@@ -609,7 +609,7 @@ class Grade(sch_mod.AwpBaseModel):
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
-    # NOTE: total score was stored in pescore, is moved to ce_exam_score PR2022-05-15
+    # NOTE: total wolf score was stored in pescore, is moved to ce_exam_score PR2022-05-15
     pescore = PositiveSmallIntegerField(null=True)
     cescore = PositiveSmallIntegerField(null=True)
 

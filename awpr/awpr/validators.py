@@ -847,6 +847,23 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     """
 
     msg = ''.join((
+        '<p><b>', gettext("Wolf scores can now be copied to the CE scores in the page <i>Grades</i>"), ':</b></p>',
+        "<p class='pb-2'>", gettext("AWP will not automatically copy the Wolf scores to the CE scores in the page <i>Grades</i>."), "<br>",
+        gettext("You can copy them by clicking <i>Copy Wolf scores to page Grades</i> in the menu bar."),
+        "</p><p class='pb-0'>", gettext("The following scores will be copied:"), "</p>",
+        "<ul class='manual_bullet mb-0 pb-2'><li>", str(_("Only Wolf scores that have been submitted will be copied.")), "</li>",
+        "<li>", str(_("CE scores that have been (partially) approved or submitted will be skipped, they will not be overwritten.")), "</li>",
+        "<li>", str(_("Existing CE scores that have no corresponding Wolf score will not be deleted.")), "</li></ul>",
+        "<p>", gettext("AWP will give you information before the scores will be copied."), "</p>"
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+    
+    msg = ''.join((
         '<p><b>', str(_("The following changes have been made in AWP-online 2023")), ':</b></p>',
         "<ul><li>", str(_("Previously submitted subjects and deleted subjects are included in the Ex1 form.")), "</li>",
         "<li>", str(_("When a candidate or subject is deleted, you must submit it in an additional Ex1 form")), "</li></ul>",
@@ -860,11 +877,7 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
         "<li>", str(_("In the candidates window you can enter special characters.")), "</li></ul>",
     ))
 
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
+    
     
     msg = ''.join((
         '<p><b>', str(_("The following changes have been made in AWP-online 2023")), ':</b></p>',

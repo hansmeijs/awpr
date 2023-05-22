@@ -193,6 +193,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['err_msg_must_be_number_greater_than_or_equal_to'] = _(' must be a number greater than or equal to ')
 
     dict['An_error_occurred'] = _('An error occurred.')
+    dict['Error_no_connection'] = _('AWP was not able to establish a connection with the server.')
 
     dict['No_item_selected'] = _('No item selected')
 
@@ -1134,6 +1135,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Click_here_to_select_subject'] = TXT_Click_to_select_subject
         dict['No_subject_selected'] = TXT_No_subject_selected
         dict['No_exam_selected'] = _('No exam selected.')
+        dict['Candidate_has_no_exam'] = _('The candidate has no exam for this subject.')
+        dict['Wolf_scores_not_published'] = _('The Wolf scores of this exam are not published.')
 
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_123ONLY
         # dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
@@ -1179,6 +1182,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve_exams'] = _("Approve exams")
         dict['Approve_wolf_exams'] = _("Approve Wolf exams")
         dict['_by_'] = TXT__by_
+
+
+        dict['Copy_wolf_scores_to_grades'] = _("Copy Wolf scores to page Grades")
+
+        dict['Wolf_scores_willbe_copied'] = _("The Wolf scores of the following subjects will be copied to the page 'Grades':")
+        dict['Only_submitted_exams_willbe_copied'] = _("Only scores of submitted exams will be copied.")
+        dict['Existing_scores_willbe_overwritten'] = _("Existing scores on the page 'Grades' will be overwritten,")
+        dict['except_when_approved'] = _("except when they are (partially) approved.")
+
         dict['Upload_ntermen'] = _("Upload N-termen table")
         dict['Copy_ntermen_to_exams'] = _("Copy N-termen to exams")
         dict['Ntermen_will_be_copied'] = _("The scalelengths and n-termen will be copied to the CVTE exams.")
@@ -1253,9 +1265,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['First_select_exam_in_column_exam'] = _("Click in the column 'Exam' to link an exam to the subject of this candidate.")
 
         dict['This_exam_has_no_questions'] = _("This exam has no questions.")
-        dict['This_is_a_secret_exam_01'] = _("This exam will be taken at the Division of Exams.")
+        dict['This_is_a_secret_exam_01'] = _("This exam will be taken at the Division of Examinations.")
         dict['This_is_a_secret_exam_02'] = _("You cannot enter scores.")
-        dict['This_is_a_secret_exam_03'] = _("The grade of this exam will be provided by the Division of Exams.")
+        dict['This_is_a_secret_exam_03'] = _("The grade of this exam will be provided by the Division of Examinations.")
         dict['This_is_a_secret_exam_04'] = _("You can enter this exam grade in the page 'Grades'.")
         dict['No_questions_of'] = _("No questions of ")
         dict['One_question_of'] = _("One question of ")
@@ -1313,7 +1325,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'key_mustbe_between_and_': _("The key must be one or more letters between 'a' and '"),
             'Exam_assignment_does_notexist': _('This exam assignment does not exist.'),
-            'Contact_divison_of_exams': _('Please contact the Division of Exams.'),
+            'Contact_divison_of_exams': _('Please contact the Division of Examinations.'),
 
             'This_exam_is_submitted': _('This exam is submitted.'),
             'This_exam_is_published': _('This exam is published.'),
@@ -1342,6 +1354,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'subheader_approve': _('Selection of the exams, that will be approved:'),
             'subheader_submit_exam': _('The following exams will be submitted:'),
+            'subheader_copy_scores': _("The Wolf scores of the following subjects will be copied to the CE score on the page 'Grades':"),
             'subheader_publish': _('The following exams will be published:'),
             'approve_0': _("Click 'Check exams' to check the selected exams before approving."),
             'approve_1': _('After the exams are approved by the chairperson and secretary,'),
@@ -1366,6 +1379,9 @@ def get_locale_dict(table_dict, user_lang, request):
             'sending_verifcode': TXT_Sending_verifcode,
             'submitting_exams': _("AWP is submitting the exams"),
             'submitting_exams_ok': _("The exams are succesfully submitted."),
+
+            'Copy_wolf_scores': _("Copy Wolf scores"),
+            'Awp_is_copying_wolf_scores': _("AWP is copying Wolf scores to CE scores"),
         }
 
         dict['corrector_cannot_approve_wolf'] = _("As second corrector you don't have to approve %(cpt)s.") \
@@ -1413,6 +1429,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_exam'] = _("Select exam")
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
+        dict['Contact_DES_if_you_need_exam'] = _("Contact the Division of Examinations if you need an exam for this subject.")
 
         dict['No_clusters'] = _("There are no clusters created yet.")
         dict['Goto_subjects_to_create'] = _("Go to the page <i>Subjects</i> and click the menu button <i>Clusters</i> to create them.")
@@ -1706,10 +1723,17 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Corrector_cannot_approve_exem': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('exemption grades')},
 
                                'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
-                               'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),  str(_("Designated exams don't have to be approved.")))),
-                               'Secret_exam_dont_enter_score': '<br>'.join((str(_('This is a designated exam.')),  str(_("You don't have to enter the score of designated exams.")))),
+                               'Cannot_approve_secret_exam': '<br>'.join((
+                                   gettext('This is a designated exam.'),
+                                   gettext("You don't have to approve designated exams.")
+                               )),
+                               'Secret_exam_dont_enter_score': '<br>'.join((
+                                   gettext('This is a designated exam.'),
+                                   gettext("You don't have to enter the score of designated exams."),
+                                   gettext("The score will be entered by the Division of Examinations.")
+                               )),
                                'no_exam_linked_to_this_score': _("You cannot approve this score, because it is not linked to an exam yet."),
-                               'click_column_to_link_score_to_exam': _("Click in the columns 'Exam' to link this score to an exam."),
+                               'click_column_to_link_score_to_exam': _("Click in the column 'Exam' to link %(cpt)s to an exam.") % {'cpt': gettext('This score').lower()},
                                'school_must_link_score_to_exam': _("The school must link this score to an exam first."),
 
                                     }

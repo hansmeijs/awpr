@@ -573,7 +573,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ')
@@ -750,7 +750,7 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('    sel_department_instance: ' + str(sel_department_instance))
 
 # ===== LEVELBASE =======================
-    allowed_depbase_dict, allowed_lvlbases_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
+    allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
         allowed_schoolbase_dict=allowed_schoolbase_dict,
         sel_depbase_pk=sel_depbase_instance.pk if sel_depbase_instance else None
     )
@@ -772,9 +772,18 @@ def download_setting(request_item_setting, user_lang, request):
 
 # ===== SUBJECTBASE =======================
     sel_lvlbase_instance_pk = sel_lvlbase_instance.pk if sel_lvlbase_instance else -9
-    allowed_subjbases_arr = acc_prm.get_userallowed_subjbase_arr(allowed_depbase_dict, sel_lvlbase_instance_pk)
+    allowed_subjbases_arr = acc_prm.get_userallowed_subjbase_arr(allowed_depbase_dict, allowed_lvlbase_pk_arr, sel_lvlbase_instance_pk)
 
-    acc_view.get_settings_subjectbase(allowed_subjbases_arr, permit_dict)
+    sel_subject_instance, sel_subject_tobesaved = acc_view.get_settings_subjectbase(
+        request_item_setting=request_item_setting,
+        sel_examyear_instance=sel_examyear_instance,
+        allowed_subjbases_arr=allowed_subjbases_arr,
+        permit_dict=permit_dict,
+        setting_dict=setting_dict,
+        selected_pk_dict=selected_pk_dict
+    )
+    if sel_subject_tobesaved:
+        selected_pk_dict_has_changed = True
 
 # ===== EXAM PERIOD =======================
     sel_examperiod, sel_examperiod_tobesaved = acc_view.get_settings_examperiod(
@@ -813,11 +822,11 @@ def download_setting(request_item_setting, user_lang, request):
     # PR2021-01-23 PR2021-03-14 PR2021-08-13 PR2022-03-06
 
     if logging_on:
-        logger.debug('++++++++++++  SECTORBASE, SCHEME, SUBJECT, STUDENT, CLUSTER ++++++++++++++++++++++++')
-        logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+        logger.debug('++++++++++++  SECTORBASE, SCHEME, STUDENT, CLUSTER ++++++++++++++++++++++++')
+        logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
     # PR2022-05-29 dont save sel_student_pk, but only filter locally. Was: , c.KEY_SEL_STUDENT_PK):
     for key_str in (c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,
-                    c.KEY_SEL_STUDENT_PK, c.KEY_SEL_CLUSTER_PK, c.KEY_SEL_SUBJECT_PK):
+                    c.KEY_SEL_STUDENT_PK, c.KEY_SEL_CLUSTER_PK):
 
         if logging_on:
             logger.debug('........... key_str: ' + str(key_str))
@@ -854,18 +863,8 @@ def download_setting(request_item_setting, user_lang, request):
 # --- add info to setting_dict, will be sent back to client
         if saved_pk_int:
             setting_dict[key_str] = saved_pk_int
-            if key_str == c.KEY_SEL_SUBJECT_PK:
-                subject = subj_mod.Subject.objects.get_or_none(
-                    pk=saved_pk_int
-                )
-                if subject:
-                    setting_dict['sel_subject_code'] = subject.base.code
-                    setting_dict['sel_subject_name'] = subject.name_nl
 
-            # use studentbase_pk instead of student_pk PR2022-02-07
-            # on second thought: don't, student might be in multiple schools in the same examyear PR2022-12-07
-
-            elif key_str == c.KEY_SEL_STUDENT_PK:
+            if key_str == c.KEY_SEL_STUDENT_PK:
                 student = stud_mod.Student.objects.get_or_none(
                     pk=saved_pk_int
                 )
@@ -898,6 +897,12 @@ def download_setting(request_item_setting, user_lang, request):
 
     # - save settings when they have changed
     if selected_pk_dict_has_changed:
+
+        if logging_on:
+            logger.debug('  >>> selected_pk_dict: ' + str(selected_pk_dict))
+
+
+
         acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
 
         if logging_on:

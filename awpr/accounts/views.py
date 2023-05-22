@@ -3499,7 +3499,10 @@ def get_userallowed_for_subjects_studsubj(sel_examyear, sel_schoolbase, sel_depb
     request, skip_allowedsubjbase_filter, table=None):
     # PR2022-03-13 PR2022-12-17 PR2023-01-09
     # this function adds selected / allowed  filter to sql for subjects row, for page studsubject, subjects, exam, wolf
-    # called by subjects.create_subject_rows
+    # only called by subjects.create_subject_rows
+
+    # PR2023-05-20 debug: subject in 'all levels' not in list
+    # TODO change to acc_prm.get_sqlclause_allowed_NEW
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -4417,7 +4420,7 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
 # - end of get_settings_examyear
 
 
-# ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-10
+# ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-10 PR2023-05-17
 def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance, allowed_sections_dict, page,
                             permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10
@@ -4426,7 +4429,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
     # and in page school btn select school is not working
     # must check if sel_schoolbase is in allowed_schools, and if not: make first allowed school the selected school
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_schoolbase -------')
     # when requsr.role = school: make requsr.schoolbase the selected school
@@ -4683,17 +4686,16 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
 # ===== LEVELBASE =======================
 def get_settings_levelbase(request, request_item_setting, sel_examyear_instance, sel_department_instance,
                                 allowed_depbase_dict, page, permit_dict, setting_dict, selected_pk_dict):
-    # PR2022-12-11 PR2023-01-11
+    # PR2022-12-11 PR2023-01-11 PR2023-05-18
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('===== LEVELBASE ======================= ')
         logger.debug(' ------- get_settings_levelbase -------')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
 
     # every user can change lvlbase, if in sel_department_lvlbases and in user allowed_lvlbases
     # only called by DatalistDownloadView.download_setting
 
-# - get sel_lvlbase_instance
+# - get sel_lvlbase_instance from request_item_lvlbase
     request_item_lvlbase_pk = request_item_setting.get(c.KEY_SEL_LVLBASE_PK)
     if logging_on:
         logger.debug('    request_item_lvlbase_pk: ' + str(request_item_lvlbase_pk) + ' ' + str(type(request_item_lvlbase_pk)))
@@ -4743,16 +4745,102 @@ def get_settings_levelbase(request, request_item_setting, sel_examyear_instance,
 # - end of get_settings_levelbase
 
 
-# ===== SUBJECTBASE ======================= PR2022-12-11
-def get_settings_subjectbase(allowed_subjbases_arr, permit_dict):
-    # PR2022-12-11
+# ===== SUBJECTBASE ======================= PR2022-12-11 PR2023-05-18
+def get_settings_subjectbase(request_item_setting, sel_examyear_instance,
+                             allowed_subjbases_arr, permit_dict, setting_dict, selected_pk_dict):
+    # PR2022-12-11 PR2023-05-18
     logging_on = False  # s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' ------- get_settings_subjectbase -------')
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    allowed_subjbases_arr: ' + str(allowed_subjbases_arr))
+        logger.debug('    ----------')
 
     if allowed_subjbases_arr:
         permit_dict['allowed_subjbases'] = allowed_subjbases_arr
-# - end of get_settings_subjectbase
+
+# - get sel_subject_instance from request_item_subject_pk
+    request_item_subject_pk = request_item_setting.get(c.KEY_SEL_SUBJECT_PK)
+    if logging_on:
+        logger.debug('    request_item_subject_pk: ' + str(request_item_subject_pk) + ' ' + str(type(request_item_subject_pk)))
+
+# - get saved_subject_pk from Usersetting
+    saved_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK) if selected_pk_dict else None
+    if logging_on:
+        logger.debug('    saved_subject_pk: ' + str(saved_subject_pk))
+
+# - when request_item is 'All subjects'
+    sel_subject_pk = None
+    sel_subject_tobesaved = False
+    if request_item_subject_pk == -9:
+        if saved_subject_pk:
+            sel_subject_tobesaved = True
+
+    # - check if request_item_subject_pk exists and is allowed
+    else:
+        if request_item_subject_pk:
+            # get subjbase_id from subject if allowed
+            request_item_subject = subj_mod.Subject.objects.get_or_none(pk=request_item_subject_pk)
+            if request_item_subject:
+                request_item_subjbase_pk = request_item_subject.base_id
+                if (not allowed_subjbases_arr) or (request_item_subjbase_pk in allowed_subjbases_arr):
+                    sel_subject_pk = request_item_subject.pk
+                    sel_subject_tobesaved = sel_subject_pk != saved_subject_pk
+
+            if logging_on:
+                logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
+                logger.debug('    sel_subject_tobesaved: ' + str(sel_subject_tobesaved))
+
+# - if sel_subject_pk is None: get saved_subject_pk, check if is allowed
+        if sel_subject_pk is None:
+            if saved_subject_pk:
+                # get subjbase_id from subject if allowed
+                saved_subject = subj_mod.Subject.objects.get_or_none(pk=saved_subject_pk)
+                if saved_subject:
+                    saved_subjbase_pk = saved_subject.base_id
+                    if (not allowed_subjbases_arr) or (saved_subjbase_pk in allowed_subjbases_arr):
+                        sel_subject_pk = saved_subject.pk
+
+# - if sel_subject_pk is None and there is only 1 allowed subject_pk : get allowed subjecte_pk
+    if sel_subject_pk is None:
+        if len(allowed_subjbases_arr) == 1:
+            saved_subject = subj_mod.Subject.objects.get_or_none(
+                base_id=allowed_subjbases_arr[0],
+                examyear=sel_examyear_instance
+            )
+            if saved_subject:
+                sel_subject_pk = saved_subject.pk
+                sel_subject_tobesaved = True
+
+# - get sel_subject_instance
+    sel_subject_instance = None
+    if sel_subject_pk:
+        sel_subject_instance = subj_mod.Subject.objects.get_or_none(
+            pk=sel_subject_pk
+        )
+        if sel_subject_instance:
+            setting_dict['sel_subjbase_pk'] = sel_subject_instance.base_id
+            setting_dict['sel_subject_pk'] = sel_subject_instance.pk
+            setting_dict['sel_subjbase_code'] = sel_subject_instance.base.code
+            setting_dict['sel_subject_name'] = sel_subject_instance.name_nl
+
+    if logging_on:
+        logger.debug('....sel_subject_instance: ' + str(sel_subject_instance))
+        logger.debug('....sel_subject_tobesaved: ' + str(sel_subject_tobesaved))
+
+# - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
+    if sel_subject_tobesaved:
+        # save subject_pk when sel_subject_instance exists
+        if sel_subject_instance:
+            selected_pk_dict[c.KEY_SEL_SUBJECT_PK] = sel_subject_instance.pk
+        else:
+            # romeove key when 'all' is selected
+            if selected_pk_dict and c.KEY_SEL_SUBJECT_PK in selected_pk_dict:
+                selected_pk_dict.pop(c.KEY_SEL_SUBJECT_PK)
+
+    return sel_subject_instance, sel_subject_tobesaved
+# --- end of get_sel_subject_instance
 
 
 # ===== EXAMPERIOD ======================= PR2022-12-11
@@ -5117,6 +5205,35 @@ def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08 
     return sel_examyear, sel_examperiod
 
 
+
+def get_selected_ey_ep_dep_lvl_subj_from_usersetting(request, selected_pk_dict):  # PR2023-05-18
+    # - get selected examyear, examperiod and department from usersettings, only examyear from request.user.country
+    # used in ExamDownloadExamJsonView
+    # note: examyear.code is integer '2021'
+    sel_examyear, sel_department, sel_examperiod, sel_lvlbase_pk, sel_subject_pk = None, None, None, None, None
+
+    if request.user and request.user.country:
+        if selected_pk_dict:
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=request.user.country
+            )
+            sel_department = sch_mod.Department.objects.get_or_none(
+                base_id=selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK),
+                examyear=sel_examyear
+            )
+            # give sel_lvlbase_pk only value when sel_department.level_req
+            if sel_department and sel_department.level_req:
+                sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+
+            sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+
+            sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+
+    return sel_examyear, sel_department, sel_examperiod, sel_lvlbase_pk, sel_subject_pk
+# - end of get_selected_examyear_examperiod_department_from_usersetting
+
+
 def get_selected_examyear_examperiod_dep_school_from_usersetting(request):  # PR2022-01-31
     # - get selected examyear and department from usersettings, only examyear from request.user.country
     # used in ExamApproveOrPublishExamView
@@ -5141,6 +5258,7 @@ def get_selected_examyear_examperiod_dep_school_from_usersetting(request):  # PR
 
     return sel_examyear, sel_department, sel_school, sel_examperiod
 # - end of get_selected_examyear_examperiod_dep_school_from_usersetting
+
 
 
 def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
@@ -5294,7 +5412,6 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
     def get_department_instance(sel_examyear_instance, sel_school_instance,
                                           allowed_schoolbase_dict, selected_pk_dict):
         # PR2022-12-19 PR2023-01-08 PR2023-04-10
-        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ------- get_department_instance -------')
 
@@ -5341,7 +5458,6 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
     def get_level_instance(sel_examyear_instance, sel_department_instance,
                                         allowed_depbase_dict, selected_pk_dict):
         # PR2022-12-19 PR2023-02-21 PR2023-05-01
-        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ------- get_level_instance -------')
 
@@ -5360,10 +5476,10 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 # - create array of allowed lvlbase_pk of requsr from allowed_depbase_dict
             allowed_lvlbases_arr = []
             # PR2023-02-21 debug: when allowed_lvlbases_dict is empty: all levels are allowed
-            if allowed_depbase_dict:
+            # PR2023-05-20 debug: also when  'all levels (-9) in allowed_lvlbases_dict
+            if allowed_depbase_dict and '-9' not in allowed_depbase_dict:
                 for lvlbase_pk_str in allowed_depbase_dict:
-                    if lvlbase_pk_str != '-9':
-                        allowed_lvlbases_arr.append(int(lvlbase_pk_str))
+                    allowed_lvlbases_arr.append(int(lvlbase_pk_str))
 
             if logging_on:
                 logger.debug('    allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
@@ -5863,8 +5979,6 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
 # --- end of get_sel_depbase_instance
 
 
-
-
 def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, allowed_depbase_dict):
     # PR2022-12-11 PR2023-01-11
 
@@ -5954,6 +6068,9 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
 
     return sel_lvlbase_instance, sel_lvlbase_tobesaved, allowed_lvlbases_arr
 # --- end of get_sel_lvlbase_instance
+
+
+
 
 ######################################################
 

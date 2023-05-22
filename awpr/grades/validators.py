@@ -16,13 +16,19 @@ from students import models as stud_mod
 import logging
 logger = logging.getLogger(__name__)
 
+
 def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requsr_auth, grade_row, req_usr):
     # PR2023-04-10
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_grade_approval_remove_allowed -------')
+
     err_html = None
 
     # PR2023-03-25 remove approval can only be done by the same auth or by the chairperson and secretary
     if is_reset:
-        # PR2023-04-10: approvals can only be reste by same user
+        # PR2023-04-10: approvals can only be reset by same user
         # was:
             # skip when chairperson or secretary, they may remove approval
             #   if auth_index > 2:
@@ -32,7 +38,10 @@ def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requs
         if auth_id != req_usr.pk:
 
             cpt = _('This score') if is_score else _('This grade')
-            auth = _('Corrector') if auth_index == 4 else _('Examiner')
+            auth = _('Second corrector') if auth_index == 4 else \
+                    _('Examiner') if auth_index == 3 else \
+                    _('Secretary') if auth_index == 2 else \
+                    _('Chairperson')
 
             err_html = ''.join((
                 "<div class='p-2 border_bg_invalid'><p>",
@@ -45,7 +54,11 @@ def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requs
                 "</p></div>"
             ))
 
+    if logging_on:
+        logger.debug('     err_html: ' + str(err_html))
     return err_html
+# - end of validate_grade_approval_remove_allowed
+
 
 def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, userallowed_cluster_pk_list,
                 schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted, is_secret_exam,
@@ -75,7 +88,8 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, u
             if is_approve:
                 msg_list.append(gettext("You don't have to approve designated exams."))
             else:
-                msg_list.append(gettext("You don't have to enter the score of designated exams."))
+                msg_list.extend((gettext("You don't have to enter the score of designated exams."),
+                                gettext("The score will be entered by the Division of Examinations.")))
 
         else:
 
@@ -158,11 +172,11 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, userallowed_cluster
 # - end of validate_grade_multiple_is_allowed
 
 
-def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_examyear, si_dict):
+def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_examyear, si_dict, request):
     # PR2021-01-18 PR2021-09-19 PR2021-12-15 PR2021-12-25 PR2022-02-09 PR2022-04-16
-    logging_on = False  # s.LOGGING_ON
-    # examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade
-    # calculated fields are: 'sesrgrade', 'pecegrade', 'finalgrade'
+    logging_on = s.LOGGING_ON
+    # values of examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'
+    #  ('sesrgrade', 'pecegrade', 'finalgrade' are calculated fields)
 
     examperiod = grade_instance.examperiod
 
@@ -185,7 +199,6 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
     # deprecated, use partial_exam instead. Was: st_additional_exam = student.additional_exam  # when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
     max_score, nex_id, cesuur, nterm = None, None, None, None
-    is_secret_exam = False
     if is_pe:
         exam = grade_instance.pe_exam
     else:
@@ -193,7 +206,6 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
 
     if exam:
         max_score = exam.scalelength
-        is_secret_exam = exam.secret_exam
 
     if logging_on:
         logger.debug(' ')
@@ -226,15 +238,16 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
         if logging_on:
             logger.debug('     validate_grade_examgradetype_in_examyear:     ' + str(err_list))
 
-# - check if it is allowed to enter a score / grade because of is_secret_exam
-    # nota any more. ALso when secret exam you must enter score, not grade
-    # entering pe- and ce-grades not allowed in ep01, ep02 and ep03, only when exemption ce-grades can be entered
-    if not error_list:
-        err_list = validate_grade_secret_exam(examperiod, gradetype, is_secret_exam)
+    if not err_list:
+        err_list = validate_score_has_ceexam(grade_instance, examgradetype, request)
         if err_list:
             error_list.extend(err_list)
             if logging_on:
-                logger.debug('     validate_grade_secret_exam:     ' + str(err_list))
+                logger.debug('     validate_score_has_ceexam:     ' + str(err_list))
+
+# - check if it is allowed to enter a score / grade because of is_secret_exam
+    # not any more. was: ALso when secret exam you must enter score, not grade
+    # entering pe- and ce-grades not allowed in ep01, ep02 and ep03, only when exemption ce-grades can be entered
 
 # - check if grade is published or authorized
     if not error_list:
@@ -599,57 +612,6 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
 # - end of validate_import_grade
 
 
-def validate_grade_secret_exam(examperiod, examgradetype, is_secret_exam):  # PR2022-05-20
-    # - check if it is allowed to enter a score / grade because of is_secret_exam
-    # PR2022-06-22 secret_exam also enters scores, only difference is that examiner and commissioner dont need to approve it
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- validate_grade_secret_exam ----- ')
-        logger.debug('     examperiod: ' + str(examperiod))
-        logger.debug('     is_secret_exam: ' + str(is_secret_exam))
-        logger.debug('     examgradetype: ' + str(examgradetype))
-
-    # examgradetypes are: 'segrade', 'srgrade', 'pescore', 'pegrade', 'cescore', 'cegrade'
-
-    err_list = []
-    col_name = None
-    # PR2022-06-22 was:
-    #if is_secret_exam:
-    #    if examgradetype in ('pescore', 'cescore'):
-    #        if examperiod == c.EXAMPERIOD_FIRST:
-    #            col_name = _('CE grade')
-    #        elif examperiod == c.EXAMPERIOD_SECOND:
-    #            col_name = _('Re-examination grade')
-    #        elif examperiod == c.EXAMPERIOD_THIRD:
-    #            col_name = _('Third period grade')
-    #        if col_name:
-    #            err_list.extend(((
-    #                str(_('This exam is taken at the Division of Exams.')),
-    #                str(_('You cannot enter scores in this exam.')),
-    #                str(_('The grade of this exam will be provided by the Division of Exams.')),
-    #                str(_("You can enter this grade in the column '%(cpt)s'.") % {'cpt': col_name}))))
-    #else:
-    # entering grades not allowed in ep01, ep02 and ep03
-    if examgradetype in ('pegrade', 'cegrade'):
-        if examperiod == c.EXAMPERIOD_FIRST:
-            col_name = _('CE score')
-        elif examperiod == c.EXAMPERIOD_SECOND:
-            col_name = _('Re-examination score')
-        elif examperiod == c.EXAMPERIOD_THIRD:
-            col_name = _('Third period score')
-        if col_name:
-            err_list.extend(((
-                str(_('You cannot enter a grade.')),
-                str(_("Enter the score in the column '%(cpt)s'.") % {'cpt': col_name}),
-                str(_('AWP will calculate the grade when the conversion table has been published.')))))
-
-    if logging_on:
-        logger.debug('     err_list: ' + str(err_list))
-
-    return err_list
-# - en of validate_grade_secret_exam
-
-
 def validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype):  # PR2021-12-11 PR2021-12-25
     # functions checks if examyear has no_practexam, sr_allowed, no_centralexam, no_thirdperiod
     # values of examgradetype are:
@@ -679,6 +641,58 @@ def validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype):  # PR
 
     return err_list
 # - end of validate_grade_examgradetype_in_examyear
+
+
+
+def validate_score_has_ceexam(grade_instance, examgradetype, request):
+    # PR2023-05-21
+    # functions checks if garde has ce_exam,
+    #  eneterin scores only allowed when grade has ce_exam
+    #  necessary to check if it is a secret exam (entering by school not allowed when secret exam
+
+    # values of examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'
+
+    err_list = []
+    if grade_instance.examperiod in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+        no_exam = False
+        exam = None
+        if examgradetype == 'cescore':
+            exam = grade_instance.ce_exam
+        elif examgradetype == 'pescore':
+            exam = grade_instance.pe_exam
+
+        if exam is None:
+            caption = None
+            if grade_instance.examperiod == c.EXAMPERIOD_FIRST:
+                caption = gettext('an exam')
+            elif grade_instance.examperiod == c.EXAMPERIOD_SECOND:
+                caption = gettext(' a re-examination')
+            elif grade_instance.examperiod == c.EXAMPERIOD_THIRD:
+                caption = gettext(' a re-examination 3rd period')
+            if caption:
+                err_list.extend((
+                        gettext("This subject is not linked to (cpt)s.") % {'cpt': caption},
+                        gettext("Click in the column 'Exam' to link this subject to %(cpt)s.") % {'cpt': caption}
+                ))
+        else:
+            requsr_role = request.user.role
+            if exam.secret_exam:
+                if requsr_role != c.ROLE_064_ADMIN:
+                    err_list.extend((
+                        gettext("This is a designated exam."),
+                        gettext("The Division of Examinations will enter the score of this exam.")
+                    ))
+            else:
+                if requsr_role != c.ROLE_008_SCHOOL:
+                    err_list.extend((
+                        gettext("This is a designated exam."),
+                        acc_prm.err_txt_no_permit("to enter the score of this exam")
+                    ))
+
+            # check if is secret exam
+
+    return err_list
+# - end of validate_score_has_ceexam
 
 
 def validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dict, input_value):

@@ -376,6 +376,7 @@ urlpatterns = [
         # approval of single wolf exams is done in GradeUploadView
         path('approve_submit_wolf', subject_views.ExamApproveOrSubmitWolfView.as_view(), name='url_approve_submit_wolf'),
         path('download_wolf_pdf/<list>/', subject_views.ExamDownloadWolfView.as_view(), name='url_download_wolf_pdf'),
+        path('copy_wolf_scores', subject_views.ExamCopyWolfScoresView.as_view(), name='url_copy_wolf_scores'),
     ])),
 # ===== IMPORT ==========================
     path('import/', include([

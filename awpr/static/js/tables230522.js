@@ -181,7 +181,7 @@
         setting_dict.sel_student_name_init = null;
 
         setting_dict.sel_subject_pk = null;
-        setting_dict.sel_subject_code = null;
+        setting_dict.sel_subjbase_code = null;
         setting_dict.sel_subject_name = null;
 
         console.log("new_setting", new_setting);
@@ -670,7 +670,6 @@
         //console.log( "    data_dict", data_dict);
                     display_txt = t_MSSSS_get_display_text(tblName, data_dict);
 
-        //console.log( "    display_txt", display_txt);
                 } else {
                     if (data_dicts){
                         // PR2022-12-23 debug: when table = cluster, 'all' must always be shown, even when there is only 1 cluster,
@@ -690,6 +689,7 @@
                         display_txt = t_MSSSS_NoItems_txt(tblName);
                     };
                 };
+        //console.log( "    display_txt", display_txt);
                 el_SBR_select.value = display_txt;
                 add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
             };
@@ -1109,9 +1109,6 @@
 
     function t_MSSSS_get_display_text(tblName, data_dict) {
         // PR2022-05-01 PR2022-08-29
-        //console.log( "===== t_MSSSS_get_display_text  ========= ");
-        //console.log( "    tblName", tblName);
-        //console.log( "    data_dict", data_dict);
         const name_field = (tblName === "student") ? "name_first_init" : (tblName === "subject") ? "name_nl" : "name";
         const code_field = (tblName === "student") ? "name_first_init" : "code";
         const display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 30) ? data_dict[name_field] :
@@ -3066,7 +3063,7 @@ const mod_MCOL_dict = {
         setting_dict.sel_sctbase_code = null;
 
         setting_dict.sel_subject_pk = null;
-        setting_dict.sel_subject_code = null;
+        setting_dict.sel_subjbase_code = null;
         setting_dict.sel_subject_name = null;
 
         setting_dict.sel_cluster_pk = null;

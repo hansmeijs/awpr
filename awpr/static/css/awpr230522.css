@@ -594,6 +594,10 @@ select.form-control:not([size]):not([multiple]) {
   cursor: pointer;
  }
 
+.text_underline {
+  text-decoration: underline;
+}
+
 
 ////////////
 

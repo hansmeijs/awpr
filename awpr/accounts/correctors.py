@@ -1692,7 +1692,7 @@ def calc_compensation(approvals_sum, meetings_sum, approvals_sum_correction, mee
 def update_usercompensation(sel_examyear, request):
     # --- create list of all correctors, approvals
     # and return dict with key (user_pk, exam_pk, school_pk) and count PR2023-02-24 PR2023-05-14
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_usercompensation ----- ')
 

@@ -238,7 +238,7 @@ def create_subject_rows(request, sel_examyear, sel_schoolbase, sel_depbase, sel_
     # PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07 PR2022-08-21 PR2022-12-19
     # --- create rows of all subjects of this examyear
     # skip_allowedsubjbase_filter is used in userpage: when setting 'allowed_', all subjects must be shown
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_subject_rows ============= ')
@@ -296,16 +296,30 @@ def create_subject_rows(request, sel_examyear, sel_schoolbase, sel_depbase, sel_
         #    )
 
     # --- filter on usersetting and allowed
-        sql_clause = acc_view.get_userallowed_for_subjects_studsubj(
-            sel_examyear=sel_examyear,
-            sel_schoolbase=sel_schoolbase,
-            sel_depbase=sel_depbase,
-            sel_lvlbase=sel_lvlbase,
-            request=request,
-            skip_allowedsubjbase_filter=skip_allowedsubjbase_filter
+        # PR2023-05-20 cahnged to get_sqlclause_allowed_NEW
+        # was:
+            #sql_clause = acc_view.get_userallowed_for_subjects_studsubj(
+            #    sel_examyear=sel_examyear,
+            #    sel_schoolbase=sel_schoolbase,
+            #    sel_depbase=sel_depbase,
+            #    sel_lvlbase=sel_lvlbase,
+            #    request=request,
+            #    skip_allowedsubjbase_filter=skip_allowedsubjbase_filter
+            #)
+            #if sql_clause:
+            #    sub_sql_list.append("AND " + sql_clause)
+
+        sql_clause = acc_prm.get_sqlclause_allowed_NEW(
+            table='subject',
+            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+            sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
+            sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
+            userallowed_sections_dict=acc_prm.get_userallowed_sections_dict_from_request(request),
+            return_false_when_no_allowedsubjects=False
         )
         if sql_clause:
-            sub_sql_list.append("AND " + sql_clause)
+            sub_sql_list.append(sql_clause)
+
 
         sub_sql_list.append("GROUP BY si.subject_id")
 
@@ -2811,6 +2825,7 @@ class ExamApproveOrSubmitWolfView(View):
         req_usr = request.user
         test_is_ok = False
         saved_is_ok = False
+        has_tobesubmitted_eteexams = False
 
 # -  get user_lang
         user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
@@ -2838,10 +2853,6 @@ class ExamApproveOrSubmitWolfView(View):
 
             if logging_on:
                 logger.debug('mode: ' + str(mode))
-                logger.debug('     is_approve: ' + str(is_approve))
-                logger.debug('     is_submit:  ' + str(is_submit))
-                logger.debug('     is_reset:   ' + str(is_reset))
-                logger.debug('     is_test:    ' + str(is_test))
 
 # -  get permit, must come after get upload_dict
             has_permit_approve = acc_prm.get_permit_of_this_page('page_wolf', 'approve_exam', request)
@@ -2895,7 +2906,7 @@ class ExamApproveOrSubmitWolfView(View):
                         sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
                         sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
                         sel_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
-                    # Filter on subjbase_pok, not sel_subject_pk because subject_pk of SXM is different from Curacao
+                    # Filter on subjbase_pk, not sel_subject_pk because subject_pk of SXM is different from Curacao
                         if sel_subject_pk:
                             subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
                             if subject:
@@ -2921,12 +2932,7 @@ class ExamApproveOrSubmitWolfView(View):
                     if logging_on:
                         logger.debug('     sel_examperiod:      ' + str(sel_examperiod))
                         logger.debug('     sel_subject_pk:      ' + str(sel_subject_pk))
-
-                        row_count = len(grade_exam_rows)
-                        logger.debug('row_count:      ' + str(row_count))
-                        if row_count and False:
-                            for row in grade_exam_rows:
-                                logger.debug('row:      ' + str(row))
+                        logger.debug('     row_count:      ' + str(len(grade_exam_rows)))
 
                     # grade_exams_tobe_updated_list contains list of tuples with (grade_pk, exam_pk)
 
@@ -3006,14 +3012,6 @@ class ExamApproveOrSubmitWolfView(View):
                                 already_submitted = exam_dict.get('already_submitted', 0) or 0
                                 not_fully_approved = exam_dict.get('not_fully_approved', 0) or 0
 
-                                if logging_on:
-                                    logger.debug('  >> exam_dict: ' + str(exam_dict))
-                                    logger.debug('     count: ' + str(count))
-                                    logger.debug('     committed: ' + str(committed))
-                                    logger.debug('     tobesaved: ' + str(tobesaved))
-                                    logger.debug('     already_submitted: ' + str(already_submitted))
-                                    logger.debug('     not_fully_approved: ' + str(not_fully_approved))
-
                                 is_tobe_submitted = False
                                 if is_test:
                                     if committed and committed + already_submitted == count:
@@ -3026,6 +3024,17 @@ class ExamApproveOrSubmitWolfView(View):
                                     if exam_id and exam_dict not in tobe_submitted_ete_exams:
                                         tobe_submitted_ete_exams.append(exam_id)
                                         exam_dict['tobe_submitted'] = True
+                                        has_tobesubmitted_eteexams = True
+
+                                if logging_on:
+                                    logger.debug('  >> exam_dict: ' + str(exam_dict))
+                                    logger.debug('     count: ' + str(count))
+                                    logger.debug('     committed: ' + str(committed))
+                                    logger.debug('     tobesaved: ' + str(tobesaved))
+                                    logger.debug('     already_submitted: ' + str(already_submitted))
+                                    logger.debug('     not_fully_approved: ' + str(not_fully_approved))
+                                    logger.debug('     is_tobe_submitted: ' + str(is_tobe_submitted))
+                                    logger.debug('     has_tobesubmitted_eteexams: ' + str(has_tobesubmitted_eteexams))
 
                         if logging_on:
                             logger.debug('............ tobe_submitted_ete_exams: ' + str(tobe_submitted_ete_exams))
@@ -3122,12 +3131,24 @@ class ExamApproveOrSubmitWolfView(View):
 
                     if total_ok:
                         if is_test:
-                            test_is_ok = True
+                            if is_submit:
+                                test_is_ok = has_tobesubmitted_eteexams
+                            else:
+                               test_is_ok = True
+
+                    if logging_on:
+                        logger.debug('    total_ok: ' + str(total_ok))
+                        logger.debug('    is_test: ' + str(is_test))
+                        logger.debug('    is_submit: ' + str(is_submit))
+                        logger.debug('    has_tobesubmitted_eteexams: ' + str(has_tobesubmitted_eteexams))
+                        logger.debug('    test_is_ok: ' + str(test_is_ok))
 
         if test_is_ok:
             update_wrap['test_is_ok'] = True
         if saved_is_ok:
             update_wrap['saved_is_ok'] = True
+
+        update_wrap['has_tobesubmitted_eteexams'] = has_tobesubmitted_eteexams
 
         if logging_on:
             logger.debug('    msg_list: ' + str(msg_list))
@@ -3531,7 +3552,7 @@ def create_grade_exam_approve_submit_msg_list(req_usr, requsr_auth, count_list, 
                         blank_no = str(pgettext_lazy('geen', 'no') if no_questions_count else _('blank'))
                         msg_list.append(' '.join(("<div class='pl-2 border_bg_invalid'>",
                                                 str(_('This exam has errors.')),
-                                                str(_('Please contact the Division of Exams.')), '</div>')))
+                                                str(_('Please contact the Division of Examinations.')), '</div>')))
                     else:
 
         # count grade_exam is already submitted
@@ -3781,7 +3802,7 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
                                   sel_subjbase_pk=None, sel_cluster_pk=None):
     # PR2022-04-25 PR2022-06-01 PR2023-04-30 PR2023-05-16
     # approving single grade_exam happens in UploadGrade
-    logging_on = False  #s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  ---- get_approve_grade_exam_rows -----')
         logger.debug('     sel_examperiod: ' + str(sel_examperiod))
@@ -3790,9 +3811,8 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
 
         logger.debug('     sel_examyear:        ' + str(sel_examyear))
         logger.debug('     sel_school:          ' + str(sel_school.name))
-        logger.debug('     sel_school.pk:          ' + str(sel_school.id))
         logger.debug('     sel_department:      ' + str(sel_department.name))
-        logger.debug('     sel_department.pk:   ' + str(sel_department.pk))
+        logger.debug('     sel_level:   ' + str(sel_level))
 
     # Note: exams must also be assigned to students of SXM. Therefore don't filter on examyer.pk but on examyear.code
     # it doesnt matter here because it doesnt filter on exam
@@ -4923,7 +4943,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-06-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_all_exam_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear))
@@ -7292,21 +7312,21 @@ class ExamDownloadConversionView(View):  # PR2022-05-08
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamDownloadExamJsonView(View):  # PR2021-05-06
+class ExamDownloadExamJsonView(View):  # PR2021-05-06 PR2023-05-18
 
     def get(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('===== ExamDownloadExamJsonView ===== ')
 
-        def get_exam_rows(sel_examyear_code, sel_examperiod,
-                                          selected_pk_dict, request):
+        def get_exam_rows(sel_examyear_code, sel_examperiod, sel_department, sel_lvlbase_pk, sel_subject_pk, request):
             # --- create exam rows that have students with results, also SXM of this examyear PR2022-05-03
 
             logging_on = s.LOGGING_ON
             if logging_on:
                 logger.debug(' ----- get_exam_rows -----')
-                logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+                logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
 
             # - only grades with ete exams are visible
             # - only exams that are published are visible
@@ -7316,23 +7336,22 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             exam_rows = []
             req_usr = request.user
             if req_usr.role == c.ROLE_064_ADMIN:
-                sel_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
+
+                sel_depbase_pk = sel_department.base_id if sel_department else None
 
                 sql_keys = {'ey_code': sel_examyear_code, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
 
-                sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
                 if sel_lvlbase_pk:
                     sql_keys['lvlbase_pk'] = sel_lvlbase_pk
 
                 sel_subjbase_pk = None
-                # get sel_subjbase_pk from sel_subject_pk TODO deprecate, replace filter on sel_subject_pk by sel_subjbase_pk
-                sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
                 if sel_subject_pk:
                     subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
-                    if subject and subject.base.pk:
+                    if subject:
                         sel_subjbase_pk = subject.base.pk
-                    else:
-                        sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+
+                if logging_on:
+                    logger.debug('    sel_subjbase_pk: ' + str(sel_subjbase_pk))
 
                 if sel_subjbase_pk:
                     sql_keys['sjb_pk'] = sel_subjbase_pk
@@ -7436,8 +7455,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                 """
             return exam_rows
 
-        def get_grade_exam_result_rows(sel_examyear_code, sel_examperiod,
-                                          selected_pk_dict, request):
+        def get_grade_exam_result_rows(sel_examyear_code, sel_examperiod, selected_pk_dict, request):
             # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
 
             logging_on = False  # s.LOGGING_ON
@@ -7871,10 +7889,14 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             activate(user_lang)
 
 # - get selected examyear and examperiod from usersettings
-            sel_examyear, sel_examperiod = acc_view.get_selected_examyear_examperiod_from_usersetting(request)
+            selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+            sel_examyear, sel_department, sel_examperiod, sel_lvlbase_pk, sel_subject_pk = \
+                acc_view.get_selected_ey_ep_dep_lvl_subj_from_usersetting(request, selected_pk_dict)
 
             if logging_on:
-                logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
 
             examyear_txt = str(sel_examyear.code)
             examperiod_txt = c.get_examperiod_caption(sel_examperiod)
@@ -7888,9 +7910,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             if sel_examperiod in (1, 2):
                 examenlijst = []
 
-                selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-
-                exam_rows = get_exam_rows(sel_examyear.code, sel_examperiod, selected_pk_dict, request)
+                exam_rows = get_exam_rows(sel_examyear.code, sel_examperiod, sel_department, sel_lvlbase_pk, sel_subject_pk, request)
                 if logging_on:
                     logger.debug('exam_rows: ' + str(exam_rows))
 
@@ -7984,6 +8004,407 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
         #return JsonResponse({'test': 'json'})
 
 # - end of ExamDownloadExamJsonView
+
+
+@method_decorator([login_required], name='dispatch')
+class ExamCopyWolfScoresView(View):  # PR2023-05-18
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExamCopyWolfScoresView ============= ')
+
+        def get_sub_sql(is_test):
+
+            if logging_on:
+                logger.debug('  ----- get_sub_sql -----')
+                logger.debug('    sel_level: ' + str(sel_level))
+                logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
+
+
+            # see https://wiki.postgresql.org/wiki/Is_distinct_from
+            sub_sql_list = ["SELECT grd.id AS grade_id, subj.id AS subject_id, subj.name_nl AS subject_name, exam.level_id, ",
+                            "(grd.cescore IS DISTINCT FROM grd.ce_exam_score) AS change, ",
+                            "(grd.cescore IS NOT NULL AND grd.cescore IS DISTINCT FROM grd.ce_exam_score) AS diff, ",
+                            "(grd.cescore IS NOT NULL AND grd.cescore IS NOT DISTINCT FROM grd.ce_exam_score) AS same, ",
+
+                            "(grd.ce_auth1by_id IS NOT NULL OR grd.ce_auth2by_id IS NOT NULL OR ",
+                            "grd.ce_auth3by_id IS NOT NULL OR grd.ce_auth4by_id IS NOT NULL OR ",
+                            "grd.ce_published_id IS NOT NULL) AS appr "
+
+                            #"stud.lastname, stud.firstname, grd.cescore, grd.ce_exam_score "
+
+                            "FROM students_grade AS grd ",
+                            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id) ",
+                            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id) ",
+                            "INNER JOIN schools_school AS school ON (school.id = stud.school_id) ",
+                            "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id) ",
+                            "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id) ",
+
+            # grade must have exam
+                            "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id) ",
+                            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id) ",
+
+                            "WHERE stud.school_id=", str(sel_school.pk), "::INT ",
+                            "AND stud.department_id=", str(sel_department.pk), "::INT ",
+                            "AND grd.examperiod=", str(sel_examperiod), "::INT ",
+
+            # filter on wolf score has value
+                            "AND grd.ce_exam_score IS NOT NULL ",
+
+            # grdae, subj and stud may not be deleted or tobedeleted must be published
+                            "AND NOT grd.tobedeleted AND NOT grd.deleted ",
+                            "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted ",
+                            "AND NOT stud.tobedeleted AND NOT stud.deleted ",
+            # exam must be published
+                            "AND grd.ce_exam_published_id IS NOT NULL ",
+                            ]
+
+            # set this filter only when updating
+            if not is_test:
+                # skip when grade score is (partly) approved or published
+                sub_sql_list.extend(("AND grd.ce_auth1by_id IS NULL AND grd.ce_auth2by_id IS NULL ",
+                                    "AND grd.ce_auth3by_id IS NULL AND grd.ce_auth4by_id IS NULL ",
+                                    "AND grd.ce_published_id IS NULL ",
+                # skip when wolf score and grade score are the same
+                                     "AND grd.cescore IS DISTINCT FROM grd.ce_exam_score "
+                                     ))
+
+            if sel_department.level_req and sel_level:
+                sub_sql_list.extend(("AND stud.level_id=", str(sel_level.pk), "::INT "))
+
+            if sel_subject_pk:
+                # PR2023-05-19 debug: don't filter on exam.subject_id, it can be differentt from  studsubj.scheeitem.subject_id
+                # filter on sel_subjbase_pk instead.
+                # was: sub_sql_list.extend(("AND exam.subject_id=", str(sel_subject_pk), "::INT "))
+                sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
+                if logging_on:
+                    logger.debug('    sel_subject: ' + str(sel_subject))
+                if sel_subject:
+                    sub_sql_list.extend(("AND subj.base_id=", str(sel_subject.base_id), "::INT "))
+
+            sql_clause = acc_prm.get_sqlclause_allowed_NEW(
+                table='grade',
+                sel_schoolbase_pk=sel_school.base.pk if sel_school else None,
+                sel_depbase_pk=sel_department.base.pk if sel_department else None,
+                sel_lvlbase_pk=sel_level.base.pk if sel_level else None,
+                userallowed_sections_dict=acc_prm.get_userallowed_sections_dict_from_request(request),
+                return_false_when_no_allowedsubjects=False
+            )
+            if sql_clause:
+                sub_sql_list.append(sql_clause)
+
+            return ''.join(sub_sql_list)
+
+        def test_scores():
+            updated_list_sorted = []
+            total_change = 0
+            level_pk_list = []
+            try:
+                updated_dict = {}
+                sub_sql = get_sub_sql(True)  # True: is_test
+                with connection.cursor() as cursor:
+                    cursor.execute(sub_sql)
+
+                    for row in af.dictfetchall(cursor):
+                        if logging_on and False:
+                            logger.debug(' row: ' + str(row))
+
+                        subject_id = row.get('subject_id')
+                        if subject_id not in updated_dict:
+                            updated_dict[subject_id] = {
+                                'subject': row.get('subject_name') or '---',
+                                'count': 0, 'change': 0, 'diff': 0, 'same': 0, 'appr': 0}
+                        subject_dict = updated_dict[subject_id]
+                        subject_dict['count'] += 1
+
+                        if row.get('appr'):
+                            subject_dict['appr'] += 1
+                        elif row.get('same'):
+                            subject_dict['same'] += 1
+                        elif row.get('change'):
+                            subject_dict['change'] += 1
+                            total_change += 1
+                            if row.get('diff'):
+                                subject_dict['diff'] += 1
+
+                        level_id = row.get('level_id')
+                        if level_id not in level_pk_list:
+                            level_pk_list.append(level_id)
+
+                # convert dict to list
+                updated_list = list(updated_dict.values())
+                if logging_on and False:
+                    for updated_row in updated_list:
+                        logger.error('updated_row: ' + str(updated_row))
+                # sort list to sorted dictlist
+                # PR2021-11-15 from https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-a-value-of-the-dictionary
+                updated_list_sorted = sorted(updated_list, key=lambda d: d['subject'])
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+            if logging_on and False:
+                logger.debug(' total_change: ' + str(total_change))
+                for row in updated_list_sorted:
+                    logger.debug(' row: ' + str(row))
+
+            return updated_list_sorted, total_change, level_pk_list
+
+        def copy_scores(request, sel_school, sel_department, sel_level, sel_examperiod, sel_subject_pk):
+            # PR2022-05-15 field pescore was temporary used to store ce_exam_score
+            # move value of pescore to field ce_exam_score, set pescore = null
+
+            if logging_on:
+                logger.debug('    sel_school: ' + str(sel_school))
+                logger.debug('    sel_department: ' + str(sel_department))
+                logger.debug('    sel_level: ' + str(sel_level))
+                logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
+
+            sub_sql = get_sub_sql(False)  # False: not is_test
+
+            updated_count = 0
+            try:
+                modifiedby_pk_str = str(request.user.pk)
+                modifiedat_str = str(timezone.now())
+
+                sql_list = [
+                    "WITH sub_sql AS (", sub_sql, ")",
+                    "UPDATE students_grade AS grade",
+                    "SET cescore = ce_exam_score,",
+                    "modifiedby_id=", modifiedby_pk_str, ", modifiedat='", modifiedat_str, "' ",
+
+                    "FROM sub_sql",
+                    "WHERE grade.id = sub_sql.grade_id",
+                    "RETURNING grade.id"
+                ]
+                sql = ' '.join(sql_list)
+
+                if logging_on and False:
+                    for txt in sql_list:
+                        logger.debug(' > ' + str(txt))
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+
+                    rows = cursor.fetchall()
+                    if rows:
+                        updated_count = len(rows)
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+            return updated_count
+
+        def create_test_msg_list(updated_list_sorted, level_pk_list):
+
+            if logging_on:
+                logger.debug('  ----- create_test_msg_list -----')
+
+            msg_list = []
+
+            # - get number of subjects
+            total_subject_count = len(updated_list_sorted)
+
+            # get list of levels
+            level_abbrev_list = []
+            if level_pk_list:
+                for level_pk in level_pk_list:
+                    level = subj_mod.Level.objects.get_or_none(pk=level_pk)
+                    if level:
+                        level_abbrev_list.append(level.abbrev)
+
+            level_abbrev_str = ''
+            if level_abbrev_list:
+                if len(level_abbrev_list) == 1:
+                    level_abbrev_str = gettext(' in the learning path ')
+                else:
+                    level_abbrev_str = gettext(' in the learning paths ')
+                level_abbrev_list_sorted = sorted(level_abbrev_list)
+                level_abbrev_str += ', '.join(level_abbrev_list_sorted)
+
+            if total_subject_count:
+                msg_txt = gettext("The selection contains %(count)s") % {'count': get_subjects_count_text(total_subject_count, True)}
+            else:
+                msg_txt = gettext("The selection contains no submitted Wolf scores")
+
+            msg_list.append(''.join(("<p class='pb-0'>", msg_txt, level_abbrev_str, ':</p>' if total_subject_count else '.</p>')))
+            # +++ loop through exams
+            if total_subject_count:
+                for update_dict in updated_list_sorted:
+                    msg_list.append("<div class='mx-2 mt-0 p-0'>")
+
+                    # write examname in bold letters
+                    subject_name = update_dict.get('subject', '-') or '-'
+                    msg_list.append("<b>" + subject_name + "</b>")
+                    msg_list.append("<div class='mx-2 mt-0 p-0'>")
+
+                    # count candidates
+                    # grade_exam_count cannot be zero because of INNER JOIN ce_exam ceex_exam_id
+                    grade_exam_count = update_dict.get('count') or 0
+                    change_count = update_dict.get('change') or 0
+                    diff_count = update_dict.get('diff') or 0
+                    same_count = update_dict.get('same') or 0
+                    appr_count = update_dict.get('appr') or 0
+
+                    msg_list.append(''.join(("<div class='pl-2'>",
+                                             str(_("There %(is_are)s %(count)s with this exam and submitted Wolf scores.") % {
+                                                 'is_are': get_is_are_txt(grade_exam_count),
+                                                 'count': get_candidates_count_text(grade_exam_count)}),
+                                             '</div>')))
+
+                    if appr_count:
+                        score_count = ' '.join(
+                            (str(appr_count), gettext('CE scores are'))) if appr_count > 1 else gettext(
+                            '1 CE score is')
+                        same_txt = gettext('CE scores are') if appr_count > 1 else gettext('1 CE score is')
+                        willbe_txt = pgettext_lazy('plural', 'will be') if appr_count > 1 else pgettext_lazy('singular',
+                                                                                                             'will be')
+                        msg_list.append(''.join(("<div class='pl-2'>",
+                                                 str(_(
+                                                     "%(count)s already approved and %(willbe)s skipped.") % {
+                                                         'count': score_count, 'same': same_txt,
+                                                         'willbe': str(willbe_txt)}),
+                                                 '</div>')))
+
+                    if same_count:
+                        score_count = ' '.join((str(same_count), gettext('Wolf scores are'))) if same_count > 1 else gettext('1 Wolf score is')
+                        same_txt = gettext('CE scores') if same_count > 1 else gettext('CE score')
+                        willbe_txt = pgettext_lazy('plural', 'will be') if same_count > 1 else pgettext_lazy('singular', 'will be')
+                        msg_list.append(''.join(("<div class='pl-2'>",
+                                                 str(_("%(count)s the same as the %(same)s in the page 'Grades' and %(willbe)s skipped.") % {
+                                                     'count': score_count, 'same': same_txt, 'willbe': str(willbe_txt)}),
+                                                 '</div>')))
+
+                    changed_count_txt = gettext('No scores will be') if not change_count else \
+                                        gettext('1 score will be') if change_count == 1 else \
+                                        ' '.join((str(change_count), gettext('scores will be')))
+                    border_class = ' border_bg_valid' if change_count else ''
+                    msg_list.append(''.join(("<div class='pl-2", border_class, "'>",
+                                             str(_("%(count)s copied to the CE score in the page 'Grades'.") % {
+                                                 'count': changed_count_txt}),
+                                             '</div>')))
+
+                    if diff_count:
+                        score_count = ' '.join((str(diff_count), gettext('CE scores have'))) if diff_count > 1 else gettext('1 CE score has')
+                        willbe_txt = pgettext_lazy('plural', 'will be') if diff_count > 1 else pgettext_lazy('singular', 'will be')
+                        msg_list.append(''.join(("<div class='pl-2 border_bg_warning'><b>", gettext('ATTENTION'), '</b>: ',
+                                                 gettext("%(count)s a different value in the page 'Grades' and %(willbe)s overwritten.") % {
+                                                     'count': score_count, 'willbe': willbe_txt},
+                                                 '</div>')))
+
+                    msg_list.append("</div>")
+                    msg_list.append("</div>")
+            # +++ end of loop through exams
+
+            class_str = 'border_bg_transparent'
+            msg_list.insert(0, "<div class='p-2 " + class_str + "'>")
+            msg_list.append("</div>")
+
+            msg_html = ''.join(msg_list)
+
+            return msg_html
+
+        def create_updated_msg_list(updated_score_count):
+            if logging_on:
+                logger.debug('  ----- create_updated_msg_list -----')
+
+            msg_list = ["<div class='p-2 border_bg_transparent'>"]
+
+            score_count = gettext('No Wolf scores have been') if not updated_score_count else \
+                gettext('1 Wolf score has been')  if updated_score_count == 1 else \
+                ' '.join((str(updated_score_count), gettext('Wolf scores have been')))
+
+            border_class = ' border_bg_valid' if updated_score_count else ''
+            msg_list.append(''.join(("<div class='pl-2", border_class, "'>",
+                                     gettext("%(count)s copied to the CE score in the page 'Grades'.") % {
+                                         'count': score_count},
+                                     '</div>')))
+            msg_list.append("</div>")
+
+            msg_html = ''.join(msg_list)
+
+            return msg_html
+
+######################
+        req_usr = request.user
+        msg_html = None
+        update_wrap = {}
+
+# - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            if logging_on:
+                logger.debug('upload_dict' + str(upload_dict))
+
+# - get permit
+            has_permit = acc_prm.get_permit_crud_of_this_page('page_wolf', request)
+            if not has_permit:
+                msg_txt = acc_prm.err_html_no_permit()  # default: 'to perform this action')
+                msg_html = acc_prm.msghtml_from_msgtxt_with_border(msg_txt, c.HTMLCLASS_border_bg_invalid)
+            else:
+
+    # - get exam_pk from upload_dict
+                mode = upload_dict.get('mode')
+
+    # - get selected examyear etc from Usersetting
+                sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
+                selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD) if selected_pk_dict else None
+                sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK) if selected_pk_dict else None
+
+                # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
+                if mode and sel_examyear and sel_school and sel_department and sel_examperiod in (1, 2, 3):
+
+                    if logging_on:
+                        logger.debug('    sel_level: ' + str(sel_level))
+
+        # if no sel_level: get array of allowed levels
+                    #allowed_lvlbase_pk_arr, allowed_subjbases_arr = [], []
+                    #if (sel_department.level_req and sel_level is None) or (sel_subject_pk is None):
+                    #    requsr_allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
+                    #    allowed_schoolbase_dict, allowed_depbases_pk_arr = \
+                    #        acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+                    #            userallowed_sections_dict=requsr_allowed_sections_dict,
+                    #            sel_schoolbase_pk=sel_school.base.pk
+                    #        )
+                    #    allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
+                    #        allowed_schoolbase_dict=allowed_schoolbase_dict,
+                    #        sel_depbase_pk=sel_department.base.pk
+                    #    )
+                    #    sel_level_base_pk = sel_level.base.pk if sel_level else None
+                    #    allowed_subjbases_arr = acc_prm.get_userallowed_subjbase_arr(allowed_depbase_dict, allowed_lvlbase_pk_arr, sel_level_base_pk)
+
+                    if mode == 'is_test':
+                        updated_list_sorted, total_change, level_pk_list = test_scores()
+                        msg_html = create_test_msg_list(updated_list_sorted, level_pk_list)
+                        update_wrap['total_change'] = total_change
+
+                    elif mode == 'update_scores':
+                        updated_score_count = copy_scores(request, sel_school, sel_department, sel_level, sel_examperiod, sel_subject_pk)
+
+                        msg_html = create_updated_msg_list(updated_score_count)
+
+
+        if msg_html:
+            update_wrap['approve_msg_html'] = msg_html
+
+        # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+# - end of ExamCopyWolfScoresView
+
+
+
 
 
 def get_assignment_list(exam_partex_dict, exam_assignment_dict, exam_keys_dict):
@@ -8473,10 +8894,16 @@ def xl_col_to_name(col, col_abs=False):
 #---------------------------------------
 
 
-def get_subjects_count_text(count):
-    exam_str = str(_('Subject') if count == 1 else _('Subjects')).lower()
-    count_str = str(pgettext_lazy('geen', 'no ') if not count else count)
-    return ' '.join((count_str, exam_str))
+def get_subjects_count_text(count, has_submitted_txt=False):
+    #PR2023-05-22
+
+
+    return ' '.join(filter(None, (
+        str(pgettext_lazy('geen', 'no ') if not count else count),
+        str(pgettext_lazy('singular adjective', 'submitted') if count == 1 else
+                pgettext_lazy('plural adjective', 'submitted')) if has_submitted_txt else None,
+        str(_('Subject') if count == 1 else _('Subjects')).lower()
+    )))
 
 
 def get_subjects_have_text(count):

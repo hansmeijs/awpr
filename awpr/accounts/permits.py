@@ -238,19 +238,11 @@ def get_userallowed_schoolbase_dict_depbases_pk_arr(userallowed_sections_dict, s
 
 def get_userallowed_depbase_dict_lvlbases_pk_arr(allowed_schoolbase_dict, sel_depbase_pk):
     # PR2023-01-09 PR2023-02-08
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ---  get_userallowed_depbase_dict_lvlbases_pk_arr  ------- ')
-        logger.debug('    allowed_schoolbase_dict:      ' + str(allowed_schoolbase_dict))
-        logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk))
-        """
-        userallowed_sections_dict:   {'13': {'1': {'4': [113], '-9': [122]}, '2': {'-9': [167]}}}
-        userallowed_schoolbase_dict:        {'1': {'4': [113], '-9': [122]}, '2': {'-9': [167]}}
-        userallowed_depbases_pk_arr:        [1, 2]
-        userallowed_depbase_dict:                 {'4': [113], '-9': [122]}
-        userallowed_lvlbase_pk_arr:         [4, -9]
-        userallowed_cluster_pk_list: []
-        """
+
+    # allowed_schoolbase_dict: {'1': {'4': [113], '-9': [122]}, '2': {'-9': [167]}}
+    # allowed_depbases_pk_arr: [1, 2]
+    # allowed_depbase_dict:    {'4': [113], '-9': [122]}
+    # allowed_lvlbase_pk_arr:  [4, -9]
 
     allowed_depbase_dict = {}
     allowed_lvlbase_pk_arr = []
@@ -271,37 +263,31 @@ def get_userallowed_depbase_dict_lvlbases_pk_arr(allowed_schoolbase_dict, sel_de
         for lvlbase_pk_str in allowed_depbase_dict:
             allowed_lvlbase_pk_arr.append(int(lvlbase_pk_str))
 
-    if logging_on:
-        logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
-        logger.debug('    allowed_lvlbase_pk_arr: ' + str(allowed_lvlbase_pk_arr))
-
     return allowed_depbase_dict, allowed_lvlbase_pk_arr
 # - end of get_userallowed_depbase_dict_lvlbases_pk_arr
 
 
-def get_userallowed_subjbase_arr(allowed_depbase_dict, sel_lvlbase_pk):
-    # PR2023-02-12
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug('  ---  get_userallowed_subjbase_arr  ------- ')
-        logger.debug('    allowed_depbase_dict:      ' + str(allowed_depbase_dict))
-        logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+def get_userallowed_subjbase_arr(allowed_depbase_dict, allowed_lvlbase_pk_arr, sel_lvlbase_pk):
+    # PR2023-02-12 PR2023-05-20
+
+    # allowed_depbase_dict:      {'5': [129, 133, 121], '6': [155, 129, 133, 121], '-9': [116]}
+    # allowed_lvlbase_pk_arr:      [5, 6, -9]
+    # allowed_subjbase_pk_arr: [129, 133, 121, 155, 116]
 
     allowed_subjbase_pk_arr = []
-    lvlbase_pk_arr = ['-9']
-    if sel_lvlbase_pk:
-        lvlbase_pk_arr.append(str(sel_lvlbase_pk))
-    # loop through 'all' and selected lvlbase_pk
-    for lvlbase_pk_str in lvlbase_pk_arr:
+
+    for lvlbase_pk in allowed_lvlbase_pk_arr:
+        lvlbase_pk_str = str(lvlbase_pk)
+
         if lvlbase_pk_str in allowed_depbase_dict:
             allowed_lvlbase_arr = allowed_depbase_dict.get(lvlbase_pk_str)
+
             if allowed_lvlbase_arr:
                 for subject_pk in allowed_lvlbase_arr:
+
                     if subject_pk not in allowed_subjbase_pk_arr:
                         allowed_subjbase_pk_arr.append(subject_pk)
 
-    if logging_on:
-        logger.debug('    allowed_subjbase_pk_arr:      ' + str(allowed_subjbase_pk_arr))
     return allowed_subjbase_pk_arr
 # - end of get_userallowed_subjbase_arr
 
@@ -696,10 +682,20 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
             base_clause = ''.join((field_name, "=", base_pk_str, "::INT"))
         return base_clause
 
-    def get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects):
-
-    # - create lvlbase_clause
-        lvlbase_clause = get_base_clause('lvl.base_id', lvlbase_pk_str)
+    def get_lvl_subjbase_clause(sel_lvlbase_pk, lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects):
+        if logging_on:
+            logger.debug('          ----- get_lvl_subjbase_clause -----')
+        # PR2023-05-22 debug: was no sel_lvlbase filter when allowed_levels = -9
+        # values were: sel_lvlbase_pk: 6,  allowed_depbase_dict {'-9': []}
+        # - must create lvlbase_clause when allowe = -9 and sel has value
+        if sel_lvlbase_pk:
+            lvlbase_clause = get_base_clause('lvl.base_id', str(sel_lvlbase_pk))
+        else:
+            lvlbase_clause = get_base_clause('lvl.base_id', lvlbase_pk_str)
+        if logging_on:
+            logger.debug('          ---- sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+            logger.debug('          ---- lvlbase_pk_str: ' + str(lvlbase_pk_str))
+            logger.debug('          ---- lvlbase_clause: ' + str(lvlbase_clause))
 
     # - create subjbase_clause
         subjbase_clause = None
@@ -722,7 +718,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
 #############################################
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')
@@ -730,6 +726,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
         logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk))
         logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+        logger.debug('    table: ' + str(table))
         logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
         logger.debug(' ----------')
 
@@ -737,6 +734,9 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         subjbase_id_fld = 'studsubj.subjbase_id'
     else:
         subjbase_id_fld = 'subj.base_id'
+
+    # PR2023-05-20 when table = 'subject' skip school_filter, when called by sj_vw.create_subject_rows, that has no table school
+    # happens further in this function
 
     sch_dep_lvl_subjbase_clause_joined = None
 
@@ -766,13 +766,17 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                 # - sel_schoolbase_pk has always a value
                 add_to_list = get_add_to_list(sel_schoolbase_pk, schoolbase_pk_str)
                 if logging_on:
-                    logger.debug('    ----- ')
+                    logger.debug('    +++++ loop through schools')
                     logger.debug('      schoolbase_pk_str: ' + str(schoolbase_pk_str))
                     logger.debug('      add_to_list: ' + str(add_to_list))
 
                 if add_to_list:
             # - create schoolbase_clause
-                    schoolbase_clause = get_base_clause('school.base_id', schoolbase_pk_str)
+                    #PR2023-05-20 not when called by sj_vw.create_subject_rows, that has no table school
+                    if table == 'subject':
+                        schoolbase_clause = None
+                    else:
+                        schoolbase_clause = get_base_clause('school.base_id', schoolbase_pk_str)
                     if logging_on:
                         logger.debug('      userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
                         logger.debug('      > schoolbase_clause: ' + str(schoolbase_clause))
@@ -813,12 +817,17 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                                 allowed_depbase_dict[str(sel_lvlbase_pk)] = {}
 
             # ----- loop through levels
+                            if logging_on:
+                                logger.debug('          allowed_depbase_dict ' + str(allowed_depbase_dict))
+                                logger.debug('          sel_lvlbase_pk ' + str(sel_lvlbase_pk) + ' ' + str(type(sel_lvlbase_pk)))
+
                             lvl_subjbase_clause_arr = []
                             for lvlbase_pk_str, allowed_subjbase_list in allowed_depbase_dict.items():
 
                                 if logging_on:
-                                    logger.debug('        ----- ')
-                                    logger.debug('          lvlbase_pk_str ' + str(lvlbase_pk_str))
+                                    logger.debug('        ----- loop through levels')
+                                    logger.debug('          lvlbase_pk_str ' + str(lvlbase_pk_str) + ' ' + str(type(lvlbase_pk_str)))
+                                    logger.debug('          allowed_subjbase_list ' + str(allowed_subjbase_list))
 
                                 add_to_list = get_add_to_list(sel_lvlbase_pk, lvlbase_pk_str)
                                 if logging_on:
@@ -826,9 +835,8 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
                                 if add_to_list:
 
-                                    lvl_subjbase_clause = get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects)
+                                    lvl_subjbase_clause = get_lvl_subjbase_clause(sel_lvlbase_pk, lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects)
                                     if logging_on:
-                                        logger.debug('          allowed_subjbase_list ' + str(allowed_subjbase_list))
                                         logger.debug('          > lvl_subjbase_clause: ' + str(lvl_subjbase_clause))
 
                                     if lvl_subjbase_clause:
@@ -857,13 +865,13 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                         logger.debug('  > dep_lvl_subjbase_clause_joined: ' + str(dep_lvl_subjbase_clause_joined))
 
                 # - join schoolbase_clause and dep_lvl_subjbase_clause_joined with AND
-                        sch_dep_lvl_subjbase_clause = get_AND_joined(schoolbase_clause, dep_lvl_subjbase_clause_joined, has_subjbases)
-                        if logging_on:
-                            logger.debug('    > sch_dep_lvl_subjbase_clause: ' + str(sch_dep_lvl_subjbase_clause))
+                    sch_dep_lvl_subjbase_clause = get_AND_joined(schoolbase_clause, dep_lvl_subjbase_clause_joined, has_subjbases)
+                    if logging_on:
+                        logger.debug('    > sch_dep_lvl_subjbase_clause: ' + str(sch_dep_lvl_subjbase_clause))
 
                 # - add clause to sch_dep_lvl_subjbase_clause_arr
-                        if sch_dep_lvl_subjbase_clause:
-                            sch_dep_lvl_subjbase_clause_arr.append(''.join(('(', sch_dep_lvl_subjbase_clause, ')')))
+                    if sch_dep_lvl_subjbase_clause:
+                        sch_dep_lvl_subjbase_clause_arr.append(''.join(('(', sch_dep_lvl_subjbase_clause, ')')))
 
 # +++++ end of loop through schools
             # - join sch_dep_lvl_subjbase_clause_arr with OR
@@ -882,7 +890,10 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
             # add sqlclause when sel_schoolbase_pk etc has value and allowed_sections = None
             sql_clause_arr = []
             if sel_schoolbase_pk:
-                sql_clause_arr.append(get_base_clause('school.base_id', str(sel_schoolbase_pk)))
+                # PR2023-05-20 not when called by sj_vw.create_subject_rows, that has no table school
+                if table != 'subject':
+                    sql_clause_arr.append(get_base_clause('school.base_id', str(sel_schoolbase_pk)))
+
             if sel_depbase_pk:
                 sql_clause_arr.append(get_base_clause('dep.base_id', str(sel_depbase_pk)))
             if sel_lvlbase_pk:
@@ -901,6 +912,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 # - end of get_sqlclause_allowed_NEW
 
 ###########################
+
 
 def validate_userallowed_school(userallowed_sections_dict, schoolbase_pk):
     # This function checks if een given school is allowed, based on allowedsections # PR2023-02-16
@@ -1456,7 +1468,6 @@ def get_permit_list(page, req_usr):
 # - end of get_permit_list
 
 
-
 def get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroups_list):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
     # - usergroups are now stored per examyear in usergroup_allowed PR2022-12-09
@@ -1491,6 +1502,8 @@ def get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroups_li
                     # PR2023-04-05 permit 'write_message' is not in use any more, use usergroup msgsend instead
 
                     if row[0]:
+                        if logging_on:
+                            logger.debug('    row: ' + str(row))
                         permit = 'permit_' + row[0]
                         if permit not in permit_list:
                             permit_list.append(permit)
@@ -1500,7 +1513,6 @@ def get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroups_li
 
     return permit_list
 # - end of get_requsr_permitlist_from_usergrouplist
-
 
 
 def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page):

@@ -1675,8 +1675,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= HandleArrowEvent  ================== PR2020-12-20 PR2023-04-16
     function HandleArrowEvent(el, event){
-        console.log(" --- HandleArrowEvent ---")
-        console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
+        //console.log(" --- HandleArrowEvent ---")
+        //console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
         // This is not necessary: (event.key === "Tab" && event.shiftKey === true)
         // Tab and shift-tab move cursor already to next / prev element
         if (["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
@@ -1731,8 +1731,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 new_col_index = colindex_arr[new_arr_index];
             };
-    console.log ("move_horizontal", move_horizontal)
-    console.log ("move_vertical", move_vertical)
+    //console.log ("move_horizontal", move_horizontal)
+    //console.log ("move_vertical", move_vertical)
 
 // --- set focus to next / previous cell
             // apparently you must deduct number of header rows from row_index
@@ -1765,8 +1765,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
             };
             //const new_tblRow = tblBody.rows[new_row_index]
-    console.log ("new_tblRow", new_tblRow)
-    console.log ("new_col_index", new_col_index)
+    //console.log ("new_tblRow", new_tblRow)
+    //console.log ("new_col_index", new_col_index)
             if(new_tblRow){
                 const next_cell = new_tblRow.cells[new_col_index];
                 if(next_cell){
@@ -4972,7 +4972,7 @@ console.log( "......filter_value", filter_value);
         if(!row_count){
             let tblRow = tblBody_select.insertRow(-1);
             let td = tblRow.insertCell(-1);
-            td.innerText = loc.No_exam_for_this_subject;
+            td.innerHTML = [loc.No_exam_for_this_subject, loc.Contact_DES_if_you_need_exam].join("<br>");
 
         } else if(row_count === 1){
             let tblRow = tblBody_select.rows[0]

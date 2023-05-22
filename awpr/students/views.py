@@ -4198,7 +4198,7 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
                         logger.debug('    userallowed_lvlbase_pk_arr: ' + str(userallowed_lvlbase_pk_arr))
 
                     sel_lvlbase_pk = sel_level.base_id if sel_level else None
-                    userallowed_subjbase_pk_list = acc_prm.get_userallowed_subjbase_arr(userallowed_depbase_dict, sel_lvlbase_pk)
+                    userallowed_subjbase_pk_list = acc_prm.get_userallowed_subjbase_arr(userallowed_depbase_dict, userallowed_lvlbase_pk_arr, sel_lvlbase_pk)
 
                     userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
                     if logging_on:
@@ -8043,7 +8043,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
     # PR2022-12-16 allowed filter renewed
     # PR2023-04-18 Sentry error fixed: syntax error at or near ")" LINE 1: ...cluster_id IN (SELECT UNNEST(ARRAY[1465]::INT[])) ) ORDER BY...
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_studentsubject_rows ============= ')
@@ -8167,7 +8167,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
 
             "WHERE NOT stud.deleted AND NOT studsubj.deleted"
 
-            # PR2022-12-26 show tobedelted records only when they are not submitted yet
+            # PR2022-12-26 show tobedeleted records only when they are not submitted yet
             # "WHERE NOT studsubj.tobedeleted"
             #"WHERE ( NOT studsubj.tobedeleted OR (studsubj.tobedeleted AND studsubj.subj_published_id IS NULL) )"
             ]

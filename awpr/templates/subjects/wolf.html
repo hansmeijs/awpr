@@ -5,7 +5,7 @@
 {% block title %}Wolf{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/wolf230516.js' %}"></script>
+    <script src="{% static 'js/wolf230522.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -67,7 +67,6 @@
         {% else %}
             {% include 'subjects/modexamquestions.html' %}
             {% include 'subjects/modduoexam.html' %}
-            {% include 'subjects/modduoexamcreate.html' %}
 
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
@@ -141,9 +140,6 @@
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-url_exam_upload="{% url 'url_exam_upload' %}"
-                data-url_duo_exam_upload="{% url 'url_duo_exam_upload' %}"
-                data-url_exam_copy="{% url 'url_exam_copy' %}"
-                data-url_link_exam_to_grades="{% url 'url_link_exam_to_grades' %}"
 
                 data-url_approve_submit_wolf="{% url 'url_approve_submit_wolf' %}"
                 data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
@@ -151,6 +147,8 @@
                 data-url_exam_download_exam_pdf="{% url 'url_exam_download_exam_pdf'  '-' %}"
                 data-url_download_wolf_pdf="{% url 'url_download_wolf_pdf'  '-' %}"
                 data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
+
+                data-url_copy_wolf_scores="{% url 'url_copy_wolf_scores' %}"
 
                 data-url_grade_upload="{% url 'url_grade_upload' %}"
 
