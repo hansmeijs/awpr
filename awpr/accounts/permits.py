@@ -307,12 +307,20 @@ def get_usergroup_list_from_user_instance(user_instance):  # PR2023-01-25
     )
 
 
-def get_userallowed_cluster_pk_list(userallowed_instance):  # PR2023-01-14
+def get_userallowed_cluster_pk_list(userallowed_instance):
+    # PR2023-01-14 PR2023-05-23
+    logging_on = False  # s.LOGGING_ON
     allowed_cluster_pk_list = []
     if userallowed_instance:
         allowed_clusters_str = getattr(userallowed_instance, 'allowed_clusters')
+        if logging_on:
+            logger.debug('    allowed_clusters_str: ' + str(allowed_clusters_str) + ' ' + str(type(allowed_clusters_str)))
         if allowed_clusters_str:
             allowed_cluster_pk_list = json.loads(allowed_clusters_str)
+
+    if logging_on:
+        logger.debug('    allowed_cluster_pk_list:' + str(allowed_cluster_pk_list) + ' ' + str(type(allowed_cluster_pk_list)))
+
     return allowed_cluster_pk_list
 
 

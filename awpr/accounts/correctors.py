@@ -45,14 +45,37 @@ logger = logging.getLogger(__name__)
 class UserAllowedClusterUploadView(View):
     # used in page correctors when schools set allowedcluster in user with role corrector
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserAllowedClusterUploadView ===============')
 
-        msg_html = None
+        def get_saved_allowedcluster_dict(allowed_cluster_list):
+            saved_allowedcluster_dict = {}
+            if allowed_cluster_list:
+                sql = ''.join((
+                    "SELECT id, school_id, department_id, subject_id, name ",
+                    "FROM subjects_cluster ",
+                    "WHERE id IN (SELECT UNNEST(ARRAY", str(allowed_cluster_list), "::INT[]))"
+                ))
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    for row in cursor.fetchall():
+                        # row:(1625, 37, 12, 269, 'V6beco')
+                        if row[0] not in saved_allowedcluster_dict:
+                            saved_allowedcluster_dict[row[0]] = {
+                                'cluster_id': row[0],
+                                'school_id': row[1],
+                                'department_id': row[2],
+                                'subject_id': row[3],
+                                'name': row[4]
+                            }
+            return saved_allowedcluster_dict
+########################
+
+        msg_list = []
+        border_class = None
         update_wrap = {}
-        data_has_changed = False
 
 # - get upload_dict from request.POST
         upload_json = request.POST.get('upload', None)
@@ -61,6 +84,8 @@ class UserAllowedClusterUploadView(View):
             mode = upload_dict.get('mode')
             # upload_dict: {'user_pk': 1472, 'mode': 'update', 'allowed_clusters': [1740, 1743]}
 
+            if logging_on:
+                logger.debug('    upload_dict:' + str(upload_dict))
 # - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
             activate(user_lang)
@@ -70,64 +95,142 @@ class UserAllowedClusterUploadView(View):
             has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
+                border_class = c.HTMLCLASS_border_bg_invalid
+                msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
             else:
 
-# - get variables
-                user_pk = upload_dict.get('user_pk')
-                ual_pk = upload_dict.get('ual_pk')
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                if err_list:
+                    border_class = c.HTMLCLASS_border_bg_invalid
+                    err_list.append(str(_('You cannot make changes.')))
+                    msg_list.extend(err_list)
 
-                updated_rows = []
-                error_list = []
+                elif sel_examyear and sel_school and sel_department:
+    # - get variables
+                    user_pk = upload_dict.get('user_pk')
+                    user_instance = acc_mod.User.objects.get_or_none(pk=user_pk)
+                    sel_examyear_instance = acc_prm.get_sel_examyear_from_user_instance(request.user)
 
-                append_dict = {}
-
-# - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
-                userallowed_instance = acc_mod.UserAllowed.objects.get_or_none(
-                    pk=ual_pk,
-                    user_id=user_pk
-                )
-                if logging_on:
-                    logger.debug('    userallowed_instance:' + str(userallowed_instance))
-
-                if userallowed_instance:
-                    new_allowed_clusters_str = None
-                    new_allowed_clusters_list = upload_dict.get('allowed_clusters')
-                    if new_allowed_clusters_list:
-                        new_allowed_clusters_list.sort()
-                        new_allowed_clusters_str = json.dumps(new_allowed_clusters_list)
+    # - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
+                    userallowed_instance = acc_prm.get_userallowed_instance(user_instance, sel_examyear_instance)
 
                     if logging_on:
-                        logger.debug('    new_allowed_clusters_list:' + str(new_allowed_clusters_list) + ' ' + str(
-                            type(new_allowed_clusters_list)))
-                        logger.debug('    new_allowed_clusters_str:' + str(new_allowed_clusters_str) + ' ' + str(
-                            type(new_allowed_clusters_str)))
+                        logger.debug('    user_instance:' + str(user_instance))
+                        logger.debug('    userallowed_instance: ' + str(userallowed_instance))
+                        logger.debug('    sel_school: ' + str(sel_school))
+                        if sel_school:
+                            logger.debug('    sel_schoolcode: ' + str(sel_school.base.code))
+                            logger.debug('    sel_school_pke: ' + str(sel_school.pk))
 
-                    saved_allowed_clusters_str = getattr(userallowed_instance, 'allowed_clusters')
+                    if userallowed_instance:
+                        saved_userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                        if logging_on:
+                            logger.debug('    saved_userallowed_cluster_pk_list:' + str(saved_userallowed_cluster_pk_list))
 
-                    if logging_on:
-                        logger.debug('    new_allowed_clusters_str: ' + str(new_allowed_clusters_str))
-                        logger.debug('    saved_allowed_clusters_str: ' + str(saved_allowed_clusters_str))
+                        saved_allowedcluster_dict = get_saved_allowedcluster_dict(saved_userallowed_cluster_pk_list)
+                        if logging_on:
+                            logger.debug('    saved_allowedcluster_dict:' + str(saved_allowedcluster_dict))
+                        # saved_allowedcluster_dict:{
+                        # 1625: {'id': 1625, 'school_id': 37, 'department_id': 12, 'subject_id': 269, 'name': 'V6beco'},
+                        # 1601: {'id': 1601, 'school_id': 37, 'department_id': 11, 'subject_id': 239, 'name': 'H5ec'},
+                        # 1628: {'id': 1628, 'school_id': 37, 'department_id': 12, 'subject_id': 239, 'name': 'V6ec'},
+                        # 1597: {'id': 1597, 'school_id': 37, 'department_id': 11, 'subject_id': 269, 'name': 'H5beco'}}
 
-                    if new_allowed_clusters_str != saved_allowed_clusters_str:
-                        setattr(userallowed_instance, 'allowed_clusters', new_allowed_clusters_str)
-                        userallowed_instance.save()
+                        new_allowed_clusters_str = None
+                        has_changed = False
+                        new_allowed_clusters_list = upload_dict.get('allowed_clusters')
+                        if logging_on:
+                            logger.debug(' >>>>   new_allowed_clusters_list:' + str(new_allowed_clusters_list))
 
-                        updated_corrector_rows = acc_view.create_user_rowsNEW(
-                            sel_examyear=userallowed_instance.examyear if userallowed_instance else None,
-                            request=request,
-                            user_pk=user_pk
-                        )
+                        new_allowedcluster_dict = get_saved_allowedcluster_dict(new_allowed_clusters_list)
+                        if logging_on:
+                            logger.debug(' @@@@   new_allowedcluster_dict:' + str(new_allowedcluster_dict))
+
+                        # loop through new clusters
+                        for cluster_id, new_allowedcluster in new_allowedcluster_dict.items():
+                            # skip if not this school and department
+                            school_id = new_allowedcluster.get('school_id')
+                            department_id = new_allowedcluster.get('department_id')
+
+                            if logging_on:
+                                logger.debug(' ... new cluster_id:' + str(cluster_id) + ' ' + str(new_allowedcluster.get('name')))
+                                logger.debug('      sel_school.pk:' + str(sel_school.pk) + ' ' + str(type(sel_school.pk)))
+                                logger.debug('      new school_id:' + str(school_id) + ' ' + str(type(school_id)))
+                                logger.debug('      new department_id:' + str(department_id) + ' ' + str(type(department_id)))
+                                logger.debug('      new sel_department.pk:' + str(sel_department.pk) + ' ' + str(type(sel_department.pk)))
+
+                            if school_id == sel_school.pk:
+                                if logging_on:
+                                    logger.debug('      ...  school dep match')
+                                if cluster_id not in saved_allowedcluster_dict:
+                                    saved_allowedcluster_dict[cluster_id] = new_allowedcluster
+                                    has_changed = True
+
+                                    if logging_on:
+                                        logger.debug(' ... add cluster_id:' + str(cluster_id))
+
+                                # check if aleady in
+                                subject_id = new_allowedcluster.get('subject_id')
+                                name = new_allowedcluster.get('name')
+                            else:
+                                if logging_on:
+                                    logger.debug('      >>  no school dep match')
+
+                        # check if clusters are deleted:
+                        for cluster_id, saved_allowedcluster in saved_allowedcluster_dict.items():
+
+                            if logging_on:
+                                logger.debug(' --- saved cluster_id:' + str(cluster_id) + ' ' + str(saved_allowedcluster.get('name')))
+
+                            school_id = saved_allowedcluster.get('school_id')
+                            department_id = saved_allowedcluster.get('department_id')
+                            if school_id == sel_school.pk:
+                                if logging_on:
+                                    logger.debug(' ...  school dep match')
+                                if cluster_id not in new_allowedcluster_dict:
+                                    saved_allowedcluster_dict[cluster_id] = {'deleted': True}
+                                    has_changed = True
+                            else:
+                                if logging_on:
+                                    logger.debug(' >>  no school dep match')
+                            if logging_on:
+                                logger.debug(' --- del cluster_id:' + str(cluster_id))
 
                         if logging_on:
-                            logger.debug('    updated_corrector_rows: ' + str(updated_corrector_rows))
-                        if updated_corrector_rows:
-                            update_wrap['updated_corrector_rows'] = updated_corrector_rows
+                            logger.debug('    has_changed: ' + str(has_changed))
+
+                        # create list
+                        if has_changed:
+                            saved_allowedcluster_list = []
+                            for cluster_id, saved_allowedcluster in saved_allowedcluster_dict.items():
+                                if 'deleted' not in saved_allowedcluster:
+                                    saved_allowedcluster_list.append(cluster_id)
+
+                            new_allowed_clusters_str = None
+                            if saved_allowedcluster_list:
+                                saved_allowedcluster_list.sort()
+                                new_allowed_clusters_str = json.dumps(saved_allowedcluster_list)
+
+                            setattr(userallowed_instance, 'allowed_clusters', new_allowed_clusters_str)
+                            userallowed_instance.save()
+
+                            updated_corrector_rows = acc_view.create_user_rowsNEW(
+                                sel_examyear=userallowed_instance.examyear if userallowed_instance else None,
+                                request=request,
+                                school_correctors_only=True,
+                                user_pk=user_pk
+                            )
+
+                            if logging_on:
+                                logger.debug('    updated_corrector_rows: ' + str(updated_corrector_rows))
+                            if updated_corrector_rows:
+                                update_wrap['updated_corrector_rows'] = updated_corrector_rows
 
 # - addd msg_html to update_wrap
-        if msg_html:
-            update_wrap['msg_html'] = msg_html
 
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - ens of UserAllowedClusterUploadView
@@ -1269,7 +1372,6 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR20
             logger.debug(' ')
             logger.debug(' ============= UserCompensationApproveSingleView ============= ')
 
-# function sets auth and publish of studentsubject records of current department # PR2021-07-25
         update_wrap = {}
         msg_list = []
         border_class = None
@@ -1293,7 +1395,7 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR20
                 if logging_on:
                     logger.debug('    upload_dict: ' + str(upload_dict))
                 #  upload_dict: {'table': 'usercompensation', 'usercompensation_list': [{'usercompensation_pk': 916, 'auth2by': True}]}
-
+                # upload_dict: {'table': 'usercompensation', 'usercompensation_list': [{'usercompensation_pk': 1089, 'auth2by': False}]}
 # ----- get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, sel_level, may_editNIU, err_list = \
                     acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
@@ -1308,7 +1410,8 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR20
                     # 'usercompensation_list': [{'usercompensation_pk': 916, 'auth2by': True}]
 
                     if usercompensation_list:
-                        updated_usercomp_rows = []
+                        updated_usercompensation_rows = []
+                        updated_usercomp_pk_list = []
 # -------------------------------------------------
 # - loop through list of uploaded studentsubjects
                         for usercompensation_dict in usercompensation_list:
@@ -1349,30 +1452,17 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR20
                                     'sel_schoolbase_pk': sel_school.base_id,
                                     'sel_depbase_pk': sel_department.base_id
                                 }
+                                if changes_are_saved and usercomp_instance:
+                                    updated_usercomp_pk_list.append(usercomp_instance.pk)
 
-                                #if logging_on:
-                                #    logger.debug('studsubj.pk: ' + str(studsubj.pk))
-                                #studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
 
-                                #rows = create_studentsubject_rows(
-                                #    sel_examyear=sel_examyear,
-                                #    sel_schoolbase=sel_school.base if sel_school else None,
-                                #    sel_depbase=sel_department.base if sel_department else None,
-                                #    append_dict=append_dict,
-                                #    request=request,
-                                #    sel_lvlbase=sel_level.base if sel_level else None,
-                                #    requsr_same_school=True,  # check for same_school is included in may_edit
-                                #    student_pk=student.pk,
-                                #    studsubj_pk_list=studsubj_pk_list
-                               # )
-                                #if rows:
-                                #    studsubj_row = rows[0]
-                                #    if studsubj_row:
-                               #        studsubj_rows.append(studsubj_row)
 # - end of loop
 # -------------------------------------------------
-                        if updated_usercomp_rows:
-                            update_wrap['updated_usercomp_rows'] = updated_usercomp_rows
+
+                        if updated_usercomp_pk_list:
+                            updated_usercompensation_rows = create_usercompensation_rows(sel_examyear, request, updated_usercomp_pk_list)
+                            if updated_usercompensation_rows:
+                                update_wrap['updated_usercompensation_rows'] = updated_usercompensation_rows
 
         if msg_list:
             update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
@@ -1414,7 +1504,7 @@ def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase
     return corrector_rows
 
 
-def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None):
+def create_usercompensation_rows(sel_examyear, request, updated_usercomp_pk_list=None):
     # --- create list of all correctors of this school, or  PR2023-02-19 PR2023-05-13
     # when a school opens this recordset, only users with uc of the school must be schown
     # when opened by role corrector: show all users, also without uc
@@ -1424,7 +1514,7 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
         logger.debug('    request.user.role: ' + str(request.user.role))
         logger.debug('    request.user.schoolbase.pk: ' + str(request.user.schoolbase.pk))
 
-    userapproval_rows = []
+    usercompensation_rows = []
     if sel_examyear:
         try:
             requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
@@ -1500,9 +1590,11 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
 
                         "CONCAT('usercomp_', u.id::TEXT, CASE WHEN uc_sub.id IS NULL THEN NULL ELSE '_' END, uc_sub.id::TEXT) AS mapid,",
 
+                        "'TEST' AS TEST,",
                         "SUBSTRING(u.username, 7) AS username, u.last_name, u.is_active,",
                        # "ual.examyear_id, ual.allowed_sections,",
 
+                        "'TEST2' AS TEST2,",
                         "user_sb.code AS user_sb_code,",
                         "uc_sub.uc_schoolbase_id, uc_sub.uc_school_abbrev, uc_sub.sb_code, uc_sub.uc_depbase_code, uc_sub.uc_lvlbase_code,",
                         "uc_sub.exam_version, uc_sub.examperiod,",
@@ -1512,6 +1604,8 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                         "uc_sub.uc_meetingdate1,uc_sub.uc_meetingdate2,",
                         "uc_sub.uc_auth1by_id, uc_sub.uc_auth1by_usr,",
                         "uc_sub.uc_auth2by_id, uc_sub.uc_auth2by_usr,",
+                        
+
                         "uc_sub.uc_published_id, uc_sub.uc_notes",
 
                         "FROM accounts_user AS u",
@@ -1525,10 +1619,9 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                         ''.join(("AND (POSITION('", c.USERGROUP_AUTH4_CORR, "' IN ual.usergroups) > 0)")),
 
                         #''.join((" u.role=", str(c.ROLE_016_CORR), "::INT")),
-
                         ]
-           # if usercompensation_pk:
-                #''.join(("AND uc_sub.id=", str(usercompensation_pk), "::INT"))
+            if updated_usercomp_pk_list:
+                sql_list.append(''.join(("AND uc_sub.id IN (SELECT UNNEST(ARRAY", str(updated_usercomp_pk_list), "::INT[]))")))
 
             # - when req_usr.role = school: only correctors of this school are visible (from role corrector and own school)
             #       - req_usr.role = school and usergroups countains auth4: show only usercomp rows of this school / this req_usr
@@ -1552,24 +1645,26 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                 else:
                     sql_list.append("AND FALSE")
 
-            sql = ' '.join(sql_sub_list)
+            sql = ' '.join(sql_list)
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
 
-                userapproval_rows = af.dictfetchall(cursor)
+                usercompensation_rows = af.dictfetchall(cursor)
             if logging_on :
-                for row in userapproval_rows:
+                for row in usercompensation_rows:
+                    logger.debug(' > row: ' + str(row))
                     logger.debug(' > uc_amount: ' + str(row.get('uc_amount')))
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
-        logger.debug('  len  userapproval_rows: ' + str(len(userapproval_rows)))
+        logger.debug('  len  usercompensation_rows: ' + str(len(usercompensation_rows)))
 
-    return userapproval_rows
+    return usercompensation_rows
 # - end of create_usercompensation_rows
+
 
 def create_usercomp_agg_rows(sel_examyear, request):
     # --- create list of all approvals per correctors per exam and calcultae total compensation PR2023-02-25
@@ -1585,8 +1680,6 @@ def create_usercomp_agg_rows(sel_examyear, request):
             # this filter is ok: school.examyear_id
 
             try:
-                requsr_country_pk = request.user.country.pk
-                # sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
                 sql_list = ["SELECT u.id AS u_id, exam.id AS exam_id,",
 
                             "CONCAT('user_exam_', u.id::TEXT, '_',  exam.id::TEXT) AS mapid,",
@@ -1628,10 +1721,20 @@ def create_usercomp_agg_rows(sel_examyear, request):
 
                             # for testimg only: "AND u.last_name ILIKE '%%jeska%%'"
                             ]
+            # only show correctors of this uc_school when role = school
+                if request.user.role == c.ROLE_008_SCHOOL:
+                    sql_list.extend(("AND uc_school.base_id=", str(request.user.schoolbase.pk), "::INT"))
 
-                sql_list.append("GROUP BY u.id, u.username, u.last_name, u.is_active, user_sb.code, exam.id,")
-                sql_list.append(
-                    "exam.version, exam.examperiod, depbase.code, lvlbase.code, subj.name_nl, subjbase.code")
+            # show only this corr when ug = corrector and not auth1, auth2
+                requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
+                requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
+                if c.USERGROUP_AUTH4_CORR in requsr_usergroup_list \
+                        and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list \
+                        and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list:
+                    sql_list.extend(("AND u.id=", str(request.user.pk), "::INT"))
+
+                sql_list.extend(("GROUP BY u.id, u.username, u.last_name, u.is_active, user_sb.code, exam.id,",
+                                 "exam.version, exam.examperiod, depbase.code, lvlbase.code, subj.name_nl, subjbase.code"))
 
                 sql = ' '.join(sql_list)
 

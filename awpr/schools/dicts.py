@@ -537,7 +537,7 @@ def create_department_rows(examyear, sel_school, sel_schoolbase, skip_allowed_fi
     allowed_depbase_sql_clause, allowed_depbase_sql_key_dict = acc_prm.get_sqlclause_allowed_depbase_from_request(
         request=request,
         depbase_pk=None,
-        sel_schoolbase_pk=sel_schoolbase.pk,
+        sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
         skip_allowed_filter=skip_allowed_filter
     )
 

@@ -2059,7 +2059,7 @@ class UserModMessageHideView(View):
 # end of UserModMessageHideView
 
 
-def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, school_correctors_only=False):
+def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, school_correctors_only=False, this_depbase_only=None):
     # PR2020-07-31 PR2022-12-02 PR2023-03-26
     # --- create list of all users of this school, or 1 user with user_pk
     # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
@@ -2079,7 +2079,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
     # - dont show users with higher role
     # - when role is inspection or school: show only users of request.user.schoolbase
     # - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
-
+    # PR2023-05-23 debug: must show only cluster of this school when school_correctors_only
     def get_allowed_schoolbases(schoolbase_pk_arr):
 
         schoolbase_code_list = []
@@ -2273,11 +2273,23 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
     def get_all_clusters_dict():
         all_clusters_dict = {}
         try:
-            sql = ' '.join(("SELECT cl.id, cl.name",
+            sql_list = ["SELECT cl.id, cl.name, sb.code AS sb_code",
                             "FROM subjects_cluster AS cl",
                             "INNER JOIN schools_school AS sch ON (sch.id = cl.school_id)",
+                            "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                            "INNER JOIN schools_department AS dep ON (dep.id = cl.department_id)",
                             "WHERE sch.examyear_id = ", str(sel_examyear.pk) , "::INT"
-                            ))
+                        ]
+            if school_correctors_only:
+                if request.user.schoolbase:
+                    sql_list.extend(("AND sch.base_id = ", str(request.user.schoolbase.pk) , "::INT"))
+                else:
+                    sql_list.append("AND FALSE")
+
+            if this_depbase_only:
+                sql_list.extend(("AND dep.base_id = ", str(this_depbase_only) , "::INT"))
+
+            sql = ' '.join(sql_list)
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
@@ -4420,7 +4432,7 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
 # - end of get_settings_examyear
 
 
-# ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-10 PR2023-05-17
+# ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-10 PR2023-05-17 PR2023-05-23
 def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance, allowed_sections_dict, page,
                             permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10
@@ -4428,6 +4440,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
     # because selected school is SXMCOR or CURCOM
     # and in page school btn select school is not working
     # must check if sel_schoolbase is in allowed_schools, and if not: make first allowed school the selected school
+    # PR2023-05-23 debug: with new admin user no sel_schoolbase given: set requsr schoolbase as sel_schoolbase
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -4455,6 +4468,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 
     saved_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
     if logging_on:
+        logger.debug('    requsr_schoolbase: ' + str(requsr_schoolbase))
         logger.debug('    saved_schoolbase_pk: ' + str(saved_schoolbase_pk))
         logger.debug('    request.user.role: ' + str(request.user.role))
 
@@ -4489,7 +4503,11 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
             if logging_on:
                 logger.debug('    saved_schoolbase_instance: ' + str(sel_schoolbase_instance))
 
-        if sel_schoolbase_instance:
+# - if no saved_schoolbase: get requsr_schoolbase
+        # PR2023-05-23 debug: with new admin user no sel_schoolbase given: set requsr schoolbase as sel_schoolbase
+        if sel_schoolbase_instance is None:
+            sel_schoolbase_instance = requsr_schoolbase
+            sel_schoolbase_tobesaved = True
 
 # - check if sel_schoolbase is in allowed_sections
             # schoolbase is allowed when allowed_sections_dict is empty or when 'all schools' (-9) in allowed_sections_dict
@@ -4498,7 +4516,6 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
             sel_schoolbase_is_allowed = (not allowed_sections_dict) or \
                                         ('-9' in allowed_sections_dict) or \
                                         (str(sel_schoolbase_instance.pk) in allowed_sections_dict)
-
 
             if logging_on:
                 logger.debug('    sel_schoolbase_is_allowed: ' + str(sel_schoolbase_is_allowed))
@@ -4511,6 +4528,8 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
         logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
 
     if sel_schoolbase_instance is None:
+        if logging_on:
+            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
         if allowed_sections_dict:
             for allowed_schoolbase_pk in allowed_sections_dict:
                 if logging_on:
@@ -4537,8 +4556,8 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
         setting_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
         setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
 
-        if logging_on:
-            logger.debug('    sel_schoolbase_instance.code: ' + str(sel_schoolbase_instance.code))
+    if logging_on:
+        logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
     # requsr_same_school = True when requsr.role = school and selected school is same as requsr_school PR2021-04-27
     # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
 
@@ -4558,12 +4577,15 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
         display_school = True
     permit_dict['display_school'] = display_school
 
+    if logging_on:
+        logger.debug('    display_school: ' + str(display_school))
+
 # - get school from sel_schoolbase and sel_examyear_instance
     sel_school_instance = sch_mod.School.objects.get_or_none(
         base=sel_schoolbase_instance,
         examyear=sel_examyear_instance)
     if logging_on:
-        logger.debug('    sel_school_instance: ' + str(sel_school_instance) + ' pk: ' + str(sel_school_instance.pk))
+        logger.debug('    sel_school_instance: ' + str(sel_school_instance))
 
     if sel_school_instance:
         setting_dict['sel_school_pk'] = sel_school_instance.pk
@@ -4586,6 +4608,11 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
                     'exyr': str(sel_school_instance.examyear.code)}),
                              str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
 
+    if logging_on:
+        logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
+        logger.debug('    sel_schoolbase_tobesaved: ' + str(sel_schoolbase_tobesaved))
+        logger.debug('    sel_school_instance: ' + str(sel_school_instance))
+
     return sel_schoolbase_instance, sel_schoolbase_tobesaved, sel_school_instance
 # - end of get_settings_schoolbase
 
@@ -4594,9 +4621,11 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
                                 allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10  PR2023-01-08
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_departmentbase -------')
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
 
     # every user can change depbase, if in .sel_school_depbases and in user_allowed if existst
 # - get sel_depbase_instance
@@ -4605,6 +4634,8 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
     #   - if not exists and not 'all_allowed': get first available depbase that is allowed
 
     request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_DEPBASE_PK)
+    if logging_on:
+        logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
 
     sel_depbase_instance, sel_depbase_tobesaved, allowed_schoolbase_dict, allowed_depbases_arr = \
         get_sel_depbase_instance(
@@ -4612,7 +4643,8 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
                 page=page,
                 request=request,
                 request_item_depbase_pk=request_item_depbase_pk,
-                allowed_schoolbase_dict=allowed_schoolbase_dict
+                allowed_schoolbase_dict=allowed_schoolbase_dict,
+                selected_pk_dict=selected_pk_dict
             )
     if logging_on:
         logger.debug('    sel_depbase_instance: ' + str(sel_depbase_instance))
@@ -4622,7 +4654,6 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
 
     # every user can change examyear, may_select_examyear is False when there is only 1 allowed examyear PR2023-01-08
     # permit_dict['may_select_department'] = True
-
 
     permit_dict['allowed_depbases'] = allowed_depbases_arr
     allowed_depbases_len = len(allowed_depbases_arr)
@@ -4636,8 +4667,12 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
     else:
         may_select_department = allowed_depbases_len > 1
 
+
     permit_dict['may_select_department'] = may_select_department
     permit_dict['display_department'] = (page not in ('page_examyear', 'page_user'))
+
+    if logging_on:
+        logger.debug('    may_select_department: ' + str(may_select_department))
 
     # NIU, I think PR2022-12-11
     # get_sel_depbase_instance has already filter requser_allowed_databases
@@ -4661,7 +4696,7 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
 # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_depbase_tobesaved:
         # sel_depbase_instance has always value when sel_depbase_tobesaved = True
-        selected_pk_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
+        selected_pk_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk if sel_depbase_instance else None
 
 # - add info to setting_dict, will be sent back to client
     sel_department_instance = None
@@ -4678,6 +4713,11 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
             setting_dict['sel_dep_level_req'] = sel_department_instance.level_req
             setting_dict['sel_dep_has_profiel'] = sel_department_instance.has_profiel
             # setting_dict['sel_dep_sector_req'] = sel_department_instance.sector_req
+
+    if logging_on:
+        logger.debug('    sel_depbase_instance: ' + str(sel_depbase_instance))
+        logger.debug('    sel_depbase_tobesaved: ' + str(sel_depbase_tobesaved))
+        logger.debug('    sel_department_instance: ' + str(sel_department_instance))
 
     return sel_depbase_instance, sel_depbase_tobesaved, sel_department_instance
 # - end of get_settings_departmentbase
@@ -5411,7 +5451,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
     def get_department_instance(sel_examyear_instance, sel_school_instance,
                                           allowed_schoolbase_dict, selected_pk_dict):
-        # PR2022-12-19 PR2023-01-08 PR2023-04-10
+        # PR2022-12-19 PR2023-01-08 PR2023-04-10 PR2023-05-23
         if logging_on:
             logger.debug(' ------- get_department_instance -------')
 
@@ -5422,22 +5462,48 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
         if logging_on:
             logger.debug('    sel_school_allowed_depbases_list: ' + str(sel_school_allowed_depbases_list))
-            # sel_school_allowed_depbases_list: [1, 2, 3]
+            # sel_school_allowed_depbases_list: [2, 3]
 
     # - create array of allowed depbases: allowed_depbases_list
         # - must be in sel_school_allowed_depbases_list
         # - and also in allowed_depbases_dict, unless allowed_depbases_dict is empty
 
-        # allowed_depbases_list: [1, 3]
+        # allowed_sections_dict: {
+        # '13': {'2': {'-9': [145]}, '3': {'-9': [145]}},
+        # '17': {'-9': {'-9': [145]}},
+        # '19': {'-9': {'-9': [145]}},
+        # '-9': {'1': {'-9': []}, '2': {'-9': []}, '3': {'-9': []}}}
+
+        # sel_school_allowed_depbases_list: [2, 3]
+        # allowed_schoolbase_dict: {'-9': {'-9': [145]}}
+        # - sel_school_allowed_depbases_list contains list of allowed_depbases of selected school AS INTEGER
+        # - allowed_schoolbase_dict contains keys that are allowed_depbases of user AS STRING
         allowed_depbases_list = []
         for depbase_pk_int in sel_school_allowed_depbases_list:
-            if not allowed_schoolbase_dict or str(depbase_pk_int) in allowed_schoolbase_dict:
+            if not allowed_schoolbase_dict:
                 allowed_depbases_list.append(depbase_pk_int)
+            else:
+                if str(depbase_pk_int) in allowed_schoolbase_dict:
+                    allowed_depbases_list.append(depbase_pk_int)
+                elif '-9' in allowed_schoolbase_dict:
+                    allowed_depbases_list.append(depbase_pk_int)
+        # check if depbase_pk_int in 'all schoolbases_dict', if exists
+                elif '-9' in allowed_sections_dict:
+                    all_schoolbase_dict = allowed_sections_dict.get('-9')
+                    if all_schoolbase_dict and  str(depbase_pk_int) in all_schoolbase_dict:
+                        allowed_depbases_list.append(depbase_pk_int)
+
+        # allowed_depbases_list: [1, 3]
 
     # - get saved depbase_pk from Usersetting
+        # there must always be a selected department
         sel_department_instance = None
 
         saved_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK) if selected_pk_dict else None
+
+        if logging_on:
+            logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
+            logger.debug('    saved_depbase_pk: ' + str(saved_depbase_pk))
 
         if saved_depbase_pk is None:
             msg_list.append(gettext("There is no %(cpt)s selected.") % {'cpt': _('department')})
@@ -5820,37 +5886,62 @@ def get_sel_depbase_instance___ISN(sel_school_instance, page, request, request_i
 # --- end of get_sel_depbase_instance
 
 
-def get_sel_depbase_instance(sel_school_instance, page, request, request_item_depbase_pk, allowed_schoolbase_dict):
+def get_sel_depbase_instance(sel_school_instance, page, request, request_item_depbase_pk, allowed_schoolbase_dict, selected_pk_dict):
     # PR2020-12-26 PR2021-05-07 PR2021-08-13 PR2022-10-19 PR2022-03-16
     #  code works ok: it returns
     #  - combination of allowed_depbases from user and school and
     #  - request_item_depbase_pk or saved depbase_pk or first allowed depbase_pk
 
-    # PR2022-10-19 TODO
-    # code to switch selected depbase is not perfect yet. To be improved, take in account:
+    # PR2022-10-19
     # depbase can be changed in 2 ways:
     # - in the menubar. Then there is no 'all deps' possible, use saved or default if necessary
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
         logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
 
+###########################
+    def test_wrong_studsubjclusters():
+        if logging_on:
+            logger.debug('      @@@@@@@@@@ test_wrong_studsubjclusters @@@@@@@@@@@@@@@@@')
+            try:
+                sql_list = ["SELECT cl.name, school.abbrev, stud.lastname, stud.firstname",
+                            "FROM students_studentsubject AS studsubj",
+                            "INNER JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+                            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                            "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                            "INNER JOIN schools_department AS dep ON (dep.id = cl.department_id)",
+                            "WHERE school.id <> cl.school_id OR stud.department_id <> cl.department_id;"
+                            ]
+                sql = ' '.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    for row in cursor.fetchall():
+                        logger.debug('    row: ' + str(row))
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+#############################
+
     def get_saved_depbase_instance():
         saved_depbase_instance = None
-        selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-        if selected_dict:
-            sel_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+        if selected_pk_dict:
+            sel_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
             if sel_depbase_pk:
                 saved_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk)
+
+        if logging_on:
+            logger.debug('      ..... get_saved_depbase_instance')
+            logger.debug('    saved_depbase_instance: ' + str(saved_depbase_instance))
         return saved_depbase_instance
 
     sel_depbase_instance = None
     sel_depbase_tobesaved = False
-    multiple_depbases_exist = False
     allowed_depbases_list = []
 
     if request.user and request.user.country:
@@ -5860,6 +5951,8 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
         # cause: ETE user had Vsbo school selected, since it doesn't have Havo, it changed dp to Vsbo
         # solution: skip this check when page = orderlist
         skip_school_allowed_depbases = (page in ('page_subject', 'page_orderlist'))
+
+        test_wrong_studsubjclusters()
 
 # +++++ get allowed_depbases_list
     # - get list of allowed_depbases of selected school
@@ -5895,13 +5988,12 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
                         allowed_depbases_list.append(depbase_pk_int)
             else:
                 allowed_depbases_list = sel_school_allowed_depbases_list
-
-        if logging_on:
-            logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
+            if logging_on:
+                logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
 
 # +++++ get request_item_depbase
     # - check if there is a new depbase_pk in request_item and check if request_item_depbase exists
-        if sel_depbase_instance is None:
+
             if request_item_depbase_pk:
                 if request_item_depbase_pk == -1:
                     # TODO check if this is in use and correct (is 'all' = -1 or -9 ? )
@@ -5944,14 +6036,21 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
 
                     if logging_on:
                         logger.debug('    saved_depbase_instance: ' + str(saved_depbase_instance))
+                        logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
 
                     if saved_depbase_instance:
     # check if saved_depbase is in allowed_schoolbase_dict
                         # PR2023-01-16 debug: skip this check when allowed_schoolbase_dict is empty
-                        if allowed_schoolbase_dict and str(saved_depbase_instance.pk) in allowed_schoolbase_dict or \
-                                not allowed_schoolbase_dict:
+                        # PR2023-05-24 debug: Hans Vlinkervleugel KAP: skips back to Havo
+                        # must also skip when allowed_schoolbase_dict contains --9
+
+                        if not allowed_schoolbase_dict \
+                            or '-9' in allowed_schoolbase_dict \
+                            or str(saved_depbase_instance.pk) in allowed_schoolbase_dict:
                             sel_depbase_instance = saved_depbase_instance
 
+                    if logging_on:
+                        logger.debug('    sel_depbase_instance = saved_depbase_instance: ' + str(sel_depbase_instance))
 # +++++ get first available depbase
     # - get first available depbase when sel_depbase_instance is None, except when select_all_allowed
 
@@ -5960,6 +6059,10 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
             # also in page_exams when requsr = admin
             select_all_allowed = (page == 'page_orderlist') or \
                                  (page == 'page_exams' and req_usr.role == c.ROLE_064_ADMIN)
+
+            if logging_on:
+                logger.debug('    select_all_allowed: ' + str(select_all_allowed))
+
             if not select_all_allowed:
                 if allowed_depbases_list:
                     allowed_depbases_list.sort()

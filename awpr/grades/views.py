@@ -49,16 +49,16 @@ logger = logging.getLogger(__name__)
 
 # ========  GRADES SECRET EXAMS =====================================
 @method_decorator([login_required], name='dispatch')
-class GradeSecretExamListView(View):  # PR2023-04-03
+class SecretExamListView(View):  # PR2023-04-03
 
     def get(self, request):
 
 # - set headerbar parameters
-        page = 'page_gradesecretexam'
+        page = 'page_secretexam'
         param = {'display_school': False, 'display_department': True}
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
 
-        return render(request, 'gradesecretexam.html', headerbar_param)
+        return render(request, 'secretexam.html', headerbar_param)
 
 # ========  GRADES  =====================================
 
@@ -440,9 +440,10 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
         # - get allowed filter > this is part of create_grade_approve_rows
                                 if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
                                     err_list = []
-                                    logger.debug('    err_list: ' + str(err_list))
-                                    logger.debug('    sel_examperiod: ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
-                                    logger.debug('    sel_examtype: ' + str(sel_examtype) + ' ' + str(type(sel_examtype)))
+                                    if logging_on:
+                                        logger.debug('    err_list: ' + str(err_list))
+                                        logger.debug('    sel_examperiod: ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
+                                        logger.debug('    sel_examtype: ' + str(sel_examtype) + ' ' + str(type(sel_examtype)))
 
         # give msg when corrector wants to approve exem or se, or when examiner wants to approve exem
                                     auth_txt, gradetype_txt = None, None
@@ -458,8 +459,9 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                         if sel_examperiod == c.EXAMPERIOD_EXEMPTION:
                                             gradetype_txt = gettext('exemption grades')
 
-                                    logger.debug('    auth_txt: ' + str(auth_txt))
-                                    logger.debug('    gradetype_txt: ' + str(gradetype_txt))
+                                    if logging_on:
+                                        logger.debug('    auth_txt: ' + str(auth_txt))
+                                        logger.debug('    gradetype_txt: ' + str(gradetype_txt))
                                     if gradetype_txt is not None:
                                         err_list.append(
                                             gettext("As %(auth)s you don't have to approve %(gradetype)s.") \
@@ -478,6 +480,10 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                             userallowed_instance)
                                         userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(
                                             userallowed_instance)
+
+                                        if logging_on:
+                                            logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
+                                            logger.debug('    userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
 
                                         # blank scores / grades are not included
                                         grade_approve_rows = create_grade_approve_rows(
@@ -2606,21 +2612,15 @@ class GradeUploadView(View):
                 page = upload_dict.get('page')
 
     # - get permit
-
-                permit_list, requsr_usergroups_listNIU, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(
-                    request, 'page_grade')
-                has_permit = 'permit_crud' in permit_list
-
-                if logging_on:
-                    logger.debug('    permit_list: ' + str(permit_list))
-                    logger.debug('    has_permit: ' + str(has_permit))
-
+                #permit_list, requsr_usergroups_listNIU, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(
+                #    request, 'page_grade')
+                #has_permit = 'permit_crud' in permit_list
 
                 page_name = page if page else 'page_grade'
                 has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
                 if logging_on:
-                    logger.debug('    permit_list: ' + str(permit_list))
+                    logger.debug('    page_name: ' + str(page_name))
                     logger.debug('    has_permit: ' + str(has_permit))
 
                 if not has_permit:
@@ -3504,13 +3504,15 @@ def create_grade_stat_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 
 
 def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod, request,
-                      append_dict=None, grade_pk_list=None, auth_dict=None,
+                      secret_exams_only=False, append_dict=None, grade_pk_list=None, auth_dict=None,
                       remove_note_status=False):
     # --- create grade rows of all students of this examyear / school PR2020-12-14  PR2021-12-03 PR2022-02-09 PR2022-12-12
 
     # note: don't forget to filter tobedeleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
     # note_icon is downloaded in separate call
+
+    # PR2023-05-22 when secret_exams_only = True: shiws grdaes of all schools, but secret_exams_only
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -3520,6 +3522,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
         logger.debug('    sel_schoolbase:     ' + str(sel_schoolbase))
         logger.debug('    sel_depbase:     ' + str(sel_depbase))
         logger.debug('    sel_lvlbase:     ' + str(sel_lvlbase))
+        logger.debug('    secret_exams_only:     ' + str(secret_exams_only))
         logger.debug(' ----------')
 
     grade_rows = []
@@ -3528,7 +3531,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
         req_usr = request.user
 
 # - only requsr of the same school can view grades that are not published, PR2021-04-29
-        requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase.pk == sel_schoolbase.pk)
+        # requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase.pk == sel_schoolbase.pk)
 
  # - also corrector can view grades that are not published
         requsr_corrector = (req_usr.role == c.ROLE_016_CORR)
@@ -3554,11 +3557,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
         # - also the role_corrector may see the grades
         # - also exemptions, because they are not published - they are always visible.
         # PR2023-04-08 dont hide grades any more for Inspection and adminshow grades
-        # if requsr_same_school or requsr_corrector or sel_examperiod == c.EXAMPERIOD_EXEMPTION:
-        # if True:
-        #grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
-        #final_grade = "grd.finalgrade AS finalgrade,"
-       # status = "se_status, sr_status, pe_status, ce_status,"
+
         """
         else:
             grades = ' '.join([
@@ -3583,9 +3582,6 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
             status = "se_status, sr_status, pe_status, ce_status,"
         """
-        # sel_examtype not in use
-        sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'depbase_id': sel_depbase.pk,
-                    'experiod': sel_examperiod}
 
         sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
                     "CONCAT('grade_', grd.id::TEXT) AS mapid,",
@@ -3628,7 +3624,12 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 
                     "subj.name_nl AS subj_name_nl, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+        ]
+        # add schoolname, only when secret_exams_only
+        if secret_exams_only:
+            sql_list.append("schoolbase.code AS school_code, school.abbrev AS school_abbrev,")
 
+        sql_list.extend((
                     "NULL AS note_status", # will be filled in after downloading note_status
 
                     "FROM students_grade AS grd",
@@ -3647,11 +3648,20 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                     "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                    "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+                    "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)"
+        ))
 
-                    "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+        # PR2023-05-22 only show grades with exams when secret_exams_only
+        if secret_exams_only:
+            sql_list.extend((
+                "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
+                "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)"
+            ))
+        else:
+            sql_list.append("LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)")
+
+        sql_list.extend((
                     "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
-
                     "LEFT JOIN schools_published AS se_published ON (se_published.id = grd.se_published_id)",
                     "LEFT JOIN schools_published AS ce_published ON (ce_published.id = grd.ce_published_id)",
 
@@ -3665,11 +3675,20 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     "LEFT JOIN accounts_user AS ce_auth4 ON (ce_auth4.id = grd.ce_auth4by_id)",
 
                     "WHERE NOT stud.deleted AND NOT studsubj.deleted",
-                    ''.join(("AND ey.id = ", str(sel_examyear.pk), "::INT")),
-                    ''.join(("AND grd.examperiod = ", str(sel_examperiod), "::INT")),
-                    ''.join(("AND school.base_id=", str(sel_schoolbase.pk), "::INT")),
-                    ''.join(("AND dep.base_id = ", str(sel_depbase.pk), "::INT"))
-                    ]
+                    "AND ey.id = ", str(sel_examyear.pk), "::INT",
+                    "AND grd.examperiod = ", str(sel_examperiod), "::INT",
+                    "AND dep.base_id = ", str(sel_depbase.pk), "::INT"
+                    ))
+
+        # PR2023-05-22 skip schoolbase clause when secret_exams_only
+        if secret_exams_only:
+            sql_list.append("AND exam.secret_exam")
+        else:
+            if sel_schoolbase:
+                sql_list.extend(("AND school.base_id=", str(sel_schoolbase.pk), "::INT"))
+            else:
+                sql_list.append("AND FALSE")
+
         # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
         # not true, in 2022 there were some deleted grades  PR2023-03-29
         # was: if sel_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_EXEMPTION):
@@ -3747,6 +3766,9 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
         # when a corrector has no allowed subjects, must return None.
         # when an examiner has no allowed subjects, must return all subjects.
         return_false_when_no_allowedsubjects = requsr_corrector
+        # dont filter on sel_schoolbase when secret_exams_only
+        if secret_exams_only:
+            sel_schoolbase = None
 
         sql_clause = acc_prm.get_sqlclause_allowed_NEW(
             table='grade',
@@ -3760,14 +3782,14 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
             sql_list.append(sql_clause)
 
         sql_list.append('ORDER BY grd.id')
-        if logging_on and False:
+        if logging_on:
             for sql_txt in sql_list:
                 logger.debug(' > ' + str(sql_txt))
 
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
+            cursor.execute(sql)
             grade_rows = af.dictfetchall(cursor)
 
     # - add full name to rows, and array of id's of auth

@@ -56,7 +56,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
         if request.user and request.user.country and  request.user.schoolbase:
             if request.POST['download']:
 
-
 # once only function converts allowed deps, levels and subjects to a dict and stores it in allword_schools PR2022-11-23
                 # af.convertAllowedSectionsONCEONLY(request)
 
@@ -109,9 +108,16 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get school settings (includes import settings)
                 request_item_schoolsetting = datalist_request.get('schoolsetting')
+                if logging_on:
+                    logger.debug('request_item_schoolsetting: ' + str(request_item_schoolsetting) + ' ' + str(type(request_item_schoolsetting)))
+
                 if request_item_schoolsetting:
                     datalists['schoolsetting_dict'] = sch_fnc.get_schoolsettings(
                         request, request_item_schoolsetting, sel_examyear, sel_schoolbase, sel_depbase)
+
+                    if logging_on:
+                        logger.debug('datalists[schoolsetting_dict]: ' + str(datalists['schoolsetting_dict']))
+
                 if logging_on:
                     logger.debug('request_item_schoolsetting: ' + str(request_item_schoolsetting) + ' ' + str(type(request_item_schoolsetting)))
 
@@ -262,15 +268,14 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     )
 # ----- clusters
                 if datalist_request.get('cluster_rows'):
-                    cur_dep_only = af.get_dict_value(datalist_request, ('cluster_rows', 'cur_dep_only'), False)
-                    allowed_only = af.get_dict_value(datalist_request, ('cluster_rows', 'allowed_only'), False)
+                    page = af.get_dict_value(datalist_request, ('cluster_rows', 'page'))
                     datalists['cluster_rows'] = sj_vw.create_cluster_rows(
                         request=request,
+                        page=page,
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_schoolbase,
-                        sel_depbase=sel_depbase,
-                        cur_dep_only=cur_dep_only,
-                        allowed_only=allowed_only)
+                        sel_depbase=sel_depbase
+                    )
 # ----- schemes
                 if datalist_request.get('scheme_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('scheme_rows', 'cur_dep_only'), False)
@@ -407,20 +412,22 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- grades
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
+                        secret_exams_only = af.get_dict_value(datalist_request, ('grade_rows', 'secret_exams_only'), False)
                         datalists['grade_rows'] = gr_vw.create_grade_rows(
                             sel_examyear=sel_examyear,
                             sel_schoolbase=sel_schoolbase,
                             sel_depbase=sel_depbase,
                             sel_lvlbase=sel_lvlbase,
                             sel_examperiod=sel_examperiod,
+                            secret_exams_only=secret_exams_only,
                             request=request
                         )
 
                         # PR2022-05-11 just added to answer question of Nancy Josefina
                         #datalists['grade_rows_with_modby'] = gr_vw.create_grade_rows_with_modbyTEMP(
                         #    sel_examyear_pk=sel_examyear.pk,
-                        #    sel_schoolbase_pk=sel_schoolbase.pk,
-                        #    sel_depbase_pk=sel_depbase.pk,
+                        #    sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+                        #    sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
                         #    sel_examperiod=sel_examperiod,
                         #    request=request
                         #)
@@ -754,6 +761,9 @@ def download_setting(request_item_setting, user_lang, request):
         allowed_schoolbase_dict=allowed_schoolbase_dict,
         sel_depbase_pk=sel_depbase_instance.pk if sel_depbase_instance else None
     )
+    if logging_on:
+        logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
+        logger.debug('    allowed_lvlbase_pk_arr: ' + str(allowed_lvlbase_pk_arr))
 
     sel_lvlbase_instance, sel_lvlbase_tobesaved, sel_level_instance = \
         acc_view.get_settings_levelbase(
@@ -769,6 +779,11 @@ def download_setting(request_item_setting, user_lang, request):
         )
     if sel_lvlbase_tobesaved:
         selected_pk_dict_has_changed = True
+
+    if logging_on:
+        logger.debug('    sel_lvlbase_instance: ' + str(sel_lvlbase_instance))
+        logger.debug('    sel_lvlbase_tobesaved: ' + str(sel_lvlbase_tobesaved))
+        logger.debug('    sel_level_instance: ' + str(sel_level_instance))
 
 # ===== SUBJECTBASE =======================
     sel_lvlbase_instance_pk = sel_lvlbase_instance.pk if sel_lvlbase_instance else -9

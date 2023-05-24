@@ -291,7 +291,7 @@ urlpatterns = [
 # ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('grades/', include([
 
-        path('gradesecretexam', grade_views.GradeSecretExamListView.as_view(), name='gradesecretexam_url'),
+        path('secretexam', grade_views.SecretExamListView.as_view(), name='secretexam_url'),
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
         path('upload', grade_views.GradeUploadView.as_view(), name='url_grade_upload'),
 

@@ -497,8 +497,9 @@ document.addEventListener("DOMContentLoaded", function() {
             department_rows: {get: true},
             level_rows: {cur_dep_only: true},
             sector_rows: {cur_dep_only: true},
+
             subject_rows: {cur_dep_only: true},
-            cluster_rows: {cur_dep_only: true, allowed_only: true},
+            cluster_rows: {page: "page_grade"},
 
             student_rows: {cur_dep_only: true},
             studentsubject_rows: {cur_dep_only: true},
@@ -862,7 +863,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 schemeitem_rows: {cur_dep_only: true},
 
                 subject_rows: {cur_dep_only: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_grade"},
 
                 student_rows: {cur_dep_only: true},
                 studentsubject_rows: {cur_dep_only: true},
@@ -916,7 +917,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // PR2022-05-12 debug. subject_rows etc added. needs refresh to show subjects of the new level
             subject_rows: {cur_dep_only: true},
-            cluster_rows: {cur_dep_only: true, allowed_only: true},
+            cluster_rows: {page: "page_grade"},
 
             student_rows: {cur_dep_only: true},
             studentsubject_rows: {cur_dep_only: true},
@@ -2472,8 +2473,8 @@ console.log("is_blocked", is_blocked)
         }  //  if(!!row_upload)
     };  // UploadChanges
 
-// +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++++++++++
 
+// +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++++++++++
     function SBR_show_all_response() {  // PR2023-03-21
         console.log("===== SBR_show_all_response =====");
         // this is response of t_SBR_show_all
@@ -2485,7 +2486,7 @@ console.log("is_blocked", is_blocked)
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 subject_rows: {get: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_grade"},
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
@@ -4352,7 +4353,7 @@ console.log( "......filter_value", filter_value);
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 subject_rows: {get: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_grade"},
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
@@ -4392,8 +4393,9 @@ console.log( "......filter_value", filter_value);
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
+
                 subject_rows: {get: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_grade"},
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},

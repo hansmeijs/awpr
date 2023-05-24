@@ -1093,7 +1093,7 @@ def get_department(old_examyear, new_examyear):
 
 # ===============================
 def get_schoolsettings(request, request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):
-    # PR2020-04-17 PR2020-12-28  PR2021-01-12 PR2022-03-19
+    # PR2020-04-17 PR2020-12-28  PR2021-01-12 PR2022-03-19 PR2023-05-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_schoolsetting ---------------- ')
@@ -1108,37 +1108,49 @@ def get_schoolsettings(request, request_item_setting, sel_examyear, sel_schoolba
 
     setting_key = request_item_setting.get('setting_key')
     schoolsetting_dict = {}
-    if setting_key:
-        if setting_key in (c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT,
-                           c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS, c.KEY_IMPORT_USERNAME):
-            sel_examyear_pk = sel_examyear.pk if sel_examyear else None
-            sel_examyear_code = sel_examyear.code if sel_examyear else None
-            sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
-            sel_schoolbase_code = sel_schoolbase.code if sel_schoolbase else None
-            sel_depbase_pk = sel_depbase.pk if sel_depbase else None
-            sel_depbase_code = sel_depbase.code if sel_depbase else None
-            sel_school_pk = None
-            sel_school_name = None
-            if sel_examyear and sel_schoolbase:
-                sel_school = sch_mod.School.objects.get_or_none(
-                    base=sel_schoolbase,
-                    examyear=sel_examyear
-                )
-                if sel_school:
-                    sel_school_pk = sel_school.pk
-                    sel_school_name = sel_school.name
+    try:
+        if setting_key:
+            if setting_key in (c.KEY_IMPORT_SUBJECT, c.KEY_IMPORT_STUDENT, c.KEY_IMPORT_STUDENTSUBJECT,
+                               c.KEY_IMPORT_GRADE, c.KEY_IMPORT_PERMITS, c.KEY_IMPORT_USERNAME):
+                sel_examyear_pk = sel_examyear.pk if sel_examyear else None
+                sel_examyear_code = sel_examyear.code if sel_examyear else None
+                sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
+                sel_schoolbase_code = sel_schoolbase.code if sel_schoolbase else None
+                sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+                sel_depbase_code = sel_depbase.code if sel_depbase else None
+                sel_school_pk = None
+                sel_school_name = None
 
-            schoolsetting_dict = {'sel_examyear_pk': sel_examyear_pk,
-                                  'sel_examyear_code': sel_examyear_code,
-                                  'sel_schoolbase_pk': sel_schoolbase_pk,
-                                  'sel_schoolbase_code': sel_schoolbase_code,
-                                  'sel_depbase_pk': sel_depbase_pk,
-                                  'sel_depbase_code': sel_depbase_code,
-                                  'sel_school_pk': sel_school_pk,
-                                  'sel_school_name': sel_school_name}
-            schoolsetting_dict[setting_key] = get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, sel_depbase)
-        else:
-            schoolsetting_dict[setting_key] = sel_schoolbase.get_schoolsetting_dict(setting_key)
+                if logging_on:
+                    logger.debug('sel_examyear: ' + str(sel_examyear))
+                    logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+
+                if sel_examyear and sel_schoolbase:
+                    sel_school = sch_mod.School.objects.get_or_none(
+                        base=sel_schoolbase,
+                        examyear=sel_examyear
+                    )
+                    if sel_school:
+                        sel_school_pk = sel_school.pk
+                        sel_school_name = sel_school.name
+
+                    if logging_on:
+                        logger.debug('sel_school: ' + str(sel_school))
+
+                schoolsetting_dict = {'sel_examyear_pk': sel_examyear_pk,
+                                      'sel_examyear_code': sel_examyear_code,
+                                      'sel_schoolbase_pk': sel_schoolbase_pk,
+                                      'sel_schoolbase_code': sel_schoolbase_code,
+                                      'sel_depbase_pk': sel_depbase_pk,
+                                      'sel_depbase_code': sel_depbase_code,
+                                      'sel_school_pk': sel_school_pk,
+                                      'sel_school_name': sel_school_name}
+                schoolsetting_dict[setting_key] = get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, sel_depbase)
+            else:
+                schoolsetting_dict[setting_key] = sel_schoolbase.get_schoolsetting_dict(setting_key)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
         logger.debug('setting_key: ' + str(setting_key) + ' ' + str(type(setting_key)))

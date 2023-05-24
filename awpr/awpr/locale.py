@@ -1418,6 +1418,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['no_allowed_subj_msg_02'] = _("Second correctors may only view subjects")
         dict['no_allowed_subj_msg_03'] = _("that are in their allowed subjects list.")
 
+        dict['no_reex_yet'] = _("There are no re-examination candidates.")
+        dict['no_reex03_yet'] = _("There are no re-examination candidates in the third period.")
+
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
@@ -1450,6 +1453,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Character'] = pgettext_lazy('karakter', 'Character')
 
         dict['_of_'] = TXT__of_
+
+        dict['Schoolcode_2lines'] = _('School\ncode')
+        dict['School_code'] = TXT_School_code
 
         dict['Preliminary_Ex2'] = _('Preliminary %(form)s') % {'form': 'Ex2'}
         dict['Preliminary_Ex2A'] = _('Preliminary %(form)s') % {'form': 'Ex2A'}

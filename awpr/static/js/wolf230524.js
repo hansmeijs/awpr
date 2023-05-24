@@ -541,8 +541,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
+
                 subject_rows: {etenorm_only: true, cur_dep_only: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_wolf"},
 
                 student_rows: {cur_dep_only: true},
 

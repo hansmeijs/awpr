@@ -34,7 +34,7 @@ MENUS_BUTTONS = {
                          'page_exams', 'page_studsubj', 'page_wolf', 'page_grade',
                       'page_result', 'page_corrector', 'page_archive', 'page_exampaper'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', # 'page_student',
-                       'page_exams', 'page_studsubj', 'page_grade', # 'page_secretexam',
+                       'page_exams', 'page_studsubj', 'page_grade', #'page_secretexam',
                      'page_result', 'page_archive', 'page_exampaper'],  #, 'page_corrector', 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
                       'page_exams', 'page_grade', 'page_result', 'page_archive', 'page_exampaper'],  #,'page_report', 'page_analysis'],
@@ -52,7 +52,7 @@ MENUS_DICT = {
     'page_exams': {'caption': _('Exams'), 'href': 'exams_url', 'width': 100},
     'page_wolf': {'caption': _('Wolf'), 'href': 'wolf_url', 'width': 100},
     'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 100},
-    'page_secretexam': {'caption': _('Designated exams'), 'href': 'gradesecretexam_url', 'width': 180},
+    'page_secretexam': {'caption': _('Designated exams'), 'href': 'secretexam_url', 'width': 180},
     'page_result': {'caption': _('Results'), 'href': 'results_url', 'width': 100},
     'page_report': {'caption': _('Reports'), 'href': 'url_archive', 'width': 120},
     'page_corrector': {'caption': _('Second correctors'), 'href': 'url_corrector', 'width': 150},
@@ -148,8 +148,11 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
 
     # - if sel_examyear_instance is not saved yet: save it in usersettings
         if sel_examyear_instance and sel_examyear_save:
-            selected_pk_dict = {c.KEY_SEL_EXAMYEAR_PK: sel_examyear_instance.pk}
-            acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
+            sel_examyear_pk_dict = {c.KEY_SEL_EXAMYEAR_PK: sel_examyear_instance.pk}
+            acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, sel_examyear_pk_dict, request)
+
+# - get selected_pk_dict from usersettings
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 
 # - set background color in headerbar
         if req_usr.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
@@ -310,7 +313,8 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
                     page=sel_page,
                     request=request,
                     request_item_depbase_pk=None,
-                    allowed_schoolbase_dict=allowed_schoolbase_dict
+                    allowed_schoolbase_dict=allowed_schoolbase_dict,
+                    selected_pk_dict=selected_pk_dict
                 )
 
             sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase_instance, examyear=sel_examyear_instance)

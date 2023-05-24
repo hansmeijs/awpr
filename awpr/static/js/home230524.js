@@ -116,7 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 subject_rows: {get: true},
-                cluster_rows: {cur_dep_only: true},
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},

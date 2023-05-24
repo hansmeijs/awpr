@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 school_rows: {get: true},
                 level_rows: {get: true},
                 subject_rows_page_users: {get: true},
-                cluster_rows: {get: true}
+                cluster_rows: {page: "page_corrector"}
             };
 
         console.log("    datalist_request: ", datalist_request)
@@ -653,12 +653,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- add EventListener to td
                     // only input fields are: "uc_corr_amount", "uc_corr_meetings"
+                    // only auth1 of auth2 vfrom role corrector may edit them
                     if (field_tag === "input") {
-                        if (permit_dict.permit_approve_comp){
+                        if (permit_dict.permit_make_corrections){
                             el.addEventListener("change", function() {UploadInputChange(el)}, false)
                             add_hover(td);
                         };
-                        el.readOnly = !permit_dict.permit_approve_comp;
+                        el.readOnly = !permit_dict.permit_make_corrections;
 
                     } else if (field_name === "select") {
                         // TODO add select multiple users option PR2020-08-18
@@ -680,8 +681,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (field_name === "status"){
 
                         const published_id = (data_dict.published_id) ? data_dict.published_id : null;
-
-                        if(!published_id && permit_dict.permit_approve_comp){
+                        const has_comp = (!!data_dict.uc_amount || !!data_dict.uc_meetings);
+                        if(!published_id && has_comp && permit_dict.permit_approve_comp){
                             td.addEventListener("click", function() {UploadToggleStatus(el)}, false)
                             add_hover(td);
                         };
@@ -798,10 +799,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.className = (permit_bool) ? "tickmark_2_2" : "tickmark_0_0" ;
 
             } else if (field_name === "status"){
-                const [status_className, status_title_text, filter_val] = f_format_status_subject("uc", data_dict)
-                filter_value = filter_val;
-                el_div.className = status_className;
-                title_text = status_title_text;
+                if (!!data_dict.uc_amount || !!data_dict.uc_meetings) {
+                    const [status_className, status_title_text, filter_val] = f_format_status_subject("uc", data_dict)
+                    filter_value = filter_val;
+                    el_div.className = status_className;
+                    title_text = status_title_text;
+                };
             };
 
 // ---  put value in innerText and title
@@ -1930,7 +1933,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 level_rows: {get: true},
 
                 subject_rows_page_users: {get: true},
-                cluster_rows: {get: true}
+                cluster_rows: {page: "page_corrector"}
             };
 
         DatalistDownload(datalist_request);
@@ -2047,7 +2050,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSM_FillSelectTable  ================ PR2022-01-26 PR23-01-26
     function MSM_FillSelectTable() {
-        console.log( "===== MSM_FillSelectTable ========= ");
+        //console.log( "===== MSM_FillSelectTable ========= ");
 
         // check if school has multiple departments, needed for allowed_clusters
         let school_has_multiple_deps = false;
@@ -2055,8 +2058,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const depbase_arr = setting_dict.sel_school_depbases.split(";");
             school_has_multiple_deps = depbase_arr && depbase_arr.length > 1;
         };
-        console.log( "    setting_dict.sel_school_depbases: ", setting_dict.sel_school_depbases);
-        console.log( "    school_has_multiple_deps: ", school_has_multiple_deps);
+    //console.log( "    setting_dict.sel_school_depbases: ", setting_dict.sel_school_depbases);
+    //console.log( "    school_has_multiple_deps: ", school_has_multiple_deps);
 
         // cluster has no base table
         const base_pk_field = "id"
@@ -2072,15 +2075,15 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "    mod_MSM_dict.allowed_clusters: ", mod_MSM_dict.allowed_clusters);
         const allowed_clusters_pk_arr = (mod_MSM_dict.allowed_clusters_pk_arr) ? mod_MSM_dict.allowed_clusters_pk_arr : [];
 
-        console.log( "    allowed_clusters_pk_arr: ", allowed_clusters_pk_arr);
+        //console.log( "    allowed_clusters_pk_arr: ", allowed_clusters_pk_arr);
 
         for (const data_dict of Object.values(cluster_dictsNEW)) {
-    console.log( "    data_dict: ", data_dict)
+    //console.log( "    data_dict: ", data_dict)
             const pk_int = data_dict.id;
             const row_is_selected = (pk_int && allowed_clusters_pk_arr && allowed_clusters_pk_arr.includes(pk_int));
 
-    console.log( "    pk_int: ", pk_int);
-    console.log( "   ==== row_is_selected: ", row_is_selected);
+    //console.log( "    pk_int: ", pk_int);
+    //console.log( "   ==== row_is_selected: ", row_is_selected);
             if(row_is_selected){
                 has_selected_rows = true;
             };
@@ -2089,23 +2092,23 @@ document.addEventListener('DOMContentLoaded', function() {
             MSM_FillSelectRow(tblBody_select, data_dict, row_is_selected);
         };
 
-    console.log( "  >>>>>>>>>>   has_selected_rows: ", has_selected_rows);
+    //console.log( "  >>>>>>>>>>   has_selected_rows: ", has_selected_rows);
 
 // ---  add 'all' at the beginning of the list, with id = 0, make selected if no other rows are selected
-        const data_dict = {};
-        data_dict.id = -9;
-        data_dict.name = "<" + loc.All_ + loc.Clusters.toLowerCase() + ">"
+        //const data_dict = {};
+        //data_dict.id = -9;
+        //data_dict.name = "<" + loc.All_ + loc.Clusters.toLowerCase() + ">"
 
-        const row_index = 0;
+        //const row_index = 0;
         // select <All> when has_selected_rows = false;
-        MSM_FillSelectRow(tblBody_select, data_dict, !has_selected_rows, true)  // true = insert_at_index_zero
+        //MSM_FillSelectRow(tblBody_select, data_dict, !has_selected_rows, true)  // true = insert_at_index_zero
 
     }  // MSM_FillSelectTable
 
 //=========  MSM_FillSelectRow  ================ PR2022-01-26
     function MSM_FillSelectRow(tblBody_select, data_dict, row_is_selected, insert_at_index_zero) {
-        console.log( "===== MSM_FillSelectRow ========= ");
-        console.log("data_dict: ", data_dict);
+        //console.log( "===== MSM_FillSelectRow ========= ");
+        //console.log("data_dict: ", data_dict);
 
         // cluster has no base table
         const pk_int = data_dict.id;
@@ -2116,11 +2119,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
 // ---  lookup index where this row must be inserted
-        const ob1 = (data_dict.dep_sequence) ? "00000" + data_dict.dep_sequence.toString() : "";
-        const ob2 = (data_dict.name) ? data_dict.name.toLowerCase() : "";
+        //const ob1 = (data_dict.dep_sequence) ? "00000" + data_dict.dep_sequence.toString() : "";
+        const ob1 = (data_dict.name) ? data_dict.name.toLowerCase() : "";
 
         const row_index = (insert_at_index_zero) ? 0 :
-            b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1, ob2);
+            b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_select.insertRow(row_index);
@@ -2131,7 +2134,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
-        tblRow.setAttribute("data-ob2", ob2);
+        //tblRow.setAttribute("data-ob2", ob2);
+
 // ---  add EventListener to tblRow, not when 'no items' (pk_int is then -1, ''all clusters = -9
         if (pk_int !== -1) {
             tblRow.addEventListener("click", function() {MSM_SelecttableClicked(tblRow)}, false )

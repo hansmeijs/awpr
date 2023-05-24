@@ -195,18 +195,19 @@
 //=========  t_MSED_FillSelectRows  ================
 //  PR2022-08-02 PR2023-01-08
     function t_MSED_FillSelectRows(tblName, MSED_Response, selected_pk) {
-        console.log( "===== t_MSED_FillSelectRows ========= ");
+        //console.log( "===== t_MSED_FillSelectRows ========= ");
         //console.log( "tblName", tblName);
         //console.log( "all_countries", all_countries);
         //console.log( "permit_dict", permit_dict);
 
         const tblBody_select = document.getElementById("id_MSED_tblBody_select");
-        console.log( "tblBody_select", tblBody_select);
+    //console.log( "tblBody_select", tblBody_select);
         if (tblBody_select){
             tblBody_select.innerText = null;
             const data_rows = (tblName === "examyear") ? examyear_rows :
                               (tblName === "department") ? department_rows : null;
-            console.log( "    data_rows", data_rows);
+    //console.log( "    data_rows", data_rows);
+
     // --- loop through data_rows
             if(data_rows && data_rows.length){
                 // PR2022-04-19 Sentry Error: Expected identifier
@@ -221,9 +222,9 @@
                     const code_value = (tblName === "examyear") ? (data_dict.examyear_code) ? data_dict.examyear_code : "---" :
                                     (tblName === "department") ? (data_dict.base_code) ? data_dict.base_code : "---" : "---";
 
-            console.log( "data_dict", data_dict);
-            console.log( "code_value", code_value);
-            console.log( "is_locked", is_locked);
+    //console.log( "data_dict", data_dict);
+    //console.log( "code_value", code_value);
+    //console.log( "is_locked", is_locked);
                     let skip_row = false;
                     if(tblName === "examyear") {
                         skip_row = (permit_dict.requsr_country_pk !== data_dict.country_id);
@@ -237,7 +238,7 @@
                             skip_row = true;
                         };
                     };
-            console.log( "skip_row", skip_row);
+    //console.log( "skip_row", skip_row);
                     if(!skip_row){
                         t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk)
                     };
@@ -352,11 +353,11 @@
 //========= t_MSSSS_Open_NEW ====================================
     function t_MSSSS_Open_NEW (loc, tblName, data_dicts, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
 //PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13 PR2023-01-05 PR2023-03-20
-        console.log(" ===  t_MSSSS_Open_NEW  =====", tblName) ;
+        //console.log(" ===  t_MSSSS_Open_NEW  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
-    console.log( "tblName", tblName );
-    console.log( "data_dicts", data_dicts, typeof data_dicts );
+    //console.log( "tblName", tblName );
+    //console.log( "data_dicts", data_dicts, typeof data_dicts );
         // tblNames are: 'cluster", "school", "subject", "student", "envelopbundle
         // table "school", "student" use base_id as selected_pk
 
@@ -368,15 +369,15 @@
         // allow opening only when loc has value
         if(!isEmpty(permit_dict)){
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
-    console.log( "may_select", may_select);
+    //console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (tblName === "cluster") ? setting_dict.sel_cluster_pk :
                                     (tblName === "school") ? setting_dict.sel_school_pk :
                                     (tblName === "subject") ? setting_dict.sel_subject_pk :
                                     (tblName === "student") ? setting_dict.sel_studbase_pk :
                                     (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
-    console.log( "setting_dict", setting_dict );
-    console.log( "selected_pk", selected_pk, typeof selected_pk );
+    //console.log( "setting_dict", setting_dict );
+    //console.log( "selected_pk", selected_pk, typeof selected_pk );
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
 
@@ -389,7 +390,7 @@
                     b_show_mod_message_html(msg_html);
                 } else {
         // --- fill select table
-    console.log( "    fill select table" );
+    //console.log( "    fill select table" );
                     t_MSSSS_Fill_SelectTable_NEW(loc, tblName, data_dicts, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
                     el_MSSSS_input.value = null;
             // ---  set focus to input element
@@ -463,9 +464,9 @@
 
 //========= t_MSSSS_Fill_SelectTable_NEW  ============= PR2021-01-23  PR2021-07-23 PR2022-08-12 PR2023-01-05
     function t_MSSSS_Fill_SelectTable_NEW(loc, tblName, data_dicts, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
-        console.log("===== t_MSSSS_Fill_SelectTable_NEW ===== ", tblName);
-        console.log("    data_dicts", data_dicts, typeof data_dicts);
-        console.log("    tblName", tblName, typeof tblName);
+        //console.log("===== t_MSSSS_Fill_SelectTable_NEW ===== ", tblName);
+        //console.log("    data_dicts", data_dicts, typeof data_dicts);
+        //console.log("    tblName", tblName, typeof tblName);
         // this function iterates over dicts dictionary instead of over a dictlist
 // set header text
         const label_text = loc.Select + ((tblName === "cluster") ?  loc.a_cluster :
@@ -3103,7 +3104,8 @@ const mod_MCOL_dict = {
             sel_classname: null,
             sel_subject_pk: null,
             sel_cluster_pk: null,
-            sel_student_pk: null}};
+            sel_student_pk: null
+            }};
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         SBR_show_all_response();

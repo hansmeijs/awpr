@@ -184,7 +184,7 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
 # - get allowed_schoolbase_dict from allowed_sections_dict
     allowed_schoolbase_dict, allowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
         userallowed_sections_dict=allowed_sections_dict,
-        sel_schoolbase_pk=sel_schoolbase.pk
+        sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None
     )
     # allowed_schoolbase_dict:    {'1': {'-9': []}, '2': {'-9': []}} key is depbase_pk / lvlbase_pk
 
@@ -1231,12 +1231,10 @@ class ClusterUploadView(View):  # PR2022-01-06
 
                             updated_cluster_rows = sj_vw.create_cluster_rows(
                                 request=request,
+                                page='studsubj',
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_schoolbase,
-                                sel_depbase=sel_depbase,
-                                cur_dep_only=True,
-                                allowed_only=False,
-                                cluster_pk_list=updated_cluster_pk_arr
+                                sel_depbase=sel_depbase
                             )
 
                             if updated_cluster_rows:

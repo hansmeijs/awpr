@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 school_rows: {skip_allowed_filter: true},
                 level_rows: {skip_allowed_filter: true},
                 subject_rows_page_users: {get: true},
-                cluster_rows: {get: true},
+                cluster_rows: {page: "page_user"}
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
@@ -3447,8 +3447,8 @@ console.log( "upload_dict", upload_dict);
 
 //=========  MSM_FillSelectRow  ================ PR2022-01-26
     function MSM_FillSelectRow(tblBody_select, data_dict, row_is_selected, insert_at_index_zero) {
-        console.log( "===== MSM_FillSelectRow ========= ");
-        console.log("data_dict: ", data_dict);
+        //console.log( "===== MSM_FillSelectRow ========= ");
+        //console.log("data_dict: ", data_dict);
 
         // cluster has no base table
         const pk_int = data_dict.id;
@@ -3542,16 +3542,14 @@ console.log( "upload_dict", upload_dict);
 
 //////////////////////////////////////
 
-//========= HandleInputChange  =============== PR2021-03-20 PR2022-02-21
+//========= HandleInputChange  =============== PR2021-03-20 PR2022-02-21 PR2023-05-24
     function HandleInputChange(el_input){
-        //console.log(" --- HandleInputChange ---")
+        console.log(" --- HandleInputChange ---")
 
         const tblRow = t_get_tablerow_selected(el_input);
-        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        const data_dict = get_datadict_from_tblRow(tblRow);
 
-        if (pk_int){
-            const data_dict = get_datadict_from_pk("userpermit", pk_int);
-        //console.log("data_dict", data_dict)
+        if (data_dict){
             const fldName = get_attr_from_el(el_input, "data-field");
             const userpermit_pk = data_dict.id;
             const map_value = data_dict[fldName];
@@ -3566,7 +3564,6 @@ console.log( "upload_dict", upload_dict);
                 const upload_dict = {mode: "update",
                                     userpermit_pk: userpermit_pk};
                 upload_dict[fldName] = new_value;
-        //console.log("upload_dict: ", upload_dict);
 
         // ---  upload changes
                 UploadChanges(upload_dict, url_str);
@@ -3578,7 +3575,7 @@ console.log( "upload_dict", upload_dict);
 
 //=========  ModConfirmOpen_AddFromPreviousExamyears  ================ PR2023-04-1
     function ModConfirmOpen_AddFromPreviousExamyears() {
-        console.log(" -----  ModConfirmOpen_AddFromPreviousExamyears   ----")
+        //console.log(" -----  ModConfirmOpen_AddFromPreviousExamyears   ----")
 
         mod_dict = {mode: "add_from_prev_examyears"};
         mod_dict.user_pk_list = [];
@@ -4498,7 +4495,7 @@ console.log( "new_value", new_value);
                 school_rows: {skip_allowed_filter: true},
                 level_rows: {skip_allowed_filter: true},
                 subject_rows_page_users: {get: true},
-                cluster_rows: {get: true}
+                cluster_rows: {page: "page_user"}
             };
 
         DatalistDownload(datalist_request);
@@ -4563,21 +4560,6 @@ console.log( "new_value", new_value);
         return (arr && arr.length) ? arr[0] : null;
     };
 //////////////////////
-
-
-    function get_datadict_from_pk(tblName, pk_int) {
-        //console.log( "===== get_datadict_from_pk  === ");
-        //console.log( "tblName", tblName);
-        //console.log( "pk_int", pk_int, typeof pk_int );
-        let data_dict = null;
-        if(tblName && pk_int){
-            const data_rows = get_data_dicts(tblName) ;
-    //console.log( "data_rows", data_rows, typeof data_rows );
-            const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-            if (!isEmpty(found_dict)) {data_dict = found_dict};
-        };
-        return data_dict;
-    };  // get_datadict_from_pk
 
     function get_tblName_from_selectedBtn() {  //P R2021-08-01
         // HandleBtnSelect sets tblName to default "user" when there is no selected_btn

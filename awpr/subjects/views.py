@@ -491,28 +491,73 @@ def create_subjectrows_for_page_users(sel_examyear):
 
 
 def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
-                        cur_dep_only, allowed_only=False, cluster_pk_list=None):
+                        page, cluster_pk_list=None):
     # --- create rows of all clusters of this examyear this department  PR2022-01-06 PR2022-12-25 PR2023-02-09
-    logging_on = False  # s.LOGGING_ON
+    # called by page users, correctors,
+    # grades, secretexam, studentsubject,  wolf
+    logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
-        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
-        logger.debug('sel_schoolbase: ' + str(sel_schoolbase) + ' ' + str(type(sel_schoolbase)))
-        logger.debug('sel_depbase: ' + str(sel_depbase) + ' ' + str(type(sel_depbase)))
-        logger.debug('allowed_only: ' + str(allowed_only))
-        logger.debug('cluster_pk_list: ' + str(cluster_pk_list))
+        logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug('    sel_schoolbase: ' + str(sel_schoolbase) + ' ' + str(type(sel_schoolbase)))
+        logger.debug('    sel_depbase: ' + str(sel_depbase) + ' ' + str(type(sel_depbase)))
+        logger.debug('    page: ' + str(page))
+        logger.debug('    cluster_pk_list: ' + str(cluster_pk_list))
+        # pages are: page_studsubj page_grade page: page_corrector, page_user"page_wolf page_secretexam
+
+    cur_dep_only, cur_school_only, allowed_only = False, False, False
+    if page == 'page_corrector':
+
+        # show only this corr when ug = corrector and not auth1, auth2
+        requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
+        requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
+        requsr_has_ug_corrector_only = c.USERGROUP_AUTH4_CORR in requsr_usergroup_list \
+                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list \
+                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list
+
+        if request.user.role == c.ROLE_008_SCHOOL:
+            # when school uses page_corrector:
+            # school can add clusters to allowed_clusters
+            # - show only clusters of this school, all departments
+            cur_school_only = True
+            # school_corrector can only see his allowedclusters
+            if requsr_has_ug_corrector_only:
+                allowed_only = True
+
+        elif request.user.role == c.ROLE_016_CORR:
+
+            # when role corrector uses page_corrector:
+
+            # when usergroup is only corrector, not chairperon ofr sexcretaru:
+            # can only see allowed clusters of all schools and all departmentsf
+            # school can add clusters to allowed_clusters
+            # - show only clusters of this school, all departments
+
+            # show only this corr when ug = corrector and not auth1, auth2
+            requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
+            requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
+            if c.USERGROUP_AUTH4_CORR in requsr_usergroup_list \
+                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list \
+                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list:
+                allowed_only = True
+
+    elif page == 'page_user':
+        cur_school_only = True
+    elif page in ('page_studsubj', 'page_grade', 'page_wolf', 'page_secretexam'):
+        cur_school_only = True
+        cur_dep_only = True
 
     cluster_rows = []
     if sel_examyear and sel_schoolbase and sel_depbase:
         try:
 
             sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
-                        'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
-                        'db_id': sel_depbase.pk if sel_depbase else None
+                        #'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
+                        #'db_id': sel_depbase.pk if sel_depbase else None
                         }
             sql_list = ["SELECT cluster.id, cluster.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
-                        "dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
+                        "sch.base_id AS schoolbase_id, dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
                         "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl",
                         "FROM subjects_cluster AS cluster",
                         "INNER JOIN subjects_subject AS subj ON (subj.id = cluster.subject_id)",
@@ -523,8 +568,14 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
 
                         "WHERE subj.examyear_id = %(ey_id)s::INT",
                         "AND sch.examyear_id = %(ey_id)s::INT",
-                        "AND sch.base_id = %(sb_id)s::INT"
+                        #"AND sch.base_id = %(sb_id)s::INT"
                         ]
+            if cur_school_only:
+                if sel_schoolbase:
+                    sel_schoolbase_clause = ''.join(( "AND sch.base_id = ", str(sel_schoolbase.pk), "::INT"))
+                else:
+                    sel_schoolbase_clause = "AND FALSE"
+                sql_list.append(sel_schoolbase_clause)
 
             if cur_dep_only:
                 if sel_depbase:
@@ -539,20 +590,21 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                 #sqlclause_allowed_dep_lvl_subj = acc_prm.get_sqlclause_allowed_dep_lvl_subj(
                 #    table='cluster',
                 #    userallowed_sections_dict=acc_prm.get_userallowed_sections_dict_from_request(request),
-                #    sel_schoolbase_pk=sel_schoolbase.pk,
-                #    sel_depbase_pk=sel_depbase.pk
+                #    sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+                #    sel_depbase_pk=sel_depbase.pk if sel_depbase else None
                 #)
                 #if sqlclause_allowed_dep_lvl_subj:
                 #    sql_list.append(sqlclause_allowed_dep_lvl_subj)
 
     # - filter on allowed clusters
-            userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
-            userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters('cluster', userallowed_cluster_pk_list)
-            if userallowed_cluster_pk_clause:
-                sql_list.append(userallowed_cluster_pk_clause)
-            if logging_on:
-                logger.debug('   userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
-                logger.debug('   userallowed_cluster_pk_clause: ' + str(userallowed_cluster_pk_clause))
+            if allowed_only:
+                userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
+                userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters('cluster', userallowed_cluster_pk_list)
+                if userallowed_cluster_pk_clause:
+                    sql_list.append(userallowed_cluster_pk_clause)
+                if logging_on:
+                    logger.debug('   userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+                    logger.debug('   userallowed_cluster_pk_clause: ' + str(userallowed_cluster_pk_clause))
 
             sql_list.append("ORDER BY cluster.id")
 

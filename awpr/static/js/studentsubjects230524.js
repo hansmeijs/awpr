@@ -513,8 +513,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 schemeitem_rows: {cur_dep_only: true},
 
                 student_rows: {cur_dep_only: true},
+
                 subject_rows: {cur_dep_only: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_studsubj"},
+
                 studentsubject_rows: {cur_dep_only: true},
 
                 published_rows: {get: true}
@@ -831,8 +833,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 schemeitem_rows: {cur_dep_only: true},
 
                 student_rows: {cur_dep_only: true},
+
                 subject_rows: {cur_dep_only: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_studsubj"},
+
                 studentsubject_rows: {cur_dep_only: true},
 
             };
@@ -3145,7 +3149,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MCL_FillClusterList  ================ PR2022-01-09
     function MCL_FillClusterList() {
-        console.log("===== MCL_FillClusterList =====");
+        //console.log("===== MCL_FillClusterList =====");
         // called by MCL_Open and by MSSSS_Response (after selecting subject)
 
 // - reset cluster_list
@@ -3162,7 +3166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             */
 
         for (const data_dict of Object.values(cluster_dictsNEW)) {
-        console.log("data_dict", data_dict);
+
     // add only clusters of this subject
             if (data_dict.subject_id === mod_MCL_dict.subject_pk){
                 mod_MCL_dict.cluster_list.push({
@@ -3176,7 +3180,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  sort dictlist by key 'sortby'
             mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
         };
-        console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
+
     };  // MCL_FillClusterList
 
 //=========  MCL_FillStudentList  ================ PR2022-01-06 PR2023-01-05
@@ -3243,28 +3247,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  loop through dictlist
         for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
 
-        console.log(" ", student_dict.sortby);
-            /* student_dict = {
-                cluster_pk: null,
-                cluster_name: null,
-                selected: false
-                studsubj_pk: 68758,
-                subject_code: "zwi",
-                sortby: "van den Wall Arnemann, Tamara"}
-
-
-                cluster_pk: null
-                cluster_name: null
-                classname: "4V3"
-                fullname: "Sterling, Stephany N."
-                sortby: "Sterling Stephany Naomi "
-                mode: null
-                studsubj_pk: 47508
-                subject_code: "en"
-                subject_pk: 224
-
-
-            */
     // put all studsubjects of this cluster in table el_MCL_tblBody_studs_selected
             const is_selected = (!!student_dict.cluster_pk && student_dict.cluster_pk === mod_MCL_dict.sel_cluster_pk);
 
@@ -3895,8 +3877,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 schemeitem_rows: {cur_dep_only: true},
 
                 student_rows: {cur_dep_only: true},
+
                 subject_rows: {cur_dep_only: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_studsubj"},
+
                 studentsubject_rows: {cur_dep_only: true},
 
                 published_rows: {get: true}
@@ -3942,7 +3926,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setting: new_setting_dict,
             student_rows: {cur_dep_only: true},
             subject_rows: {cur_dep_only: true},
-            cluster_rows: {cur_dep_only: true},
+            cluster_rows: {page: "page_studsubj"},
             studentsubject_rows: {cur_dep_only: true},
         };
 
@@ -5554,7 +5538,11 @@ console.log( "......filter_dict", filter_dict);
                 setting: new_setting,
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
-                grade_rows: {get: true},
+
+                subject_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_studsubj"},
+
+                //grade_rows: {get: true},
                 schemeitem_rows: {get: true}
             };
         DatalistDownload(datalist_request);
@@ -5590,12 +5578,13 @@ console.log( "......filter_dict", filter_dict);
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
+
                 subject_rows: {get: true},
-                cluster_rows: {cur_dep_only: true},
+                cluster_rows: {page: "page_studsubj"},
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
-                grade_rows: {get: true},
+                //grade_rows: {get: true},
 
                 all_exam_rows: {get: true}
             };
@@ -5745,7 +5734,10 @@ console.log( "......filter_dict", filter_dict);
                     sector_rows: {cur_dep_only: true},
                     student_rows: {cur_dep_only: true},
                     studentsubject_rows: {cur_dep_only: true},
-                    schemeitem_rows: {cur_dep_only: true}
+                    schemeitem_rows: {cur_dep_only: true},
+
+                    subject_rows: {cur_dep_only: true},
+                    cluster_rows: {page: "page_studsubj"}
                 };
 
             DatalistDownload(datalist_request);
