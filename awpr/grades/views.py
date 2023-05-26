@@ -2617,7 +2617,12 @@ class GradeUploadView(View):
                 #has_permit = 'permit_crud' in permit_list
 
                 page_name = page if page else 'page_grade'
-                has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+                if 'approve' in mode:
+                    has_permit = acc_prm.get_permit_of_this_page(page_name, 'approve_exam' ,request)
+                elif 'undo_submitted' in mode:
+                    has_permit = acc_prm.get_permit_of_this_page(page_name, 'submit_exam' ,request)
+                else:
+                    has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
                 if logging_on:
                     logger.debug('    page_name: ' + str(page_name))
@@ -2644,7 +2649,6 @@ class GradeUploadView(View):
                         # get examperiod and examtype from upload_dict
                         # don't get it from usersettings, get it from upload_dict instead
                         # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = acc_prm.get_selected_experiod_extype_subject_from_usersetting(request)
-
 
                         grade_pk = upload_dict.get('grade_pk')
                         examgradetype = upload_dict.get('examgradetype', '')
@@ -2735,7 +2739,8 @@ class GradeUploadView(View):
                                 si_dict = schemeitems_dict.get(si_pk)
 
         # +++ update existing grade - not when grade is created - grade is None when deleted
-                                if mode == 'update':
+                                # undo_submitted means: undo submitted wolf exam (ce_exam)
+                                if mode in ('update', 'undo_submitted'):
                                     err_list = update_grade_instance(
                                         grade_instance=grade,
                                         upload_dict=upload_dict,
@@ -2837,6 +2842,18 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
     recalc_finalgrade = False
     must_recalc_reex_reex03 = False
 
+    def get_ce_score_is_approved():
+        return getattr(grade_instance, 'ce_auth1by') is not None or \
+                           getattr(grade_instance, 'ce_auth2by') is not None or \
+                           getattr(grade_instance, 'ce_auth3by') is not None or \
+                           getattr(grade_instance, 'ce_auth4by') is not None
+
+    def get_ce_exam_is_approved():
+        return getattr(grade_instance, 'ce_exam_auth1by') is not None or \
+                              getattr(grade_instance, 'ce_exam_auth2by') is not None or \
+                              getattr(grade_instance, 'ce_exam_auth3by') is not None
+
+
     for field, new_value in upload_dict.items():
 
         if field in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
@@ -2884,67 +2901,64 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
     # ----- save changes in field 'exam'
         elif field == 'exam_pk':
+            exam = subj_mod.Exam.objects.get_or_none(pk=new_value) if new_value else None
 
-            if logging_on and False:
-                logger.debug('....field: ' + str(field))
-                logger.debug('    new_value: ' + str(new_value))
-
-# - validate if ce_exam is approved or submitted:
-            # ce_exam_auth1by is approval of exam (wolf)
-            # ce_auth1by is approval of score
-
-            score_is_approved, exam_is_submitted, exam_is_approved = False, False, False
-            score_is_submitted = getattr(grade_instance, 'ce_published')
-            if not score_is_submitted:
-                score_is_approved = getattr(grade_instance, 'ce_auth1by') or \
-                                   getattr(grade_instance, 'ce_auth2by') or \
-                                   getattr(grade_instance, 'ce_auth3by') or \
-                                   getattr(grade_instance, 'ce_auth4by')
-            if not score_is_approved:
-                exam_is_submitted = getattr(grade_instance, 'ce_exam_published')
-            if not exam_is_submitted:
-                exam_is_approved = getattr(grade_instance, 'ce_exam_auth1by') or \
-                                       getattr(grade_instance, 'ce_exam_auth2by') or \
-                                       getattr(grade_instance, 'ce_exam_auth3by')
+            # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again
+            db_field = 'ce_exam'
+            saved_exam = getattr(grade_instance, db_field)
 
             if logging_on:
                 logger.debug('....field: ' + str(field))
-                logger.debug('    score_is_approved: ' + str(score_is_approved))
-                logger.debug('    score_is_submitted: ' + str(score_is_submitted))
-                logger.debug('    exam_is_submitted: ' + str(exam_is_submitted))
+                logger.debug('    new_value: ' + str(new_value))
+                logger.debug('    exam:       ' + str(exam) + ' ' + str(type(exam)))
+                logger.debug('    saved_exam: ' + str(saved_exam) + ' ' + str(type(saved_exam)))
 
-            if score_is_submitted or score_is_approved or exam_is_submitted or exam_is_approved:
-                score_exam_txt = str(_('This score') if score_is_submitted or score_is_approved else _('This exam'))
-                submitted_approved_txt = str(_('Submitted') if score_is_submitted or score_is_approved else _('Approved')).lower()
-                change_delete = str(_('Change') if new_value else _('Delete')).lower()
-                err_list.append(str(_("%(cpt)s' is already %(publ_appr_cpt)s.") % {'cpt': score_exam_txt, 'publ_appr_cpt': submitted_approved_txt}))
-                err_list.append(str(_("You cannot %(ch_del)s %(cpt)s.") % {'ch_del': change_delete, 'cpt': score_exam_txt.lower()}))
+            # PR2023-05-25 skip when exam and saved exam are the same ( None == None gives True in Python)
+            if exam != saved_exam:
 
-            else:
-                # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again
-                db_field = 'ce_exam'
-                saved_exam = getattr(grade_instance, db_field)
+    # - validate if ce_exam is approved or submitted:
+                # ce_exam_auth1by is approval of exam (wolf)
+                # ce_auth1by is approval of score
+
+                ce_score_is_approved, ce_exam_is_submitted, ce_exam_is_approved = False, False, False
+
+            # - cannot change exam when ce_score_is_submitted
+                ce_score_is_submitted = getattr(grade_instance, 'ce_published') is not None
+                if not ce_score_is_submitted:
+                    ce_score_is_approved = get_ce_score_is_approved()
+
+            # - cannot change exam when ce_score_is_approved
+                if not ce_score_is_approved:
+                    ce_exam_is_submitted = getattr(grade_instance, 'ce_exam_published')
+
+            # - cannot change exam when Wolf-scores are submitted or (partly) approved
+                if not ce_exam_is_submitted:
+                    ce_exam_is_approved = get_ce_exam_is_approved()
+
                 if logging_on:
-                    logger.debug('     field:                  ' + str(field) + ' new_value: ' + str(new_value))
-                    logger.debug('     saved_exam:             ' + str(saved_exam) + ' ' + str(type(saved_exam)))
+                    logger.debug('....field: ' + str(field))
+                    logger.debug('    ce_score_is_approved: ' + str(ce_score_is_approved))
+                    logger.debug('    ce_score_is_submitted: ' + str(ce_score_is_submitted))
+                    logger.debug('    ce_exam_is_submitted: ' + str(ce_exam_is_submitted))
+                    logger.debug('    ce_exam_is_approved: ' + str(ce_exam_is_approved))
 
-                exam = None
-                if new_value:
-                    exam = subj_mod.Exam.objects.get_or_none(pk=new_value)
-                if logging_on:
-                    logger.debug('     exam:                   ' + str(exam) + ' ' + str(type(exam)))
+                if ce_score_is_submitted or ce_score_is_approved or ce_exam_is_submitted or ce_exam_is_approved:
+                    score_exam_txt = gettext('this CE score') if ce_score_is_submitted or ce_score_is_approved else gettext('this Wolf exam')
+                    score_exam_txt_capitalized = af.capitalize_first_char(score_exam_txt)
 
-                if exam:
-                    save_exam = (saved_exam is None) or (exam.pk != saved_exam.pk)
+                    submitted_approved_txt = gettext('Submitted') if ce_score_is_submitted or ce_score_is_approved else gettext('Approved')
+                    change_delete = str(_('Change') if new_value else _('Delete')).lower()
+                    err_list.append(str(_("%(cpt)s' is already %(publ_appr_cpt)s.") \
+                                        % {'cpt': score_exam_txt_capitalized,  'publ_appr_cpt': submitted_approved_txt.lower()}))
+                    err_list.append(str(_("You cannot %(ch_del)s %(cpt)s.") % {'ch_del': change_delete, 'cpt': score_exam_txt}))
+
                 else:
-                    save_exam = (saved_exam is not None)
+                    # has_changed is alreay checked above
+                    # save_exam = True
 
-                if logging_on:
-                    logger.debug('     save_exam:              ' + str(save_exam) + ' ' + str(type(save_exam)))
-
-                if save_exam:
                     setattr(grade_instance, db_field, exam)
-                    # reset ce_exam_ fields when exam_pk changes
+
+            # reset ce_exam_ fields when exam_pk changes
                     setattr(grade_instance, "ce_exam_blanks", None)
                     setattr(grade_instance, "ce_exam_result", None)
                     setattr(grade_instance, "ce_exam_score", None)
@@ -2960,6 +2974,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     # dont reset cescore cegrade
                     # was: setattr(grade_instance, "pescore", None)
                     # was: setattr(grade_instance, "cescore", None)
+
                     # but do reset cegrade, pecegrade, finalgrade
                     setattr(grade_instance, "cegrade", None)
                     setattr(grade_instance, "pecegrade", None)
@@ -2975,10 +2990,14 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
 # - save changes in field 'ce_exam_result', 'pe_exam_result'
         elif field in ('ce_exam_result', 'pe_exam_result'):
+
+            if logging_on:
+                logger.debug('....field: ' + str(field))
+                logger.debug('    new_value:   ' + str(new_value))
+
             saved_value = getattr(grade_instance, field)
             if logging_on:
-                logger.debug('     field:                  ' + str(field) + ' new_value: ' + str(new_value))
-                logger.debug('     saved_value:            ' + str(saved_value) + ' ' + str(type(saved_value)))
+                logger.debug('    saved_value: ' + str(saved_value))
 
     # 2. save changes if changed and no_error
             # always calculate and save result, to be on the safe side. Was: if new_value != saved_value:
@@ -3097,6 +3116,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
     return err_list
 # --- end of update_grade_instance
+
 
 def recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_value):
     # PR2022-06-23
@@ -3868,7 +3888,7 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
     #   they may not be downloaded by schools,
     #   to be 100% sure that the answers cannot be retrieved by a school.
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_with_exam_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))
@@ -4575,8 +4595,8 @@ def get_all_result_with_assignment_dict_CALC_SCORE_BLANKS(partex_str, assignment
 
 
 def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str, result_str):
-    # PR2022-01-29 PR2022-04-22 PR2022-05-14 PR2022-05-21
-    # called by draw_grade_exam
+    # PR2022-01-29 PR2022-04-22 PR2022-05-14 PR2022-05-21 PR2023-05-25
+    # called by  update_grade_instance, recalc_grade_ce_exam_score, draw_grade_exam
     #  ce_exam_result: "189;202#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3#4"
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -4685,10 +4705,11 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
             """
 
             this_partex_amount = 0
-            this_partex_entered_count = 0  # is_entered, ie score entered by school
             this_partex_maxscore = 0
             this_partex_total_score = 0
             this_partex_has_errors = False
+
+            this_partex_not_entered_count = 0
 
             this_partex_result_dict = {
                 'blanks': None,
@@ -4709,6 +4730,9 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
             if not this_partex_assignment_keys_dict:
                 this_partex_has_errors = True
                 total_error_list.append('no question found in this partial exam')
+
+                if logging_on:
+                    logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
             else:
                 name = this_partex_assignment_keys_dict.get('name')
                 this_partex_result_dict['name'] = name
@@ -4724,12 +4748,17 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
                         this_partex_result_dict['no_score'] = this_partex_no_score
                         total_no_score += this_partex_no_score
                         this_partex_has_errors = True
+                        if logging_on:
+                            logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
 
                     this_partex_no_key = this_partex_assignment_keys_dict.get('no_key')
                     if this_partex_no_key:
                         this_partex_result_dict['no_key'] = this_partex_no_key
                         total_no_key += this_partex_no_key
                         this_partex_has_errors = True
+
+                        if logging_on:
+                            logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
 
 # - add number of questions of this partex to total_amount
                     all_q_dict = this_partex_assignment_keys_dict.get('q')
@@ -4741,150 +4770,184 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
                             4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
                         """
 
-# +++  loop through all questions of this partex
+# ------------  loop through all questions of this partex
                     for q_number in range(1, this_partex_amount + 1):  # range(start_value, end_value, step), end_value is not included!
-                        q_result_str = partex_result_dict.get(q_number) if partex_result_dict else ''
+                        q_result_str = partex_result_dict.get(q_number) if partex_result_dict else None
 
                         q_dict = all_q_dict.get(q_number) or {}
+
                         """
                          q_dict: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}
                          q_result: a
                         """
 
                         if logging_on:
-                            logger.debug('- ' + str( q_number) + ':  q_dict: ' + str(q_dict))
+                            logger.debug(' ' + str( q_number) + ':  q_dict: ' + str(q_dict))
+                            logger.debug('      q_result_str: ' + str( q_result_str))
 
-                        q_score = None
+                        # PR2023-05-25 debug use boolean instead of this_partex_entered_count, this_partex_not_entered_count got value -1
+                        q_entered_by_school = False
+
+                        q_score = None  # note: q_score can be 0 when student has question wrong
                         q_is_multiple_choice = False
 
                         if not q_dict:
                             # error when there are no assignment for this q_number
                             total_error_list.append('no assignment for question ' + str(q_number))
                             this_partex_has_errors = True
+                            if logging_on:
+                                logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
 
                             if logging_on:
                                 logger.debug('      no assignment for question')
-
-                        elif not q_result_str:
-                            if logging_on:
-                                logger.debug('      not q_result_str')
-                            pass # is_not_entered, ie answer not entered by school
-                        elif q_result_str == 'x':
-                            # is_blank, ie question not answered by candidate
-                            this_partex_entered_count += 1 # count entered by school
-                            if logging_on:
-                                logger.debug('      this_partex_entered_count q=x: ' + str(this_partex_entered_count))
                         else:
-                            q_max_char = q_dict.get('max_char')
+
+                # - q_max_score_int
                             q_max_score = q_dict.get('max_score')
                             if logging_on:
                                 logger.debug('      q_max_score: ' + str(q_max_score))
 
                             try:
                                 q_max_score_int = int(q_max_score) if q_max_score else None
-                                if logging_on:
-                                    logger.debug('      q_max_score_int: ' + str(q_max_score_int))
                             except:
                                 q_max_score_int = None
                                 this_partex_has_errors = True
-
-                                total_error_list.append('q_max_score_int is not an integer. q_max_score: ' + str(q_max_score))
                                 if logging_on:
-                                    logger.debug('      q_max_score_int is not an integer. q_max_score: ' + str(q_max_score))
+                                    logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
 
-                            # min_score = int(q_dict.get('min_score', 0))
-                            q_keys = q_dict.get('keys')
-                            if logging_on:
-                                logger.debug('      q_dict: ' + str(q_dict))
-                                logger.debug('      q_keys: ' + str(q_keys))
-                                logger.debug('      q_max_char:  ' + str(q_max_char))
-
-        # if max_char has value, it is a multiplechoice question
-                            if q_max_char:
-                                q_is_multiple_choice = True
+                                total_error_list.append(
+                                    'q_max_score_int is not an integer. q_max_score: ' + str(q_max_score))
                                 if logging_on:
-                                    logger.debug('      q_is_multiple_choice: ' + str(q_is_multiple_choice) )
-
-                                if not q_keys:
-                                    this_partex_has_errors = True
-                                    total_error_list.append('no keys in mc question ' + str(q_number))
-                                    if logging_on:
-                                        logger.debug('      no keys in mc question')
-                                else:
-                                    q_max_char_lc = q_max_char.lower()
-                                    q_result_lc = q_result_str.lower()
-                                    # The ord() function returns an integer representing the Unicode character.
-                                    q_result_ord = ord(q_result_lc)
-                                    if not (ord('a') <= q_result_ord <= ord('w')) :
-                                        this_partex_has_errors = True
-                                        total_error_list.append('not a <= q_result <= w')
-                                        if logging_on:
-                                            logger.debug('      not a <= q_result <= w')
-                                    elif q_result_ord > ord(q_max_char_lc):
-                                        this_partex_has_errors = True
-                                        total_error_list.append('q_result > q_max_char)')
-                                        if logging_on:
-                                            logger.debug('      q_result > q_max_char)')
-                                    else:
-                                        this_partex_entered_count += 1  # count entered by school
-
-                                        # q_max_score may be > 1, default = 1 when not entered
-                                        if not q_max_score_int:
-                                            q_max_score_int = 1
-
-                                        this_partex_maxscore += q_max_score_int
-
-                                        # answer is correct if result_str is in q_keys
-                                        # q_keys may contain multiple characters: 'ac'
-                                        if q_result_str in q_keys:
-                                            q_score = q_max_score_int
-                                        else:
-                                            q_score = 0
-
-                            else:
-                                if logging_on:
-                                    logger.debug('      q_is_multiple_choice: ' + str(False) )
-
+                                    logger.debug(
+                                        '      q_max_score_int is not an integer. q_max_score: ' + str(q_max_score))
+                            if q_max_score_int:
                                 this_partex_maxscore += q_max_score_int
 
-                                # q_result can be '0' or even 'b' (should not be possible)
-                                try:
-                                    if logging_on:
-                                        logger.debug('      q_result_str: ' + str(q_result_str))
-                                    q_result_int = int(q_result_str)
-                                    if logging_on:
-                                        logger.debug('      q_result_int(' + str(q_result_int) + ')')
-                                except:
-                                    this_partex_has_errors = True
-                                    total_error_list.append('q_result_int is not an integer. q_result_str: ' + str(q_result_str))
-                                    if logging_on:
-                                        logger.debug('      q_result_int is not an integer. q_result_str: ' + str(q_result_str))
-                                else:
-                                    if q_result_int > q_max_score_int:
-                                        this_partex_has_errors = True
-                                        total_error_list.append('score exceeds max_score in question ' + str(q_number))
-                                    elif q_result_int < 0:
-                                        this_partex_has_errors = True
-                                        total_error_list.append('score is fewer than zero in question ' + str(q_number))
-                                    else:
-                                        this_partex_entered_count += 1  # count entered by school
+                            if not q_result_str:
+                                if logging_on:
+                                    logger.debug('      q_result_str is None')
+                                pass # is_not_entered, ie answer not entered by school
 
-                                        q_score = q_result_int
+                            elif q_result_str == 'x':
+                                # when a student does not answer a question or has mutiple answers in multiple choice the school enters 'x'
+                                    # it is counted as q_entered_by_school
+                                    q_entered_by_school = True
+                                    if logging_on:
+                                        logger.debug('      q_entered_by_school q=x: ' + str(q_entered_by_school))
+
+                            else:
+                                q_max_char = q_dict.get('max_char')
+
+                                # min_score = int(q_dict.get('min_score', 0))
+                                q_keys = q_dict.get('keys')
+                                if logging_on:
+                                    logger.debug('      q_max_score_int: ' + str(q_max_score_int))
+                                    logger.debug('      q_keys: ' + str(q_keys))
+                                    logger.debug('      q_max_char:  ' + str(q_max_char))
+
+            # if max_char has value, it is a multiplechoice question
+                                if q_max_char:
+                                    q_is_multiple_choice = True
+                                    if logging_on:
+                                        logger.debug('      q_is_multiple_choice: ' + str(q_is_multiple_choice) )
+
+                                    if not q_keys:
+                                        this_partex_has_errors = True
+                                        total_error_list.append('no keys in mc question ' + str(q_number))
+
                                         if logging_on:
-                                            logger.debug(
-                                                ' - ' + str(q_number) + ':  q_score = q_result_int')
+                                            logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
+                                            logger.debug('      no keys in mc question')
+                                    else:
+                                        q_max_char_lc = q_max_char.lower()
+                                        q_result_lc = q_result_str.lower()
+                                        # The ord() function returns an integer representing the Unicode character.
+                                        q_result_ord = ord(q_result_lc)
+                                        if not (ord('a') <= q_result_ord <= ord('w')) :
+                                            this_partex_has_errors = True
+                                            total_error_list.append('not a <= q_result <= w')
+
+                                            if logging_on:
+                                                logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
+                                                logger.debug('      not a <= q_result <= w')
+
+                                        elif q_result_ord > ord(q_max_char_lc):
+                                            this_partex_has_errors = True
+                                            total_error_list.append('q_result > q_max_char)')
+
+                                            if logging_on:
+                                                logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
+                                                logger.debug('      q_result > q_max_char)')
+                                        else:
+                                            q_entered_by_school = True
+
+                                            # q_max_score may be > 1, default = 1 when not entered
+                                            if not q_max_score_int:
+                                                q_max_score_int = 1
+
+                                            # answer is correct if result_str is in q_keys
+                                            # q_keys may contain multiple characters: 'ac'
+                                            if q_result_str in q_keys:
+                                                q_score = q_max_score_int
+                                            else:
+                                                q_score = 0
+
+                                else:
+            # if max_char has no value, it is not a multiplechoice question
+                                    if logging_on:
+                                        logger.debug('      q is not a multiple_choice ')
+
+                                    # q_result can be '0' or even 'b' (should not be possible)
+                                    try:
+                                        q_result_int = int(q_result_str)
+
+                                    except:
+                                        this_partex_has_errors = True
+                                        total_error_list.append('q_result_int is not an integer. q_result_str: ' + str(q_result_str))
+
                                         if logging_on:
-                                            logger.debug('      q_score = ' + str(q_result_int))
+                                            logger.debug(' >> this_partex_has_errors: ' + str(this_partex_has_errors))
+                                            logger.debug('      q_result_int is not an integer: ' + str(q_result_str))
+                                    else:
+                                        if logging_on:
+                                            logger.debug('      q_result_str: ' + str(q_result_str))
+
+                                        if q_result_int > q_max_score_int:
+                                            this_partex_has_errors = True
+                                            total_error_list.append('score exceeds max_score in question ' + str(q_number))
+                                            if logging_on:
+                                                logger.debug(' >> score exceeds max_score in question: ' + str(q_result_int))
+
+                                        elif q_result_int < 0:
+                                            this_partex_has_errors = True
+                                            total_error_list.append('score is fewer than zero in question ' + str(q_number))
+
+                                            if logging_on:
+                                                logger.debug(' >> score is fewer than zero in question: ' + str(q_number))
+                                        else:
+                                            q_entered_by_school = True
+
+                                            q_score = q_result_int
+                                            if logging_on:
+                                                logger.debug('      q_score = q_result_int')
+                                            if logging_on:
+                                                logger.debug('      q_score = ' + str(q_result_int))
 
                         if logging_on:
-                            logger.debug('      this_partex_entered_count: ' + str(this_partex_entered_count) )
-                            logger.debug('      this_partex_maxscore: ' + str(this_partex_maxscore) )
+                            logger.debug('      q_entered_by_school: ' + str(q_entered_by_school) )
+                            logger.debug('      this_partex_total_score: ' + str(this_partex_total_score) )
 
             # add score to this_partex_total_score
                         if q_score is not None:
                             this_partex_total_score += q_score
 
+                        if not q_entered_by_school:
+                            this_partex_not_entered_count += 1
+
             # put score in 's' dict, when score has value. Skip None and 0
+                        # 's': dict = score: contains integer, 0 or None
+                        # 'q' dict = display value: contains integer, 0, letter or 'x'
+                        # 'm': dict = multiple choice list
                         if q_score:
                             this_partex_result_dict['s'][q_number] = str(q_score)
 
@@ -4893,16 +4956,19 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
 
                         if q_is_multiple_choice:
                             this_partex_result_dict['m'].append(q_number)
-    # +++  end of loop through all questions of this partex
 
-            this_partex_not_entered_count = (this_partex_amount - this_partex_entered_count)
+# ------------  end of loop through all questions of this partex
 
+
+            # this_partex_not_entered_count = (this_partex_amount - this_partex_entered_count)
 
             if logging_on:
                 logger.debug(' > this_partex_amount: ' + str(this_partex_amount))
-                logger.debug(' > this_partex_entered_count: ' + str(this_partex_entered_count))
                 logger.debug(' > this_partex_not_entered_count: ' + str(this_partex_not_entered_count))
                 logger.debug(' > this_partex_maxscore: ' + str(this_partex_maxscore))
+                logger.debug(' > this_partex_total_score: ' + str(this_partex_total_score))
+                logger.debug(' > this_partex_has_errors: ' + str(this_partex_has_errors))
+                logger.debug(' > this_partex_not_entered_count: ' + str(this_partex_not_entered_count))
 
             if this_partex_has_errors:
                 total_has_errors = True
@@ -4941,6 +5007,10 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
         assignment_with_results_return_dict['errors'] = total_error_list
 
     if logging_on:
+        logger.debug('total_max_score: ' + str(total_max_score))
+        logger.debug('total_score: ' + str(total_score))
+        logger.debug('total_has_errors: ' + str(total_has_errors))
+        logger.debug('total_blanks: ' + str(total_blanks))
         logger.debug('assignment_with_results_return_dict: ' + str(assignment_with_results_return_dict))
 
     """       
@@ -4993,11 +5063,7 @@ assignment_with_results_return_dict: {
 'name': 'Minitoets 4 ROOD onderdeel D', 'amount': 8, 'max_score': 8, 'score': 4}}, 
 
 'amount': 39, 'blanks': 1, 'max_score': 109, 'score': None, 'no_score': 0, 'no_key': 0, 'errors': ['error q_result_int = int(a)']}
-
-                
-                
-                
-                  
+           
     """
     return assignment_with_results_return_dict, total_amount, total_max_score, total_score, total_blanks, total_no_score, total_no_key
 # - end of get_grade_assignment_with_results_dict

@@ -1309,9 +1309,6 @@ def update_library_in_awpr_lib(examyear, request):
 # -end of reset_show_msg
 
 
-
-
-
 def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
     # function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
     logging_on = False  # s.LOGGING_ON
@@ -3041,6 +3038,14 @@ def get_country_instance_by_abbrev(abbrev):
             logger.error(getattr(e, 'message', str(e)))
     return country
 # - end of get_country_instance_by_abbrev
+
+
+def capitalize_first_char(text):
+    # PR2023-05-25
+    capitalized_first_char = ''
+    if text:
+        capitalized_first_char = text[:1].upper() + text[1:]
+    return capitalized_first_char
 
 
 def transfer_depbases_from_array_to_string():

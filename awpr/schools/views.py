@@ -1537,7 +1537,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, body_txt, requ
             don't add attachments to notification email
             mailattachments = sch_mod.Mailattachment.objects.filter(mailmessage=mailmessage_instance)
             """
-
+            has_mailattachments = sch_mod.Mailattachment.objects.filter(mailmessage=mailmessage_instance)
             for sb_pk, sb_dict in userlist_dict.items():
                 if isinstance(sb_pk, int):
                     schoolcode = (sb_dict.get('schoolcode', '-') + c.STRING_SPACE_10)[:10]

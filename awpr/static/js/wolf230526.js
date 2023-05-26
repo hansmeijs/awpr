@@ -280,10 +280,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  SIDEBAR ------------------------------------
         // el_SBR_select_examperiod only exists when not is_requsr_same_school
-        const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
-        if (el_SBR_select_examperiod){
-            el_SBR_select_examperiod.addEventListener("change", function() {HandleSbrPeriod(el_SBR_select_examperiod)}, false );
-        };
+        //const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
+        //if (el_SBR_select_examperiod){
+        //    el_SBR_select_examperiod.addEventListener("change", function() {HandleSbrPeriod(el_SBR_select_examperiod)}, false );
+        //};
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         if (el_SBR_select_level){
             el_SBR_select_level.addEventListener("change", function() {HandleSbrLevel(el_SBR_select_level)}, false );
@@ -642,7 +642,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if(must_update_headerbar){
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
-                    FillOptionsExamperiod();
+                    //FillOptionsExamperiod();
                 };
                 if ("messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
@@ -733,7 +733,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if (permit_dict.permit_approve_exam ){
                 AddSubmenuButton(el_submenu, loc.Approve_wolf_exams, function() {MASE_Open("approve_school")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
             };
-            if (permit_dict.permit_submit_exam ){
+            if (permit_dict.permit_submit_exam){
                 AddSubmenuButton(el_submenu, loc.Submit_wolf_exams, function() {MASE_Open("submit_school")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
                 AddSubmenuButton(el_submenu, loc.Undo_submitted, function() {ModConfirmOpen("undo_submitted")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
 
@@ -915,6 +915,7 @@ document.addEventListener("DOMContentLoaded", function() {
     };  // HandleSbrLevel
 
 //=========  FillOptionsExamperiod  ================ PR2021-03-08 PR2022-02-20
+/*
     function FillOptionsExamperiod() {
         //console.log("=== FillOptionsExamperiod");
         //console.log("el_SBR_select_examperiod", el_SBR_select_examperiod);
@@ -945,7 +946,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }  //  if (is_permit_same_school)
         };
     };  // FillOptionsExamperiod
-
+*/
 
 //========= UpdateHeaderLeftRight  ================== PR2021-03-14 PR2022-01-17 PR2022-08-28
     function UpdateHeaderLeftRight(skip_upload){
@@ -1658,7 +1659,6 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log( " ==== HandleToggleApprove ====");
         // called by field "status' in table  "grades"
 
-
         const permit_auth_list = b_get_multiple_auth_index_of_requsr(permit_dict)
         // permit_auth_list (5) [null, 0, 0, 0, 1]
         const is_auth1 = permit_auth_list[1]
@@ -1667,7 +1667,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 b_show_mod_message_html(loc.corrector_cannot_approve_wolf);
             };
         } else {
-            console.log( "    permit_auth_list", permit_auth_list);
+    //console.log( "    permit_auth_list", permit_auth_list);
             const requsr_auth_index = setting_dict.sel_auth_index;
             // if requsr_auth_index does not exist or is not in permit_auth_list:
             // make first available auth the requsr_auth_index;
@@ -1681,15 +1681,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
             };
 
-            console.log( "    requsr_auth_index", requsr_auth_index);
+    // console.log( "    requsr_auth_index", requsr_auth_index);
 
             if(permit_dict.requsr_same_school && permit_dict.permit_approve_exam){
-
 
         // ---  lookup exam_dict in ete_exam_rows or in grade_exam_rows
                 const data_dict = get_datadict_from_table_element(tblName, el_input)
 
-            console.log( "    data_dict", data_dict);
+    console.log( "    data_dict", data_dict);
                 if (!isEmpty(data_dict)){
 
     // - get info of this grade
@@ -1732,7 +1731,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             b_show_mod_message_html(msg_html);
                         } else {
             // ---  toggle value of auth_bool_at_index
-                            let new_is_approved = false;
+                            let new_is_approved = null;
                             if (requsr_auth_index === 1) {
                                 auth1by_id = (!old_is_approved) ? permit_dict.requsr_pk : null;
                                 new_is_approved = !!auth1by_id;
@@ -1743,64 +1742,65 @@ document.addEventListener("DOMContentLoaded", function() {
                             } else if (requsr_auth_index === 3) {
                                 auth3by_id = (!old_is_approved) ? permit_dict.requsr_pk : null;
                                 new_is_approved = !!auth3by_id;
-
-                            }
-                        console.log( "new_is_approved", new_is_approved);
-
-            // give message when status_bool = true and exam already approved by this user in different function
-                            // may approve as examiner + chairperson / secretary
-                            let double_approved = false;
-                            if (new_is_approved){
-                                if (requsr_auth_index === 1){
-                                    double_approved = (auth2by_id === permit_dict.requsr_pk);
-                                } else if (requsr_auth_index === 2){
-                                    double_approved = (auth1by_id === permit_dict.requsr_pk);
-                                };
                             };
-                            if (double_approved) {
-                                const msg_html = loc.err_list.Approved_different_function + "<br>" + loc.err_list.You_cannot_approve_again;
-                                b_show_mod_message_html(msg_html);
-                            } else {
+                        console.log( "new_is_approved", new_is_approved);
+                            if (new_is_approved !== null){
 
-            // ---  change icon, before uploading
-                                el_input.className = f_get_status_auth123_iconclass(is_published, false, auth1by_id, auth2by_id, auth3by_id);
-
-            // ---  upload changes
-                                const url_str = (tblName === "grades") ? urls.url_grade_upload : urls.url_exam_upload;
-                                // value of 'mode' determines if status is set to 'approved' or 'not
-                                // instead of using value of new_is_approved,
-                                const mode = "update"  // : "approve_reset"
-
-                                if (tblName === "grades") {
-                                    const upload_dict = { table: tblName,
-                                        page: 'page_wolf',
-                                       mode: mode,
-                                       grade_pk: data_dict.id,
-                                       //PR2023-05-16 debug. don't send exam_pk, gives err_msg
-                                       // was: exam_pk: data_dict.ce_exam_id,
-                                       //       examperiod: data_dict.examperiod,
-                                       student_pk: data_dict.student_id,
-                                       auth_index: requsr_auth_index,
-                                       auth_bool_at_index: new_is_approved,
-                                       return_grades_with_exam: true
+                // give message when status_bool = true and exam already approved by this user in different function
+                                // may approve as examiner + chairperson / secretary
+                                let double_approved = false;
+                                if (new_is_approved){
+                                    if (requsr_auth_index === 1){
+                                        double_approved = (auth2by_id === permit_dict.requsr_pk);
+                                    } else if (requsr_auth_index === 2){
+                                        double_approved = (auth1by_id === permit_dict.requsr_pk);
                                     };
-                                    UploadChanges(upload_dict, url_str);
-                                } else {
-                                    const upload_dict = { table: tblName,
-                                                           page: 'page_wolf',
-                                                           mode: mode,
-                                                           examyear_pk: data_dict.ey_id,
-                                                           depbase_pk: data_dict.depbase_id,
-                                                           lvlbase_pk: data_dict.lvlbase_id,
-                                                           exam_pk: data_dict.id,
-                                                           subject_pk: data_dict.subj_id,
-                                                           auth_index: requsr_auth_index,
-                                                           auth_bool_at_index: new_is_approved,
-                                                           };
-                                    //UploadChanges(upload_dict, url_str);
                                 };
-                            }; //  if (double_approved))
+                                if (double_approved) {
+                                    const msg_html = loc.err_list.Approved_different_function + "<br>" + loc.err_list.You_cannot_approve_again;
+                                    b_show_mod_message_html(msg_html);
+                                } else {
 
+                // ---  change icon, before uploading
+                                    el_input.className = f_get_status_auth123_iconclass(is_published, false, auth1by_id, auth2by_id, auth3by_id);
+
+                // ---  upload changes
+                                    //const url_str = (tblName === "grades") ? urls.url_grade_upload : urls.url_exam_upload;
+                                    const url_str = urls.url_approve_submit_wolf;
+                                    // value of 'mode' determines if status is set to 'approved' or 'not
+                                    // instead of using value of new_is_approved,
+                                    const mode = (new_is_approved) ? "approve_save" : "approve_reset";
+
+                                    if (tblName === "grades") {
+                                        const upload_dict = { table: tblName,
+                                            page: 'page_wolf',
+                                           mode: mode,
+                                           grade_pk: data_dict.id,
+                                           //PR2023-05-16 debug. don't send exam_pk, gives err_msg
+                                           // was: exam_pk: data_dict.ce_exam_id,
+                                           //       examperiod: data_dict.examperiod,
+                                           student_pk: data_dict.student_id,
+                                           auth_index: requsr_auth_index,
+                                           auth_bool_at_index: new_is_approved,
+                                           return_grades_with_exam: true
+                                        };
+                                        UploadChanges(upload_dict, url_str);
+                                    } else {
+                                        const upload_dict = { table: tblName,
+                                                               page: 'page_wolf',
+                                                               mode: mode,
+                                                               examyear_pk: data_dict.ey_id,
+                                                               depbase_pk: data_dict.depbase_id,
+                                                               lvlbase_pk: data_dict.lvlbase_id,
+                                                               exam_pk: data_dict.id,
+                                                               subject_pk: data_dict.subj_id,
+                                                               auth_index: requsr_auth_index,
+                                                               auth_bool_at_index: new_is_approved,
+                                                               };
+                                        //UploadChanges(upload_dict, url_str);
+                                    };
+                                }; //  if (double_approved))
+                            };
                         };  // if (is_published)
 
                         mod_dict = {};
@@ -1954,6 +1954,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
+        console.log("field_names", field_names);
 
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
@@ -1971,7 +1972,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     error_columns.push(err_field);
                 };
             };
-        //console.log("error_columns", error_columns);
+        console.log("error_columns", error_columns);
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -1992,6 +1993,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         // cannot delete rows
                     } else {
 
+        console.log("data_dict", data_dict);
 // ++++ updated row +++++++++++
         // loop through fields of update_dict, check which fields are updated, add to list 'updated_columns'
 
@@ -2016,10 +2018,12 @@ document.addEventListener("DOMContentLoaded", function() {
     // ---  add field 'status' to updated_columns when value has changed
                         const [old_status_className, old_status_title] = UpdateFieldStatus(tblName, data_dict);
                         const [new_status_className, new_status_title] = UpdateFieldStatus(tblName, update_dict);
+
                         if (old_status_className !== new_status_className || old_status_title !== new_status_title ) {
                             updated_columns.push("status");
                         };
 
+        console.log("update_dict", update_dict);
     // ---  loop through fields of update_dict
                         for (const [key, new_value] of Object.entries(update_dict)) {
                             if (key in data_dict){
@@ -2040,12 +2044,12 @@ document.addEventListener("DOMContentLoaded", function() {
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-                        if(updated_columns.length){
+                        if((updated_columns && updated_columns.length) || (error_columns && error_columns.length)){
 
     // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
-        //console.log("tblRow", tblRow);
-        //console.log("updated_columns", updated_columns);
+        console.log("   tblRow", tblRow);
+        console.log("    updated_columns", updated_columns);
                             if(tblRow){
 
     // - to make it perfect: move row when first or last name have changed
@@ -2064,6 +2068,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                         const is_updated_field = updated_columns.includes(el_fldName);
                                         const is_err_field = error_columns.includes(el_fldName);
 
+        console.log("    el_fldName", el_fldName);
+        console.log("    error_columns", error_columns);
+        console.log("  >>> is_err_field", is_err_field);
+
     // - update field and make field green when field name is in updated_columns
                                         if(is_updated_field){
                                             UpdateField(tblName, el, update_dict);
@@ -2071,6 +2079,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                         };
                                         if(is_err_field){
     // - make field red when error and reset old value after 2 seconds
+                                            const tobedeleted = false;
                                             reset_element_with_errorclass(tblName, el, update_dict, tobedeleted)
                                         };
                                     }  // if (el)
@@ -2267,6 +2276,10 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  reset_element_with_errorclass  ================ PR2022-05-07
     function reset_element_with_errorclass(tblName, el_input, update_dict) {
         // make field red when error and reset old value after 2 seconds
+
+        console.log( "===== reset_element_with_errorclass  ========= ");
+        console.log( "el_input", el_input);
+
         const err_class = "border_bg_invalid";
         el_input.classList.add(err_class);
         setTimeout(function (){
@@ -5157,7 +5170,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 // reset sel_auth_index when user has no auth
                 setting_dict.sel_auth_index = null;
             };
-            console.log("setting_dict.sel_auth_index", setting_dict.sel_auth_index) ;
+ console.log("setting_dict.sel_auth_index", setting_dict.sel_auth_index) ;
 
 // hide cluster and function in is_copy_scores
             add_or_remove_class(el_MASE_examperiod.parentNode, cls_hide, is_copy_scores);
@@ -5180,7 +5193,7 @@ document.addEventListener("DOMContentLoaded", function() {
             mod_MASE_dict.is_reset = false;
 
 // get has_permit
-            mod_MASE_dict.has_permit = (is_copy_scores) ? (permit_dict.requsr_same_school && permit_dict.permit_crud) :
+            mod_MASE_dict.has_permit = (is_copy_scores) ? (permit_dict.requsr_same_school && mod_MASE_dict.auth_index && permit_dict.permit_submit_exam) :
                                        (is_approve_mode) ? (permit_dict.requsr_same_school && mod_MASE_dict.auth_index && permit_dict.permit_approve_exam) :
                                        (is_submit_mode) ? (permit_dict.requsr_same_school && mod_MASE_dict.auth_index && permit_dict.permit_submit_exam)
                                         : false;
@@ -5685,7 +5698,7 @@ document.addEventListener("DOMContentLoaded", function() {
         let header_text = null;
         let btn_save_txt = loc.Save, btn_cancel_txt = loc.Cancel;
 
-        if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
+        if (permit_dict.permit_submit_exam && permit_dict.requsr_same_school) {
             if (mode === "copy_scores"){
                 mod_dict.show_modal = true;
 
@@ -5803,7 +5816,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("mod_dict: ", mod_dict);
 
         mod_dict.dont_hide_modal = mod_dict.is_test;
-        if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
+        if (permit_dict.permit_submit_exam && permit_dict.requsr_same_school) {
 
             console.log("mod_dict.mode: ", mod_dict.mode);
             add_or_remove_class(el_confirm_loader, cls_hide, false);
@@ -5815,7 +5828,7 @@ document.addEventListener("DOMContentLoaded", function() {
             } else if (mod_dict.mode === "undo_submitted"){
                 upload_dict = { table: "grades",
                                    page: 'page_wolf',
-                                   mode: "update",
+                                   mode: mod_dict.mode,
                                    grade_pk: mod_dict.grade_pk,
                                    examyear_pk: mod_dict.examyear_pk,
                                    subject_pk: mod_dict.subject_pk,

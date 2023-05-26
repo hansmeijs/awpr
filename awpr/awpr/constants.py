@@ -555,6 +555,13 @@ USERGROUP_CAPTION = {
 }
 
 
+AUTH_CAPTION = {
+    1: _('Chairperson'),
+    2: _('Secretary'),
+    3: _('Examiner'),
+    4: _('Second corrector')
+}
+
 MAILBOX_USERGROUPS = {
     USERGROUP_AUTH1_PRES: _('Chairperson'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
