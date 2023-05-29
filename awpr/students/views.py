@@ -3846,7 +3846,10 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
                 # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
                         if show_msg_first_approve_by_pres_secr:
-                            msg_txt = ''.join(('<div>', str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') % {'cpt': subjects_txt, 'frm': form_txt}   ), '</div>'))
+                            msg_txt = ''.join(('<div>',
+                                str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') \
+                                    % {'cpt': subjects_txt, 'frm': form_txt}),
+                                '</div>'))
                             msg_list.append(msg_txt)
 
                         if student_composition_error_count:
@@ -3965,7 +3968,8 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                         "<br>",
                         msg_txt,
                        "</p><p class='pb-2'>",
-                        str(_('The chairperson and the secretary must approve all subjects before you can submit the Ex1 form.')),
+                        str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') \
+                            % {'cpt': _('subjects'), 'frm': form_txt}),
                        "</p>"
                     ))
 
@@ -3997,7 +4001,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                 '<p>',
                                 str(_("The %(frm)s form can not be submitted.") % {'frm': form_txt}),
                                 "</p><p>",
-                                str(_('The chairperson and the secretary must approve all subjects before you can submit the Ex1 form.')),
+                                str(_(
+                                    'The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') \
+                                    % {'cpt': _('subjects'), 'frm': form_txt}),
                                 "</p>"
                             ))
                             msg_list.append(msg_str)
@@ -4056,19 +4062,11 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 
-
-#######################################
-
         msg_list.append('</div>')
-
-
         if logging_on:
             logger.debug('   msg_list: ' + str(msg_list))
 
         msg_html = ''.join(msg_list)
-
-        if logging_on:
-            logger.debug('    msg_html: ' + str(msg_html))
 
         return msg_html
 # - end of create_ex1_ex4_msg_list
@@ -5770,7 +5768,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             # - recalc max_ etc in studsubj
             # - recalc result in student
 
-            must_add_delete_exem_reex_reex03 = False
+            must_add_or_delete_exem_reex_reex03 = False
 
 # +++++ add exemption, reex, reex03
             if new_value:
@@ -5793,7 +5791,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
-                        must_add_delete_exem_reex_reex03 = True
+                        must_add_or_delete_exem_reex_reex03 = True
                         if logging_on:
                             logger.debug(' add reex, field: ' + str(field) + ' ' + str(new_value))
 
@@ -5831,7 +5829,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
-                        must_add_delete_exem_reex_reex03 = True
+                        must_add_or_delete_exem_reex_reex03 = True
                         if logging_on:
                             logger.debug(' removed reex, field: ' + str(field) + ' new_value: ' + str(new_value))
 
@@ -5841,7 +5839,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
 # --- add exem, reex, reex03 grade or make grade 'tobedeleted'
             # when adding: also put values of segrade, srgrade and pegrade in new grade_instance
-            if must_add_delete_exem_reex_reex03:
+            if must_add_or_delete_exem_reex_reex03:
                 err_list = add_or_delete_grade_exem_reex_reex03( field, studsubj_instance, new_value, request)
                 if logging_on:
                     logger.debug('  err_list:     ' + str(err_list))
@@ -6001,15 +5999,17 @@ def update_student_subj_composition(student_instance):
 # --- end of update_student_subj_composition
 
 
-def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, request):  # PR2021-12-15
+def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, request):  # PR2021-12-15 PR2023-05-27
     # fields are 'has_exemption', 'has_reex', 'has_reex03'
     # when new_value = True: add or undelete grade
     # when new_value = False: make grade 'tobedeleted', remove all values if allowed
 
+    # PR2023-05-27 add exam if only one published exam
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_or_delete_grade_exem_reex_reex03 -------')
         logger.debug('     field: ' + str(field))
+
     exam_period = None
     if field == 'has_exemption':
         exam_period = c.EXAMPERIOD_EXEMPTION
@@ -6026,6 +6026,11 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
 
     try:
         save_changes = False
+
+# if new_value = True: check if reex / reex03 has only one exam
+        ce_exam = None
+        if new_value:
+            ce_exam = get_exam_if_only_one_available_from_studsubj(studsubj_instance, exam_period)
 
 # - check if grade of this exam_period exists
         # Note: don't use get_or_none, returns None when multiple records exists and therefore will add another one
@@ -6050,16 +6055,25 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
                 # TODO PR2023-01-23 replace grade 'tobedeleted' by  grade 'deleted', let 'tobedeleted' stay for now
                 setattr(grade, 'tobedeleted', False)
                 setattr(grade, 'deleted', False)
+                # when deleting grade, ce_exam info is erased. Add exam if found
+                setattr(grade, 'ce_exam', ce_exam)
+
+                ce_exam = ce_exam
+
                 if logging_on:
                     logger.debug('     grade deleted: ' + str(grade.deleted))
             else:
         # - if grade does not exist: create new grade row
                 grade = stud_mod.Grade(
                     studentsubject=studsubj_instance,
-                    examperiod=exam_period)
+                    examperiod=exam_period,
+                    # add ce_exam if found
+                    ce_exam=ce_exam
+                )
 
                 if logging_on:
                     logger.debug('     grade new: ' + str(exam_period))
+
     # if 2nd or 3rd period: get se sr pe from first period and put them in new grade
             # PR2022-01-05 dont save se, sr, pe in reex reex03 any more
             # PR2022-05-29 changed my mind: due to batch update needs those grades in reex_grade to calc final grade
@@ -6103,6 +6117,150 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
 
     return err_list
 # --- end of add_or_delete_grade_exem_reex_reex03
+
+
+def get_exam_if_only_one_available_from_studsubj(studsubj_instance, examperiod):
+    # PR2022-08-26 PR2023-05-27
+    # this function counts number of exams of this subject / dep / level / examperiod
+
+    # - skip when there is more than 1 exam for this subject / dep / level / examperiod
+    # in SXM subject may have ETE exams (ey=cur) and DUO examns (ey=sxm) How to deal with this?
+    # - first check number of exams both in cur and sxm (filter by ey_code)
+    # if only 1 exists: get that one
+    # - if multiple exist: check number of exams in this country, if 1 exists: get that one
+    # - when sxm has not his own exam,
+
+    # PR2023-05-27 add exam if only one published exam
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_exam_if_only_one_available_from_studsubj -------')
+        logger.debug('     studsubj_instance: ' + str(studsubj_instance))
+        logger.debug('     examperiod: ' + str(examperiod))
+
+    def get_studsubj_info():
+        studsub_sql = ' '.join((
+            "SELECT dep.base_id, lvl.base_id, subj.base_id, dep.examyear_id, ey.code",
+            "FROM students_studentsubject AS studsub",
+            "INNER JOIN subjects_schemeitem AS si ON (si.id = studsub.schemeitem_id)",
+            "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+            "WHERE studsub.id =", str(studsubj_instance.pk), "::INT"
+        ))
+
+        with connection.cursor() as cursor:
+            cursor.execute(studsub_sql)
+            row = cursor.fetchone()
+            if row:
+                # depbase_id, lvlbase_id, subjbase_id, ey_id, ey_code
+                return row[0], row[1], row[2], row[3], row[4]
+            else:
+                return None, None, None, None, None
+
+    def get_exam_if_only_one_available(ey_pk, ey_code, examperiod, depbase_id, lvlbase_id, subjbase_id, get_from_all_countries):
+        # PR2023-05-27 add exam if only one published exam
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ......... get_exam_if_only_one_available .........')
+            logger.debug('     get_from_all_countries: ' + str(get_from_all_countries))
+
+        exams_found = False
+        exam_id = None
+
+        sql_list = [
+            "SELECT exam.id",
+            "FROM subjects_exam AS exam",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+
+            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+
+            "WHERE dep.base_id =", str(depbase_id), "::INT",
+            "AND subj.base_id =", str(subjbase_id), "::INT",
+            "AND exam.examperiod =", str(examperiod), "::INT",
+        ]
+
+        if lvlbase_id:
+            sql_list.extend(("AND lvl.base_id =", str(lvlbase_id), "::INT"))
+
+        if get_from_all_countries:
+            # when all_countries: only get published ETE exams
+            sql_list.extend((
+                "AND ey.code =", str(ey_code), "::INT",
+                "AND (exam.published_id IS NOT NULL AND exam.ete_exam)"
+            ))
+        else:
+            # when only this country: get CVTE exams + published ETE exams
+            sql_list.extend((
+                "AND ey.id =", str(ey_pk), "::INT",
+                "AND (exam.published_id IS NOT NULL OR NOT exam.ete_exam)"
+            ))
+
+        sql = ' '.join(sql_list)
+
+        if logging_on:
+            logger.debug('     sql: ' + str(sql))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+
+            if logging_on:
+                logger.debug('     len(rows): ' + str(len(rows)))
+
+            # when there is only one exam: take that one (can be from this country or other country (when sxm has ETE exam)
+            if rows:
+                exams_found = True
+                if len(rows) == 1:
+                    exam_id = rows[0][0]
+
+                if logging_on:
+                    for row in rows:
+                        logger.debug('  > : ' + str(row))
+
+        return exams_found, exam_id
+# - end of get_exam_if_only_one_available
+
+# - get studsubj info
+    depbase_id, lvlbase_id, subjbase_id, ey_pk, ey_code = get_studsubj_info()
+
+    if logging_on:
+        logger.debug('     depbase_id: ' + str(depbase_id))
+        logger.debug('     lvlbase_id: ' + str(lvlbase_id))
+        logger.debug('     subjbase_id: ' + str(subjbase_id))
+        logger.debug('     ey_pk: ' + str(ey_pk))
+        logger.debug('     ey_code: ' + str(ey_code))
+
+# - first check if there are published exams of this country
+    get_from_all_countries = False
+    exams_found, exam_id = get_exam_if_only_one_available(
+        ey_pk, ey_code, examperiod, depbase_id, lvlbase_id, subjbase_id, get_from_all_countries)
+
+    if logging_on:
+        logger.debug('     exams_found: ' + str(exams_found))
+        logger.debug('     exam_id: ' + str(exam_id))
+
+# - if there are no published exams of this country: check if any in all countries
+    if not exams_found:
+        get_from_all_countries = True
+        exams_found, exam_id = get_exam_if_only_one_available(
+            ey_pk, ey_code, examperiod, depbase_id, lvlbase_id, subjbase_id, get_from_all_countries)
+    if logging_on:
+        logger.debug('     exams_found: ' + str(exams_found))
+        logger.debug('     exam_id: ' + str(exam_id))
+
+    exam = None
+    if exam_id:
+        exam = subj_mod.Exam.objects.get_or_none(pk=exam_id)
+
+    if logging_on:
+        logger.debug('     exam: ' + str(exam))
+
+    return exam
+# --- end of get_exam_if_only_one_available_from_studsubj
 
 
 def clear_grade_fields(grade_instance):  # PR2021-12-24
@@ -8041,7 +8199,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
     # PR2022-12-16 allowed filter renewed
     # PR2023-04-18 Sentry error fixed: syntax error at or near ")" LINE 1: ...cluster_id IN (SELECT UNNEST(ARRAY[1465]::INT[])) ) ORDER BY...
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_studentsubject_rows ============= ')

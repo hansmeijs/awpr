@@ -173,10 +173,12 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
 
-    # TODO create these fields PR2023-04-08
+    # PR2023-05-28
     # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
-    #resultapproved = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
-    #resultapproved_at = DateTimeField(null=True)
+    # status 1 = accepted, 2 = declined
+    resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    resap_status = DateTimeField(null=True)
+    resap_modifiedat = DateTimeField(null=True)
 
     tobedeleted = BooleanField(default=False)
     deleted = BooleanField(default=False)
@@ -326,9 +328,12 @@ class Student_log(sch_mod.AwpBaseModel):
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
 
-    # TODO create these fields PR2023-04-08
-    #resultapproved = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
-    #resultapproved_at = DateTimeField(null=True)
+    # PR2023-05-28
+    # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
+    # status 1 = accepted, 2 = declined
+    resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    resap_status = DateTimeField(null=True)
+    resap_modifiedat = DateTimeField(null=True)
 
     tobedeleted = BooleanField(default=False)
     deleted = BooleanField(default=False)
@@ -387,6 +392,9 @@ class Studentsubject(sch_mod.AwpBaseModel):
     schemeitem = ForeignKey(subj_mod.Schemeitem, related_name='+', on_delete=PROTECT)
 
     cluster = ForeignKey(subj_mod.Cluster, null=True, blank=True, related_name='+', on_delete=SET_NULL)
+
+    # PR2023-05-28 added: ETE may add cluster for secret exam
+    ete_cluster = ForeignKey(subj_mod.Cluster, null=True, blank=True, related_name='+', on_delete=SET_NULL)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -473,6 +481,9 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     schemeitem_log = ForeignKey(subj_mod.Schemeitem_log, null=True, related_name='+', on_delete=SET_NULL)
 
     cluster_log = ForeignKey(subj_mod.Cluster_log,null=True, related_name='+', on_delete=SET_NULL)
+
+    # PR2023-05-28 added: ETE may add cluster for secret exam
+    ete_cluster_log = ForeignKey(subj_mod.Cluster_log, null=True, blank=True, related_name='+', on_delete=SET_NULL)
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
@@ -692,10 +703,10 @@ class Grade(sch_mod.AwpBaseModel):
     tobedeleted = BooleanField(default=False)
     deleted = BooleanField(default=False)
 
-    # TODO deprecate
-    del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+    # PR2023-05-28 deprecated
+    #del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    #del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    #del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     status = PositiveSmallIntegerField(default=0)
 

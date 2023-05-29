@@ -239,7 +239,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         };
-
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
             el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
@@ -254,15 +253,16 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_sector.addEventListener("change", function() {t_SBR_select_level_sector("sctbase", el_SBR_select_sector, SBR_lvl_sct_response)}, false)};
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if(el_SBR_select_subject){
-            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, true, false, setting_dict, permit_dict, MSSSS_subject_response)}, false)};
-
+            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, true, false, setting_dict, permit_dict, MSSSS_subject_response)}, false)
+        };
         const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         if (el_SBR_select_cluster){
-            el_SBR_select_cluster.addEventListener("click", function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, true, false, setting_dict, permit_dict, MSSSS_cluster_response)}, false)};
-
+            el_SBR_select_cluster.addEventListener("click", function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, true, false, setting_dict, permit_dict, MSSSS_cluster_response)}, false)
+        };
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if(el_SBR_select_student){
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_student_response)}, false)};
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_student_response)}, false)
+        };
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
             el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(SBR_show_all_response)}, false);
@@ -1685,7 +1685,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= UploadToggle  ============= PR2020-07-31 PR2021-09-18 PR2023-04-02
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
-        console.log( "el_input", el_input);
+        //console.log( "el_input", el_input);
         //  called in fields "has_exemption", "has_reex", "has_reex03", "is_extra_nocount", "is_extra_counts"
 
         // data-value is not in use any more, get old value from data_dict instead PR2023-04-02

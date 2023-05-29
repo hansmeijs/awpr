@@ -941,29 +941,4 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, secret_only
 # --- end of create_enveloplabel_rows
 
 
-def create_sql_count_exams_per_subjectNIU():
-    # PR2022-08-26
-    # this subquery counts number of exams of this subject / dep / level / examperiod
-    # used for envelops: when practical exam the number of exams must be divided by the number of exams of that subject
-    #  "WITH items AS (" + sub_sql + "),  counts AS (" + count_sql + ")",
-    # join with:
-    #   "LEFT JOIN counts ON (counts.dep_id = dep.id AND counts.lvl_id = COALESCE(lvl.id, 0) AND",
-    #        "counts.subj_id = subj.id AND counts.examperiod = exam.examperiod)",
-
-    count_list = [
-        "SELECT dep.id AS dep_id, COALESCE(lvl.id, 0) AS lvl_id, subj.id AS subj_id, exam.examperiod, count(*) AS exam_count",
-
-        "FROM subjects_exam AS exam",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-        "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
-
-        "WHERE ey.code = %(ey_code_int)s::INT",
-        "GROUP BY dep.id, lvl.id, subj.id, exam.examperiod"
-    ]
-    count_sql = ' '.join(count_list)
-
-    return count_sql
-# --- end of create_enveloplabel_rows
 

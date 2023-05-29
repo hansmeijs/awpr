@@ -542,6 +542,7 @@ document.addEventListener("DOMContentLoaded", function() {
             };
 
         DatalistDownload(datalist_request);
+        //ResetFilterRows();
     };
 //  #############################################################################################################
 
@@ -1100,7 +1101,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
@@ -1111,7 +1112,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- get data_rows
         const data_dicts = get_datadicts_from_sel_btn();
-    console.log( "    data_dicts", data_dicts);
 
 // ---  get list of hidden columns
         const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
@@ -1140,11 +1140,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 let show_row = true;
                 if (["btn_ete_exams", "btn_duo_exams", "btn_results"].includes(selected_btn)){
                     show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
-                                (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk)
+                                (!setting_dict.sel_subject_pk || data_dict.subj_id === setting_dict.sel_subject_pk)
 
                                // && (  (selected_btn === "btn_ete_exams" && data_dict.examtype !== "duo") ||
                                //    (selected_btn === "btn_duo_exams" && data_dict.examtype === "duo") );
                 };
+
                 if(show_row){
           // --- insert row
                     let tblRow = CreateTblRow(tblName, field_setting, data_dict, col_hidden)

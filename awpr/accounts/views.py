@@ -2059,12 +2059,12 @@ class UserModMessageHideView(View):
 # end of UserModMessageHideView
 
 
-def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, school_correctors_only=False, this_depbase_only=None):
+def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, school_correctors_only=False, this_depbase_pk_only=None):
     # PR2020-07-31 PR2022-12-02 PR2023-03-26
     # --- create list of all users of this school, or 1 user with user_pk
     # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_user_rowsNEW ============= ')
@@ -2241,6 +2241,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
     def get_allowed_subjbases(subjbase_pk_arr, all_subjbases_dict):
         subjbase_code_list = []
         subjbase_name_list = []
+        subjbase_pk_list = []
 
         if all_subjbases_dict and subjbase_pk_arr:
             # subjects are sorted in this function.Therefore no need to loop through all_subjbases_rows
@@ -2257,6 +2258,8 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
                         if name_nl not in subjbase_name_list:
                             subjbase_name_list.append(name_nl)
 
+                        # PR2023-05-29 added, to filter clusters by allowed subjects
+                        subjbase_pk_list.append(subjbase_pk)
         if subjbase_code_list:
             subjbase_code_list.sort(key=lambda v: v.lower())
 
@@ -2268,7 +2271,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
         if subjbase_name_list:
             subjbases_name = '\n'.join(subjbase_name_list)
 
-        return subjbases_code, subjbases_name
+        return subjbases_code, subjbases_name, subjbase_pk_list
 
     def get_all_clusters_dict():
         all_clusters_dict = {}
@@ -2286,8 +2289,8 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
                 else:
                     sql_list.append("AND FALSE")
 
-            if this_depbase_only:
-                sql_list.extend(("AND dep.base_id = ", str(this_depbase_only) , "::INT"))
+            if this_depbase_pk_only:
+                sql_list.extend(("AND dep.base_id = ", str(this_depbase_pk_only) , "::INT"))
 
             sql = ' '.join(sql_list)
 
@@ -2445,7 +2448,9 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
 
                                 r_allowed_sections = {}
                                 schoolbase_pk_arr, r_depbase_pk_arr, lvlbase_pk_arr, r_subjbase_pk_arr = [], [], [], []
-
+                                # when school / corrector gets user_rows: show only allowed subjects of this dep
+                                # when admin corrector : show all allowed subjects
+                                # this_dep_subjbase_pk_arr = []
                                 for schoolbase_pk_str, allowed_depbases_dict in allowed_sections_dict.items():
                                     # depbases_dict: {'1': {'5': [118, 132, 154], '6': [118, 132, 154]}} <class 'dict'>
 
@@ -2474,12 +2479,14 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
                                                     if lvlbase_pk_int not in lvlbase_pk_arr:
                                                         lvlbase_pk_arr.append(int(lvlbase_pk_str))
 
-                                                    r_subjbases_arr = []
                                                     for subjbase_pk_int in lvl_base_subjbases_arr:
                                                         if logging_on:
                                                             logger.debug(' ???   subjbase_pk_int: ' + str(subjbase_pk_int) + ' ' + str(type(subjbase_pk_int)))
                                                         if subjbase_pk_int not in r_subjbase_pk_arr:
                                                             r_subjbase_pk_arr.append(subjbase_pk_int)
+                                                            # TODO filter by depbase when school or correcor gets users
+                                                            # if depbase_pk_int == this_depbase_pk_only:
+                                                            #    this_dep_subjbase_pk_arr.append(subjbase_pk_int)
 
                                                     r_lvlbase_dict[lvlbase_pk_int] = lvl_base_subjbases_arr
 
@@ -2495,9 +2502,12 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
                                 user_dict['allowed_depbases'], has_level_req = get_allowed_depbases(r_depbase_pk_arr, all_depbases_rows)
                                 user_dict['allowed_lvlbases'] = get_allowed_lvlbases(lvlbase_pk_arr, has_level_req, all_lvlbases_rows)
 
-                                subjbases_code, subjbases_name = get_allowed_subjbases(r_subjbase_pk_arr, all_subjbases_dict)
+                                subjbases_code, subjbases_name, subjbase_pk_list = get_allowed_subjbases(r_subjbase_pk_arr, all_subjbases_dict)
                                 user_dict['allowed_subjbases'] = subjbases_code
                                 user_dict['allowed_subjbases_title'] = subjbases_name
+                                if subjbase_pk_list:
+                                    user_dict['allowed_subjbase_pk_list'] = subjbase_pk_list
+
 
                                 cluster_pk_list, cluster_name_list = get_allowed_clusters(allowed_cluster_pk_arr, all_clusters_dict)
                                 user_dict['allowed_clusters_pk'] = cluster_pk_list
@@ -4621,7 +4631,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
                                 allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10  PR2023-01-08
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_departmentbase -------')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
@@ -5898,7 +5908,7 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
@@ -5906,6 +5916,9 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
 
 ###########################
     def test_wrong_studsubjclusters():
+
+        # this function was to check if clusters accidentally were connected to the wrong school.
+        # That was not the case
         if logging_on:
             logger.debug('      @@@@@@@@@@ test_wrong_studsubjclusters @@@@@@@@@@@@@@@@@')
             try:
@@ -5921,8 +5934,12 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
 
                 with connection.cursor() as cursor:
                     cursor.execute(sql)
-                    for row in cursor.fetchall():
-                        logger.debug('    row: ' + str(row))
+                    rows = cursor.fetchall()
+                    if rows:
+                        for row in rows:
+                            logger.debug('    row: ' + str(row))
+                    else:
+                        logger.debug('    no wrong studsubjclusters found')
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
 
@@ -5952,7 +5969,8 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
         # solution: skip this check when page = orderlist
         skip_school_allowed_depbases = (page in ('page_subject', 'page_orderlist'))
 
-        test_wrong_studsubjclusters()
+        # this was to check if clusters accidentally were connected to the wrong school.
+        #test_wrong_studsubjclusters()
 
 # +++++ get allowed_depbases_list
     # - get list of allowed_depbases of selected school
@@ -6212,7 +6230,7 @@ def message_examyear_missing_notpublished_locked(sel_examyear, allow_not_publish
         err_list.append(gettext('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)})
     elif not allow_not_published and not sel_examyear.published:
         err_list.append(gettext("%(admin)s has not yet published examyear %(exyr)s.") % \
-                             {'admin': gettext('The Division of Examinations'), 'exyr': str(sel_examyear.code)})
+                             {'admin': af.get_admin_name_capitalized(sel_examyear), 'exyr': str(sel_examyear.code)})
         err_list.append(gettext('You cannot enter data.'))
     return err_list
 # - end of message_examyear_missing_notpublished_locked

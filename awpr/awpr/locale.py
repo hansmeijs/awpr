@@ -13,6 +13,7 @@ from: https://stackoverflow.com/questions/65361621/cant-find-msguniq-make-sure-y
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import gettext, pgettext_lazy, gettext_lazy as _
 from awpr import constants as c
+from awpr import functions as af
 
 import logging
 logger = logging.getLogger(__name__)
@@ -1121,8 +1122,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Exam_is_published'] = _('This exam is already published.')
         dict['Remove_publication_first'] = _('You must first remove the publication before you can delete the exam.')
 
-
-
         dict['ETE_exams'] = _("ETE exams")
         dict['CVTE_exams'] = _("CVTE exams")
         dict['CVTE_description'] = _("CVTE description")
@@ -1477,7 +1476,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit_Ex2A'] = _('Submit Ex2A')
 
         dict['Approve_scores'] = _('Approve scores')
-        dict['Approving_scores'] = _('AWP is approving scores...')
+        dict['Approving_scores'] = _('AWP is approving the scores...')
+        dict['Removing_approvals'] = _('AWP is removing the approvals...')
 
         dict['Approve_grade'] = _('Approve grade')
         dict['Approve_grades'] = _('Approve grades')
@@ -1622,6 +1622,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
         dict['Designated_exam'] = _('Designated exam')
+        dict['This_is_designated_exam'] = _("This is a designated exam.")
 
         dict['Attachment'] = _('Attachment')
 
@@ -1707,42 +1708,38 @@ def get_locale_dict(table_dict, user_lang, request):
         }
 
         dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
-                                'Only_1_allowed': _('Only 1 function is allowed. '),
-                               'cannot_approve': _('You cannot approve grades.'),
-                               'cannot_submit': _('You cannot submit grades.'),
-                               'This_grade_is_submitted': _('This grade is submitted.'),
-                               'You_cannot_change_approval': TXT_You_cannot_change_approval,
-                               'This_grade_has_no_value': _('This grade has no value.'),
-                               'You_cannot_approve': _('You cannot approve this grade.'),
-                               'No_cluster_permission': _("You don't have permission to approve grades of this cluster."),
-                               'Warning': _('WARNING'),
-                               'Need_permission_of_inspectorate': _('It is only allowed to submit grades without value with the prior approval of the Inspectorate, or when the candidate has an exemption.'),
-                               'Approved_different_function': _('You have approved this grade already in a different function.'),
-                               'Approved_in_function_of': _('You have already approved this grade as '),
-                               'Score_not_entered': _('This score is not entered.'),
-                               'Grade_not_entered': _('This grade is not entered.'),
-                               'Subject_has_no_ce': _('This subject has no central exam.'),
-                               'Dont_haveto_approve_blank_scores': _("You don't have to approve blank scores."),
-                               'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
-                               'You_cannot_approve_again': _('You cannot approve this grade again.'),
-                               'Corrector_cannot_approve_se': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('school exam grades')},
-                               'Corrector_cannot_approve_exem': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('exemption grades')},
+                    'Only_1_allowed': _('Only 1 function is allowed. '),
+                    'cannot_approve': _('You cannot approve grades.'),
+                    'cannot_submit': _('You cannot submit grades.'),
+                    'This_grade_is_submitted': _('This grade is submitted.'),
+                    'You_cannot_change_approval': TXT_You_cannot_change_approval,
+                    'This_grade_has_no_value': _('This grade has no value.'),
+                    'You_cannot_approve': _('You cannot approve this grade.'),
+                    'No_cluster_permission': _("You don't have permission to approve grades of this cluster."),
+                    'Warning': _('WARNING'),
+                    'Need_permission_of_inspectorate': _('It is only allowed to submit grades without value with the prior approval of the Inspectorate, or when the candidate has an exemption.'),
+                    'Approved_different_function': _('You have approved this grade already in a different function.'),
+                    'Approved_in_function_of': _('You have already approved this grade as '),
+                    'Score_not_entered': _('This score is not entered.'),
+                    'Grade_not_entered': _('This grade is not entered.'),
+                    'Subject_has_no_ce': _('This subject has no central exam.'),
+                    'Dont_haveto_approve_blank_scores': _("You don't have to approve blank scores."),
+                    'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
+                    'You_cannot_approve_again': _('You cannot approve this grade again.'),
+                    'Corrector_cannot_approve_se': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('school exam grades')},
+                    'Corrector_cannot_approve_exem': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('exemption grades')},
 
-                               'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
-                               'Cannot_approve_secret_exam': '<br>'.join((
-                                   gettext('This is a designated exam.'),
-                                   gettext("You don't have to approve designated exams.")
-                               )),
-                               'Secret_exam_dont_enter_score': '<br>'.join((
-                                   gettext('This is a designated exam.'),
-                                   gettext("You don't have to enter the score of designated exams."),
-                                   gettext("The score will be entered by the Division of Examinations.")
-                               )),
-                               'no_exam_linked_to_this_score': _("You cannot approve this score, because it is not linked to an exam yet."),
-                               'click_column_to_link_score_to_exam': _("Click in the column 'Exam' to link %(cpt)s to an exam.") % {'cpt': gettext('This score').lower()},
-                               'school_must_link_score_to_exam': _("The school must link this score to an exam first."),
+                    'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
 
-                                    }
+                    'Dont_haveto_approve_secretexam':  _("You don't have to approve designated exams."),
+
+                    'Dont_haveto_enter_score_secretexam': _("You don't have to enter the score of designated exams."),
+                    'Score_willbe_entered_by_admin': _("The score will be entered by %(admin)s.") % {'admin': af.get_admin_name(request.user)},
+
+                   'no_exam_linked_to_this_score': _("You cannot approve this score, because it is not linked to an exam yet."),
+                   'click_column_to_link_score_to_exam': _("Click in the column 'Exam' to link %(cpt)s to an exam.") % {'cpt': gettext('This score').lower()},
+                   'school_must_link_score_to_exam': _("The school must link this score to an exam first."),
+        }
 
         dict['No_cluster_unlock_permission'] =  _("You don't have permission to unlock grades of this cluster.")
         dict['No_cluster_remove_unlocking_permission'] =  _("You don't have permission to remove unlocking of grades of this cluster.")

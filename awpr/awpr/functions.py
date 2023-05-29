@@ -3025,6 +3025,16 @@ def add_sxmsys_school_if_not_exist(request):  # PR2021-08-05
 # - end of add_sxmsys_school_if_not_exist
 
 
+def get_admin_name_capitalized(requsr_or_examyear_instance):
+    #PR2023-05-28
+    return capitalize_first_char(str(get_admin_name(requsr_or_examyear_instance)))
+
+def get_admin_name(requsr_or_examyear_instance):
+    #PR2023-05-28
+    is_sxm = requsr_or_examyear_instance.country.abbrev.lower() == 'sxm' \
+            if requsr_or_examyear_instance and requsr_or_examyear_instance.country else False
+    return _('the Division of Examinations') if is_sxm else _('the ETE')
+
 def get_country_instance_by_abbrev(abbrev):
     # get country by abbrev 'sxm' or 'cur' PR2021-08-06
 

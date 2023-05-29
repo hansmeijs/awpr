@@ -598,12 +598,16 @@ def get_sqlclause_allowed_depbase_from_allowed_sections(userallowed_sections_dic
 # - end of get_sqlclause_allowed_depbase_from_allowed_sections
 
 
-def get_sqlclause_allowed_clusters(table, userallowed_cluster_pk_list):
-    # PR2023-02-09
-    logging_on = False  # s.LOGGING_ON
+def get_sqlclause_allowed_clusters(table, allowed_clusters_of_sel_school):
+    # PR2023-02-09 PR2023-05-29
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_sqlclause_allowed_clusters -----')
-        logger.debug('    userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+        logger.debug('    allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
+
+    # PR2023-05-28 debug: auth4 cannot approve grade;
+    # when this school has no clusters set, but allowed_Clusters only contain clusters from other schools
+    # solved by filtering only allowd clusters of this school
 
     if table == 'studsubj':
         field_name = 'studsubj.cluster_id'
@@ -612,17 +616,52 @@ def get_sqlclause_allowed_clusters(table, userallowed_cluster_pk_list):
 
     # - create sql_clause
     sql_clause = ''
-    if userallowed_cluster_pk_list:
-        if len(userallowed_cluster_pk_list) == 1:
-            sql_clause = ''.join(("AND ", field_name, " = ", str(userallowed_cluster_pk_list[0]), "::INT"))
+    if allowed_clusters_of_sel_school:
+        if len(allowed_clusters_of_sel_school) == 1:
+            sql_clause = ''.join(("AND ", field_name, " = ", str(allowed_clusters_of_sel_school[0]), "::INT"))
         else:
-            sql_clause = ''.join(("AND ", field_name, " IN (SELECT UNNEST(ARRAY", str(userallowed_cluster_pk_list), "::INT[]))"))
+            sql_clause = ''.join(("AND ", field_name, " IN (SELECT UNNEST(ARRAY", str(allowed_clusters_of_sel_school), "::INT[]))"))
 
     if logging_on:
         logger.debug('    sql_clause: ' + str(sql_clause))
 
     return sql_clause
+# - end of get_sqlclause_allowed_clusters
 
+
+def get_allowed_clusters_of_sel_school(sel_schoolbase_pk, allowed_cluster_pk_list):
+    # PR2023-05-29
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_allowed_clusters_of_sel_school -----')
+        logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+        logger.debug('    allowed_cluster_pk_list: ' + str(allowed_cluster_pk_list))
+    # PR2023-05-28 debug: corrector of SKAI could not approve scores
+    # SKAI has no allowed_clusters, but corrector had allowed_clusters from other schools
+    # gave no permission because allowed_cluster_pk_list had values and no value of SKAI
+    # solved by filtering only the allowed_clusters_of_sel_school
+    # TODO: change format of allowed_clusters like allowed_sections: dict with key = schoolbasepk and list of allowedclusters
+    allowed_clusters_of_sel_school = []
+    if sel_schoolbase_pk and allowed_cluster_pk_list:
+        sql = ''.join((
+            "SELECT cls.id ",
+            "FROM subjects_cluster AS cls ",
+            "INNER JOIN schools_school AS school ON (school.id = cls.school_id)",
+            "WHERE cls.id IN (SELECT UNNEST(ARRAY", str(allowed_cluster_pk_list), "::INT[]))"
+            "AND school.base_id = ", str(sel_schoolbase_pk), "::INT;"
+        ))
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            for row in cursor.fetchall():
+                # row is tuple
+                if row[0] not in allowed_clusters_of_sel_school:
+                    allowed_clusters_of_sel_school.append(row[0])
+
+    if logging_on:
+        logger.debug('    allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
+
+    return allowed_clusters_of_sel_school
+# - end of get_allowed_clusters_of_sel_school
 
 def allowedsections_has_subjbases(userallowed_sections_dict):
     # check if there any allowed subjects PR2023-02-16
@@ -726,7 +765,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
 #############################################
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')

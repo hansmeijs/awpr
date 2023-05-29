@@ -8,6 +8,7 @@ from accounts import permits as acc_prm
 
 from awpr import constants as c
 from awpr import settings as s
+from awpr import functions as af
 from grades import calc_finalgrade as calc_final
 
 from students import functions as stud_fnc
@@ -44,14 +45,16 @@ def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requs
                     _('Chairperson')
 
             err_html = ''.join((
-                "<div class='p-2 border_bg_invalid'><p>",
+                #"<div class='p-2 border_bg_invalid'><p>",
+                "<p>",
                 gettext("%(cpt)s is approved by a different %(auth)s.") % {'cpt': cpt, 'auth': auth.lower()},
                 "</p><p>",
                 gettext("Only the %(auth)s who has approved %(cpt)s can remove this approval.") % \
                     {'cpt': cpt.lower(),'auth': auth.lower()},
                 "</p><p>",
                 gettext("Contact the Inpectorate if you need to remove this approval."),
-                "</p></div>"
+                #"</p></div>"
+                "</p>"
             ))
 
     if logging_on:
@@ -60,17 +63,18 @@ def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requs
 # - end of validate_grade_approval_remove_allowed
 
 
-def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, userallowed_cluster_pk_list,
-                schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted, is_secret_exam,
+def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, allowed_clusters_of_sel_school,
+                schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted, is_secret_exam, is_reset,
                 msg_list, is_approve=False, is_score=False, is_grade_exam=False):
-    # PR2022-03-20 PR2023-02-18
+    # PR2022-03-20 PR2023-02-18 PR2023-05-29
     # called by GradeUploadView and by GradeApproveView
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
-        logger.debug('     userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+        logger.debug('     allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
         logger.debug('     studsubj_tobedeleted: ' + str(studsubj_tobedeleted))
         logger.debug('     is_grade_exam: ' + str(is_grade_exam))
+        logger.debug('     is_reset: ' + str(is_reset))
 
     not_allowed = False
     caption = None
@@ -82,15 +86,14 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, u
         msg_list.append(gettext("You cannot make changes."))
     else:
         # sceret exams are only allowed by admin
-        if is_score and request.user.role != c.ROLE_064_ADMIN and is_secret_exam:
+        if is_score and is_secret_exam and request.user.role != c.ROLE_064_ADMIN:
             not_allowed = True
             msg_list.append(gettext("This is a designated exam."))
             if is_approve:
                 msg_list.append(gettext("You don't have to approve designated exams."))
             else:
                 msg_list.extend((gettext("You don't have to enter the score of designated exams."),
-                                gettext("The score will be entered by the Division of Examinations.")))
-
+                                gettext("The score will be entered by %(admin)s.") % {'admin': af.get_admin_name(request.user)}))
         else:
 
             if caption and not acc_prm.validate_userallowed_school(userallowed_sections_dict, schoolbase_pk):
@@ -109,9 +112,11 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, u
             # must be able to approve all subjects as chairperson.
             # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
 
-            if requsr_auth not in ('auth1', 'auth2'):
-                if userallowed_cluster_pk_list:
-                    if not cluster_pk or cluster_pk not in userallowed_cluster_pk_list:
+            # PR2023-05-29 don't filter on allowed clusters when removing approval
+            if requsr_auth not in ('auth1', 'auth2') and not is_reset:
+                if allowed_clusters_of_sel_school:
+                    # if there are clusters in allowed_clusters_list and  cluster_pk is empty: no permission
+                    if not cluster_pk or cluster_pk not in allowed_clusters_of_sel_school:
                         caption = _('the allowed clusters')
 
             if caption:
@@ -129,12 +134,12 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, u
 # - end of validate_grade_is_allowed
 
 
-def validate_grade_multiple_is_allowed(request, requsr_auth, userallowed_cluster_pk_list, schoolbase_pk, depbase_pk, lvlbase_pk,
+def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of_sel_school, schoolbase_pk, depbase_pk, lvlbase_pk,
                                        subjbase_pk, cluster_pk):
     # PR2022-04-07
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- validate_grade_is_allowed -------')
+        logger.debug(' ------- validate_grade_multiple_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
                                'lvlbase_pk:', str(lvlbase_pk), 'subjbase_pk:', str(subjbase_pk),
                                'cluster_pk:', str(cluster_pk))))
@@ -145,9 +150,9 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, userallowed_cluster
     # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
 
     if requsr_auth not in ('auth1', 'auth2'):
-        if userallowed_cluster_pk_list:
-            # also not allowed when userallowed_cluster_pk_list is not empty and studsubj does not belong to cluster
-            if not cluster_pk or cluster_pk not in userallowed_cluster_pk_list:
+        if allowed_clusters_of_sel_school:
+            # also not allowed when allowed_clusters_of_sel_school is not empty and studsubj does not belong to cluster
+            if not cluster_pk or cluster_pk not in allowed_clusters_of_sel_school:
                 not_allowed = True
 
     if not not_allowed and request.user.allowed_subjectbases:

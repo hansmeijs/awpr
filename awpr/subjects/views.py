@@ -491,7 +491,8 @@ def create_subjectrows_for_page_users(sel_examyear):
 
 def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                         page, cluster_pk_list=None):
-    # --- create rows of all clusters of this examyear this department  PR2022-01-06 PR2022-12-25 PR2023-02-09
+    # --- create rows of all clusters of this examyear this department  #
+    # PR2022-01-06 PR2022-12-25 PR2023-02-09 PR2023-05-29
     # called by page users, correctors,
     # grades, secretexam, studentsubject,  wolf
     logging_on = False  # s.LOGGING_ON
@@ -505,15 +506,19 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
         logger.debug('    cluster_pk_list: ' + str(cluster_pk_list))
         # pages are: page_studsubj page_grade page: page_corrector, page_user"page_wolf page_secretexam
 
+    # show only this corr when ug = corrector and not auth1, auth2
+    requsr_usergroup_list = acc_prm.get_usergroup_list(acc_prm.get_userallowed_instance(request.user, sel_examyear))
+    requsr_has_ug_corrector_only = c.USERGROUP_AUTH4_CORR in requsr_usergroup_list \
+                                   and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list \
+                                   and c.USERGROUP_AUTH2_SECR not in requsr_usergroup_list
+    if logging_on:
+        logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
+        logger.debug('    requsr_has_ug_corrector_only: ' + str(requsr_has_ug_corrector_only))
+
     cur_dep_only, cur_school_only, allowed_only = False, False, False
     if page == 'page_corrector':
 
-        # show only this corr when ug = corrector and not auth1, auth2
-        requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
-        requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
-        requsr_has_ug_corrector_only = c.USERGROUP_AUTH4_CORR in requsr_usergroup_list \
-                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list \
-                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list
+
 
         if request.user.role == c.ROLE_008_SCHOOL:
             # when school uses page_corrector:
@@ -534,11 +539,7 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
             # - show only clusters of this school, all departments
 
             # show only this corr when ug = corrector and not auth1, auth2
-            requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
-            requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
-            if c.USERGROUP_AUTH4_CORR in requsr_usergroup_list \
-                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list \
-                    and c.USERGROUP_AUTH1_PRES not in requsr_usergroup_list:
+            if requsr_has_ug_corrector_only:
                 allowed_only = True
 
     elif page == 'page_user':
@@ -546,6 +547,10 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
     elif page in ('page_studsubj', 'page_grade', 'page_wolf', 'page_secretexam'):
         cur_school_only = True
         cur_dep_only = True
+        # show only this corr when ug = corrector and not auth1, auth2
+        if requsr_has_ug_corrector_only:
+            allowed_only = True
+
 
     cluster_rows = []
     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -597,12 +602,18 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
 
     # - filter on allowed clusters
             if allowed_only:
-                userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
-                userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters('cluster', userallowed_cluster_pk_list)
+                allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+                    sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+                    allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list_from_request(request)
+                )
+                userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters(
+                    table='cluster',
+                    allowed_clusters_of_sel_school=allowed_clusters_of_sel_school
+                )
                 if userallowed_cluster_pk_clause:
                     sql_list.append(userallowed_cluster_pk_clause)
                 if logging_on:
-                    logger.debug('   userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+                    logger.debug('   allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
                     logger.debug('   userallowed_cluster_pk_clause: ' + str(userallowed_cluster_pk_clause))
 
             sql_list.append("ORDER BY cluster.id")
@@ -1500,7 +1511,7 @@ class WolfListView(View):  # PR2022-12-16
 class ExamListView(View):  # PR2021-04-04 PR2022-12-16
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  -----  ExamListView -----')
 
@@ -2224,6 +2235,7 @@ class ExamLinkExamToGradesView(View):
                                     )
 # --- add exam_pk to grades, only when there is only 1 exam for this subject / dep / level / examperiod
                                     # check if subject has only 1 exam takes place in link_exam_to_grades
+                                    # PR2023-05-26 debug: must filter on weight_ce>0 becasue of sptl without CE
                                     grd_count, log_list = link_exam_to_grades(
                                         exam_instance=sel_exam,
                                         requsr_examyear_pk=requsr_examyear.pk,
@@ -4107,8 +4119,14 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
             if sql_clause:
                 sql_list.append(sql_clause)
 
-            userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
-            sqlclause_allowed_clusters = acc_prm.get_sqlclause_allowed_clusters("studsubj", userallowed_cluster_pk_list)
+            allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+                sel_schoolbase_pk=sel_school.base_id if sel_school else sel_school.base_id,
+                allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+            )
+            sqlclause_allowed_clusters = acc_prm.get_sqlclause_allowed_clusters(
+                table="studsubj",
+                allowed_clusters_of_sel_school=allowed_clusters_of_sel_school
+            )
             if sqlclause_allowed_clusters:
                 sql_list.append(sqlclause_allowed_clusters)
 
@@ -4593,11 +4611,11 @@ def get_exam_name(ce_exam_id, ete_exam, subj_name_nl, depbase_code, lvl_abbrev, 
                 exam_name += ' ' + lvl_abbrev
             if subj_name_nl:
                 exam_name += ' ' + subj_name_nl
-            exam_name += ' ' + str(examyear.code)
-            if examperiod:
-                exam_name += ' tijdvak ' + str(examperiod)
             if version:
                 exam_name += ' ' + version
+            if examperiod:
+                exam_name += ' tijdvak ' + str(examperiod)
+            exam_name += ' - ' + str(examyear.code)
         else:
         # add 'Vsbo' when lvl_abbrev has value (Havo Vwo is included in DUO mname
             if depbase_code:
@@ -4611,12 +4629,12 @@ def get_exam_name(ce_exam_id, ete_exam, subj_name_nl, depbase_code, lvl_abbrev, 
                 if subj_name_nl:
                     exam_name += ' ' + subj_name_nl
 
-                exam_name += ' ' + str(examyear.code)
+                if version:
+                    exam_name += ' ' + version
                 if examperiod:
                     exam_name += ' tijdvak ' + str(examperiod)
 
-                if version:
-                    exam_name += ' ' + version
+                exam_name += ' - ' + str(examyear.code)
     if logging_on:
         logger.debug('    exam_name: ' + str(exam_name))
 
@@ -4636,7 +4654,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
     # PR2022-06-02 tel Lavern SMAC: has sp DUO
     # solved by:
     # - SXM can also create exams in exam page
-    # - CUR can assign exams to SXM, no override (skip when ce_exam_id has value
+    # - CUR can assign exams to SXM, don't  override (skip when ce_exam_id has value
     # - SXM can only assign exams to SXM, may override
 
     updated_grd_count = 0
@@ -4712,6 +4730,11 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                     "AND grd.examperiod = %(ep)s::INT",
 # override linked exams allowed
                     # "AND grd.ce_exam_id IS NULL",
+
+# PR2023-05-26 debug: must filter on weight_ce>0 becasue of sptl without CE
+                    #TODO test
+                    # "AND si.weight_ce > 0",
+
 # this_country_only
                     "AND ey.id = %(ey_pk)s::INT"
                 ])
@@ -5188,49 +5211,49 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
     // PR2022-05-18 debug Mireille Peterson exam not showing
     //  - cause: sxm has different subj_pk, use subjbase_pk instead
     """
+
     all_exam_rows = []
     try:
+        depbase_pk = sel_depbase.pk if sel_depbase else None
+        examyear_pk = sel_examyear.pk if sel_examyear else None
+        examyear_code = sel_examyear.code if sel_examyear else None
+
+        # filte only exams of curacao if is_cur, including cur and sxm examsn if is_sxm
+        is_sxm = sel_examyear.country.abbrev.lower() == 'sxm'
+        examyear_clause = ''.join(("AND ey.code = ", str(examyear_code), "::INT")) \
+                            if is_sxm else ''.join(("AND ey.id = ", str(examyear_pk), "::INT"))
+
         # when school: only ETE published exams (DUO exams are not published)
         sql_keys = {'depbase_id': sel_depbase.pk if sel_depbase else None,
                     'ep': sel_examperiod,
                     'ey_code': sel_examyear.code if sel_examyear else None,
                     'ey_pk': sel_examyear.pk if sel_examyear else None
                     }
-        # PR2023-05-10 debug: excluding exam when subject has also duo examn is not workingas subquery,
+        # PR2023-05-10 debug: excluding exam when subject has also duo examn is not working as subquery,
         # when PBL/PKL have ETE and TKL has duo exam, like biology.
-        """
-        duo_exams_sql_list = [
-            "SELECT subj.base_id, exam.id, subj.name_nl ",
-            "FROM subjects_exam AS exam ",
-            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id) ",
-            # PR2023-05-09 not necessary. Was: "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
-            # PR2023-05-09 not necessary. Was: "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
 
-            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
-            # PR2023-05-09 not necessary. Was: "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-
-            # only show linked exams (all should be linked)
-            # PR2022-08-28 not any more. exams without ntb.id can be added, for secret DUO exams (they are not in ntb list
-            # was:  "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
-            # PR2023-05-09 not necessary. Was: "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
-
-            "WHERE NOT exam.ete_exam AND dep.base_id=", str(sel_depbase.pk), "::INT ",
-            "AND subj.examyear_id=", str(sel_examyear.pk), "::INT ",
-            "AND exam.examperiod=", str(sel_examperiod), "::INT;"
-            # was not correct:
-            #   all ETE exams are shown, only DUO exams of this country
-            # was (not correct): "AND (exam.ete_exam AND ey.code = %(ey_code)s::INT) OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT) "
-        ]
-        """
         # PR2023-05-11 this one works
         # this subquery gives all subj / dep / lvl combinations with duo exams (of this country / examyear)
+        # PR2023-05-28 exam.examperiod added
+        # PR2023-05-28 debug: checks only within own country, muste use depbase etc instad ofdep, but only when sxm
+        # different approach: create list of exam_pks that have cvte exams in own country, this examperiod
         duo_exams_sql = ' '.join((
-            "SELECT exam.subject_id, exam.department_id, exam.level_id",
+            "SELECT dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, subj.base_id AS subjbase_id, ",
+            "ey.code AS ey_code, exam.examperiod ",
             "FROM subjects_exam AS exam",
-            "WHERE NOT exam.ete_exam",
-            "GROUP BY exam.subject_id, exam.department_id, exam.level_id"
-        ))
+            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
 
+            "WHERE NOT exam.ete_exam",
+            "AND dep.base_id = ", str(depbase_pk) , "::INT",
+            "AND ey.id = ", str(examyear_pk), "::INT",
+            "AND exam.examperiod = ", str(sel_examperiod), "::INT",
+
+            "GROUP BY dep.base_id, lvl.base_id, subj.base_id, ey.code, exam.examperiod "
+
+        ))
         sql_list = [
             "WITH duo_exams AS (", duo_exams_sql, ")",
             "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
@@ -5248,8 +5271,9 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
             "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
             "ntb.tijdvak AS ntb_tijdvak, ntb.omschrijving AS ntb_omschrijving, ntb.schaallengte AS ntb_schaallengte, ntb.n_term AS ntb_nterm,",
             "ntb.datum AS ntb_datum,"
+            
+            "(dex.depbase_id IS NOT NULL) AS has_duo_exams,",
     
-            "(dex.subject_id IS NOT NULL) AS has_duo_exams,",
             "exam.status, exam.auth1by_id, exam.auth2by_id, exam.published_id, exam.locked, exam.modifiedat,",
             "au.last_name AS modby_username,",
 
@@ -5266,9 +5290,11 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
             "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
 
-            "LEFT JOIN duo_exams AS dex ON (dex.subject_id = exam.subject_id ",
-                                            "AND dex.department_id = exam.department_id ",
-                                            "AND dex.level_id = exam.level_id)",
+           "LEFT JOIN duo_exams AS dex ON (dex.depbase_id = dep.base_id ",
+                                            "AND dex.lvlbase_id = lvl.base_id",
+                                            "AND dex.subjbase_id = subj.base_id",
+                                            "AND dex.ey_code = ey.code",
+                                            "AND dex.examperiod = exam.examperiod)",
 
             "LEFT JOIN accounts_user AS auth1 ON (auth1.id = exam.auth1by_id)",
             "LEFT JOIN accounts_user AS auth2 ON (auth2.id = exam.auth2by_id)",
@@ -5277,15 +5303,23 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
             "LEFT JOIN accounts_user AS au ON (au.id = exam.modifiedby_id)",
 
             "WHERE depbase.id = %(depbase_id)s::INT",
-            "AND exam.examperiod = %(ep)s::INT",
 
+            # skip ETE exam when this country has also duo exams
+            "AND ( (dex.depbase_id IS NULL) OR (dex.depbase_id IS NOT NULL AND NOT exam.ete_exam)  ) ",
+
+            # examyear_clause,
             # - only show DUO exams of this country (filter on ey.id when NOT ete_exam)
             # - show ETE exams of all countries (filter on ey.code when ete_exam)
             # - but don't show ETE exam when there is also a DUO exam of this country
             #   (sxm has en and sp DUO exam, cur has ETE exam en and sp)
             # dex.subject_id has only value when subj/dep/lvl has duo exams
-            "AND ((exam.ete_exam AND ey.code = %(ey_code)s::INT AND dex.subject_id IS NULL)",
+            # "AND ((exam.ete_exam AND ey.code = %(ey_code)s::INT AND dex.subject_id IS NULL)",
+            #        "OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT))"
+            "AND ((exam.ete_exam AND ey.code = %(ey_code)s::INT)",
                     "OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT))"
+
+           "AND ((exam.ete_exam AND ey.code = %(ey_code)s::INT)",
+            "OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT))"
 
         ]
 
@@ -5328,16 +5362,19 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
                     logger.debug('count: ' + str(len(all_exam_rows)))
 
                 for row in all_exam_rows:
+                    exam_id = row.get('id')
                     if logging_on:
-                        logger.debug( ' '.join(('  >', str(row.get('subj_name_nl')),
+                        logger.debug( ' '.join(('  >',
+                                    str(exam_id),
+                                    str(row.get('subj_name_nl')),
                                      str(row.get('depbase_code')),
                                      str(row.get('lvl_abbrev')),
-                                     str(row.get('level_id_nonull')),
+                                     str(row.get('level_id')),
                                      str(row.get('has_duo_exams'))
                                                 )))
 
-                    exam_name = get_exam_name(
-                        ce_exam_id=row.get('id'),
+                    row['exam_name'] = get_exam_name(
+                        ce_exam_id=exam_id,
                         ete_exam=row.get('ete_exam'),
                         subj_name_nl=row.get('subj_name_nl'),
                         depbase_code=row.get('depbase_code'),
@@ -5347,10 +5384,6 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
                         version=row.get('version'),
                         ntb_omschrijving=row.get('ntb_omschrijving')
                     )
-                    if logging_on:
-                        logger.debug('exam_name: ' + str(exam_name))
-
-                    row['exam_name'] = exam_name
 
     # - add messages to first exam_row, only when exam_pk exists
             if exam_pk_list and len(exam_pk_list) == 1 and all_exam_rows:

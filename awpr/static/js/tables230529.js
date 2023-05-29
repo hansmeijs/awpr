@@ -3106,6 +3106,8 @@ const mod_MCOL_dict = {
             sel_cluster_pk: null,
             sel_student_pk: null
             }};
+
+    //console.log( " upload_dict", upload_dict);
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         SBR_show_all_response();

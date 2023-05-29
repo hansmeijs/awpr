@@ -1797,9 +1797,9 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
         const el_mod_message_size = document.getElementById("id_mod_message_size");
         const size_class = (max_size === "xl") ?  "modal-xl" : (max_size === "lg") ? "modal-lg" : "modal-md";
-        console.log( "    size_class", size_class);
+    //console.log( "    size_class", size_class);
         add_or_remove_class(el_mod_message_size, size_class, (["xl", "lg"].includes(max_size)), "modal-md");
-        console.log( "    el_mod_message_size", el_mod_message_size);
+    //console.log( "    el_mod_message_size", el_mod_message_size);
 
         /*
         'hide.bs.modal' executes when the .modal (modal window) gets closed.
@@ -1966,13 +1966,13 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         console.log( "===== b_ManualLoadPage ========= ");
        // console.log( "    page", page);
         //console.log( "    paragraph_id", paragraph_id);
-        console.log( "    manual_dict", manual_dict);
+    //console.log( "    manual_dict", manual_dict);
 
         // NIU: const el_btn = document.getElementById("id_btn_" + page)
         //console.log( "el_btn", el_btn);
 
         const is_en = (setting_dict.user_lang === "en");
-        console.log( "is_en", is_en);
+    //console.log( "is_en", is_en);
 
         const page = setting_dict.sel_page;
         const html_dict = (page === "home") ? man_home :
@@ -1986,7 +1986,7 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
                         (page === "wolf") ? man_wolf :
                         (page === "approve") ? man_approve :
                         (page === "mailbox") ? man_mailbox : man_home;
-        console.log( "    html_dict", html_dict);
+    //console.log( "    html_dict", html_dict);
 
         const html_list = (html_dict) ? (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl : null;
         //console.log( "html_list", html_list);

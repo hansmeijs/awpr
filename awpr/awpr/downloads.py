@@ -645,9 +645,7 @@ def download_setting(request_item_setting, user_lang, request):
     if requsr_allowed_sections_dict:
         permit_dict['allowed_sections'] = requsr_allowed_sections_dict
 
-    requsr_allowed_cluster_list = acc_prm.get_userallowed_cluster_pk_list(requsr_userallowed_instance)
-    if requsr_allowed_cluster_list:
-        permit_dict['allowed_clusters'] = requsr_allowed_cluster_list
+    # permit_dict['allowed_clusters comes after retrieving selected school
 
     permit_list = acc_prm.get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroup_list)
     if permit_list:
@@ -723,7 +721,15 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
         logger.debug('    sel_school_instance: ' + str(sel_school_instance))
 
-# ===== DEPARTMENTBASE =======================
+    # PR2023-05-28 debug: must filter only allowed_clusters of selected school
+    allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+        sel_schoolbase_pk=sel_schoolbase_instance.pk if sel_schoolbase_instance else None,
+        allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(requsr_userallowed_instance)
+    )
+    if allowed_clusters_of_sel_school:
+        permit_dict['allowed_clusters'] = allowed_clusters_of_sel_school
+
+    # ===== DEPARTMENTBASE =======================
     allowed_schoolbase_dict, allowed_depbases_pk_arr = \
         acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
             userallowed_sections_dict=requsr_allowed_sections_dict,

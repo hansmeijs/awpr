@@ -674,9 +674,15 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    # PR2023-05-28 removed:
+    # auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     locked = BooleanField(default=False)
+
+    # PR2023-05-28 added: publish cesuur
+    cesuur_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    cesuur_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    cesuur_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     nex_id = PositiveSmallIntegerField(null=True)
     scalelength = PositiveSmallIntegerField(null=True)
@@ -731,9 +737,15 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
-    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    # PR2023-05-28 removed:
+    # auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     locked = BooleanField(default=False)
+
+    # PR2023-05-28 added: publish cesuur
+    cesuur_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    cesuur_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    cesuur_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     nex_id = PositiveSmallIntegerField(null=True)
     scalelength = PositiveSmallIntegerField(null=True)

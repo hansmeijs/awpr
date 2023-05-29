@@ -1958,6 +1958,7 @@ document.addEventListener('DOMContentLoaded', function() {
               const data_dict = corrector_dicts["user_" + pk_int];
 
     console.log("    data_dict", data_dict)
+    console.log("    data_dict.allowed_clusters", data_dict.allowed_clusters)
 
             // fldName = allowed_clusters
 
@@ -1969,6 +1970,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // allowed_clusters = ""ac - 4A1, ac - 4VA1, ac - 4VA2,"
             mod_MSM_dict.allowed_clusters = data_dict.allowed_clusters;
             mod_MSM_dict.allowed_clusters_pk_arr = data_dict.allowed_clusters_pk;
+            mod_MSM_dict.allowed_subjbase_pk_list = data_dict.allowed_subjbase_pk_list;
 
     // ---  set header text
             const header_text = loc.Select + loc.Clusters.toLowerCase() + ":";
@@ -2075,33 +2077,40 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "    mod_MSM_dict.allowed_clusters: ", mod_MSM_dict.allowed_clusters);
         const allowed_clusters_pk_arr = (mod_MSM_dict.allowed_clusters_pk_arr) ? mod_MSM_dict.allowed_clusters_pk_arr : [];
 
+        // PR2023-05-29 filter allowed subjects
+        const allowed_subjbase_pk_arr = (mod_MSM_dict.allowed_subjbase_pk_list) ? mod_MSM_dict.allowed_subjbase_pk_list : [];
+
         //console.log( "    allowed_clusters_pk_arr: ", allowed_clusters_pk_arr);
 
         for (const data_dict of Object.values(cluster_dictsNEW)) {
-    //console.log( "    data_dict: ", data_dict)
+
+            const show_row = (allowed_subjbase_pk_arr && allowed_subjbase_pk_arr.length) ? (allowed_subjbase_pk_arr.includes(data_dict.subjbase_id)) : true;
+            if (show_row){
+    console.log( "    data_dict: ", data_dict)
             const pk_int = data_dict.id;
             const row_is_selected = (pk_int && allowed_clusters_pk_arr && allowed_clusters_pk_arr.includes(pk_int));
 
-    //console.log( "    pk_int: ", pk_int);
-    //console.log( "   ==== row_is_selected: ", row_is_selected);
+    console.log( "    pk_int: ", pk_int);
+    console.log( "   ==== row_is_selected: ", row_is_selected);
             if(row_is_selected){
                 has_selected_rows = true;
             };
 
             const row_index = -1;
             MSM_FillSelectRow(tblBody_select, data_dict, row_is_selected);
+            };
         };
 
     //console.log( "  >>>>>>>>>>   has_selected_rows: ", has_selected_rows);
 
 // ---  add 'all' at the beginning of the list, with id = 0, make selected if no other rows are selected
-        //const data_dict = {};
-        //data_dict.id = -9;
-        //data_dict.name = "<" + loc.All_ + loc.Clusters.toLowerCase() + ">"
+        const data_dict = {};
+        data_dict.id = -9;
+        data_dict.name = "<" + loc.All_ + loc.Clusters.toLowerCase() + ">"
 
-        //const row_index = 0;
+        const row_index = 0;
         // select <All> when has_selected_rows = false;
-        //MSM_FillSelectRow(tblBody_select, data_dict, !has_selected_rows, true)  // true = insert_at_index_zero
+        MSM_FillSelectRow(tblBody_select, data_dict, !has_selected_rows, true)  // true = insert_at_index_zero
 
     }  // MSM_FillSelectTable
 

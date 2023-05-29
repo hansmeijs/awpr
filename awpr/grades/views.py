@@ -303,7 +303,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
             logger.debug(' ')
             logger.debug(' ============= GradeApproveView ============= ')
 
-# function approves single or multiple scores / grades
+# - function approves single or multiple scores / grades
         update_wrap = {}
         msg_html_list = []
         msg_single_update_list = []
@@ -349,7 +349,6 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
 
                     # TODO PR2023-04-10
                     #  Een goedkeuring kan alleen worden verwijderd door dezelfde gebruiiker,
-
 
     # - get grade_pk. It only has value when a single grade is approved
                     grade_pk = upload_dict.get('grade_pk')
@@ -476,14 +475,15 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                     else:
         # get_allowed_sections
                                         userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
-                                        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(
-                                            userallowed_instance)
-                                        userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(
-                                            userallowed_instance)
+                                        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
 
+                                        allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+                                            sel_schoolbase_pk = sel_school.base_id if sel_school else None,
+                                            allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                                        )
                                         if logging_on:
                                             logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
-                                            logger.debug('    userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+                                            logger.debug('    allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
 
                                         # blank scores / grades are not included
                                         grade_approve_rows = create_grade_approve_rows(
@@ -495,7 +495,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                             sel_examperiod=sel_examperiod,
                                             sel_examtype=sel_examtype,
                                             userallowed_sections_dict=userallowed_sections_dict,
-                                            userallowed_cluster_pk_list=userallowed_cluster_pk_list,
+                                            allowed_clusters_of_sel_school=allowed_clusters_of_sel_school,
                                             grade_pk=grade_pk
                                         )
                                         if logging_on:
@@ -519,7 +519,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
 
                                         test_is_ok = False
 
-            # +++++ loop through grade_approve_rows
+# ++++++++++++++++++++++ loop through grade_approve_rows
                                         grade_rows_tobe_updated = [] # list of grdaepk that passed validation
                                         updated_grade_pk_list = []
 
@@ -545,7 +545,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                                         request=request,
                                                         requsr_auth=requsr_auth,
                                                         userallowed_sections_dict=userallowed_sections_dict,
-                                                        userallowed_cluster_pk_list=userallowed_cluster_pk_list,
+                                                        allowed_clusters_of_sel_school=allowed_clusters_of_sel_school,
 
                                                         schoolbase_pk=grade_row.get('schoolbase_id'),
                                                         depbase_pk=grade_row.get('depbase_id'),
@@ -554,7 +554,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                                         cluster_pk=grade_row.get('cluster_id'),
                                                         studsubj_tobedeleted=grade_row.get('studsubj_tobedeleted'),
                                                         is_secret_exam=grade_row.get('secret_exam'),
-
+                                                        is_reset=is_reset,
                                                         msg_list=msg_list,
                                                         is_approve=True, # only used for msg text
                                                         is_score=is_score # only used for msg text
@@ -563,7 +563,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                                     is_allowed = grad_val.validate_grade_multiple_is_allowed(
                                                         request=request,
                                                         requsr_auth=requsr_auth,
-                                                        userallowed_cluster_pk_list=userallowed_cluster_pk_list,
+                                                        allowed_clusters_of_sel_school=allowed_clusters_of_sel_school,
                                                         schoolbase_pk=grade_row.get('schoolbase_id'),
                                                         depbase_pk=grade_row.get('depbase_id'),
                                                         lvlbase_pk=grade_row.get('lvlbase_id'),
@@ -590,8 +590,8 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                                             updated_grade_pk_list = [grade_pk]
                                                         else:
                                                             pass
+# ++++++++++++++++++++++ end of loop through grade_approve_rows
 
-             # +++++  end of loop through grade_approve_rows
                                         if logging_on:
                                             logger.debug('----- grade_rows_tobe_updated: ' + str(grade_rows_tobe_updated))
                                             # grade_rows_tobe_updated = [grade_pk, new_auth_id, new_status_sum]
@@ -923,7 +923,7 @@ def batch_submit_ex2_rows(grade_rows_tobe_updated, sel_examtype, published_pk, r
 
 def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk,
                               sel_examperiod, sel_examtype, userallowed_sections_dict,
-                              userallowed_cluster_pk_list, grade_pk=None, include_grades=False):
+                              allowed_clusters_of_sel_school, grade_pk=None, include_grades=False):
     # PR2022-03-07 PR2022-06-13 PR2023-02-02
     # called by GradeApproveView, GradeSubmitEx2Ex2aView
     # include_grades is True when called by GradeSubmitEx2Ex2aView(View)
@@ -1081,9 +1081,14 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
                 sql_list.append(sqlclause_allowed_dep_lvl_subj)
 
 # - filter on allowed clusters
-            userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters('studsubj', userallowed_cluster_pk_list)
-            if userallowed_cluster_pk_clause:
-                sql_list.append( userallowed_cluster_pk_clause)
+            # PR2023-05-29 dont filter on allowed cluster here, because msg must be sent when cluster not allowed
+            # filtyer in validate_approve
+            #userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters(
+            #    table='studsubj',
+            #    allowed_clusters_of_sel_school=allowed_clusters_of_sel_school
+            #)
+            #if userallowed_cluster_pk_clause:
+            #    sql_list.append( userallowed_cluster_pk_clause)
 
         sql_list.append('ORDER BY stud.lastname, stud.firstname')
 
@@ -1320,7 +1325,11 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
         # get_allowed_sections
                         userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
                         userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
-                        userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+
+                        allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+                            sel_schoolbase_pk=sel_school.base_id if sel_school else None,
+                            allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                        )
 
         # - get selected examperiod, levelbase from usersetting
                         sel_examperiod, sel_examtype, sel_lvlbase_pk = None, None, None
@@ -1384,7 +1393,7 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                                     sel_examperiod=sel_examperiod,
                                     sel_examtype=sel_examtype,
                                     userallowed_sections_dict=userallowed_sections_dict,
-                                    userallowed_cluster_pk_list=userallowed_cluster_pk_list,
+                                    allowed_clusters_of_sel_school=allowed_clusters_of_sel_school,
                                     include_grades=True
                                 )
 
@@ -2592,219 +2601,226 @@ class GradeUploadView(View):
 
         if req_usr and req_usr.country and req_usr.schoolbase:
 
-# - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                if logging_on:
-                    logger.debug('    upload_dict: ' + str(upload_dict))
-                """
-                upload_dict: {'mode': 'update', 'mapid': 'grade_22958', 'examperiod': 1, 
-                'grade_pk': 22958, 'student_pk': 3935, 'studsubj_pk': 21706, 'examgradetype': 'segrade', 'segrade': '44'}
-    
-                upload_dict: {'table': 'grade', 'mode': 'update', 'return_grades_with_exam': True, 
-                                'examyear_pk': 1, 'depbase_pk': 1, 'examperiod': 1, 'examtype': 'se', 
-                                'exam_pk': 36,  'grade_pk': 22440, 'student_pk': 3747, 
-                                'ce_exam_result': '34;35#1|2;a'}
-    
-                """
-                mode = upload_dict.get('mode')
-                page = upload_dict.get('page')
+            try:
+    # - get upload_dict from request.POST
+                upload_json = request.POST.get('upload', None)
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
+                    if logging_on:
+                        logger.debug('    upload_dict: ' + str(upload_dict))
+                    """
+                    upload_dict: {'mode': 'update', 'mapid': 'grade_22958', 'examperiod': 1, 
+                    'grade_pk': 22958, 'student_pk': 3935, 'studsubj_pk': 21706, 'examgradetype': 'segrade', 'segrade': '44'}
+        
+                    upload_dict: {'table': 'grade', 'mode': 'update', 'return_grades_with_exam': True, 
+                                    'examyear_pk': 1, 'depbase_pk': 1, 'examperiod': 1, 'examtype': 'se', 
+                                    'exam_pk': 36,  'grade_pk': 22440, 'student_pk': 3747, 
+                                    'ce_exam_result': '34;35#1|2;a'}
+        
+                    """
+                    mode = upload_dict.get('mode')
+                    page = upload_dict.get('page')
 
-    # - get permit
-                #permit_list, requsr_usergroups_listNIU, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(
-                #    request, 'page_grade')
-                #has_permit = 'permit_crud' in permit_list
+        # - get permit
+                    #permit_list, requsr_usergroups_listNIU, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(
+                    #    request, 'page_grade')
+                    #has_permit = 'permit_crud' in permit_list
 
-                page_name = page if page else 'page_grade'
-                if 'approve' in mode:
-                    has_permit = acc_prm.get_permit_of_this_page(page_name, 'approve_exam' ,request)
-                elif 'undo_submitted' in mode:
-                    has_permit = acc_prm.get_permit_of_this_page(page_name, 'submit_exam' ,request)
-                else:
-                    has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+                    page_name = page if page else 'page_grade'
+                    if 'approve' in mode:
+                        has_permit = acc_prm.get_permit_of_this_page(page_name, 'approve_exam' ,request)
+                    elif 'undo_submitted' in mode:
+                        has_permit = acc_prm.get_permit_of_this_page(page_name, 'submit_exam' ,request)
+                    else:
+                        has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
-                if logging_on:
-                    logger.debug('    page_name: ' + str(page_name))
-                    logger.debug('    has_permit: ' + str(has_permit))
+                    if logging_on:
+                        logger.debug('    page_name: ' + str(page_name))
+                        logger.debug('    has_permit: ' + str(has_permit))
 
-                if not has_permit:
-                    msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
-                else:
-
-    # - get selected examyear, school and department from usersettings
-                    # may_edit = False when:
-                    #  - country is locked,
-                    #  - examyear is not found, not published or locked
-                    #  - school is not found, not same_school, not activated, or locked
-                    #  - department is not found, not in user allowed depbase or not in school_depbase
-                    sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
-                        acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-                    if err_list:
-                        err_list.append(str(_('You cannot make changes.')))
-                        msg_list.extend(err_list)
+                    if not has_permit:
+                        msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
                     else:
 
-    # - get upload_dict variables
-                        # get examperiod and examtype from upload_dict
-                        # don't get it from usersettings, get it from upload_dict instead
-                        # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = acc_prm.get_selected_experiod_extype_subject_from_usersetting(request)
+        # - get selected examyear, school and department from usersettings
+                        # may_edit = False when:
+                        #  - country is locked,
+                        #  - examyear is not found, not published or locked
+                        #  - school is not found, not same_school, not activated, or locked
+                        #  - department is not found, not in user allowed depbase or not in school_depbase
+                        sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                            acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                        if err_list:
+                            err_list.append(str(_('You cannot make changes.')))
+                            msg_list.extend(err_list)
+                        else:
 
-                        grade_pk = upload_dict.get('grade_pk')
-                        examgradetype = upload_dict.get('examgradetype', '')
-                        # 'examgradetype': 'segrade'
+        # - get upload_dict variables
+                            # get examperiod and examtype from upload_dict
+                            # don't get it from usersettings, get it from upload_dict instead
+                            # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = acc_prm.get_selected_experiod_extype_subject_from_usersetting(request)
 
-                        return_grades_with_exam = upload_dict.get('return_grades_with_exam', False)
+                            grade_pk = upload_dict.get('grade_pk')
+                            examgradetype = upload_dict.get('examgradetype', '')
+                            # 'examgradetype': 'segrade'
 
-    # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
-                        # sel_department only has value when sel_examyear and sel_school have value
-                        student_pk = upload_dict.get('student_pk')
-                        student = stud_mod.Student.objects.get_or_none(
-                            id=student_pk,
-                            school=sel_school,
-                            department=sel_department
-                        )
+                            return_grades_with_exam = upload_dict.get('return_grades_with_exam', False)
 
-                        grade = None
-                        if student:
-
-    # - get current grade
-                            grade = stud_mod.Grade.objects.get_or_none(
-                                id=grade_pk,
-                                studentsubject__student=student
-                            )
-                        if logging_on:
-                            logger.debug('    student: ' + str(student))
-                            logger.debug('    grade: ' + str(grade))
-
-                        if grade:
-                            # student_subj_grade_dict is not in use, I think
-                            #   examperiod_int = grade.examperiod
-                            #   double_entrieslist = []
-                            #   studsubj_pk = grade.studentsubject_id
-                            #   student_subj_grade_dict =  grad_val.get_student_subj_grade_dict(sel_school, sel_department, examperiod_int, examgradetype, double_entrieslist, student_pk, studsubj_pk)
-
-                            requsr_auth = None
-                            auth_index = upload_dict.get('auth_index')
-                            if auth_index:
-                                requsr_auth = 'auth' + str(auth_index)
-
-            # +++ check if editing grade is allowed
-                            # check if studsubj is tobedeleted
-                            studsubj_tobedeleted = grade.studentsubject.tobedeleted or False
-
-                            is_score = 'score' in examgradetype
-                            # PR2022-04-06 <Marisela Cijntje Radulphus cannot edit grade:
-                            # cause: Havo/Vwo has no level,
-                            # error: 'NoneType' object has no attribute 'base_id'
-                            # cause: Havo/Vwo has no level
-                            lvlbase_pk = grade.studentsubject.student.level.base_id if grade.studentsubject.student.level else None
-
-                            userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
-                            userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
-                            userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
-
-                            is_allowed = grad_val.validate_grade_is_allowed(
-                                request=request,
-                                requsr_auth=requsr_auth,
-
-                                userallowed_sections_dict=userallowed_sections_dict,
-                                userallowed_cluster_pk_list=userallowed_cluster_pk_list,
-
-                                schoolbase_pk=grade.studentsubject.student.school.base_id,
-                                depbase_pk=grade.studentsubject.student.department.base_id,
-                                lvlbase_pk=lvlbase_pk,
-                                subjbase_pk=grade.studentsubject.schemeitem.subject.base_id,
-                                cluster_pk=grade.studentsubject.cluster_id,
-                                studsubj_tobedeleted=studsubj_tobedeleted,
-                                is_secret_exam=grade.ce_exam.secret_exam if grade.ce_exam else False,
-
-                                msg_list=msg_list,
-                                is_score=is_score,
-                                is_grade_exam=return_grades_with_exam
+        # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
+                            # sel_department only has value when sel_examyear and sel_school have value
+                            student_pk = upload_dict.get('student_pk')
+                            student = stud_mod.Student.objects.get_or_none(
+                                id=student_pk,
+                                school=sel_school,
+                                department=sel_department
                             )
 
-                            if logging_on:
-                                logger.debug('    is_allowed: ' + str(is_allowed))
-                                logger.debug('    msg_list: ' + str(msg_list))
+                            grade = None
+                            if student:
 
-                            if is_allowed:
-
-    # - get schemitem_info, separately, instead of getting from grade_instance, should be faster
-                                si_pk = grade.studentsubject.schemeitem_id
-                                schemeitems_dict = subj_vw.get_scheme_si_dict(
-                                    examyear_pk=sel_examyear.pk if sel_examyear else None,
-                                    depbase_pk=sel_department.base_id if sel_department else None,
-                                    schemeitem_pk=si_pk)
-                                si_dict = schemeitems_dict.get(si_pk)
-
-        # +++ update existing grade - not when grade is created - grade is None when deleted
-                                # undo_submitted means: undo submitted wolf exam (ce_exam)
-                                if mode in ('update', 'undo_submitted'):
-                                    err_list = update_grade_instance(
-                                        grade_instance=grade,
-                                        upload_dict=upload_dict,
-                                        sel_examyear=sel_examyear,
-                                        sel_department=sel_department,
-                                        si_dict=si_dict,
-                                        request=request)
-                                if err_list:
-                                    msg_list.extend(err_list)
-
-                                if logging_on:
-                                    logger.debug('    student: ' + str(student))
-                                    logger.debug('    grade: ' + str(grade))
-
-                # - add update_dict to update_wrap
-                            grade_rows = []
-                            if return_grades_with_exam:
-                                rows = create_grade_with_exam_rows(
-                                    sel_examyear=sel_examyear,
-                                    sel_schoolbase=sel_school.base if sel_school else None,
-                                    sel_depbase=sel_department.base if sel_department else None,
-                                    sel_lvlbase=sel_level.base if sel_level else None,
-                                    sel_examperiod=grade.examperiod,
-                                    request=request,
-                                    ete_exams_only=False,
-                                    grade_pk_list=[grade.pk]
+        # - get current grade
+                                grade = stud_mod.Grade.objects.get_or_none(
+                                    id=grade_pk,
+                                    studentsubject__student=student
                                 )
-                            else:
-                                #TODO add error fieldname to err_fields in update)grade, not here
+                            if logging_on:
+                                logger.debug('    student: ' + str(student))
+                                logger.debug('    grade: ' + str(grade))
 
-                    # - err_fields is used when there is an error entering grade, to restore old value on page
-                                append_dict = {}
-                                if msg_list:
-                                     # only one grade is updated, therefore multiple fields are not possible
-                                    if examgradetype in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
-                                        append_dict[grade.pk] = {'err_fields': [examgradetype]}
+                            if grade:
+                                # student_subj_grade_dict is not in use, I think
+                                #   examperiod_int = grade.examperiod
+                                #   double_entrieslist = []
+                                #   studsubj_pk = grade.studentsubject_id
+                                #   student_subj_grade_dict =  grad_val.get_student_subj_grade_dict(sel_school, sel_department, examperiod_int, examgradetype, double_entrieslist, student_pk, studsubj_pk)
+
+                                requsr_auth = None
+                                auth_index = upload_dict.get('auth_index')
+                                if auth_index:
+                                    requsr_auth = 'auth' + str(auth_index)
+
+                # +++ check if editing grade is allowed
+                                # check if studsubj is tobedeleted
+                                studsubj_tobedeleted = grade.studentsubject.tobedeleted or False
+
+                                is_score = 'score' in examgradetype
+                                # PR2022-04-06 <Marisela Cijntje Radulphus cannot edit grade:
+                                # cause: Havo/Vwo has no level,
+                                # error: 'NoneType' object has no attribute 'base_id'
+                                # cause: Havo/Vwo has no level
+                                lvlbase_pk = grade.studentsubject.student.level.base_id if grade.studentsubject.student.level else None
+
+                                userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
+                                userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+
+                                allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+                                    sel_schoolbase_pk=grade.studentsubject.student.school.base_id,
+                                    allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                                )
+                                is_allowed = grad_val.validate_grade_is_allowed(
+                                    request=request,
+                                    requsr_auth=requsr_auth,
+
+                                    userallowed_sections_dict=userallowed_sections_dict,
+                                    allowed_clusters_of_sel_school=allowed_clusters_of_sel_school,
+
+                                    schoolbase_pk=grade.studentsubject.student.school.base_id,
+                                    depbase_pk=grade.studentsubject.student.department.base_id,
+                                    lvlbase_pk=lvlbase_pk,
+                                    subjbase_pk=grade.studentsubject.schemeitem.subject.base_id,
+                                    cluster_pk=grade.studentsubject.cluster_id,
+                                    studsubj_tobedeleted=studsubj_tobedeleted,
+                                    is_secret_exam=grade.ce_exam.secret_exam if grade.ce_exam else False,
+                                    is_reset=False, # only used when approving
+                                    msg_list=msg_list,
+                                    is_score=is_score,
+                                    is_grade_exam=return_grades_with_exam
+                                )
 
                                 if logging_on:
+                                    logger.debug('    is_allowed: ' + str(is_allowed))
                                     logger.debug('    msg_list: ' + str(msg_list))
-                                    logger.debug('    append_dict: ' + str(append_dict))
 
-                                rows = create_grade_rows(
-                                    sel_examyear=sel_examyear,
-                                    sel_schoolbase=sel_school.base,
-                                    sel_depbase=sel_department.base if sel_department else None,
-                                    sel_lvlbase=sel_level.base if sel_level else None,
-                                    sel_examperiod=grade.examperiod,
-                                    request=request,
-                                    append_dict=append_dict,
-                                    grade_pk_list=[grade.pk],
-                                    remove_note_status=True
-                                )
-                            if logging_on:
-                                logger.debug('    rows: ' + str(rows))
-                            if rows:
-                                row = rows[0]
-                                if row:
-                                    grade_rows.append(row)
-                            if logging_on:
-                                logger.debug('    grade_rows: ' + str(grade_rows))
+                                if is_allowed:
 
-                            if grade_rows:
-                                update_wrap['updated_grade_rows'] = grade_rows
+        # - get schemitem_info, separately, instead of getting from grade_instance, should be faster
+                                    si_pk = grade.studentsubject.schemeitem_id
+                                    schemeitems_dict = subj_vw.get_scheme_si_dict(
+                                        examyear_pk=sel_examyear.pk if sel_examyear else None,
+                                        depbase_pk=sel_department.base_id if sel_department else None,
+                                        schemeitem_pk=si_pk)
+                                    si_dict = schemeitems_dict.get(si_pk)
 
+            # +++ update existing grade - not when grade is created - grade is None when deleted
+                                    # undo_submitted means: undo submitted wolf exam (ce_exam)
+                                    if mode in ('update', 'undo_submitted'):
+                                        err_list = update_grade_instance(
+                                            grade_instance=grade,
+                                            upload_dict=upload_dict,
+                                            sel_examyear=sel_examyear,
+                                            sel_department=sel_department,
+                                            si_dict=si_dict,
+                                            request=request)
+                                    if err_list:
+                                        msg_list.extend(err_list)
+
+                                    if logging_on:
+                                        logger.debug('    student: ' + str(student))
+                                        logger.debug('    grade: ' + str(grade))
+
+                    # - add update_dict to update_wrap
+                                grade_rows = []
+                                if return_grades_with_exam:
+                                    rows = create_grade_with_exam_rows(
+                                        sel_examyear=sel_examyear,
+                                        sel_schoolbase=sel_school.base if sel_school else None,
+                                        sel_depbase=sel_department.base if sel_department else None,
+                                        sel_lvlbase=sel_level.base if sel_level else None,
+                                        sel_examperiod=grade.examperiod,
+                                        request=request,
+                                        ete_exams_only=False,
+                                        grade_pk_list=[grade.pk]
+                                    )
+                                else:
+                                    #TODO add error fieldname to err_fields in update)grade, not here
+
+                        # - err_fields is used when there is an error entering grade, to restore old value on page
+                                    append_dict = {}
+                                    if msg_list:
+                                         # only one grade is updated, therefore multiple fields are not possible
+                                        if examgradetype in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
+                                            append_dict[grade.pk] = {'err_fields': [examgradetype]}
+
+                                    if logging_on:
+                                        logger.debug('    msg_list: ' + str(msg_list))
+                                        logger.debug('    append_dict: ' + str(append_dict))
+
+                                    rows = create_grade_rows(
+                                        sel_examyear=sel_examyear,
+                                        sel_schoolbase=sel_school.base,
+                                        sel_depbase=sel_department.base if sel_department else None,
+                                        sel_lvlbase=sel_level.base if sel_level else None,
+                                        sel_examperiod=grade.examperiod,
+                                        request=request,
+                                        append_dict=append_dict,
+                                        grade_pk_list=[grade.pk],
+                                        remove_note_status=True
+                                    )
+                                if logging_on:
+                                    logger.debug('    rows: ' + str(rows))
+                                if rows:
+                                    row = rows[0]
+                                    if row:
+                                        grade_rows.append(row)
+                                if logging_on:
+                                    logger.debug('    grade_rows: ' + str(grade_rows))
+
+                                if grade_rows:
+                                    update_wrap['updated_grade_rows'] = grade_rows
+            except Exception as e:
+                # - create error when exam is not created PR2023-03-20
+                logger.error(getattr(e, 'message', str(e)))
+                msg_list.append(acc_prm.msghtml_error_occurred_no_border(e, _('The changes have not been saved.')))
         if logging_on:
             logger.debug('    msg_list: ' + str(msg_list))
 

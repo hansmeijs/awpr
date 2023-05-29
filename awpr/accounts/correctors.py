@@ -1487,6 +1487,7 @@ def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase
             sel_examyear=sel_examyear if sel_examyear else None,
             request=request,
             school_correctors_only=True
+            #this_depbase_pk_only=sel_depbase.pk if sel_depbase else None
         )
 
            # userallowed_sections_dict = json.loads(allowed_sections_str)
