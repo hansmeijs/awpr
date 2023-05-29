@@ -1545,6 +1545,8 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("    field_name", field_name);
         //console.log("    fld_value", fld_value);
         //console.log("    data_dict", data_dict);
+        //console.log("    data_dict.secret_exam", data_dict.secret_exam);
+        //console.log("    data_dict.ceex_secret_exam", data_dict.ceex_secret_exam);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
@@ -1563,17 +1565,16 @@ document.addEventListener("DOMContentLoaded", function() {
             // TODO enable this next year. It is turned off because empty scores were submitted
             //const grade_has_value = get_grade_has_value(field_name, data_dict, true);
 
-            const hide_secret_exam = (data_dict.secret_exam && field_name === "ce_status" && !permit_dict.requsr_role_admin )
+            // PR2-23-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
+            const is_secret_exam = (data_dict.secret_exam || data_dict.ceex_secret_exam);
+            const hide_secret_exam = (is_secret_exam && field_name === "ce_status" && !permit_dict.requsr_role_admin )
 
             const subj_has_weight = ( ["se_status", "sr_status"].includes(field_name) && data_dict.weight_se > 0 ||
                                 ["pe_status", "ce_status"].includes(field_name) && data_dict.weight_ce > 0 );
             const show_status = (subj_has_weight && !hide_secret_exam);
 
-        //console.log("    hide_secret_exam", hide_secret_exam);
-        //console.log("    subj_has_weight", subj_has_weight);
-        //console.log("  show_status", show_status);
             if (!show_status){
-                if (!permit_dict.requsr_role_admin){
+                if (is_secret_exam && !permit_dict.requsr_role_admin){
                     title_text = [
                         loc.This_is_designated_exam,
                         loc.approve_err_list.Dont_haveto_approve_secretexam
@@ -4080,12 +4081,12 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                                                 (key === "ce_blocked") ? "ce_status" : key;
 
         // ---  first put key in updated_columns
-
                             updated_columns.push(mapped_key);
         // ---  then put updated value back in data_map
                             data_dict[key] = update_dict[key];
                             if(key === "ce_exam_id"){
-                            // also update download_conv_table when ce_exam_id has changed
+                            // also update status download_conv_table when ce_exam_id has changed
+                                updated_columns.push("ce_status");
                                 updated_columns.push("download_conv_table");
                             };
                             if(key === "exemption_imported"){
@@ -4878,7 +4879,7 @@ console.log( "......filter_value", filter_value);
         //console.log(" ===  MSELEX_Open  =====") ;
         //console.log( "el_input", el_input);
         // only called in table "grades" when clicked on field "ceex_name"
-        // cannot change exam when it is approved or published
+        // cannot change exam when score is approved or published
 
         el_MSELEX_header.innerText = loc.Select_exam;
 

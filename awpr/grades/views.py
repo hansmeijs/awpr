@@ -2650,6 +2650,11 @@ class GradeUploadView(View):
                         #  - department is not found, not in user allowed depbase or not in school_depbase
                         sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
                             acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
+                        if logging_on:
+                            logger.debug('    sel_school: ' + str(sel_school))
+                            logger.debug('    sel_department: ' + str(sel_department))
+
                         if err_list:
                             err_list.append(str(_('You cannot make changes.')))
                             msg_list.extend(err_list)
@@ -2666,28 +2671,36 @@ class GradeUploadView(View):
 
                             return_grades_with_exam = upload_dict.get('return_grades_with_exam', False)
 
-        # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
-                            # sel_department only has value when sel_examyear and sel_school have value
-                            student_pk = upload_dict.get('student_pk')
-                            student = stud_mod.Student.objects.get_or_none(
-                                id=student_pk,
-                                school=sel_school,
-                                department=sel_department
-                            )
+        # when admin is entering secret exams, sel_school = school of admin. Skip getting student
+                            grade = stud_mod.Grade.objects.get_or_none(pk=grade_pk)
+                            student = grade.studentsubject.student if grade else None
+                            student_school_is_correct = False
 
-                            grade = None
-                            if student:
-
-        # - get current grade
-                                grade = stud_mod.Grade.objects.get_or_none(
-                                    id=grade_pk,
-                                    studentsubject__student=student
-                                )
                             if logging_on:
-                                logger.debug('    student: ' + str(student))
                                 logger.debug('    grade: ' + str(grade))
+                                logger.debug('    student: ' + str(student))
 
-                            if grade:
+            # check if student is from requsr_school
+                            if student:
+                                if student.department == sel_department:
+                                    if logging_on:
+                                        logger.debug('    student.department == sel_department ')
+                                    if page_name == 'page_secretexam':
+                                        if req_usr.role == c.ROLE_064_ADMIN:
+                                            student_school_is_correct = True
+                                            if logging_on:
+                                                logger.debug('    req_usr.role == c.ROLE_064_ADMIN ')
+                                    else:
+                                        if student.school.base == req_usr.schoolbase:
+                                            student_school_is_correct = True
+                                            if logging_on:
+                                                logger.debug('    student.school.base == req_usr.schoolbase ')
+
+        # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
+                            if logging_on:
+                                logger.debug('    student_school_is_correct: ' + str(student_school_is_correct))
+
+                            if student_school_is_correct:
                                 # student_subj_grade_dict is not in use, I think
                                 #   examperiod_int = grade.examperiod
                                 #   double_entrieslist = []
@@ -2936,33 +2949,28 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                 # ce_exam_auth1by is approval of exam (wolf)
                 # ce_auth1by is approval of score
 
-                ce_score_is_approved, ce_exam_is_submitted, ce_exam_is_approved = False, False, False
-
-            # - cannot change exam when ce_score_is_submitted
-                ce_score_is_submitted = getattr(grade_instance, 'ce_published') is not None
-                if not ce_score_is_submitted:
-                    ce_score_is_approved = get_ce_score_is_approved()
-
-            # - cannot change exam when ce_score_is_approved
-                if not ce_score_is_approved:
-                    ce_exam_is_submitted = getattr(grade_instance, 'ce_exam_published')
+            # PR2023-05-29 debug tel ANgela Richardson Masis Stella: cannot remove exam because is published (with empty score)
+            # was:
+                    # ce_score_is_approved, ce_exam_is_submitted, ce_exam_is_approved = False, False, False
+                # - cannot change exam when ce_score_is_submitted
+                    #ce_score_is_submitted = getattr(grade_instance, 'ce_published') is not None
+                    #if not ce_score_is_submitted:
+                    #    ce_score_is_approved = get_ce_score_is_approved()
 
             # - cannot change exam when Wolf-scores are submitted or (partly) approved
-                if not ce_exam_is_submitted:
-                    ce_exam_is_approved = get_ce_exam_is_approved()
+                ce_exam_is_submitted = getattr(grade_instance, 'ce_exam_published')
+                ce_exam_is_approved = get_ce_exam_is_approved() if not ce_exam_is_submitted else False
 
                 if logging_on:
                     logger.debug('....field: ' + str(field))
-                    logger.debug('    ce_score_is_approved: ' + str(ce_score_is_approved))
-                    logger.debug('    ce_score_is_submitted: ' + str(ce_score_is_submitted))
                     logger.debug('    ce_exam_is_submitted: ' + str(ce_exam_is_submitted))
                     logger.debug('    ce_exam_is_approved: ' + str(ce_exam_is_approved))
 
-                if ce_score_is_submitted or ce_score_is_approved or ce_exam_is_submitted or ce_exam_is_approved:
-                    score_exam_txt = gettext('this CE score') if ce_score_is_submitted or ce_score_is_approved else gettext('this Wolf exam')
+                if ce_exam_is_submitted or ce_exam_is_approved:
+                    score_exam_txt = gettext('this Wolf exam')
                     score_exam_txt_capitalized = af.capitalize_first_char(score_exam_txt)
 
-                    submitted_approved_txt = gettext('Submitted') if ce_score_is_submitted or ce_score_is_approved else gettext('Approved')
+                    submitted_approved_txt = gettext('Submitted') if ce_exam_is_submitted else gettext('Approved')
                     change_delete = str(_('Change') if new_value else _('Delete')).lower()
                     err_list.append(str(_("%(cpt)s' is already %(publ_appr_cpt)s.") \
                                         % {'cpt': score_exam_txt_capitalized,  'publ_appr_cpt': submitted_approved_txt.lower()}))
@@ -3549,6 +3557,9 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
     # note_icon is downloaded in separate call
 
     # PR2023-05-22 when secret_exams_only = True: shiws grdaes of all schools, but secret_exams_only
+
+    # PR2-23-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
+    # must rename secret_exam to ceex_secret_exam etc
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
