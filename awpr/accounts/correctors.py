@@ -1125,7 +1125,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
             # - line with text how many subjects will be approved / submitted
                         msg_list.append("<p class='pb-2'>")
                         if not committed:
-                            msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
+                            msg_str = _("No %(cpts)s will be approved.") % {'cpts': subjects_txt}
                             if logging_on:
                                 logger.debug('    is_approve not committed: ' + str(not committed))
 

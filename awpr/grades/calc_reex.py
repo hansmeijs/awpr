@@ -66,10 +66,7 @@ class CalcReexView(View):  # PR2023-04-04
 
 # ----- get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
-                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
-                        request=request,
-                        skip_same_school_clause= request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN)
-                    )
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - exit when examyear or school is locked, not published etc
                 if not may_edit:

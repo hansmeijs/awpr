@@ -4520,7 +4520,7 @@ console.log( "new_value", new_value);
     }  // MSSSS_Response
 
 //###########################################################################
-//========= set_columns_hidden  ====== PR2021-04-26 PR2022-03-03
+//========= set_columns_hidden  ====== PR2021-04-26 PR2022-03-03 PR2023-05-30
     function set_columns_hidden() {
         //console.log( "===== set_columns_hidden  === ");
         //console.log( "    permit_dict", permit_dict);
@@ -4528,7 +4528,8 @@ console.log( "new_value", new_value);
         if (permit_dict.requsr_role_system) {
             columns_hidden =  [];
         } else if (permit_dict.requsr_role_admin) {
-            columns_hidden = ["group_auth3", "group_auth4"];
+            //  PR2023-05-30 admin must approve secret exams, dont hide auth3 auth4
+            //columns_hidden = ["group_auth3", "group_auth4"];
         } else if (permit_dict.requsr_role_insp) {
             columns_hidden =  ["group_auth3", "group_auth4"];
         } else if (permit_dict.requsr_role_corr) {

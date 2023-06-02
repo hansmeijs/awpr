@@ -1776,7 +1776,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
 
                     if ("updated_cluster_rows" in response) {
-                        RefreshDataDictNEW("cluster", response.updated_cluster_rows, cluster_dictsNEW)
+                        //RefreshDataDictNEW("cluster", response.updated_cluster_rows, cluster_dictsNEW)
+                        RefreshDataDictCluster();
                     };
                     add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
                     if ("studsubj_validate_html" in response) {
@@ -2783,7 +2784,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };  // MCL_Open
 
-//=========  MCL_Save  ================ PR2022-01-09 PR2022-12-24
+//=========  MCL_Save  ================ PR2022-01-09 PR2022-12-24 PR2023-06-01
     function MCL_Save() {
         console.log("===== MCL_Save =====");
         console.log("    mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
@@ -2791,7 +2792,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         //note: cluster_upload uses subject_pk, not subjbase_pk
 // ---  loop through mod_MCL_dict.cluster_list
-        const cluster_list = []
+        const cluster_list = [];
+        const changed_cluster_pk_list = [];
         for (let i = 0, cluster_dict; cluster_dict = mod_MCL_dict.cluster_list[i]; i++) {
             if (["create", 'delete', "update"].includes(cluster_dict.mode)){
                 cluster_list.push({
@@ -2800,14 +2802,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     subject_pk: cluster_dict.subject_pk,
                     mode: cluster_dict.mode
                 });
+                changed_cluster_pk_list.push(cluster_dict.cluster_pk);
             };
         };
 
 // ---  loop through mod_MCL_dict.student_list
         const studsubj_list = []
         for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
-            if (student_dict.mode === "update"){
+            if ( (student_dict.mode === "update") ||
+                (student_dict.cluster_pk && changed_cluster_pk_list.length &&
+                    changed_cluster_pk_list.includes(student_dict.cluster_pk)) ) {
                 studsubj_list.push({
+                    grade_pk: student_dict.grade_pk,  // only used to return updated grade_rows
+                    examperiod: student_dict.examperiod,  // only used to return updated grade_rows
                     studsubj_pk: student_dict.studsubj_pk,
                     cluster_pk: student_dict.cluster_pk
                 });
@@ -2815,7 +2822,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         if (cluster_list.length || studsubj_list.length){
-
             console.log("    studsubj_list", studsubj_list);
 
     // ---  upload changes
@@ -5287,6 +5293,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
         };  // if(!isEmpty(update_dict))
     }  // RefreshDatadictItemNEW
+
+
+//=========  RefreshDataDictCluster  ================  PR2021-06-21 PR2023-06-01
+    function RefreshDataDictCluster(update_rows) {
+        console.log(" ===== RefreshDataDictCluster  =====");
+        console.log("    update_rows", update_rows);
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+                if(!isEmpty(update_dict)){
+            // ---  first remove key 'created' from update_dict
+                    if(update_dict.created){
+                        delete update_dict.created;
+                    };
+                    if (update_dict.deleted){
+                        if (map_id && map_id in cluster_dictsNEW){
+                            delete cluster_dictsNEW[map_id];
+                        };
+                    } else {
+                        cluster_dictsNEW[map_id] = update_dict;
+                    };
+        }}};
+    };  //  RefreshDataDictCluster
+
+
 
 //###########################################################################
 

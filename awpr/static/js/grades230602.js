@@ -1254,6 +1254,7 @@ document.addEventListener("DOMContentLoaded", function() {
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
 
+        console.log("field_name", field_name);
             const is_status_field = (field_name !== "note_status" && field_name.includes("_status"));
             const skip_left_border = (field_name === "download_conv_table" || is_status_field);
 
@@ -2810,6 +2811,14 @@ const is_allowed_cluster = true;
                 b_show_mod_message_html(loc.MAG_info.corrector_cannot_approve_exem);
 
             } else {
+            //TODO implement ant test
+            // PRE2023-03-25 when corrector and examtype = 'se', change to 'ce' instead of giving message
+
+                // when examtype is changed it will be updated in settings on server
+                //if (setting_dict.sel_auth_index === 4 && !["pe", "ce"].includes(setting_dict.sel_examtype) ){
+                //    setting_dict.sel_examtype = "ce";
+                //    mod_MAG_dict.examtype = "ce";
+                //};
 
         // --- get sel_examtype
                 MAG_get_sel_examtype(open_mode);
@@ -2823,6 +2832,7 @@ const is_allowed_cluster = true;
                 mod_MAG_dict.has_permit = false;
                 if (mod_MAG_dict.auth_index) {
                     if( mod_MAG_dict.is_approve_mode && permit_dict.permit_approve_grade){
+                        // only same school or corrector can approve secret exams
                         mod_MAG_dict.has_permit = (permit_dict.requsr_same_school || permit_dict.requsr_role_corr);
                     } else if (mod_MAG_dict.is_submit_ex2_mode || mod_MAG_dict.is_submit_ex2a_mode){
                         mod_MAG_dict.has_permit = (permit_dict.requsr_same_school && permit_dict.permit_submit_grade)
@@ -2985,7 +2995,6 @@ const is_allowed_cluster = true;
         MAG_SetInfoboxesAndBtns(response);
     };  // MAG_UpdateFromResponse
 
-
 //=========  MAG_SetInfoboxesAndBtns  ================ PR2023-02-23 PR2023-04-10
     function MAG_SetInfoboxesAndBtns(response) {
         console.log("===  MAG_SetInfoboxesAndBtns  =====") ;
@@ -2995,11 +3004,14 @@ const is_allowed_cluster = true;
         console.log(" ====>  step", mod_MAG_dict.step);
 
     // --- get header_txt and subheader_txt
-        const header_txt = (mod_MAG_dict.is_approve_mode) ? (mod_MAG_dict.is_examperiod_exemption) ? loc.Approve_exemptions :  (mod_MAG_dict.examtype == "se") ? loc.Approve_grades : loc.Approve_scores :
+        const header_txt = (mod_MAG_dict.is_approve_mode) ? (mod_MAG_dict.is_examperiod_exemption) ? loc.Approve_exemptions :
+                            (mod_MAG_dict.examtype == "se") ? loc.Approve_grades : loc.Approve_scores :
                             (mod_MAG_dict.is_submit_ex2_mode) ? loc.Submit_Ex2_form :
                             (mod_MAG_dict.is_submit_ex2a_mode) ? loc.Submit_Ex2A_form : null;
         el_MAG_header.innerText = header_txt;
-        const subheader_txt = (mod_MAG_dict.is_approve_mode) ? (mod_MAG_dict.is_examperiod_exemption) ? loc.MAG_info.subheader_approve_exem : loc.MAG_info.subheader_approve :
+        const subheader_txt = (mod_MAG_dict.is_approve_mode) ? (mod_MAG_dict.is_examperiod_exemption) ? loc.MAG_info.subheader_approve_exem :
+
+                                (mod_MAG_dict.examtype == "se") ? loc.MAG_info.subheader_approve_grade : loc.MAG_info.subheader_approve_score :
                               (mod_MAG_dict.is_submit_ex2_mode) ? loc.MAG_info.subheader_submit_ex2 :
                               (mod_MAG_dict.is_submit_ex2a_mode) ? loc.MAG_info.subheader_submit_ex2a : null;
         el_MAG_subheader.innerText = subheader_txt;
@@ -4357,8 +4369,8 @@ console.log( "......filter_value", filter_value);
 
         b_clear_dict(filter_dict);
         t_reset_filterrow(tblHead_datatable);
-        t_tbody_selected_clear(tblBody_datatable)
-            // ---  show total in sidebar
+        t_tbody_selected_clear(tblBody_datatable);
+// ---  show total in sidebar
         t_set_sbr_itemcount_txt();
 
         t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);

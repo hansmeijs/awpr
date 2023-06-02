@@ -27,6 +27,8 @@
     const examyear_dicts = {};
     const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
     const cluster_dictsNEW = {}; //PR2023-01-26 new approach, dict instead of sorted list
+    const grade_dictsNEW = {}; //PR2023-05-29 only used in secretaxam.js, for now
+    const school_dictsNEW = {}; //PR2023-05-29 only used in secretaxam.js, for now
 
     const manual_dict = {'test': true}
 

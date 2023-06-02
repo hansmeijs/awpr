@@ -1662,6 +1662,21 @@ def get_permit_crud_of_this_page(page, request):
     return has_permit
 # - end of get_permit_crud_of_this_page
 
+def get_return_false_when_no_allowedsubjects(req_usr):
+    # PR2023-06-02
+    # when a corrector has no allowed subjects, must return None.
+    # when an examiner has no allowed subjects, must return all subjects.
+    # PR2023-06-02 Shalini v Uytrecht: wants to be able to see the grades. Ship when chairperson or secretary
+
+    return_false_when_no_allowedsubjects = False
+    if (req_usr.role == c.ROLE_016_CORR):
+        # - skip if auth1 or auth2 is in requsr_usergroup_list
+        requsr_usergroup_list = get_usergroup_list_from_user_instance(req_usr)
+        return_false_when_no_allowedsubjects = not requsr_usergroup_list or \
+                ('auth1' not in requsr_usergroup_list and 'auth2' not in requsr_usergroup_list)
+
+    return return_false_when_no_allowedsubjects
+
 # ==========================
 
 def is_usergroup_admin(req_usr):

@@ -5352,14 +5352,13 @@ def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_clause=False, page=None):
+def get_selected_ey_school_dep_lvl_from_usersetting(request, page=None, skip_allowed_filter=False):
     # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31 PR2023-04-10
-    # called by not has_subjbases
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
         logger.debug(' +++++ get_selected_ey_school_dep_lvl_from_usersetting +++++ ' )
-        logger.debug('    skip_same_school_clause: ' + str(skip_same_school_clause))
     # this function gets sel_examyear, sel_school, sel_department from req_usr and usersetting
 
     # checks if user may edit .
@@ -5372,6 +5371,8 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
     # PR2023-04-10 # message 'You cannot make changes' must be created outside this function, text depends on situation
     sel_examyear_instance, sel_school_instance, sel_department_instance, sel_level_instance = None, None, None, None
+    # PR2023-06-02 TODO finish skip_allowed_filter, not in use yet
+
 
     def get_sel_examyear_instance():
         err_html = None
@@ -5423,26 +5424,21 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                 )
 
                 if saved_schoolbase:
-
-    # - check if saved_schoolbase_pk is in allowed_sections
-                    # schoolbase is allowed when allowed_sections_dict is empty,
-                    #  or when 'all schools' (-9) in allowed_sections_dict
-                    #  or when  saved_schoolbase.pk in allowed_sections_dict
-                    if (not allowed_sections_dict) or \
-                            ('-9' in allowed_sections_dict) or \
-                            ( str(saved_schoolbase_pk) in allowed_sections_dict):
+                    if skip_allowed_filter:
                         sel_schoolbase_instance = saved_schoolbase
                     else:
-                        caption = ' '.join(( gettext('School'), saved_schoolbase.code ))
-                        msg_list.append(gettext("%(cpt)s is not in your list of allowed %(cpt2)s.") % {'cpt': caption,
-                                                                                       'cpt2': gettext('schools')})
-
-        #TODO requsr_same_school and skip_same_school_clause has no effect, PR2023-04-17
-        # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
-        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not enter grades
-        requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and
-                              sel_schoolbase_instance and request.user.schoolbase and
-                              request.user.schoolbase.pk == sel_schoolbase_instance.pk)
+    # - check if saved_schoolbase_pk is in allowed_sections
+                        # schoolbase is allowed when allowed_sections_dict is empty,
+                        #  or when 'all schools' (-9) in allowed_sections_dict
+                        #  or when  saved_schoolbase.pk in allowed_sections_dict
+                        if (not allowed_sections_dict) or \
+                                ('-9' in allowed_sections_dict) or \
+                                ( str(saved_schoolbase_pk) in allowed_sections_dict):
+                            sel_schoolbase_instance = saved_schoolbase
+                        else:
+                            caption = ' '.join(( gettext('School'), saved_schoolbase.code ))
+                            msg_list.append(gettext("%(cpt)s is not in your list of allowed %(cpt2)s.") % {'cpt': caption,
+                                                                                           'cpt2': gettext('schools')})
 
     # - get school from sel_schoolbase and sel_examyear_instance
         if sel_schoolbase_instance:
@@ -5456,7 +5452,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                 err_html = gettext('Exam year %(exyr)s of this school is locked.') % {
                         'exyr': str(sel_school_instance.examyear.code)}
 
-        return sel_school_instance, requsr_same_school, err_html
+        return sel_school_instance, err_html
 # - end of get_school_instance
 
     def get_department_instance(sel_examyear_instance, sel_school_instance,
@@ -5633,7 +5629,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                 logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
 
     # - get sel_school_instance
-            sel_school_instance, requsr_same_school, err_html = \
+            sel_school_instance, err_html = \
                 get_school_instance(
                     request=request,
                     sel_examyear_instance=sel_examyear_instance,

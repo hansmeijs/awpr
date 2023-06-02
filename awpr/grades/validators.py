@@ -192,6 +192,7 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
     # gradetypes are: 0: None, 1: number, 2: character (g, o, v)
     gradetype = si_dict.get('gradetype')
     no_ce_years = si_dict.get('no_ce_years')
+    weight_ce = si_dict.get('weight_ce')
 
     subj_code = si_dict.get('subj_code')
 
@@ -244,7 +245,7 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
             logger.debug('     validate_grade_examgradetype_in_examyear:     ' + str(err_list))
 
     if not err_list:
-        err_list = validate_score_has_ceexam(grade_instance, examgradetype, request)
+        err_list = validate_score_has_ceexam(grade_instance, examgradetype, weight_ce, request)
         if err_list:
             error_list.extend(err_list)
             if logging_on:
@@ -649,8 +650,8 @@ def validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype):  # PR
 
 
 
-def validate_score_has_ceexam(grade_instance, examgradetype, request):
-    # PR2023-05-21
+def validate_score_has_ceexam(grade_instance, examgradetype, weight_ce, request):
+    # PR2023-05-21 PR2023-06-02
     # functions checks if garde has ce_exam,
     #  enetering scores only allowed when grade has ce_exam
     #  necessary to check if it is a secret exam (entering by school not allowed when secret exam
@@ -659,7 +660,10 @@ def validate_score_has_ceexam(grade_instance, examgradetype, request):
 
     err_list = []
     if examgradetype in ('pescore', 'cescore'):
-        if grade_instance.examperiod in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+        if not weight_ce:
+            err_list.append(gettext("This subject has no central exam."))
+
+        elif grade_instance.examperiod in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
             no_exam = False
             exam = None
             if examgradetype == 'cescore':
@@ -677,7 +681,7 @@ def validate_score_has_ceexam(grade_instance, examgradetype, request):
                     caption = gettext(' a re-examination 3rd period')
                 if caption:
                     err_list.extend((
-                            gettext("This subject is not linked to (cpt)s.") % {'cpt': caption},
+                            gettext("This subject is not linked to %(cpt)s.") % {'cpt': caption},
                             gettext("Click in the column 'Exam' to link this subject to %(cpt)s.") % {'cpt': caption}
                     ))
             else:

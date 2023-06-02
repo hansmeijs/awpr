@@ -511,7 +511,6 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06 PR
 
                 if logging_on:
                     logger.debug('    sel_examyear: ' + str(sel_examyear))
-                    logger.debug('    is_create: ' + str(is_create))
 
 # ++++ Create new mailmessage_instance:
                 if is_create:
@@ -1087,7 +1086,7 @@ def update_mailbox_instance(mailbox_instance, upload_dict, request):
 def convert_recipients_dict(recipients_dict, sel_examyear):
     # function takes recipients_dict and creates dict of user_pk per school PR2021-10-29
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== convert_recipients_dict ============= ')
 
@@ -1454,7 +1453,7 @@ def create_mailbox_items(mailmessage_instance, userlist_dict, request):
     # 'ac'  = True means: all_countries = True. This is not used yet. PR2021-11-03
     #  when option 'All Vasbo schools' is added, it need 'ac' to determine of schools from other counyries must be included.
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_mailbox_items ----- ')
         logger.debug('mailmessage_instance: ' + str(mailmessage_instance))
@@ -1470,7 +1469,8 @@ def create_mailbox_items(mailmessage_instance, userlist_dict, request):
     """
 
     if userlist_dict:
-        try:
+        #try:
+        if True:
             # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
             sent_date = timezone.now()
             for sb_pk, sb_dict in userlist_dict.items():
@@ -1495,9 +1495,11 @@ def create_mailbox_items(mailmessage_instance, userlist_dict, request):
             setattr(mailmessage_instance, 'sentdate', sent_date)
             mailmessage_instance.save(request=request)
 
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
+            if logging_on:
+                logger.debug('mailmessage_instance saved: ' + str(mailmessage_instance))
 
+        #except Exception as e:
+        #    logger.error(getattr(e, 'message', str(e)))
 # - end of create_mailbox_items
 
 
@@ -1533,11 +1535,14 @@ def send_email_message(examyear, userlist_dict, log_list, header, body_txt, requ
                 1: {'schoolname': 'Panta Rhei', 'schoolarticle': None, 'schoolcode': 'CURSYS',
                     1: ['Hans Meijs', 'hansmeijs@pantarhei.cw']}, 
             """
-            """
-            don't add attachments to notification email
-            mailattachments = sch_mod.Mailattachment.objects.filter(mailmessage=mailmessage_instance)
-            """
-            has_mailattachments = sch_mod.Mailattachment.objects.filter(mailmessage=mailmessage_instance)
+
+            # PR2023-06-02 TODO this code gave error mailmessage_instance not defined.
+            # dont know the planned use of it
+            # was:
+            #   #don't add attachments to notification email
+            #mailattachments = sch_mod.Mailattachment.objects.filter(mailmessage=mailmessage_instance)
+            #has_mailattachments = sch_mod.Mailattachment.objects.filter(mailmessage=mailmessage_instance)
+
             for sb_pk, sb_dict in userlist_dict.items():
                 if isinstance(sb_pk, int):
                     schoolcode = (sb_dict.get('schoolcode', '-') + c.STRING_SPACE_10)[:10]
@@ -4589,10 +4594,7 @@ class ArchivesUploadView(View):  # PR2022-11-02
                 #  - school is not found, not same_school, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
-                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
-                        request=request,
-                        skip_same_school_clause=True
-                    )
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if sel_msg_list:
                     msg_html = '<br>'.join(sel_msg_list)

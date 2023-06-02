@@ -814,16 +814,6 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
 
     msg = ''.join((
-
-        '<p><b>', gettext("Bug when adding allowed clusters to Second correctors"), '</b></p>',
-        "<p class='pb-2'>",
-        gettext("The following bug has occurred in the program"), ": ",
-        gettext("When a school added an allowed cluster to a Second corrector, the allowed clusters from other schools were removed."), "<br>",
-        gettext("The bug has been fixed, but maybe some allowed clusters of your Second correctors are missing."),"<br>",
-        gettext("Please check if the Second correctors still have the right allowed clusters."),"<br>",
-        gettext("Our apologies for the inconvenience."),
-
-        
         '<p><b>', gettext("Wolf scores can now be copied to the CE scores in the page <i>Grades</i>"), ':</b></p>',
         "<p class='pb-2'>", gettext("AWP will not automatically copy the Wolf scores to the CE scores in the page <i>Grades</i>."), "<br>",
         gettext("You can copy them by clicking <i>Copy Wolf scores to page Grades</i> in the menu bar."),
@@ -840,6 +830,14 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
 
     """
     
+        '<p><b>', gettext("Bug when adding allowed clusters to Second correctors"), '</b></p>',
+        "<p class='pb-2'>",
+        gettext("The following bug has occurred in the program"), ": ",
+        gettext("When a school added an allowed cluster to a Second corrector, the allowed clusters from other schools were removed."), "<br>",
+        gettext("The bug has been fixed, but maybe some allowed clusters of your Second correctors are missing."),"<br>",
+        gettext("Please check if the Second correctors still have the right allowed clusters."),"<br>",
+        gettext("Our apologies for the inconvenience."),
+        
     msg = ''.join((
         '<p><b>', str(_("The following changes have been made in AWP-online 2023")), ':</b></p>',
         "<ul><li>", str(_("Previously submitted subjects and deleted subjects are included in the Ex1 form.")), "</li>",

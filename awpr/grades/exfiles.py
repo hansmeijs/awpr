@@ -107,7 +107,7 @@ class GradeDownloadPdfViewNIU(View):  # PR2021-02-0
 
 
 @method_decorator([login_required], name='dispatch')
-class GetEx3infoView(View):  # PR2021-10-06
+class GetEx3infoView(View):  # PR2021-10-06 PR2023-05-30
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -126,7 +126,11 @@ class GetEx3infoView(View):  # PR2021-10-06
 # - get upload_dict from request.POST
         upload_json = request.POST.get('upload', None)
         if upload_json:
-            # upload_dict = json.loads(upload_json)
+            upload_dict = json.loads(upload_json)
+            secret_exams_only = upload_dict.get('secret_exams_only')
+            if logging_on:
+                logger.debug('    upload_dict: ' + str(upload_dict))
+                logger.debug('    secret_exams_only: ' + str(secret_exams_only))
 
 # - get ex3 settings from usersetting
             setting_dict = acc_prm.get_usersetting_dict(c.KEY_EX3, request)
@@ -158,7 +162,7 @@ class GetEx3infoView(View):  # PR2021-10-06
             if logging_on:
                 logger.debug('update_wrap: ' + str(update_wrap))
 
-            subject_rows = self.get_subject_rows (sel_examyear, sel_school, sel_department, sel_examperiod)
+            subject_rows = self.get_subject_rows (sel_examyear, sel_school, sel_department, sel_examperiod, secret_exams_only)
 
             update_wrap['ex3_subject_rows'] = subject_rows
 
@@ -166,54 +170,77 @@ class GetEx3infoView(View):  # PR2021-10-06
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
 
-    def get_subject_rows (self, examyear, school, department, examperiod):
+    def get_subject_rows (self, examyear, school, department, examperiod, secret_exams_only):
         # PR2021-10-09
         # note: don't forget to filter deleted = false!! PR2021-03-15
         # grades that are not published are only visible when 'same_school'
         # note_icon is downloaded in separate call
 
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ----- get_subject_rows -----')
+            logger.debug('    examyear: ' + str(examyear))
+            logger.debug('    school: ' + str(school))
+            logger.debug('    department: ' + str(department))
+            logger.debug('    examperiod: ' + str(examperiod))
 
-        sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
+        subject_rows = []
+        if examyear and school and department and examperiod:
+            sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
 
-        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name_nl,",
-                    # TODO add cluster
-                    # "MAX(studsubj.clustername) AS max_clustername, MAX(stud.classname) AS max_classname,",
-                    "MAX(stud.classname) AS max_classname,",
-                    "ARRAY_AGG(DISTINCT lvl.base_id) AS lvlbase_id_arr",
+            sql_list = [
+                "SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name_nl,",
+                # TODO add cluster
+                # "MAX(studsubj.clustername) AS max_clustername, MAX(stud.classname) AS max_classname,",
+                "MAX(stud.classname) AS max_classname,",
+                "ARRAY_AGG(DISTINCT lvl.base_id) AS lvlbase_id_arr",
 
-                    "FROM students_grade AS grd",
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
 
-                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
 
-                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                    "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted",
-                    "AND grd.examperiod = %(examperiod)s::INT",
+            ]
+            if secret_exams_only:
+                sql_list.append("INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)")
 
-                    "GROUP BY subj.id, subjbase.code, subj.name_nl",
+            # admin only deals with secret exams of their own school, therefore filter on examyear.pk
+            sql_list.extend((
+                "WHERE ey.id = ",  str(examyear.pk), "::INT ",
+                "AND dep.id = ",  str(department.pk), "::INT",
+                "AND grd.examperiod = ",  str(examperiod), "::INT",
 
-                    "ORDER BY LOWER(subj.name_nl)"
-                    ]
-        sql = ' '.join(sql_list)
+                "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                "AND NOT grd.deleted AND NOT grd.tobedeleted",
+            ))
+            if secret_exams_only:
+                sql_list.append("AND exam.secret_exam")
+            else:
+                sql_list.extend(("AND school.id = ",  str(school.pk), "::INT "))
 
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-            subject_rows = af.dictfetchall(cursor)
+            sql_list.extend((
+                "GROUP BY subj.id, subjbase.code, subj.name_nl",
+                "ORDER BY LOWER(subj.name_nl)"
+            ))
+            sql = ' '.join(sql_list)
 
-        if logging_on:
-            logger.debug('sql_keys: ' + str(sql_keys))
-            logger.debug('sql: ' + str(sql))
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                subject_rows = af.dictfetchall(cursor)
+
+            if logging_on:
+                logger.debug('sql_keys: ' + str(sql_keys))
+                for txt in sql_list:
+                    logger.debug('  > ' + str(txt))
 
         # - add full name to rows, and array of id's of auth
         """
@@ -376,7 +403,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 
 
 @method_decorator([login_required], name='dispatch')
-class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
+class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
 
     def get(self, request, list):
         logging_on = s.LOGGING_ON
@@ -385,7 +412,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
             if logging_on:
                 logger.debug('     list: ' + str(list))
 
-        # TODO for uploading Exs with signatures:
+        # for uploading Exs with signatures (not in use):
         # - give each Ex3 a sequence, print under Ex3 in box
         # - create table mapped_ex3 with field Ex3 sequence and field with all grade_pks of that Ex3
         # when uploading: user types Ex3 number when uploading Ex3,
@@ -398,6 +425,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
 
         if request.user and request.user.country and request.user.schoolbase and list:
             upload_dict = json.loads(list)
+            # upload_dict: {'subject_list': [238], 'sel_layout': 'none', 'secret_exams_only': True, 'lvlbase_pk_list': []}
 
             req_user = request.user
 
@@ -414,6 +442,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
             sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
 
             if logging_on:
+                logger.debug('    upload_dict: ' + str(upload_dict))
                 logger.debug('    sel_examperiod: ' + str(sel_examperiod))
                 logger.debug('    sel_school: ' + str(sel_school))
                 logger.debug('    sel_department: ' + str(sel_department))
@@ -422,6 +451,12 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
                 sel_layout = upload_dict.get('sel_layout')
                 lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
                 subject_list = upload_dict.get('subject_list', [])
+                secret_exams_only = upload_dict.get('secret_exams_only') or False
+
+                lvlbase_pk_list = upload_dict.get('lvlbase_pk_list') or []
+                subject_list = upload_dict.get('subject_list') or []
+                sel_layout = upload_dict.get('sel_layout')
+
 
 # - save sel_layout and lvlbase_pk_list and in usersetting
                 setting_dict = {'sel_layout': sel_layout, 'lvlbase_pk_list': lvlbase_pk_list}
@@ -431,7 +466,8 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
                 exform_text = awpr_lib.get_library(sel_examyear, ['exform', 'ex3'])
 
 # +++ get ex3_grade_rows
-                ex3_dict = self.get_ex3_grade_rows(sel_examyear, sel_school, sel_department, upload_dict, sel_examperiod)
+                ex3_dict = self.get_ex3_grade_rows(sel_examyear, sel_school, sel_department,
+                                                   lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout)
                 """
                 ex3_dict: { 
                     2168: { 'subj_name': 'Culturele en Artistieke Vorming', 
@@ -540,16 +576,16 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of DownloadEx3View
 
-    def get_ex3_grade_rows (self, examyear, school, department, upload_dict, examperiod):
+    def get_ex3_grade_rows (self, examyear, school, department,
+                            lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout):
 
         # note: don't forget to filter deleted = false!! PR2021-03-15
         # grades that are not published are only visible when 'same_school'
         # note_icon is downloaded in separate call
 
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ----- get_ex3_grade_rows -----')
-            logger.debug('upload_dict: ' + str(upload_dict))
 
         # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}
 
@@ -559,12 +595,8 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
         #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
         #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
 
-        lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
-        subject_list = upload_dict.get('subject_list', [])
-        sel_layout = upload_dict.get('sel_layout')
-
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk,
-                    'lvlbase_pk_arr': lvlbase_pk_list, 'subj_arr': subject_list, 'experiod': examperiod}
+                    'lvlbase_pk_arr': lvlbase_pk_list, 'subj_arr': subject_list, 'experiod': sel_examperiod}
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys))
 
@@ -574,34 +606,46 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
         subject_filter = "AND subj.id IN ( SELECT UNNEST( %(subj_arr)s::INT[]))" if subject_list else ""
 
         logger.debug('subject_filter: ' + str(subject_filter))
-        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
-                    "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.extrafacilities,",
-                    "stud.classname, cl.name AS cluster_name,",
-                    "stud.level_id, lvl.name AS lvl_name",
+        sql_list = [
+            "SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
+            "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.extrafacilities,",
+            "stud.classname, cl.name AS cluster_name,",
+            "stud.level_id, lvl.name AS lvl_name",
 
-                    "FROM students_grade AS grd",
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+            "FROM students_grade AS grd",
+            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
 
-                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+            "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
 
-                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+            "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+            "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+        ]
+        if secret_exams_only:
+            sql_list.append("INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)")
 
-                    "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+        # admin only deals with secret exams of their own school, therefore filter on examyear.pk
+        sql_list.extend((
+            "WHERE ey.id = ",  str(examyear.pk), "::INT ",
+            "AND dep.id = ",  str(department.pk), "::INT",
+            "AND grd.examperiod = ",  str(sel_examperiod), "::INT",
+            level_filter,
+            subject_filter,
+            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+            "AND NOT grd.deleted AND NOT grd.tobedeleted",
+        ))
+        if secret_exams_only:
+            sql_list.append("AND exam.secret_exam")
+        else:
+            sql_list.extend(("AND school.id = ",  str(school.pk), "::INT "))
 
-                    "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                    level_filter,
-                    subject_filter,
-
-                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
-                    "AND grd.examperiod = %(experiod)s::INT",
-                    "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
-                    ]
+        sql_list.append("ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)")
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:

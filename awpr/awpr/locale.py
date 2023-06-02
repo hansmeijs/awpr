@@ -62,6 +62,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['All_sectors_profiles'] = _("All sectors / profiles")
     dict['All_sectors_profiles'] = _("All sectors / profiles")
     dict['All_clusters'] = _("All clusters")
+    dict['All_schools'] = _("All schools")
 
     dict['All_sections_are_allowed'] = _("All sections are allowed.")
 
@@ -1514,11 +1515,13 @@ def get_locale_dict(table_dict, user_lang, request):
         }
 
         dict['MAG_info'] = {
-            'awp_is_checking_grades': _('AWP is checking the %(sc_gr)s of the candidates...') % {'sc_gr': _('grades')},
-            'awp_is_checking_scores': _('AWP is checking the %(sc_gr)s of the candidates...') % {'sc_gr': _('scores')},
+            'awp_is_checking_grades': _('AWP is checking the %(sc_gr)s of the candidates...') % {'sc_gr': gettext('Grades').lower()},
+            'awp_is_checking_scores': _('AWP is checking the %(sc_gr)s of the candidates...') % {'sc_gr': gettext('Scores').lower()},
 
-            'subheader_approve': _('The following grades will be approved:'),
-            'subheader_approve_exem': _('The following exemptions will be approved:'),
+            'subheader_approve_grade': _('The following %(cpt)s will be approved:') % {'cpt': gettext('Grades').lower()},
+            'subheader_approve_score': _('The following %(cpt)s will be approved:') % {'cpt': gettext('Scores').lower()},
+            'subheader_approve_exem': _('The following %(cpt)s will be approved:') % {'cpt': gettext('Exemptions').lower()},
+
             'subheader_submit_ex2': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex2', 'sc_gr': _('grades')},
             'subheader_submit_ex2a': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex2A', 'sc_gr': _('scores')},
             'approve_0_ex2': _("Click 'Check grades' to check the selected grades before approving."),

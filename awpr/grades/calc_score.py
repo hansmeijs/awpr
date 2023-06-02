@@ -175,16 +175,14 @@ def calc_grade_from_score_wrap(department, si_dict, row):
 
     has_centralexam = department and not department.examyear.no_centralexam and si_dict.get('weight_ce')
     if has_centralexam:
-        is_secret_exam = row.get('secret_exam', False)
         examperiod = row.get('examperiod')
-
         if logging_on:
-            logger.debug('     is_secret_exam: ' + str(is_secret_exam) + ' ' + str(type(is_secret_exam)))
             logger.debug('     examperiod:     ' + str(examperiod) + ' ' + str(type(examperiod)))
 
 # - ce_grade is an entered value when is_secret_exam or exemption
         #PR2022-06-19 scores of secret_exam are also entered, not grades
-        # was: if is_secret_exam or examperiod == c.EXAMPERIOD_EXEMPTION:
+        # was:  is_secret_exam = row.get('secret_exam', False)
+        #       if is_secret_exam or examperiod == c.EXAMPERIOD_EXEMPTION:
         if examperiod == c.EXAMPERIOD_EXEMPTION:
             ce_grade = row.get('cegrade')
             if logging_on:

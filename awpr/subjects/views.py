@@ -494,8 +494,8 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
     # --- create rows of all clusters of this examyear this department  #
     # PR2022-01-06 PR2022-12-25 PR2023-02-09 PR2023-05-29
     # called by page users, correctors,
-    # grades, secretexam, studentsubject,  wolf
-    logging_on = False  # s.LOGGING_ON
+    # grades, secretexam, studentsubject, wolf
+    logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
@@ -517,9 +517,6 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
 
     cur_dep_only, cur_school_only, allowed_only = False, False, False
     if page == 'page_corrector':
-
-
-
         if request.user.role == c.ROLE_008_SCHOOL:
             # when school uses page_corrector:
             # school can add clusters to allowed_clusters
@@ -561,6 +558,7 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                         #'db_id': sel_depbase.pk if sel_depbase else None
                         }
             sql_list = ["SELECT cluster.id, cluster.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
+                        "CONCAT('cluster_', cluster.id::TEXT) AS mapid,",
                         "sch.base_id AS schoolbase_id, dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
                         "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl",
                         "FROM subjects_cluster AS cluster",
@@ -615,6 +613,9 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                 if logging_on:
                     logger.debug('   allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
                     logger.debug('   userallowed_cluster_pk_clause: ' + str(userallowed_cluster_pk_clause))
+
+            if cluster_pk_list:
+                sql_list.extend(("AND cluster.id IN (SELECT UNNEST(ARRAY", str(cluster_pk_list), "::INT[]))"))
 
             sql_list.append("ORDER BY cluster.id")
 
@@ -8135,15 +8136,24 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06 PR2023-05-18
             user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
             activate(user_lang)
 
-# - get selected examyear and examperiod from usersettings
+# - get selected examyear and from Usersetting
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             sel_examyear, sel_department, sel_examperiod, sel_lvlbase_pk, sel_subject_pk = \
                 acc_view.get_selected_ey_ep_dep_lvl_subj_from_usersetting(request, selected_pk_dict)
 
+# - get selected examyear and examperiod from usersettings
+
             if logging_on:
+                logger.debug('    sel_examyear: ' + str(sel_examyear))
                 logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('    sel_department: ' + str(sel_department))
                 logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
                 logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
+            if sel_examperiod not in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+                sel_examperiod = c.EXAMPERIOD_FIRST
+                # save examperiod in usersettings
+                new_setting_dict = {'sel_examperiod': sel_examperiod }
+                acc_view.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK , new_setting_dict, request)
 
             examyear_txt = str(sel_examyear.code)
             examperiod_txt = c.get_examperiod_caption(sel_examperiod)
@@ -8269,12 +8279,13 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
                 logger.debug('    sel_level: ' + str(sel_level))
                 logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
 
-
             # see https://wiki.postgresql.org/wiki/Is_distinct_from
             sub_sql_list = ["SELECT grd.id AS grade_id, subj.id AS subject_id, subj.name_nl AS subject_name, exam.level_id, ",
                             "(grd.cescore IS DISTINCT FROM grd.ce_exam_score) AS change, ",
                             "(grd.cescore IS NOT NULL AND grd.cescore IS DISTINCT FROM grd.ce_exam_score) AS diff, ",
                             "(grd.cescore IS NOT NULL AND grd.cescore IS NOT DISTINCT FROM grd.ce_exam_score) AS same, ",
+
+
 
                             "(grd.ce_auth1by_id IS NOT NULL OR grd.ce_auth2by_id IS NOT NULL OR ",
                             "grd.ce_auth3by_id IS NOT NULL OR grd.ce_auth4by_id IS NOT NULL OR ",
@@ -8412,7 +8423,8 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
 
             sub_sql = get_sub_sql(False)  # False: not is_test
 
-            updated_count = 0
+            updated_grade_pk_list = []
+
             try:
                 modifiedby_pk_str = str(request.user.pk)
                 modifiedat_str = str(timezone.now())
@@ -8438,12 +8450,13 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
 
                     rows = cursor.fetchall()
                     if rows:
-                        updated_count = len(rows)
+                        for row in rows:
+                            updated_grade_pk_list.append(row[0])
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
 
-            return updated_count
+            return updated_grade_pk_list
 
         def create_test_msg_list(updated_list_sorted, level_pk_list):
 
@@ -8574,8 +8587,8 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
             msg_html = ''.join(msg_list)
 
             return msg_html
-
 ######################
+
         req_usr = request.user
         msg_html = None
         update_wrap = {}
@@ -8637,9 +8650,14 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
                         update_wrap['total_change'] = total_change
 
                     elif mode == 'update_scores':
-                        updated_score_count = copy_scores(request, sel_school, sel_department, sel_level, sel_examperiod, sel_subject_pk)
+                        updated_grade_pk_list = copy_scores(request, sel_school, sel_department, sel_level, sel_examperiod, sel_subject_pk)
+                        if updated_grade_pk_list:
+                            calc_score.batch_update_finalgrade(
+                                department_instance=sel_department,
+                                grade_pk_list=updated_grade_pk_list
+                        )
 
-                        msg_html = create_updated_msg_list(updated_score_count)
+                        msg_html = create_updated_msg_list(len(updated_grade_pk_list))
 
 
         if msg_html:

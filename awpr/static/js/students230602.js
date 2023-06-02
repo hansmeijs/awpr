@@ -436,7 +436,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
                 }
-
+                if ("msg_html" in response) {
+                    b_show_mod_message_dictlist(response.messages);
+                }
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows);
@@ -963,7 +965,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if("messages" in response){
                         b_show_mod_message_dictlist(response.messages);
-                    }
+                    };
+
+                    if("msg_html" in response){
+                        b_show_mod_message_html(response.msg_html)
+                    };
+
                     if ("validate_scheme_response" in response) {
                         ValidateScheme_Response(response.validate_scheme_response)
                     }

@@ -81,7 +81,7 @@ def create_mailmessage_received_rows(examyear, request, mailmessage_pk=None):
 def create_mailmessage_draft_or_sent_rows(is_sent, examyear, request, append_dict, mailmessage_pk=None):
     # --- create received mail_message rows of this user, this examyear PR2021-10-28
     #       use INNER JOIN mailbox to filter messages for this user
-    logging_on = False # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_mailmessage_draft_or_sent_rows ============= ')
         logger.debug('examyear_pk: ' + str(examyear))

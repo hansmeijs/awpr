@@ -151,7 +151,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get correctors
                 if datalist_request.get('corrector_rows'):
-                    logger.debug('    datalist_request corrector_rows ')
                     datalists['corrector_rows'] = acc_corr.create_corrector_rows(
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_schoolbase,
@@ -398,7 +397,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- grade_exam_result_rows
                 if datalist_request.get('grade_exam_result_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
-                        ete_exams_only = af.get_dict_value(datalist_request, ('grade_exam_rows', 'ete_exams_only'))
                         datalists['grade_exam_result_rows'] = gr_vw.create_grade_exam_result_rows(
                             sel_examyear=sel_examyear,
                             sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
@@ -406,7 +404,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_department=sel_department,
                             sel_examperiod=sel_examperiod,
                             setting_dict=new_setting_dict,
-                            ete_exams_only=ete_exams_only,
                             request=request
                         )
 # ----- grades

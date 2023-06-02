@@ -518,38 +518,15 @@ document.addEventListener("DOMContentLoaded", function() {
         };
 
     if(may_view_page){
-// ---  set selected menu button active
-       // SetMenubuttonActive(document.getElementById("id_hdr_users"));
-
-        const datalist_request = {
-                setting: {page: "page_exams"},
-                locale: {page: ["page_exams", "page_grade", "upload"]},
-                examyear_rows: {get: true},
-                school_rows: {get: true},
-                department_rows: {get: true},
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-                subject_rows: {with_ce_only: true, cur_dep_only: true},
-
-                duo_ete_subject_rows: {get: true},
-                ete_exam_rows: {get: true},
-                duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                ntermentable_rows: {get: true},
-
-                published_rows: {get: true}
-            };
-
-        DatalistDownload(datalist_request);
+        DatalistDownload({page: "page_exams"});
         //ResetFilterRows();
     };
 //  #############################################################################################################
 
 //========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, keep_loader_hidden) {
+    function DatalistDownload(request_item_setting, keep_loader_hidden) {
         console.log( "=== DatalistDownload ")
-        console.log("request: ", datalist_request)
+        console.log("    request_item_setting: ", request_item_setting)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -564,6 +541,27 @@ document.addEventListener("DOMContentLoaded", function() {
             el_loader.classList.remove(cls_visible_hide);
         };
         add_or_remove_class(el_header_left.parentNode, cls_visible_hide, !keep_loader_hidden);
+
+
+        const datalist_request = {
+                setting: request_item_setting,
+                locale: {page: ["page_exams", "page_grade", "upload"]},
+                examyear_rows: {get: true},
+                school_rows: {get: true},
+                department_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
+                subject_rows: {with_ce_only: true, cur_dep_only: true},
+
+                duo_ete_subject_rows: {get: true},
+                ete_exam_rows: {get: true},
+                duo_exam_rows: {get: true},
+                grade_exam_rows: {get: true},
+                grade_exam_result_rows: {get: true},
+                ntermentable_rows: {get: true}
+            };
+
+
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -849,21 +847,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
         setting_dict.sel_examperiod = (Number(el_select.value)) ? Number(el_select.value) : null;
 
-// ---  upload new setting
-        let new_setting = {page: 'page_exams',
-                           sel_examperiod: setting_dict.sel_examperiod};
-// also retrieve the tables that have been changed because of the change in examperiod
-        const datalist_request = {setting: new_setting,
-                ete_exam_rows: {get: true},
-                duo_ete_subject_rows: {get: true},
-                duo_exam_rows: {get: true},
-                ntermentable_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                published_rows: {get: true}
-        };
+        el_SBR_item_count.innerText = null;
 
-        DatalistDownload(datalist_request);
+// ---  upload new setting
+        const request_item_setting = {
+            page: 'page_exams',
+            sel_examperiod: setting_dict.sel_examperiod
+        };
+        DatalistDownload(request_item_setting);
 
     }  // HandleSbrPeriod
 
@@ -888,21 +879,14 @@ document.addEventListener("DOMContentLoaded", function() {
         setting_dict.sel_lvlbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
         setting_dict.sel_lvlbase_code = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
-// ---  upload new setting
-        let new_setting = {page: 'page_exams',
-                           sel_lvlbase_pk: setting_dict.sel_lvlbase_pk};
-// also retrieve the tables that have been changed because of the change in examperiod
-        const datalist_request = {setting: new_setting,
-                duo_ete_subject_rows: {get: true},
-                ete_exam_rows: {get: true},
-                duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                ntermentable_rows: {get: true},
-                published_rows: {get: true}
-        };
+        el_SBR_item_count.innerText = null;
 
-        DatalistDownload(datalist_request);
+// ---  upload new setting
+        const request_item_setting = {
+            page: 'page_exams',
+            sel_lvlbase_pk: setting_dict.sel_lvlbase_pk
+        };
+        DatalistDownload(request_item_setting);
     };  // HandleSbrLevel
 
 //=========  FillOptionsExamperiod  ================ PR2021-03-08 PR2022-02-20
@@ -986,7 +970,6 @@ document.addEventListener("DOMContentLoaded", function() {
     function HandleShowAll() {
         console.log("=== HandleShowAll");
 
-
         setting_dict.sel_exam_pk = null;
 
     // don't reset sel_examperiod
@@ -1023,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // also retrieve the tables that have been changed because of the change in examperiod
 // ---  upload new setting
-        let new_setting = {page: 'page_exams',
+        const request_item_setting = {page: 'page_exams',
                             sel_examperiod: null,
                             sel_lvlbase_pk: null,
                             sel_sctbase_pk: null,
@@ -1031,28 +1014,17 @@ document.addEventListener("DOMContentLoaded", function() {
                             sel_cluster_pk: null,
                             sel_student_pk: null
                           };
-
-        const datalist_request = {setting: new_setting,
-                duo_ete_subject_rows: {get: true},
-                ete_exam_rows: {get: true},
-                duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                ntermentable_rows: {get: true},
-                published_rows: {get: true}
-        }
-
-        DatalistDownload(datalist_request);
+        DatalistDownload(request_item_setting);
     }  // HandleShowAll
 
 
     function SBR_show_all_response() {
-        //console.log("===== SBR_show_all_response =====");
+        console.log("===== SBR_show_all_response =====");
         // this is response of t_SBR_show_all
 
 // ---  upload new setting and refresh page
 // also retrieve the tables that have been changed because of the change in examperiod
-        let new_setting = {page: 'page_exams',
+        const request_item_setting = {page: 'page_exams',
                             sel_examperiod: null,
                             sel_lvlbase_pk: null,
                             sel_sctbase_pk: null,
@@ -1060,22 +1032,8 @@ document.addEventListener("DOMContentLoaded", function() {
                             sel_cluster_pk: null,
                             sel_student_pk: null
                           };
-
-        const datalist_request = {setting: new_setting,
-                duo_ete_subject_rows: {get: true},
-                ete_exam_rows: {get: true},
-                duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                ntermentable_rows: {get: true},
-                published_rows: {get: true}
-        }
-
-        DatalistDownload(datalist_request);
+        DatalistDownload(request_item_setting);
     };  // SBR_show_all_response
-
-
-
 
 //========= UpdateHeaderLeftRight  ================== PR2021-03-14 PR2022-01-17 PR2022-08-28
     function UpdateHeaderLeftRight(skip_upload){
@@ -1101,7 +1059,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
@@ -1137,13 +1095,13 @@ document.addEventListener("DOMContentLoaded", function() {
         if(data_dicts){
             for (const data_dict of Object.values(data_dicts)) {
             // only show rows of selected student / subject
-                let show_row = true;
-                if (["btn_ete_exams", "btn_duo_exams", "btn_results"].includes(selected_btn)){
-                    show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
-                                (!setting_dict.sel_subject_pk || data_dict.subj_id === setting_dict.sel_subject_pk)
+            // selected_btns are: "btn_ete_exams", "btn_duo_exams", "btn_ntermen", "btn_results"
 
-                               // && (  (selected_btn === "btn_ete_exams" && data_dict.examtype !== "duo") ||
-                               //    (selected_btn === "btn_duo_exams" && data_dict.examtype === "duo") );
+                let show_row = false;
+                if (selected_btn === "btn_ntermen") {
+                    show_row = true;
+                } else if (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) {
+                    show_row = (!setting_dict.sel_subject_pk || data_dict.subj_id === setting_dict.sel_subject_pk);
                 };
 
                 if(show_row){
@@ -1769,17 +1727,19 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= UploadToggle  ============= PR2022-05-16 PR2022-06-15
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
-        console.log( "  el_input", el_input);
 
-        // only called in secret_exam, can be duo and ete exam
+        // only called by field 'secret_exam', can be duo and ete exam
         if (permit_dict.permit_crud && permit_dict.requsr_role_admin){
             const fldName = get_attr_from_el(el_input, "data-field");
 
             const tblName = get_tblName_from_selectedBtn();
             const data_dict = get_datadict_from_table_element(el_input);
 
+        console.log( "  data_dict", data_dict);
+
             if(!isEmpty(data_dict)){
                 const exam_pk = data_dict.id;
+                // subj_id is used in ete_exam_dicts,  subj_id is used PR2023-06-02
                 const subject_pk = data_dict.subj_id;
                 const examyear_pk = data_dict.ey_id;
 
@@ -3057,39 +3017,23 @@ console.log( "......filter_dict", filter_dict);
 
 //========= ResetFilterRows  ====================================
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20 PR2022-05-19
-       //console.log( "===== ResetFilterRows  ========= ");
+       console.log( "===== ResetFilterRows  ========= ");
 
         setting_dict.sel_exam_pk = null;
         selected.map_id = null; //PR2023-05-16 added
 
         filter_dict = {};
 
-        Filter_TableRows(tblBody_datatable);
 
-        let filterRow = tblHead_datatable.rows[1];
-        if(!!filterRow){
-            for (let j = 0, cell, el; cell = filterRow.cells[j]; j++) {
-                if(cell){
-                    el = cell.children[0];
-                    if(el){
-                        const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tagName === "INPUT"){
-                            el.value = null
-                        } else {
-                            const el_icon = el.children[0];
-                            if(el_icon){
-                                let classList = el_icon.classList;
-                                while (classList.length > 0) {
-                                    classList.remove(classList.item(0));
-                                }
-                                el_icon.classList.add("tickmark_0_0")
-                            }
-                        }
-                    }
-                }
-            }
-       };
-        FillTblRows();
+        t_reset_filterrow(tblHead_datatable);
+        t_tbody_selected_clear(tblBody_datatable);
+// ---  show total in sidebar
+        t_set_sbr_itemcount_txt();
+
+        t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Exam, loc.Exams);
+
+        //Filter_TableRows(tblBody_datatable);
+        //FillTblRows();
     }  // function ResetFilterRows
 
 ///////////////////////////////////////
@@ -6835,7 +6779,7 @@ console.log("exam_dict", exam_dict);
         console.log(" -----  ModConfirmOpen   ----")
         console.log("    mode", mode)
         console.log("    table", table)
-        // values of mode are : "delete", 'json', 'copy', 'copy_ntermen', 'save' 'undo_published' 'undo_submitted'
+        // values of mode are : "delete", 'json', 'copy', 'copy_ntermen', 'save' 'undo_published'
         // values of table are : "exam" (when delete exam), "ete_exam" "duo_exam" 'duo_grade_exam' "results"
         // TODO print_exam not in use: remove, add 'publish'
 
@@ -6992,24 +6936,7 @@ console.log("exam_dict", exam_dict);
         console.log("mod_dict: ", mod_dict);
 
         mod_dict.dont_hide_modal = false;
-        if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
-
-            console.log("mod_dict.mode: ", mod_dict.mode);
-            if (mod_dict.mode === "undo_submitted"){
-                const upload_dict = { table: "grades",
-                                       mode: "update",
-                                       grade_pk: mod_dict.grade_pk,
-                                       examyear_pk: mod_dict.examyear_pk,
-                                       subject_pk: mod_dict.subject_pk,
-                                       student_pk: mod_dict.student_pk,
-                                       ce_exam_published: null,
-                                       return_grades_with_exam: true
-                                    };
-        console.log("upload_dict: ", upload_dict);
-
-                UploadChanges(upload_dict, urls.url_grade_upload);
-            };
-        } else if (permit_dict.permit_crud && permit_dict.requsr_role_admin) {
+        if (permit_dict.permit_crud && permit_dict.requsr_role_admin) {
 
         console.log("mod_dict.mode: ", mod_dict.mode);
             if (mod_dict.mode === "undo_published"){
@@ -7305,28 +7232,15 @@ console.log("exam_dict", exam_dict);
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT ++++++++++++++++++++
 // functions are in table.js, except for MSED_Response
 
-//=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10 PR2022-04-11
-    function MSED_Response(new_setting) {
+//=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10 PR2022-04-11 PR2023-06-02
+    function MSED_Response(request_item_setting) {
         //console.log( "===== MSED_Response ========= ");
+        el_SBR_item_count.innerText = null;
 
 // ---  upload new selected_pk
-        new_setting.page = setting_dict.sel_page;
-// also retrieve the tables that have been changed because of the change in examyear / dep
-        // PR2022-04-07 debug: when changing dep, levels must also be retrieved again. Added: level_rows: {cur_dep_only: true},
-        const datalist_request = {
-                setting: new_setting,
-                level_rows: {cur_dep_only: true},
-                subject_rows: {etenorm_only: true, cur_dep_only: true},
-                duo_ete_subject_rows: {get: true},
-                ete_exam_rows: {get: true},
-                duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                ntermentable_rows: {get: true},
-                published_rows: {get: true}
-            };
-        DatalistDownload(datalist_request);
+        request_item_setting.page = setting_dict.sel_page;
 
+        DatalistDownload(request_item_setting);
     }  // MSED_Response
 
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26  PR2023-04-17
@@ -7344,24 +7258,11 @@ console.log("exam_dict", exam_dict);
 
 // ---  upload new setting and refresh page
         // PR2022-04-07 debug: when changing dep, levels must also be retrieved again. Added: level_rows: {cur_dep_only: true},
-        const datalist_request = {
-                setting: {page: "page_exams",
-                        sel_schoolbase_pk: selected_pk
-                    },
-                school_rows: {get: true},
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-                subject_rows: {etenorm_only: true, cur_dep_only: true},
-                duo_ete_subject_rows: {get: true},
-                ete_exam_rows: {get: true},
-                duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                ntermentable_rows: {get: true},
-                published_rows: {get: true}
+            const request_item_setting = {
+                page: "page_exams",
+                sel_schoolbase_pk: selected_pk
             };
-
-            DatalistDownload(datalist_request);
+            DatalistDownload(request_item_setting);
 
         } else if (tblName === "subject") {
 
@@ -7418,60 +7319,28 @@ console.log("exam_dict", exam_dict);
         // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
         // when changing subject, only update settings, dont use DatalistDownload but filter on page
 
-        let new_setting = {page: 'page_exams'};
+        el_SBR_item_count.innerText = null;
+
+        const request_item_setting = {page: 'page_exams'};
 
         // 'all subjects' has value -1 in mod select, -9 in allowed
         if(sel_subject_pk === -1) {
-            new_setting.sel_subject_pk = -9;
+            request_item_setting.sel_subject_pk = -9;
             setting_dict.sel_subject_pk = null;
             setting_dict.sel_subject_name = null;
         } else {
-            new_setting.sel_subject_pk = sel_subject_pk;
-            new_setting.ssel_cluster_pk = null;
-            new_setting.sel_student_pk = null;
+            request_item_setting.sel_subject_pk = sel_subject_pk;
+            request_item_setting.ssel_cluster_pk = null;
+            request_item_setting.sel_student_pk = null;
 
             setting_dict.sel_subject_pk = sel_subject_pk;
             setting_dict.sel_subject_name = (selected_dict && selected_dict.name_nl) ? selected_dict.name_nl : null;
             setting_dict.sel_cluster_pk = null;
             setting_dict.sel_student_pk = null;
-
         };
-/*
-// ---  upload new setting
-        const upload_dict = {selected_pk: {
-                                sel_subject_pk: sel_subject_pk,
-                                sel_cluster_pk: null,
-                                sel_student_pk: null
-                            }};
-        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
-
-        SBR_display_subject();
-
-        FillTblRows();
-        //HandleBtnSelect(null, true)  // true = skip_upload
-        // also calls: FillTblRows(), UpdateHeader()
-*/
-// ---  upload new setting
-        console.log( "    new_setting", new_setting);
-// also retrieve the tables that have been changed because of the change in examperiod
-        const datalist_request = {setting: new_setting,
-                duo_ete_subject_rows: {get: true},
-                ete_exam_rows: {get: true},
-                duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
-                ntermentable_rows: {get: true},
-                published_rows: {get: true}
-        };
-
-        DatalistDownload(datalist_request);
-
-
-
-
+        DatalistDownload(request_item_setting);
 
     };  // MSSSS_subject_response
-
 
 //=========  SBR_display_subject  ================ PR2023-05-04
     function SBR_display_subject() {
@@ -7529,11 +7398,7 @@ console.log("exam_dict", exam_dict);
         console.log( "is_test", is_test);
 
         if(!is_test) {
-            const datalist_request = {
-                setting: {page: "page_exams"},
-                grade_exam_rows: {get: true}
-            };
-            //DatalistDownload(datalist_request);
+            DatalistDownload({page: "page_exams"});
         };
     }; //  RefreshDataRowsAfterUpload
 

@@ -584,6 +584,12 @@ CORRCOMP_OTHER_APPROVAL = 1000  # compensation of the following approved exams, 
 CORRCOMP_MEETING_COMP = 3000  # compensation per meeting, in cents
 CORRCOMP_MAX_MEETINGS = 2  # max number of meetings per school per exam
 
+# PR2023-06-02 change of default birthplace requested by Pien van DIjk email 31-05-23
+#   Het lijkt me het beste dat we aanhouden wat Kranchi zegt.
+#   Maar omdat het niet zoveel uitmaakt op het diploma moet het maar zo dan.
+BIRTHPLACE_DEFAULT_SXM = 'Sint Maarten'
+BIRTHPLACE_DEFAULT_CUR = 'Willemstad, Curaçao'
+
 COLOR_LIST = [
     ['black', ' '],
     ['red', _('red')],

@@ -160,10 +160,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
-                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
-                        request=request,
-                        skip_same_school_clause= request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN)
-                    )
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - exit when examyear or school is locked etc
                 if not may_edit:

@@ -388,8 +388,14 @@ def create_check_birthcountry_rows(sel_examyear, sel_schoolbase, sel_depbase):
 
     log_list = []
     msg_html = None
-    birthcountry_regex = '%maarten%' if sel_examyear.country.abbrev == 'Sxm' else 'cura%'
-    country = 'Sint Maarten' if sel_examyear.country.abbrev == 'Sxm' else 'Curaçao'
+    is_sxm = sel_examyear.country.abbrev == 'Sxm'
+    birthcountry_regex = '%maarten%' if is_sxm else 'cura%'
+    country = 'Sint Maarten' if is_sxm else 'Curaçao'
+
+    # PR2023-06-02 change requested by Pien van DIjk email 31-05-23
+    #   Het lijkt me het beste dat we aanhouden wat Kranchi zegt.
+    #   Maar omdat het niet zoveel uitmaakt op het diploma moet het maar zo dan.
+    default_birthplace = c.BIRTHPLACE_DEFAULT_SXM if is_sxm else c.BIRTHPLACE_DEFAULT_CUR
 
     if logging_on:
         logger.debug('birthcountry_regex: ' + str(birthcountry_regex))
@@ -440,9 +446,11 @@ def create_check_birthcountry_rows(sel_examyear, sel_schoolbase, sel_depbase):
                 is_are_str = str(_('is') if count_wrong_birthcountry == 1 else _('are'))
                 this_these_str = str(_("This candidate").lower() if count_wrong_birthcountry == 1 else _('these candidates'))
                 msg_html = '<br>'.join(("<p class='p-2 border_bg_warning'>" + count_str + \
-                                        str(_(" with country of birth: '%(cpt)s', who %(is_are)s born before October 10, 2010.") % {'cpt': country, 'is_are': is_are_str}),
+                                        str(_(" with country of birth: '%(cpt)s', who %(is_are)s born before October 10, 2010.") \
+                                            % {'cpt': country, 'is_are': is_are_str}),
                     str(_("This is not correct, because before that date, the country was 'Nederlandse Antillen', not '%(cpt)s'.") % {'cpt': country}),
-                    str(_("Click 'OK' to change the country of birth of %(this_these)s to 'Nederlandse Antillen' and the place of birth to '%(cpt)s' ") % {'this_these': this_these_str, 'cpt': country}),
+                    str(_("Click 'OK' to change the country of birth of %(this_these)s to 'Nederlandse Antillen' and the place of birth to '%(cpt)s' ") \
+                        % {'this_these': this_these_str, 'cpt': default_birthplace}),
                     str(_("The list of candidates, whose country of birth will be changed, has been downloaded.")) + '</p>'
                 ))
                 log_list.append(str(_("List of candidates, whose country of birth will be changed to 'Nederlandse Antillen'")))
@@ -480,9 +488,15 @@ def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
         logger.debug(' ----- change_birthcountry -----')
 
     msg_dict = {}
+    is_sxm = sel_examyear.country.abbrev == 'Sxm'
+    birthcountry_regex = '%maarten%' if is_sxm else 'cura%'
+    country = 'Sint Maarten' if is_sxm else 'Curaçao'
 
-    birthcountry_regex = '%maarten%' if sel_examyear.country.abbrev == 'Sxm' else 'cura%'
-    country = 'Sint Maarten' if sel_examyear.country.abbrev == 'Sxm' else 'Curaçao'
+    # PR2023-06-02 change requested by Pien van DIjk email 31-05-23
+    #   Het lijkt me het beste dat we aanhouden wat Kranchi zegt.
+    #   Maar omdat het niet zoveel uitmaakt op het diploma moet het maar zo dan.
+    default_birthplace = c.BIRTHPLACE_DEFAULT_SXM if is_sxm else c.BIRTHPLACE_DEFAULT_CUR
+
 
     modifiedby_pk_str = str(request.user.pk)
     modifiedat_str = str(timezone.now())
@@ -522,7 +536,7 @@ def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
             sql_list = [
                 "WITH sub_sql AS (", sub_sql, ")",
                 "UPDATE students_student AS stud",
-                "SET birthcountry = 'Nederlandse Antillen', birthcity = '" + country + "',",
+                "SET birthcountry = 'Nederlandse Antillen', birthcity = '" + default_birthplace + "',",
                 "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "'",
 
                 "FROM sub_sql",
@@ -859,12 +873,11 @@ class ValidateCompositionView(View):  # PR2022-08-25
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-
 # - end of ValidateCompositionView
 
 
 @method_decorator([login_required], name='dispatch')
-class ClusterUploadView(View):  # PR2022-01-06
+class ClusterUploadView(View):  # PR2022-01-06 PR2023-05-31
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -931,7 +944,7 @@ class ClusterUploadView(View):  # PR2022-01-06
 
         def delete_cluster_instance(cluster_instance):
             # --- delete cluster # PR2022-01-06  PR2022-08-08 PR2022-12-24
-            if logging_on:
+            if logging_on and False:
                 logger.debug(' ----- delete_cluster_instance -----')
                 logger.debug('    cluster_instance: ' + str(cluster_instance))
 
@@ -943,20 +956,21 @@ class ClusterUploadView(View):  # PR2022-01-06
     # - create list of studsubj_pk with thos cluster, to update the stdsubj rows in client
             if cluster_instance:
                 try:
-                    sql_dict = {'cl_id': cluster_instance.pk}
-                    sql = "SELECT id FROM students_studentsubject WHERE cluster_id = %(cl_id)s::INT"
+                    # when secret_exam field 'ete_cluster_id' is used, otherwise field 'cluster_id' is used
+                    sql = ''.join((
+                        "SELECT id FROM students_studentsubject WHERE ",
+                        "ete_cluster_id" if is_secret_exam else "cluster_id",
+                        " = ", str(cluster_instance.pk) , "::INT"
+                    ))
 
                     with connection.cursor() as cursor:
-                        cursor.execute(sql, sql_dict)
+                        cursor.execute(sql)
                         for row in cursor.fetchall():
                             updated_studsubj_pk_list.append(row[0])
 
                 except Exception as e:
                     if logging_on:
                         logger.error(getattr(e, 'message', str(e)))
-
-                if logging_on:
-                    logger.debug('XXXXXXXXXXXX updated_studsubj_pk_list: ' + str(updated_studsubj_pk_list))
 
             deleted_row, err_html = sch_mod.delete_instance(
                 table='cluster',
@@ -967,7 +981,7 @@ class ClusterUploadView(View):  # PR2022-01-06
             if err_html:
                 msg_html = err_html
 
-            if logging_on:
+            if logging_on and False:
                 logger.debug('    deleted_row: ' + str(deleted_row))
                 logger.debug('    msg_html: ' + str(msg_html))
 
@@ -1134,31 +1148,39 @@ class ClusterUploadView(View):  # PR2022-01-06
 
         update_wrap = {}
         msg_list = []
-
-# - get permit
-        has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
-        if has_permit:
+        border_class = None
 
 # - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
 
 # - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                """
-                upload_dict: {
-                    'subject_pk': 2132, 'subject_name': 'Zorg en Welzijn Intrasectoraal',
-                    'cluster_list': [
-                        {'cluster_pk': 210, 'cluster_name': 'zwi - 222', 'subjbase_pk': 445, 'mode': 'update'}, 
-                        {'cluster_pk': 'new_1', 'cluster_name': 'zwi - 6', 'subjbase_pk': 445, 'mode': 'create'}], 
-                    'studsubj_list': [
-                        {'studsubj_pk': 68838, 'cluster_pk': 'new_1'}, 
-                        {'studsubj_pk': 68862, 'cluster_pk': 'new_1'}, 
-                        {'studsubj_pk': 68886, 'cluster_pk': 'new_1'}]}    
-                """
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            """
+            upload_dict: {
+                'subject_pk': 2132, 'subject_name': 'Zorg en Welzijn Intrasectoraal',
+                'cluster_list': [
+                    {'cluster_pk': 210, 'cluster_name': 'zwi - 222', 'subjbase_pk': 445, 'mode': 'update'}, 
+                    {'cluster_pk': 'new_1', 'cluster_name': 'zwi - 6', 'subjbase_pk': 445, 'mode': 'create'}], 
+                'studsubj_list': [
+                    {'studsubj_pk': 68838, 'cluster_pk': 'new_1'}, 
+                    {'studsubj_pk': 68862, 'cluster_pk': 'new_1'}, 
+                    {'studsubj_pk': 68886, 'cluster_pk': 'new_1'}]}   
+            """
+
+# - get permit
+            page_name = upload_dict.get('page') or 'page_studsubj'
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+
+            if not has_permit:
+                border_class = c.HTMLCLASS_border_bg_invalid
+                msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
+            else:
+
 # - get variables
+                is_secret_exam = upload_dict.get('is_secret_exam')
                 cluster_list = upload_dict.get('cluster_list')
                 studsubj_list = upload_dict.get('studsubj_list')
 
@@ -1190,7 +1212,16 @@ class ClusterUploadView(View):  # PR2022-01-06
                 if sel_msg_list:
                     msg_list.extend(sel_msg_list)
                 else:
-                    sel_schoolbase = sel_school.base if sel_school else None
+                    # - when called by page secret_exam: use school of requsr as school
+                    if is_secret_exam:
+                        sel_schoolbase = request.user.schoolbase
+                        sel_school = sch_mod.School.objects.get_or_none(
+                            base=sel_schoolbase,
+                            examyear=sel_examyear
+                        )
+                    else:
+                        sel_schoolbase = sel_school.base if sel_school else None
+
                     sel_depbase = sel_department.base if sel_department else None
 
                     mapped_cluster_pk_dict = {}
@@ -1200,7 +1231,6 @@ class ClusterUploadView(View):  # PR2022-01-06
                     updated_cluster_pk_arr = []
 
                     if cluster_list:
-
                         updated_cluster_rows = []
                         err_list, created_cluster_pk_arr, updated_cluster_pk_arr, deleted_cluster_rows, \
                             updated_studsubj_pk_arr = \
@@ -1225,35 +1255,57 @@ class ClusterUploadView(View):  # PR2022-01-06
                             logger.debug('    deleted_cluster_rows:   ' + str(deleted_cluster_rows))
                             logger.debug('    updated_studsubj_pk_arr:   ' + str(updated_studsubj_pk_arr))
 
-                        if created_cluster_pk_arr or updated_cluster_pk_arr:
-                            # add created pk's to updated ar,, to get cluster_rows in one batch
-                            updated_cluster_pk_arr.extend(created_cluster_pk_arr)
-
-                            updated_cluster_rows = sj_vw.create_cluster_rows(
+                        if created_cluster_pk_arr:
+                            cluster_rows = sj_vw.create_cluster_rows(
                                 request=request,
                                 page='studsubj',
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_schoolbase,
-                                sel_depbase=sel_depbase
+                                sel_depbase=sel_depbase,
+                                cluster_pk_list=created_cluster_pk_arr
                             )
 
-                            if updated_cluster_rows:
-                # - add key 'created' to created rows, used in client to add to table Clustres
-                                for row in updated_cluster_rows:
-                                    if row.get('id') in created_cluster_pk_arr:
-                                        row['created'] = True
+                            if logging_on:
+                                logger.debug(' ???  created_cluster_pk_arr:   ' + str(created_cluster_pk_arr))
+                                logger.debug(' ???  cluster_rows:   ' + str(cluster_rows))
+
+                            if cluster_rows:
+                                # - add key 'created' to created rows, used in client to add to table Clustres
+                                for row in cluster_rows:
+                                    row['created'] = True
+                                updated_cluster_rows.extend(cluster_rows)
+##################
+                        if updated_cluster_pk_arr:
+                            cluster_rows = sj_vw.create_cluster_rows(
+                                request=request,
+                                page='studsubj',
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_schoolbase,
+                                sel_depbase=sel_depbase,
+                                cluster_pk_list=updated_cluster_pk_arr
+                            )
+
+                            if logging_on:
+                                logger.debug(' ???  updated_cluster_pk_arr:   ' + str(updated_cluster_pk_arr))
+                                logger.debug(' ???  cluster_rows:   ' + str(cluster_rows))
+
+                            if cluster_rows:
+                                updated_cluster_rows.extend(cluster_rows)
 
             # - add deleted cluster_rows to updated_cluster_rows
                         # since seleted cluster does not exist any more, add info of deleted_cluster_rows directly to  updated_cluster_rows
                         if deleted_cluster_rows:
                             updated_cluster_rows.extend(deleted_cluster_rows)
 
+                        if logging_on:
+                            logger.debug('  >>  updated_cluster_rows:   ' + str(updated_cluster_rows))
+
             # - add updated_cluster_rows to update_wrap
                         if updated_cluster_rows:
                             update_wrap['updated_cluster_rows'] = updated_cluster_rows
 
                     if studsubj_list:
-                        err_list, studsubj_pk_list = loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request)
+                        err_list, studsubj_pk_list = loop_studsubj_list(request, is_secret_exam, studsubj_list, mapped_cluster_pk_dict)
                         if err_list:
                             msg_list.extend(err_list)
                         if studsubj_pk_list:
@@ -1262,30 +1314,63 @@ class ClusterUploadView(View):  # PR2022-01-06
                             logger.debug('studsubj_pk_list: ' + str(studsubj_pk_list))
 
                     if updated_studsubj_pk_list or updated_cluster_pk_arr:
-                        studsubj_rows = create_studentsubject_rows(
-                            sel_examyear=sel_examyear,
-                            sel_schoolbase=sel_schoolbase,
-                            sel_depbase=sel_depbase,
-                            append_dict=append_dict,
-                            request=request,
-                            requsr_same_school=True,  # check for same_school is included in may_edit
-                            studsubj_pk_list=updated_studsubj_pk_list,
-                            cluster_pk_list=updated_cluster_pk_arr
-                        )
+                        if is_secret_exam:
+                            #tudsubj_list:  [{'grade_pk': 76903, 'studsubj_pk': 46327, 'cluster_pk': 'new_1'},
 
-                        if studsubj_rows:
-                            update_wrap['updated_studsubj_rows'] = studsubj_rows
+                    # - convert updated updated_studsubj_pk_list to grade_pk_list
+                            if studsubj_list:
+                                grade_pk_list = []
+                                sel_examperiod = None
+                                for studsubj_dict in studsubj_list:
+                                    studsubj_pk = studsubj_dict.get('studsubj_pk')
+                                    if studsubj_pk in updated_studsubj_pk_list:
+                                        grade_pk = studsubj_dict.get('grade_pk')
+                                        grade_pk_list.append(grade_pk)
+                                    if sel_examperiod is None:
+                                        sel_examperiod = studsubj_dict.get('examperiod')
+
+                                if logging_on:
+                                    logger.debug('grade_pk_list: ' + str(grade_pk_list))
+                                if sel_examperiod and grade_pk_list:
+                                    grade_rows = grd_view.create_grade_rows(
+                                        sel_examyear=sel_examyear,
+                                        sel_schoolbase=sel_schoolbase,
+                                        sel_depbase=sel_depbase,
+                                        sel_lvlbase=None,  # value not used when grade_pk_list has value
+                                        sel_examperiod=sel_examperiod,
+                                        secret_exams_only=is_secret_exam,
+                                        grade_pk_list=grade_pk_list,
+                                        request=request
+                                    )
+
+                                    if grade_rows:
+                                        update_wrap['updated_grade_rows'] = grade_rows
+
+                        else:
+                            studsubj_rows = create_studentsubject_rows(
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_schoolbase,
+                                sel_depbase=sel_depbase,
+                                append_dict=append_dict,
+                                request=request,
+                                requsr_same_school=not is_secret_exam,  # check for same_school is included in may_edit
+                                studsubj_pk_list=updated_studsubj_pk_list,
+                                cluster_pk_list=updated_cluster_pk_arr
+                            )
+
+                            if studsubj_rows:
+                                update_wrap['updated_studsubj_rows'] = studsubj_rows
 
         # - addd messages to update_wrap
         if msg_list:
-            update_wrap['messages'] = [{'class': "border_bg_invalid", 'msg_html': '<br>'.join(msg_list)}]
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ClusterUploadView
 
 
-def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
+def loop_studsubj_list(request, is_secret_exam, studsubj_list, mapped_cluster_pk_dict):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- loop_studsubj_list  -----')
@@ -1307,33 +1392,33 @@ def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
             studsubj_pk = studsubj_dict.get('studsubj_pk')
 
             if logging_on:
-                logger.debug('studsubj_dict: ' + str(studsubj_dict))
+                logger.debug('....studsubj_dict: ' + str(studsubj_dict))
                 # studsubj_dict: {'studsubj_pk': 45092, 'cluster_pk': 'new_1'}
 
             if studsubj_pk:
                 cluster_pk = studsubj_dict.get('cluster_pk')
                 if logging_on:
-                    logger.debug('cluster_pk: ' + str(cluster_pk) + ' ' + str(type(cluster_pk)))
+                    logger.debug('    cluster_pk: ' + str(cluster_pk) + ' ' + str(type(cluster_pk)))
 
         # replace cluster_pk 'new_1' bij saved cluster_pk
                 clean_cluster_pk = None
                 if isinstance(cluster_pk, int):
                     clean_cluster_pk = cluster_pk
                     if logging_on:
-                        logger.debug('isinstance clean_cluster_pk: ' + str(clean_cluster_pk) + ' ' + str(type(clean_cluster_pk)))
+                        logger.debug('   clean_cluster_pk: ' + str(clean_cluster_pk) + ' ' + str(type(clean_cluster_pk)))
                 elif cluster_pk in mapped_cluster_pk_dict:
                     clean_cluster_pk = mapped_cluster_pk_dict[cluster_pk]
                     if logging_on:
-                        logger.debug('mapped_cluster_pk_dict clean_cluster_pk: ' + str(clean_cluster_pk) + ' ' + str(type(clean_cluster_pk)))
+                        logger.debug('    mapped_cluster_pk_dict clean_cluster_pk: ' + str(clean_cluster_pk) + ' ' + str(type(clean_cluster_pk)))
 
                 clean_cluster_str = str(clean_cluster_pk) if clean_cluster_pk else 'NULL'
 
                 sql_studsubj_list.append((str(studsubj_pk), clean_cluster_str))
 
                 if logging_on:
-                    logger.debug('clean_cluster_pk: ' + str(clean_cluster_pk) + ' ' + str(type(clean_cluster_pk)))
-                    logger.debug('clean_cluster_str: ' + str(clean_cluster_str))
-                    logger.debug('sql_studsubj_list: ' + str(sql_studsubj_list))
+                    logger.debug('    clean_cluster_pk: ' + str(clean_cluster_pk) + ' ' + str(type(clean_cluster_pk)))
+                    logger.debug('    clean_cluster_str: ' + str(clean_cluster_str))
+                    logger.debug('    sql_studsubj_list: ' + str(sql_studsubj_list))
 
         # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
 
@@ -1347,21 +1432,21 @@ def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
 
         modifiedby_pk_str = str(request.user.pk)
         modifiedat_str = str(timezone.now())
-
+        cluster_field = 'ete_cluster_id' if is_secret_exam else 'cluster_id'
     # fields are: [studentsubject_id, cluster_id, modifiedby_id, modifiedat]
-        sql_list = ["DROP TABLE IF EXISTS tmp; CREATE TEMP TABLE tmp (ss_id, cl_id) AS VALUES (0::INT, 0::INT)"]
+        sql_list = ["DROP TABLE IF EXISTS tmp; CREATE TEMP TABLE tmp (ss_id, cl_id) AS VALUES (0::INT, 0::INT) "]
 
         for row in sql_studsubj_list:
-            sql_list.append(''.join((", (", str(row[0]), ', ' , str(row[1]), ")")))
-        sql_list.extend((
-            "; UPDATE students_studentsubject AS ss",
-            "SET cluster_id = tmp.cl_id, modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "'",
-            "FROM tmp",
-            "WHERE ss.id = tmp.ss_id",
-            "RETURNING ss.id;"
-        ))
+            sql_list.extend((", (", str(row[0]), ', ', str(row[1]), ") "))
 
-        sql = ' '.join(sql_list)
+        sql_list.append("; UPDATE students_studentsubject AS ss ")
+        if is_secret_exam:
+            # when adding cluster of secret exam: use field ete_cluster_id, dont update modified fiels
+            sql_list.extend(("SET ete_cluster_id = tmp.cl_id "))
+        else:
+            sql_list.extend(("SET cluster_id = tmp.cl_id, modifiedby_id =", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "' "))
+        sql_list.append("FROM tmp WHERE ss.id = tmp.ss_id RETURNING ss.id;")
+        sql = ''.join(sql_list)
 
         with connection.cursor() as cursor:
             cursor.execute(sql)
@@ -1380,14 +1465,17 @@ def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-01-16
+class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-01-16 PR2023-05-30
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= StudentUploadView ============= ')
+
         messages = []
+        msg_list = []
+        border_class = None
         update_wrap = {}
 
 # - get upload_dict from request.POST
@@ -1395,6 +1483,10 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
         if upload_json:
             upload_dict = json.loads(upload_json)
             mode = upload_dict.get('mode')
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
 
 # - get permit
             page_name = 'page_result' if mode == 'withdrawn' else 'page_student'
@@ -1404,16 +1496,9 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                 logger.debug('    has_permit:' + str(has_permit))
 
             if not has_permit:
-                messages.append(
-                    {'class': "border_bg_invalid",
-                     'msg_html': str(_("You don't have permission to perform this action."))}
-                )
-
+                border_class = c.HTMLCLASS_border_bg_invalid
+                msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
             else:
-
-# - reset language
-                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                activate(user_lang)
 
 # - get variables
                 student_pk = upload_dict.get('student_pk')
@@ -1423,7 +1508,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
 
                 updated_rows = []
                 error_list = []
-                messages = []
+
                 append_dict = {}
 
                 header_txt = _('Add candidate') if is_create else _('Delete candidate') if is_delete else _('Edit candidate')
@@ -1447,10 +1532,8 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                
                 """
                 if sel_msg_list:
-                    msg_html = '<br>'.join(sel_msg_list)
-                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
-                    if logging_on:
-                        logger.debug('messages:   ' + str(messages))
+                    border_class = c.HTMLCLASS_border_bg_warning
+                    msg_list.extend(sel_msg_list)
                 else:
 
 # +++  Create new student
@@ -1502,11 +1585,9 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                             )
 
                         if error_list:
-                            messages.append(
-                                {'header': str(header_txt),
-                                 'class': "border_bg_invalid",
-                                 'msg_html': '<br>'.join(error_list)}
-                            )
+                            border_class = c.HTMLCLASS_border_bg_invalid
+                            msg_list.extend(error_list)
+
                         if student_instance:
                             append_dict['created'] = True
                     else:
@@ -1527,11 +1608,9 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                         if is_delete:
                             deleted_row, err_html = set_student_instance_tobedeleted(student_instance, request)
                             if err_html:
-                                messages.append(
-                                    {'header': str(header_txt),
-                                     'class': "border_bg_invalid",
-                                     'msg_html': err_html}
-                                )
+                                border_class = c.HTMLCLASS_border_bg_invalid
+                                msg_list.append(err_html)
+
                             elif deleted_row:
                                 student_instance = None
                                 updated_rows.append(deleted_row)
@@ -1545,11 +1624,9 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                         elif is_restore:
                             restored_student_success, updated_studsubj_rows, msg_html = restore_student_instance(student_instance, request)
                             if msg_html:
-                                messages.append(
-                                    {'header': str(header_txt),
-                                     'class': "border_bg_invalid",
-                                     'msg_html': msg_html}
-                                )
+                                border_class = c.HTMLCLASS_border_bg_invalid
+                                msg_list.append(msg_html)
+
                             if not restored_student_success:
                                 student_instance = None
 
@@ -1574,7 +1651,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                                 examnumber_list=examnumber_list,
                                 diplomanumber_list=[],
                                 gradelistnumber_list=[],
-                                msg_list=messages,
+                                msg_list=msg_list,
                                 error_list=error_list,
                                 err_fields=err_fields,  # err_fields is only used in update student
                                 log_list=[], # log_list is only used in upload students
@@ -1599,10 +1676,9 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
 
                 update_wrap['updated_student_rows'] = updated_rows
 
-# - addd messages to update_wrap
-        if messages:
-            update_wrap['messages'] = messages
-
+# - addd msg_html to update_wrap
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of StudentUploadView
@@ -2625,10 +2701,7 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 
 # ----- get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
-                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
-                    request=request,
-                    skip_same_school_clause=False
-                )
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
             if logging_on:
                 logger.debug('    sel_department: ' + str(sel_department))
                 logger.debug('    sel_level: ' + str(sel_level))
@@ -2709,9 +2782,7 @@ class StudentsubjectValidateTestView(View):
 # ----- get selected examyear, school and department from usersettings
             # PR2022-12-23 debug: don't filter on allowed, it will skip not-allowed subjects and give incorrect validation
             sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
-                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
-                    request=request
-                )
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # +++ validate subjects of one student, used in modal
             student_pk = upload_dict .get('student_pk')
@@ -3828,7 +3899,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             # - line with text how many subjects will be approved / submitted
                         msg_list.append("<p class='pb-2'>")
                         if not committed:
-                            msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
+                            msg_str = _("No %(cpts)s will be approved.") % {'cpts': subjects_txt}
                             if logging_on:
                                 logger.debug('    is_approve not committed: ' + str(not committed))
 
@@ -4250,7 +4321,7 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
 
                                 err_list, err_fields = [], []
                                 update_studsubj(studsubj, studsubj_dict, si_dict,
-                                                sel_examyear, sel_school, sel_department,
+                                                sel_examyear, sel_school, sel_department, False,
                                                 err_list, err_fields, request)
                                 if logging_on:
                                     logger.debug('>>>>> err_list: ' + str(err_list))
@@ -5091,7 +5162,18 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                             si_dict = schemeitems_dict.get(si_pk)
                             err_fields = []
 
-                            studsubj_pk_list, recalc_subj_comp = update_studsubj(studsubj, studsubj_dict, si_dict, sel_examyear, sel_school, sel_department, err_list, err_fields, request)
+                            studsubj_pk_list, recalc_subj_comp = update_studsubj(
+                                studsubj_instance=studsubj,
+                                upload_dict=studsubj_dict,
+                                si_dict=si_dict,
+                                sel_examyear=sel_examyear,
+                                sel_school=sel_school,
+                                sel_department=sel_department,
+                                is_secret_exam=False,
+                                msg_list=err_list,
+                                err_fields=err_fields,
+                                request=request
+                            )
                             #if studsubj_pk_list:
                             #    for studsubj_pk in studsubj_pk_list:
                             #        if studsubj_pk not in updated_studsubj_pk_list:
@@ -5348,23 +5430,26 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-# - get permit
-        has_permit = False
-        req_usr = request.user
-        if req_usr and req_usr.country and req_usr.schoolbase:
-            has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
-        if logging_on:
-            logger.debug('    has_permit: ' + str(has_permit))
-
-        if not has_permit:
-            border_class = c.HTMLCLASS_border_bg_invalid
-            msg_list.append(gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
-        else:
-
 # - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            page_name = upload_dict.get('page') or 'page_studsubj'
+            is_secret_exam = page_name == 'page_secretexam'
+# - get permit
+            # PR2023-05-31 also called by page secret exam to change ete_cluster
+            has_permit = False
+            req_usr = request.user
+            if req_usr and req_usr.country and req_usr.schoolbase:
+                has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+            if logging_on:
+                logger.debug('    has_permit: ' + str(has_permit))
+
+            if not has_permit:
+                border_class = c.HTMLCLASS_border_bg_invalid
+                msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
+            else:
+
                     # upload_dict: {'student_pk': 8470, 'studsubj_pk': 61203, 'has_exemption': True}
                 # requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase_pk)
 
@@ -5374,7 +5459,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                #  TODO student is tobedeleted or studsubj is tobedeleted
+                #  - skip when student is tobedeleted or studsubj is tobedeleted happens further in this function
 
                 # check requsr_same_school is part of get_selected_ey_school_dep_lvl_from_usersetting
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
@@ -5391,18 +5476,20 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
                         logger.debug('    sel_department: ' + str(sel_department))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
+
                     student_pk = upload_dict.get('student_pk')
                     student_instance = stud_mod.Student.objects.get_or_none(
-                        id=student_pk,
-                        school=sel_school,
-                        department=sel_department
+                        id=student_pk
                     )
-                    if student_instance.deleted:
+                    if student_instance is None:
+                        border_class = c.HTMLCLASS_border_bg_invalid
+                        msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': _('Candidate')}))
+                    elif student_instance.deleted:
+                        border_class = c.HTMLCLASS_border_bg_invalid
                         msg_list.append(gettext("This candidate is deleted."))
-                        border_class = c.HTMLCLASS_border_bg_invalid
                     elif student_instance.tobedeleted:
-                        msg_list.extend([gettext("This candidate is marked for deletion."), gettext("You cannot make changes.")])
                         border_class = c.HTMLCLASS_border_bg_invalid
+                        msg_list.extend([gettext("This candidate is marked for deletion."), gettext("You cannot make changes.")])
                     else:
                         if logging_on:
                             logger.debug('    msg_list: ' + str(msg_list))
@@ -5417,12 +5504,12 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
                         )
                         if studsubj:
                             if studsubj.deleted:
-                                msg_list.append(gettext("This subject is deleted."))
                                 border_class = c.HTMLCLASS_border_bg_invalid
+                                msg_list.append(gettext("This subject is deleted."))
                             elif studsubj.tobedeleted:
+                                border_class = c.HTMLCLASS_border_bg_invalid
                                 msg_list.extend([gettext("This subject is marked for deletion."),
                                                  gettext("You cannot make changes.")])
-                                border_class = c.HTMLCLASS_border_bg_invalid
                             else:
 
                                 studsubj_pk_list = [studsubj.pk]
@@ -5433,7 +5520,9 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
         # - validate if requsr has allowed_cluster to change this subject - validate allowed levl / subjects not necessary, because only allowed subjects are shown
                                 cluster_pk = studsubj.cluster_id
                                 userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
-                                is_allowed = acc_prm.validate_userallowed_cluster(userallowed_cluster_pk_list, cluster_pk)
+                                # don't check allowed whenis_secret_exam
+                                is_allowed = acc_prm.validate_userallowed_cluster(userallowed_cluster_pk_list, cluster_pk) \
+                                             or is_secret_exam
                                 if not is_allowed:
                                     msg_list.append(gettext("You don't have permission %(cpt)s.") % {
                                         'cpt': gettext('to make changes in subjects of this cluster')})
@@ -5468,6 +5557,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
                                         sel_examyear=sel_examyear,
                                         sel_school=sel_school,
                                         sel_department=sel_department,
+                                        is_secret_exam=is_secret_exam,
                                         msg_list=msg_list,
                                         err_fields=err_fields,
                                         request=request
@@ -5495,19 +5585,49 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
                                     logger.debug('    append_dict: ' + str(append_dict))
 
                                 # TODO PR2022-12-22 check if sel_lvlbase must get value
+                                if is_secret_exam:
+                                    grade_pk = upload_dict.get('grade_pk')
+                                    selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 
-                                studsubj_rows = create_studentsubject_rows(
-                                    sel_examyear=sel_examyear,
-                                    sel_schoolbase=sel_school.base if sel_school else None,
-                                    sel_depbase=sel_department.base if sel_department else None,
-                                    append_dict=append_dict,
-                                    request=request,
-                                    requsr_same_school=True,  # check for same_school is included in may_edit
-                                    student_pk=student_instance.pk,
-                                    studsubj_pk_list=studsubj_pk_list
-                                )
-                                if studsubj_rows:
-                                    update_wrap['updated_studsubj_rows'] = studsubj_rows
+                                    if logging_on:
+                                        logger.debug('grade_pk: ' + str(grade_pk))
+                                        logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+
+                                    if grade_pk and selected_pk_dict:
+
+                                        sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+                                        if logging_on:
+                                            logger.debug('sel_examperiod: ' + str(sel_examperiod))
+
+                                        updated_grade_rows = grd_view.create_grade_rows(
+                                            sel_examyear=sel_examyear,
+                                            sel_schoolbase=sel_school.base if sel_school else None,
+                                            sel_depbase=sel_department.base if sel_department else None,
+                                            sel_lvlbase=sel_level.base if sel_level else None,
+                                            sel_examperiod=sel_examperiod,
+                                            secret_exams_only=is_secret_exam,
+                                            # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase note icon when refreshing this row
+                                            remove_note_status=True,
+                                            request=request,
+                                            append_dict=append_dict,
+                                            grade_pk_list=[grade_pk]
+                                        )
+                                        if updated_grade_rows:
+                                            update_wrap['updated_grade_rows'] = updated_grade_rows
+
+                                else:
+                                    studsubj_rows = create_studentsubject_rows(
+                                        sel_examyear=sel_examyear,
+                                        sel_schoolbase=sel_school.base if sel_school else None,
+                                        sel_depbase=sel_department.base if sel_department else None,
+                                        append_dict=append_dict,
+                                        request=request,
+                                        requsr_same_school=True,  # check for same_school is included in may_edit
+                                        student_pk=student_instance.pk,
+                                        studsubj_pk_list=studsubj_pk_list
+                                    )
+                                    if studsubj_rows:
+                                        update_wrap['updated_studsubj_rows'] = studsubj_rows
 
         if msg_list:
             update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
@@ -5518,7 +5638,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
 
 
 #######################################################
-def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_school, sel_department,
+def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_school, sel_department, is_secret_exam,
                     msg_list, err_fields, request):
     # PR2019-06-06 PR2021-12-25 PR2022-04-15 PR2022-06-25 PR2022-08-25
     # --- update existing and new studsubj_instance PR2019-06-06
@@ -5607,9 +5727,11 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
         elif field == 'cluster_pk':
             new_cluster = subj_mod.Cluster.objects.get_or_none(pk=new_value)
-            saved_cluster = getattr(studsubj_instance, 'cluster')
+            # when secret_exam the field 'ete_cluster' is used PR2023-05-31
+            db_field = 'ete_cluster' if is_secret_exam else 'cluster'
+            saved_cluster = getattr(studsubj_instance, db_field)
             if new_cluster != saved_cluster:
-                setattr(studsubj_instance, 'cluster', new_cluster)
+                setattr(studsubj_instance, db_field, new_cluster)
                 save_changes = True
 
         elif field == 'exemption_year':

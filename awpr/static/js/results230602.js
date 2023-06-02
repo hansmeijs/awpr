@@ -1867,225 +1867,243 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= MOD APPROVE GRADE ================ PR2022-06-12
     function MAG_Open (mode ) {
-        console.log("===  MAG_Open  =====") ;
-        console.log("mode", mode) ;
+         console.log("===  MAG_Open  =====") ;
+        console.log("    open_mode", open_mode) ;
+        //console.log("    selected_btn", selected_btn, typeof selected_btn) ;
+        console.log("    setting_dict.sel_examperiod", setting_dict.sel_examperiod, typeof setting_dict.sel_examperiod) ;
+        console.log("    setting_dict.sel_examtype", setting_dict.sel_examtype) ;
+        //console.log("    setting_dict.sel_lvlbase_code", setting_dict.sel_lvlbase_code) ;
 
+        // open_mode = 'approve' or 'submit_ex2' or 'submit_ex2a'
+
+        // TODO PR2022-11-28 debug: corrector can select id_MAG_examtype, must only show central exam
         b_clear_dict(mod_MAG_dict);
 
 // --- check sel_examperiod
         let msg_html = null;
-        if (![1,2,3].includes(setting_dict.sel_examperiod) ){
+        if ([1,2,3, 4].includes(setting_dict.sel_examperiod) ){
+            mod_MAG_dict.examperiod = setting_dict.sel_examperiod;
+        } else {
+            mod_MAG_dict.examperiod = null;
             msg_html = loc.Please_select_examperiod;
-        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
-        } else if (mode === "approve"){
-            // Ex5 has no approve mode
-        } else if (mode === "submit_ex5") {
-
-        //TODO make select btn exam period
-            if (selected_btn === "btn_ep_01" || true){
-                if (setting_dict.sel_examtype !== "ce") {
-                    setting_dict.sel_examtype = "ce";
-                    upload_examtype("ce");
-                };
-            } else if (selected_btn === "btn_reex"){
-                if (setting_dict.sel_examtype !== "reex") {
-                    setting_dict.sel_examtype = "reex";
-                    upload_examtype("reex");
-                };
-            } else if (selected_btn === "btn_reex03"){
-                if (setting_dict.sel_examtype !== "reex03") {
-                    setting_dict.sel_examtype = "reex03";
-                    upload_examtype("reex03");
-                };
-            } else{
-                msg_html = loc.Please_select_examperiod;
-            };
-
         };
+
+
         if (msg_html) {
             b_show_mod_message_html(msg_html);
         } else {
 
-
-// PR2022-03-13 debug: also check on allowed subjects, levels and clusters
+// PR2022-03-13 debug: also check on allowed subjects, levels
 
 // put info in mod_MAG_dict
-            // modes are 'approve' 'submit_test' 'submit_save'
-            mod_MAG_dict.mode = mode;
+            // open_mode are 'approve' 'submit_test' 'submit_save'
+            mod_MAG_dict.mode = open_mode;
             mod_MAG_dict.step = 0;
 
             mod_MAG_dict.auth_index = setting_dict.sel_auth_index;
 
-            mod_MAG_dict.may_test = true;
-            mod_MAG_dict.test_is_ok = false;
+            console.log(" ???   mod_MAG_dict.auth_index", mod_MAG_dict.auth_index);
+
             mod_MAG_dict.submit_is_ok = false;
             mod_MAG_dict.is_reset = false;
 
-// --- get list of auth_index of requsr
-            const requsr_auth_list = [];
-            if (permit_dict.usergroup_list.includes("auth1")){requsr_auth_list.push(1)};
-            if (permit_dict.usergroup_list.includes("auth2")){requsr_auth_list.push(2)};
-           // add examiner and commissiner only when mode = approve
-            if (mod_MAG_dict.is_approve_mode){
-                if (permit_dict.usergroup_list.includes("auth3")){requsr_auth_list.push(3)};
-                if (permit_dict.usergroup_list.includes("auth4")){requsr_auth_list.push(4)};
-            };
-            console.log("requsr_auth_list", requsr_auth_list) ;
+            mod_MAG_dict.is_approve_mode = (open_mode === "approve");
+            mod_MAG_dict.is_submit_ex2a_mode = (open_mode === "submit_ex2a");
 
-// get selected auth_index (user can be pres / secr and examiner at the same time)
-            if (requsr_auth_list.length) {
-                if(!setting_dict.sel_auth_index || !requsr_auth_list.includes(setting_dict.sel_auth_index)){
-                    // when sel_auth_index is null or not in requsr_auth_list: make first item of requsr_auth_list the sel_auth_index
-                    setting_dict.sel_auth_index = requsr_auth_list[0];
-                };
+// get selected auth_index (user can be chairpeson / secretary and examiner at the same time)
+            MAG_get_sel_auth_index();
+
+            if (setting_dict.sel_auth_index === 4 && is_examperiod_exemption &&  !["pe", "ce"].includes(setting_dict.sel_examtype) ){
+                setting_dict.sel_examtype = null;
+                b_show_mod_message_html(loc.MAG_info.corrector_cannot_approve_exem);
+
             } else {
-                // reset sel_auth_index when user has no auth
-                setting_dict.sel_auth_index = null;
+        // PRE2023-03-25 when corrector and examtype = 'se', change to 'ce' instead of giving message
+                if (setting_dict.sel_auth_index === 4 && !["pe", "ce"].includes(setting_dict.sel_examtype) ){
+                    setting_dict.sel_examtype = "ce";
+                    mod_MAG_dict.examtype = "ce";
+                };
+        // --- get sel_examtype
+                MAG_get_sel_examtype(open_mode);
+                console.log("    mod_MAG_dict.examperiod", mod_MAG_dict.examperiod);
+                console.log("    mod_MAG_dict.examtype", mod_MAG_dict.examtype);
+
+    // get has_permit
+                mod_MAG_dict.has_permit = false;
+                if (mod_MAG_dict.auth_index) {
+                    if( mod_MAG_dict.is_approve_mode && permit_dict.permit_approve_grade){
+                        // only admin or corrector can approve secret exams
+                        mod_MAG_dict.has_permit = (permit_dict.requsr_role_admin || permit_dict.requsr_role_corr);
+                    } else if (mod_MAG_dict.is_submit_ex2a_mode){
+                        mod_MAG_dict.has_permit = (permit_dict.requsr_role_admin && permit_dict.permit_submit_grade)
+                    };
+                };
+                console.log("    mod_MAG_dict.has_permit", mod_MAG_dict.has_permit);
+                console.log("    mod_MAG_dict.auth_index", mod_MAG_dict.auth_index);
+
+                if (mod_MAG_dict.has_permit && mod_MAG_dict.auth_index){
+
+    // --- get header_txt and subheader_txt
+                    const header_txt = (mod_MAG_dict.is_approve_mode) ? (is_examperiod_exemption) ? loc.Approve_exemptions :  loc.Approve_grades :
+                                        (mod_MAG_dict.is_submit_ex2a_mode) ? loc.Submit_Ex2A_form : null;
+                    el_MAG_header.innerText = header_txt;
+                    const subheader_txt = (mod_MAG_dict.is_approve_mode) ? (is_examperiod_exemption) ? loc.MAG_info.subheader_approve_exem : loc.MAG_info.subheader_approve_grade :
+                                          (mod_MAG_dict.is_submit_ex2a_mode) ? loc.MAG_info.subheader_submit_ex2a : null;
+                    el_MAG_subheader.innerText = subheader_txt;
+
+    // --- get examperiod and examtype text
+                    // sel_examperiod 4 shows "Vrijstelling" as examperiod, replace by "Eerste tijdvak"
+                    // sel_examperiod 12 shows "Eerste tijdvak / Tweede tijdvak" replace by "---"
+                    // replace by First period
+                    el_MAG_examperiod.innerText = ([1, 2, 3, 4].includes(setting_dict.sel_examperiod)) ? loc.examperiod_caption[setting_dict.sel_examperiod] : "---";
+
+    // --- fill selectbox examtype
+                    if (el_MAG_examtype){
+                        // sel_examtype = "se", "sr", "pe", "ce",   PR2023-02-03 deprecated:  "reex", "reex03", "exem"
+
+                        const examtype_list = []
+                        if (setting_dict.sel_examperiod === 1){
+                            examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce})
+                        } else if (setting_dict.sel_examperiod === 2){
+                            examtype_list.push({value: 'ce', caption: loc.examtype_caption.reex})
+                        } else if (setting_dict.sel_examperiod === 3){
+                            examtype_list.push({value: 'ce', caption: loc.examtype_caption.reex03})
+                        };
+                        t_FillOptionsFromList(el_MAG_examtype, examtype_list, "value", "caption",
+                            loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype);
+                    };
+
+    // --- hide filter subject, level and cluster when submitting Ex2 Ex2a form. Leave level visible if sel_dep_level_req, MPC must be able to submit per level
+                    const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req || mod_MAG_dict.is_approve_mode;
+                    add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
+
+    // --- hide select subject and cluster when submit mode
+                    add_or_remove_class(el_MAG_subject.parentNode, cls_hide, !mod_MAG_dict.is_approve_mode);
+
+                    add_or_remove_class(el_MAG_cluster.parentNode, cls_hide, !mod_MAG_dict.is_approve_mode || is_examperiod_exemption);
+
+                    const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_code : "<" + loc.All_levels + ">";
+                    el_MAG_lvlbase.innerText = level_abbrev;
+
+    // - set subject_text and cluster_text
+                    MAG_set_subject_cluster_txt();
+
+    // --- get approved_by
+                    if (el_MAG_approved_by_label){
+                        el_MAG_approved_by_label.innerText = ( (mod_MAG_dict.is_submit_ex2a_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
+                    }
+                    if (el_MAG_approved_by){
+                        el_MAG_approved_by.innerText = permit_dict.requsr_name;
+                    }
+
+    // --- fill selectbox auth_index
+                    MAG_fill_select_authindex ();
+
+    // --- reset ok button
+
+//----------------
+    // ---  show info container and delete button only in approve mode
+                //console.log("...........is_submit", is_submit) ;
+                add_or_remove_class(el_MAG_select_container, cls_hide, !mod_MAG_dict.is_approve_mode);
+                add_or_remove_class(el_MAG_btn_delete, cls_hide, mod_MAG_dict.is_submit_ex2a_mode);
+
+    // ---  reset el_MAG_input_verifcode
+                el_MAG_input_verifcode.value = null;
+
+    // ---  show info and hide loader
+                    // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
+                    add_or_remove_class(el_MAG_loader, cls_hide, true);
+                    //add_or_remove_class(el_MAG_btn_save, cls_hide, true);
+                    //add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
+
+                    MAG_Save ("save");
+
+    // --- open modal
+                    $("#id_mod_approve_grade").modal({backdrop: true});
+                };
             };
-            //console.log("setting_dict.sel_auth_index", setting_dict.sel_auth_index) ;
-
-// get has_permit
-            mod_MAG_dict.has_permit = (permit_dict.requsr_same_school && permit_dict.permit_submit_ex5);
-
-            if (mod_MAG_dict.has_permit && mod_MAG_dict.auth_index){
-
-// --- get header_txt and subheader_txt
-                const header_txt = loc.Submit_Ex5_form
-                el_MAG_header.innerText = header_txt;
-                const subheader_txt = loc.MAG_ex5_info.subheader_submit_ex5;
-                el_MAG_subheader.innerText = subheader_txt;
-
-// --- get examperiod and examtype text
-                // sel_examperiod 4 shows "Vrijstelling" as examperiod, replace by "Eerste tijdvak"
-                // sel_examperiod 12 shows "Eerste tijdvak / Tweede tijdvak" replace by "---"
-                // replace by First period
-                el_MAG_examperiod.innerText = (setting_dict.sel_examperiod === 3) ? loc.examperiod_caption[3] :
-                                (setting_dict.sel_examperiod === 2) ? loc.examperiod_caption[2] :
-                                ([1, 4].includes(setting_dict.sel_examperiod)) ? loc.examperiod_caption[1] : "---"
-
-// --- hide select examperiod when downloadfing Ex5
-                add_or_remove_class(el_MAG_examperiod.parentNode, cls_hide, mode === "submit_ex5");
-
-// --- fill selectbox examtype
-                if (el_MAG_examtype){
-                    const examtype_list = []
-                    if (setting_dict.sel_examperiod === 1){
-                        examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce})
-                    } else if (setting_dict.sel_examperiod === 2){
-                        examtype_list.push({value: 'reex', caption: loc.examtype_caption.reex})
-                    } else if (setting_dict.sel_examperiod === 3){
-                        examtype_list.push({value: 'reex03', caption: loc.examtype_caption.reex03})
-                    };
-                    t_FillOptionsFromList(el_MAG_examtype, examtype_list, "value", "caption",
-                        loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype);
-                };
-
-
-// --- hide select examtype, subject and cluster
-                add_or_remove_class(el_MAG_examtype.parentNode, cls_hide, true);
-                add_or_remove_class(el_MAG_subject.parentNode, cls_hide, true);
-                add_or_remove_class(el_MAG_cluster.parentNode, cls_hide, true);
-
-// --- show level visible if sel_dep_level_req, MPC must be able to submit per level
-                const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req;
-                add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
-
-                //const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_code : "<" + loc.All_levels + ">";
-                //el_MAG_level_abbrev.innerText = level_abbrev;
-
-// --- get approved_by
-                if (el_MAG_approved_by_label){
-                    el_MAG_approved_by_label.innerText = loc.Submitted_by + ":"
-                }
-                if (el_MAG_approved_by){
-                    el_MAG_approved_by.innerText = permit_dict.requsr_name;
-                }
-
-// --- fill selectbox auth_index
-                if (el_MAG_auth_index){
-                    // auth_list = [{value: 1, caption: 'Chairperson'}, {value: 3, caption: 'Examiner'} )
-                    const auth_list = [];
-                    const cpt_list = [null, loc.Chairperson, loc.Secretary, loc.Examiner, loc.Corrector];
-                    for (let i = 0, auth_index; auth_index = requsr_auth_list[i]; i++) {
-
-            console.log("auth_index", auth_index, typeof auth_index) ;
-            console.log("requsr_auth_list[i]", requsr_auth_list[i], typeof requsr_auth_list[i]) ;
-            console.log("loc.Secretary", loc.Secretary) ;
-                        auth_list.push({value: auth_index, caption: cpt_list[auth_index]});
-                    };
-                    t_FillOptionsFromList(el_MAG_auth_index, auth_list, "value", "caption",
-                        loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
-                };
-
-// --- reset ok button
-                MAG_SetMsgContainer()
-                MAG_SetInfoContainer();
-                MAG_SetBtnSaveDeleteCancel();
-
-// --- open modal
-                $("#id_mod_approve_grade").modal({backdrop: true});
-            };  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
-         };
+        };
     };  // MAG_Open
 
 //=========  MAG_Save  ================
-    function MAG_Save (save_mode) {
+    function MAG_Save(save_mode) {
         console.log("===  MAG_Save  =====") ;
-        // save_mode = 'save''
+        console.log("    save_mode", save_mode) ;
+        console.log("    mod_MAG_dict", mod_MAG_dict) ;
+        console.log("    mod_MAG_dict.examperiod", mod_MAG_dict.examperiod) ;
+        console.log("    mod_MAG_dict.examtype", mod_MAG_dict.examtype) ;
+        // save_mode = 'save' or 'delete'
 
-        if (permit_dict.permit_submit_ex5) {
-    console.log("mod_MAG_dict.step", mod_MAG_dict.step)
+        if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
+
+            mod_MAG_dict.is_reset = (save_mode === "delete");
+
+    console.log("    mod_MAG_dict.step", mod_MAG_dict.step)
 
             //  upload_modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
             const upload_dict = {
-                table: "result",
-                form: "ex5",
+                table: "grade",
+                page: "page_secretexam",
+                form: (mod_MAG_dict.is_submit_ex2a_mode) ? "ex2a" : "ex2",
                 auth_index: mod_MAG_dict.auth_index,
+                examperiod: mod_MAG_dict.examperiod,
+                examtype: mod_MAG_dict.examtype,
+                level_abbrev: mod_MAG_dict.sel_lvlbase_code,
                 now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
                 };
 
             let url_str = null;
-            if (mod_MAG_dict.step === 1 && mod_MAG_dict.test_is_ok){
-                url_str = urls.url_send_email_verifcode;
-            } else {
-                url_str = urls.url_grade_submit_ex5;
-
-                if (mod_MAG_dict.test_is_ok){
-                    upload_dict.mode = "submit_save";
-
-                    upload_dict.verificationcode = el_MAG_input_verifcode.value
-                    upload_dict.verificationkey = mod_MAG_dict.verificationkey;
+            if (mod_MAG_dict.is_approve_mode){
+                url_str = urls.url_grade_approve;
+                if (mod_MAG_dict.is_reset) {
+                    upload_dict.mode = "approve_reset";
                 } else {
-                    upload_dict.mode = "submit_test";
+                    upload_dict.mode = (mod_MAG_dict.test_is_ok) ? "approve_save" : "approve_test";
+                };
+            } else {
+                if (mod_MAG_dict.step === 1 && mod_MAG_dict.test_is_ok){
+                    url_str = urls.url_send_email_verifcode;
+
+
+                } else if (mod_MAG_dict.is_submit_ex2_mode || mod_MAG_dict.is_submit_ex2a_mode){
+                    url_str = urls.url_grade_submit_ex2;
+
+                    if (mod_MAG_dict.test_is_ok){
+                        upload_dict.mode = "submit_save";
+
+                        upload_dict.verificationcode = el_MAG_input_verifcode.value
+                        upload_dict.verificationkey = mod_MAG_dict.verificationkey;
+                    } else {
+                        upload_dict.mode = "submit_test";
+                    };
                 };
             };
-
 
     // ---  show loader
             add_or_remove_class(el_MAG_loader, cls_hide, false)
 
     // ---  disable select auth_index after clicking save button
             if (el_MAG_auth_index){
-                el_MAG_auth_index.disabled = true;
+                //el_MAG_auth_index.disabled = true;
             };
 
     // ---  hide info box and msg box and input verifcode
-            add_or_remove_class(el_MAG_msg_container, cls_hide, true);
-            add_or_remove_class(el_MAG_info_container, cls_hide, true);
-            add_or_remove_class(el_MAG_input_verifcode.parentNode, cls_hide, true);
+            //add_or_remove_class(el_MAG_info_container, cls_hide, true);
+            //add_or_remove_class(el_MAG_input_verifcode.parentNode, cls_hide, true);
 
     // ---  hide delete btn
             add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
 
-    console.log("upload_dict", upload_dict);
+    console.log("    upload_dict", upload_dict);
 
             UploadChanges(upload_dict, url_str);
 // hide modal when clicked on save btn when test_is_ok
             if (mod_MAG_dict.test_is_ok){
                 //$("#id_mod_approve_grade").modal("hide");
             };
-            MAG_SetBtnSaveDeleteCancel();
 
+        console.log("--- from MAG_Save");
+            MAG_SetInfoboxesAndBtns();
         }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
     };  // MAG_Save
 

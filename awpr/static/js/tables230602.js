@@ -702,7 +702,7 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13
     function t_MSSSS_Open (loc, tblName, data_rows, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
-        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
     //console.log( "    permit_dict", permit_dict);
     //console.log( "tblName", tblName );
     //console.log( "data_rows", data_rows, typeof data_rows );
@@ -730,7 +730,7 @@
                 // PR2022-05-25 is confusing when modal doesn't open, > 1 removed
                 //if (data_rows && data_rows.length > 1){
 
-    console.log( "    data_rows", data_rows);
+    //console.log( "    data_rows", data_rows);
                 if (data_rows && data_rows.length){
         // --- fill select table
     //console.log( "fill select table" );
@@ -761,8 +761,6 @@
 
         // PR2023-03-29 function is only called by t_MSSSS_SelectItem
         // argument MSSS_Response gets value in - for instance - addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, add_all, false, setting_dict, permit_dict, MSSSubjStud_Response)}, false);
-
-
 
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
     // function
