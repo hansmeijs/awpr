@@ -186,15 +186,11 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
 # - -end of get_pres_secr_dict
 
 
-
-# end of GetGradelistDiplomaAuthView
-
-
 @method_decorator([login_required], name='dispatch')
 class GradeDownloadShortGradelist(View):  # PR2022-06-05
 
     def get(self, request, lst):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GradeDownloadShortGradelist ============= ')
             logger.debug('     list: ' + str(lst))
@@ -224,17 +220,29 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
 # +++ get grade_dictlist
                 sortby_class = upload_dict.get('sortby_class') or False
                 sel_classes = upload_dict.get('sel_classes')
-                include_class_blank = False
                 if logging_on:
                     logger.debug('sel_classes: ' + str(sel_classes))
 
+                include_class_blank = False
                 if sel_classes:
                     if 'zz_blank' in sel_classes:
                         include_class_blank = True
                         sel_classes.remove('zz_blank')
 
-                grade_dict, classname_list = get_shortgradelist_dict(
-                    examyear=sel_examyear,
+    # calc result before printing the grade list
+                student_pk_list = get_shortgradelist_student_list(sel_school, sel_department, sel_level, sel_classes, include_class_blank)
+
+                if student_pk_list:
+                    calc_res.calc_batch_student_result(
+                        sel_examyear=sel_examyear,
+                        sel_school=sel_school,
+                        sel_department=sel_department,
+                        student_pk_list=student_pk_list,
+                        sel_lvlbase_pk=sel_lvlbase_pk,
+                        user_lang=user_lang
+                    )
+
+                grade_dict, classname_list, failed_student_pk_list = get_shortgradelist_dict(
                     school=sel_school,
                     department=sel_department,
                     level=sel_level,
@@ -242,6 +250,9 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
                     include_class_blank=include_class_blank,
                     sortby_class=sortby_class
                 )
+
+                if logging_on:
+                    logger.debug('    failed_student_pk_list: ' + str(failed_student_pk_list))
 
                 af.register_font_arial()
 
@@ -279,7 +290,7 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
                     class_dict = grade_dict.get(classname)
                     student_list = class_dict.get('student_list')
 
-                    student_list_sorted = sorted(student_list, key=lambda d: d['sortname'])
+                    student_list_sorted = sorted(student_list, key=lambda k: (k['lastname'], k['firstname']))
                     list_len = len(student_list_sorted)
                     pages = 1 + int(list_len/4)
                     page_index = 0
@@ -858,7 +869,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 first_name = row.get('firstname') or '---'
                 prefix = row.get('prefix')
                 full_name = stud_fnc.get_firstname_prefix_lastname(last_name, first_name, prefix)
-                sort_name = (last_name.lower() + c.STRING_SPACE_30)[:30] + first_name.lower()
+                #sort_name = (last_name.lower() + c.STRING_SPACE_30)[:30] + first_name.lower()
 
                 birth_date = row.get('birthdate', '')
                 birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
@@ -910,8 +921,12 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                     'sctbase_code':  row.get('sctbase_code'),
                     'has_profiel':  row.get('has_profiel', False),
 
+                    'firstname': first_name,
+                    'lastname': last_name,
+
                     'fullname': full_name,
-                    'sortname': sort_name,
+                    #'sortname': sort_name,
+
                     'idnumber': idnumber_withdots_no_char,
                     'gender': row.get('gender'),
                     'birthdate': birth_date_formatted,
@@ -1024,7 +1039,8 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
         #grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['fullname'])
         # PR2022-06-16 Hans Vlinkervleugel gradelist sort by first name, instead of by last name. sortname added
         # was: grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['fullname'])
-        grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['sortname'])
+        # was: grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['sortname'])
+        grade_dictlist_sorted = sorted(grade_list, key=lambda k: (k['lastname'], k['firstname']))
 
         if logging_on:
             if grade_dictlist_sorted:
@@ -2650,12 +2666,32 @@ def draw_shortgradelist_result_header(canvas, coord, col_tab_list, line_height, 
 
 # - draw sjtp text
 
-    result_status = student_dict.get('result_status')
+    RESULT_CAPTION = [
+        _('No result'),
+        _('Passed'),
+        _('Failed'),
+        _('Re-examination'),
+        _('Withdrawn')
+    ]
+
+    #result_status = student_dict.get('result_status')
+    result = student_dict.get('result') or 0
+
+    result_list = [
+        'No result',
+        'Passed',
+        'Failed',
+        'Re-examination',
+        'Withdrawn'
+    ]
+
+    result_txt = gettext(result_list[result])
+
     font_str = 'Times-Bold'
     txt_list = [
         {'txt': gettext('Result'), 'font': font_str, 'padding': 2, 'x': x + col_tab_list[0] * mm},
         None,
-        {'txt': result_status, 'font': font_str, 'padding': 2, 'x': x + col_tab_list[3]  * mm}
+        {'txt': result_txt, 'font': font_str, 'padding': 2, 'x': x + col_tab_list[3]  * mm}
     ]
 
     vertical_lines = (0, 5)
@@ -2732,10 +2768,6 @@ def draw_shortgradelist_page_footer(canvas, border, page_index, pages,
                                has_extra_counts, has_use_exem, has_use_reex, has_use_reex3,
                                user_lang):
     # PR2021-10-08 PR2023-06-04
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug('  ----- draw_shortgradelist_page_footer ----- ')
-        logger.debug('    has_extrafacilities: ' + str(has_extrafacilities))
 
     footer_height = 10 * mm
     padding_left = 4 * mm
@@ -2766,8 +2798,6 @@ def draw_shortgradelist_page_footer(canvas, border, page_index, pages,
 
     footer_txt = ', '.join(footer_list)
 
-    logger.debug('footer_txt: ' + str(footer_txt))
-
 # - draw horizontal line above page footer
     canvas.setStrokeColorRGB(0, 0, 0)
     canvas.line(border[3], y_top, border[1], y_top)
@@ -2776,16 +2806,11 @@ def draw_shortgradelist_page_footer(canvas, border, page_index, pages,
     canvas.setFont('Arial', 8, leading=None)
     canvas.setFillColor(colors.HexColor("#000000"))
 
-
-    # - column 0 'Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1.'
     if has_extrafacilities:
         line_height = 4 * mm
         canvas.drawString(x, y + line_height, '*: ' + gettext('Candidate uses extra facilities'))
 
-        if logging_on:
-            logger.debug('    if has_extrafacilities: ' + str(has_extrafacilities))
     if footer_txt:
-        logger.debug('x: ' + str(x))
         canvas.drawString(x, y, footer_txt)
 
     today_dte = af.get_today_dateobj()
@@ -2795,7 +2820,6 @@ def draw_shortgradelist_page_footer(canvas, border, page_index, pages,
     if pages > 1:
         page_txt = ''.join((gettext('Page'), ' ', str(page_index + 1), gettext(_(' of ')), str(pages)))
         canvas.drawString(right - 60 * mm, y, page_txt)
-
 # - end of draw_shortgradelist_page_footer
 
 
@@ -3173,12 +3197,60 @@ def draw_pok_colum_headerNIU(canvas, coord, col_tab_list, library, is_lexschool)
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-def get_shortgradelist_dict(examyear, school, department, level, sel_classes, include_class_blank, sortby_class):
-    # PR2023-06-04
+def get_shortgradelist_student_list(school, department, level, sel_classes, include_class_blank):
+    # PR2023-06-05
+    # get list of selected students, to calc result before printing the shortgradelist
+
+    sql_list = ["SELECT stud.id AS stud_id",
+
+                "FROM students_studentsubject AS studsubj",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+
+                "WHERE stud.school_id = ", str(school.pk), "::INT ",
+                "AND dep.id = ", str(department.pk), "::INT",
+
+                "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted"
+                ]
+
+    class_blank_clause = "stud.classname IS NULL"
+    if sel_classes:
+        sel_classes_clause = ''.join(("LOWER(stud.classname) IN (SELECT UNNEST(ARRAY", str(sel_classes), "::TEXT[]))"))
+        if include_class_blank:
+            sql_list.extend(("AND (", sel_classes_clause, " OR ", class_blank_clause, ")"))
+        else:
+            sql_list.extend(("AND ", sel_classes_clause))
+    else:
+        if include_class_blank:
+            sql_list.extend(("AND ", class_blank_clause))
+        else:
+            sql_list.extend(("AND FALSE"))
+
+    if level:
+        sql_list.extend(("AND lvl.base_id = ", str(level.base.pk), "::INT"))
+
+    sql_list.append("GROUP BY stud.id")
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+    student_pk_list = []
+    if rows:
+        for row in rows:
+            student_pk_list.append(row[0])
+    return student_pk_list
+
+
+def get_shortgradelist_dict(school, department, level, sel_classes, include_class_blank, sortby_class):
+    # PR2023-06-05
+
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_gradelist_dictlist -----')
         logger.debug('sel_classes: ' + str(sel_classes) + ' ' + str(type(sel_classes)))
@@ -3203,7 +3275,7 @@ def get_shortgradelist_dict(examyear, school, department, level, sel_classes, in
                 
                 "stud.extrafacilities, stud.iseveningstudent, stud.islexstudent, stud.partial_exam,"
 
-                "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
+                "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result,",
 
                 "depbase.code AS depbase_code, dep.level_req, lvlbase.code AS lvlbase_code, sctbase.code AS sctbase_code,",
 
@@ -3265,139 +3337,155 @@ def get_shortgradelist_dict(examyear, school, department, level, sel_classes, in
 
     grade_dict = {}
     classname_list = []
-
+    failed_student_pk_list = []
     if grade_rows:
         for row in grade_rows:
-            stud_id = row.get('stud_id')
-            row_classname = row.get('classname')
 
-            if not sortby_class:
-                classname = 'all'
-            elif row_classname is None:
-                classname = ''.join(('<', gettext('not entered'), '>'))
-            else:
-                classname = row_classname.lower()
+            if logging_on:
+                logger.debug('row: ' + str(row))
+            try:
+                stud_id = row.get('stud_id')
+                row_classname = row.get('classname')
 
-            if classname not in grade_dict:
-                grade_dict[classname] = {}
-                classname_list.append(classname)
-
-            class_dict = grade_dict[classname]
-
-            if stud_id not in class_dict:
-                last_name = row.get('lastname') or '---'
-                first_name = row.get('firstname') or '---'
-                prefix = row.get('prefix')
-                full_name = stud_fnc.get_lastname_firstname_initials(
-                    last_name=last_name,
-                    first_name=first_name,
-                    prefix=prefix,
-                    has_extrafacilities=False
-                )
-                sort_name = (last_name.lower() + c.STRING_SPACE_30)[:30] + first_name.lower()
-
-                class_dict[stud_id] = {
-                    'depbase_code': row.get('depbase_code'),
-                    'lvlbase_code': row.get('lvlbase_code'),
-                    'level_req': row.get('level_req', False),
-
-                    'sctbase_code': row.get('sctbase_code'),
-                    'classname': row_classname,
-
-                    'fullname': full_name,
-                    'sortname': sort_name,
-
-                    'examnumber': row.get('examnumber'),
-
-                    'bis_exam': row.get('bis_exam'),
-                    'extrafacilities': row.get('extrafacilities'),
-                    'iseveningstudent': row.get('iseveningstudent'),
-                    'islexstudent': row.get('islexstudent'),
-                    'partial_exam': row.get('partial_exam'),
-
-                    'ce_avg': row.get('gl_ce_avg'),
-                    'combi_avg': row.get('gl_combi_avg'),
-                    'final_avg': row.get('gl_final_avg'),
-                    'result_status': row.get('result_status'),
-                }
-                student_list = class_dict.get('student_list')
-                if student_list:
-                    student_list.append({'id': stud_id, 'sortname': sort_name})
+                if not sortby_class:
+                    classname = 'all'
+                elif row_classname is None:
+                    classname = ''.join(('<', gettext('not entered'), '>'))
                 else:
-                    class_dict['student_list'] = [{'id': stud_id, 'sortname': sort_name}]
+                    classname = row_classname.lower()
 
-            # - add subjecttype dict
-            student_dict = class_dict.get(stud_id)
-            if student_dict:
-                # put combi subjects in dict with key: 'combi', others in dict with key: subjecttype_id
-                # werkstuk Havo/Vwo is combi subject, is added to list of combi subjects
-                # werkstuk Vsbo TKL is not a combi subject, it is added with key 'wst', grade is shown in draw_wst
-                # stage it is added with key 'stg', grade is shown in draw_stg
-                is_combi = row.get('is_combi', False)
-                if is_combi:
-                    sjtp_sequence = 'combi'
-                else:
-                    sjtp_sequence = 'nocombi'
+                if classname not in grade_dict:
+                    grade_dict[classname] = {}
+                    classname_list.append(classname)
 
-                if sjtp_sequence not in student_dict:
-                    student_dict[sjtp_sequence] = {
-                        'combi_avg': row.get('gl_combi_avg')
+                class_dict = grade_dict[classname]
+
+                if stud_id not in class_dict:
+                    last_name = row.get('lastname') or '---'
+                    first_name = row.get('firstname') or '---'
+                    prefix = row.get('prefix')
+                    full_name = stud_fnc.get_lastname_firstname_initials(
+                        last_name=last_name,
+                        first_name=first_name,
+                        prefix=prefix,
+                        has_extrafacilities=False
+                    )
+                    #sort_name = (last_name.lower() + c.STRING_SPACE_30)[:30] + first_name.lower()
+
+                    result = row.get('result') or 0
+                    class_dict[stud_id] = {
+                        'depbase_code': row.get('depbase_code'),
+                        'lvlbase_code': row.get('lvlbase_code'),
+                        'level_req': row.get('level_req', False),
+
+                        'sctbase_code': row.get('sctbase_code'),
+                        'classname': row_classname,
+
+                        #'firstname': first_name,
+                        #'lastname': last_name,
+
+                        'fullname': full_name,
+                        #'sortname': sort_name,
+
+                        'examnumber': row.get('examnumber'),
+
+                        'bis_exam': row.get('bis_exam'),
+                        'extrafacilities': row.get('extrafacilities'),
+                        'iseveningstudent': row.get('iseveningstudent'),
+                        'islexstudent': row.get('islexstudent'),
+                        'partial_exam': row.get('partial_exam'),
+
+                        'ce_avg': row.get('gl_ce_avg'),
+                        'combi_avg': row.get('gl_combi_avg'),
+                        'final_avg': row.get('gl_final_avg'),
+
+                        'result': result
                     }
+                    if result == c.RESULT_FAILED:
+                        failed_student_pk_list.append(stud_id)
 
-                sjtp_dict = student_dict.get(sjtp_sequence)
-                subj_id = row.get('subj_id')
-                if subj_id not in sjtp_dict:
-                    segrade = row.get('gradelist_sesrgrade').replace('.', ',') if row.get(
-                        'gradelist_sesrgrade') else None
-                    pecegrade = row.get('gradelist_pecegrade').replace('.', ',') if row.get(
-                        'gradelist_pecegrade') else None
-                    finalgrade = row.get('gradelist_finalgrade')
+                    student_list = class_dict.get('student_list')
+                    if student_list:
+                        #student_list.append({'id': stud_id, 'sortname': sort_name})
+                        student_list.append({'id': stud_id,  'firstname': first_name, 'lastname': last_name})
+                    else:
+                        #class_dict['student_list'] = [{'id': stud_id, 'sortname': sort_name}]
+                        class_dict['student_list'] = [{'id': stud_id, 'firstname': first_name, 'lastname': last_name}]
 
-                    sjtp_dict[subj_id] = {
-                        'segrade': segrade,
-                        'pecegrade': pecegrade,
-                        'finalgrade': finalgrade
-                    }
-                subj_dict = sjtp_dict[subj_id]
+                # - add subjecttype dict
+                student_dict = class_dict.get(stud_id)
+                if student_dict:
+                    # put combi subjects in dict with key: 'combi', others in dict with key: subjecttype_id
+                    # werkstuk Havo/Vwo is combi subject, is added to list of combi subjects
+                    # werkstuk Vsbo TKL is not a combi subject, it is added with key 'wst', grade is shown in draw_wst
+                    # stage it is added with key 'stg', grade is shown in draw_stg
+                    is_combi = row.get('is_combi', False)
+                    if is_combi:
+                        sjtp_sequence = 'combi'
+                    else:
+                        sjtp_sequence = 'nocombi'
 
-                # - check if studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.gradelist_use_exem is True
-                # if so: add 'has_extra_nocount' = True to student-dict
-                # used to add foornote in gradelist
-                info_list = []
-                if row.get('is_extra_nocount', False):
-                    info_list.append('+')
-                    student_dict['has_extra_nocount'] = True
-                if row.get('is_extra_counts', False):
-                    info_list.append('++')
-                    student_dict['has_extra_counts'] = True
-                if row.get('is_thumbrule', False):
-                    info_list.append('d')
-                    student_dict['has_thumbrule'] = True
+                    if sjtp_sequence not in student_dict:
+                        student_dict[sjtp_sequence] = {
+                            'combi_avg': row.get('gl_combi_avg')
+                        }
 
-                if row.get('gradelist_use_exem', False):
-                    info_list.append('vr')
-                    student_dict['has_use_exem'] = True
+                    sjtp_dict = student_dict.get(sjtp_sequence)
+                    subj_id = row.get('subj_id')
+                    if subj_id not in sjtp_dict:
+                        segrade = row.get('gradelist_sesrgrade').replace('.', ',') if row.get(
+                            'gradelist_sesrgrade') else None
+                        pecegrade = row.get('gradelist_pecegrade').replace('.', ',') if row.get(
+                            'gradelist_pecegrade') else None
+                        finalgrade = row.get('gradelist_finalgrade')
 
-                gl_examperiod = row.get('gl_examperiod', 0)
-                if gl_examperiod == c.EXAMPERIOD_SECOND:
-                    info_list.append('her')
-                    student_dict['has_use_reex'] = True
-                elif gl_examperiod == c.EXAMPERIOD_THIRD:
-                    info_list.append('her 3e tv')
-                    student_dict['has_use_reex3'] = True
+                        sjtp_dict[subj_id] = {
+                            'segrade': segrade,
+                            'pecegrade': pecegrade,
+                            'finalgrade': finalgrade
+                        }
+                    subj_dict = sjtp_dict[subj_id]
 
-                subjbase_code = row.get('subjbase_code') or '-'
-                if info_list:
-                    info_txt = ', '.join(info_list)
-                    subjbase_code += ''.join((' (', info_txt, ')'))
-                subj_dict['subjbase_code'] = subjbase_code
+                    # - check if studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.gradelist_use_exem is True
+                    # if so: add 'has_extra_nocount' = True to student-dict
+                    # used to add foornote in gradelist
+                    info_list = []
+                    if row.get('is_extra_nocount', False):
+                        info_list.append('+')
+                        student_dict['has_extra_nocount'] = True
+                    if row.get('is_extra_counts', False):
+                        info_list.append('++')
+                        student_dict['has_extra_counts'] = True
+                    if row.get('is_thumbrule', False):
+                        info_list.append('d')
+                        student_dict['has_thumbrule'] = True
 
+                    if row.get('gradelist_use_exem', False):
+                        info_list.append('vr')
+                        student_dict['has_use_exem'] = True
+
+                    gl_examperiod = row.get('gl_examperiod', 0)
+                    if gl_examperiod == c.EXAMPERIOD_SECOND:
+                        info_list.append('her')
+                        student_dict['has_use_reex'] = True
+                    elif gl_examperiod == c.EXAMPERIOD_THIRD:
+                        info_list.append('her 3e tv')
+                        student_dict['has_use_reex3'] = True
+
+                    subjbase_code = row.get('subjbase_code') or '-'
+                    if info_list:
+                        info_txt = ', '.join(info_list)
+                        subjbase_code += ''.join((' (', info_txt, ')'))
+                    subj_dict['subjbase_code'] = subjbase_code
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
     classname_list.sort()
 
     if logging_on:
-        logger.debug('    grade_dict: ' + str(grade_dict))
+        # logger.debug('    grade_dict: ' + str(grade_dict))
         logger.debug('    classname_list: ' + str(classname_list))
+        logger.debug('    failed_student_pk_list: ' + str(failed_student_pk_list))
 
-    return grade_dict, classname_list
+    return grade_dict, classname_list, failed_student_pk_list
 # - end of get_shortgradelist_dict
 

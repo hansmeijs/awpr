@@ -8,7 +8,7 @@
 //let urls = {};
 //const field_settings = {};  // PR2023-04-20 made global
 
-let corrector_rows = [];
+//let corrector_rows = [];
 
 const user_dicts = {};
 const permit_dicts = {};
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 locale: {page: ["page_user", "upload"]},
                 examyear_rows: {get: true},
                 user_rows: {get: true},
-                corrector_rows: {get: true},
+                //corrector_rows: {get: true},
                 usercompensation_rows: {get: true},
                 department_rows: {skip_allowed_filter: true},
                 school_rows: {skip_allowed_filter: true},
@@ -319,8 +319,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(datalist_request, called_by) {
-        //console.log( "=== DatalistDownload ", called_by)
-        //console.log("request: ", datalist_request)
+        console.log( "=== DatalistDownload ", called_by)
+        console.log("request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -375,9 +375,9 @@ document.addEventListener('DOMContentLoaded', function() {
 console.log("user_dicts",user_dicts)
                 };
 
-                if ("corrector_rows" in response) {
-                    corrector_rows = response.corrector_rows;
-                };
+                //if ("corrector_rows" in response) {
+                //    corrector_rows = response.corrector_rows;
+                //};
                 if ("permit_rows" in response) {
                     b_fill_datadicts("userpermit",  "id", null, response.permit_rows, permit_dicts);
                 };
@@ -4490,7 +4490,7 @@ console.log( "new_value", new_value);
         const datalist_request = {
                 setting: new_setting,
                 user_rows: {get: true},
-                corrector_rows: {get: true},
+                //corrector_rows: {get: true},
                 department_rows: {skip_allowed_filter: true},
                 school_rows: {skip_allowed_filter: true},
                 level_rows: {skip_allowed_filter: true},

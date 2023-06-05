@@ -2067,7 +2067,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
     # --- create list of all users of this school, or 1 user with user_pk
     # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_user_rowsNEW ============= ')
@@ -2399,7 +2399,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
             sql_list.append('ORDER BY u.id')
             sql = ' '.join(sql_list)
 
-            if logging_on:
+            if logging_on and False:
                 for sql_txt in sql_list:
                     logger.debug(' > ' + str(sql_txt))
 
@@ -2410,25 +2410,28 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
                 # convert string allowed_schoolbases to dict, remove string PR2022-11-22
                 if rows:
                     for user_dict in rows:
-                        if logging_on and False:
+                        if logging_on:
                             logger.debug('  ====>  user_dict: ' + str(user_dict))
 
                         allowed_sections_str = user_dict.get('allowed_sections')
                         allowed_sections_dict = json.loads(allowed_sections_str) if allowed_sections_str else None
 
-                        #if logging_on:
-                        #    logger.debug('  ====>  allowed_sections_dict: ' + str(allowed_sections_dict))
-                        #    logger.debug('  ====>  request.user.schoolbase.pk) not in allowed_sections_dict: ' + str(str(request.user.schoolbase.pk) not in allowed_sections_dict))
-
+                        if logging_on:
+                            logger.debug('  ====>  allowed_sections_dict: ' + str(allowed_sections_dict))
+                            logger.debug('  ?????  school_correctors_only: ' + str(school_correctors_only))
                         # PR2023-03-26 when school downolads corrector users: add only when school is in allowed schools of corrector user
+                        # PR2023-06-05 debug: error: argument of type 'NoneType' is not iterable because allowed_sections_dict was None
+                        # solved by adding 'if allowed_sections_dict is None or ... '
                         skip_add_to_list = False
                         if school_correctors_only:
-                           if str(request.user.schoolbase.pk) not in allowed_sections_dict:
-                               skip_add_to_list = True
+                            if allowed_sections_dict:
+                                if str(request.user.schoolbase.pk) not in allowed_sections_dict:
+                                    skip_add_to_list = True
+                            else:
+                                skip_add_to_list = True
 
                         if logging_on:
                             logger.debug('  ====>  skip_add_to_list: ' + str(skip_add_to_list))
-                            logger.debug('  ====>  allowed_sections_dict: ' + str(allowed_sections_dict))
 
                         if not skip_add_to_list:
 
@@ -2438,24 +2441,30 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
 
                             allowed_clusters_str = user_dict.get('allowed_clusters')
                             allowed_cluster_pk_arr = json.loads(allowed_clusters_str) if allowed_clusters_str else None
-                            del user_dict['allowed_clusters']
 
-                            user_dict['allowed_sections_dict'] = allowed_sections_dict if allowed_sections_dict else None
+                            if 'allowed_clusters' in user_dict:
+                                del user_dict['allowed_clusters']
 
                             # create allowed depbase, schoolbases, levelbases
                             if allowed_sections_dict:
                                 # allowed_sections_dict: {'5': {'1': {'5': [118, 132, 154], '6': [118, 132, 154]}}} <class 'dict'>
 
-                                #if logging_on:
-                                #    logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+                                user_dict['allowed_sections_dict'] = allowed_sections_dict
+
+                                if logging_on:
+                                    logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
 
                                 r_allowed_sections = {}
                                 schoolbase_pk_arr, r_depbase_pk_arr, lvlbase_pk_arr, r_subjbase_pk_arr = [], [], [], []
                                 # when school / corrector gets user_rows: show only allowed subjects of this dep
                                 # when admin corrector : show all allowed subjects
                                 # this_dep_subjbase_pk_arr = []
+
                                 for schoolbase_pk_str, allowed_depbases_dict in allowed_sections_dict.items():
                                     # depbases_dict: {'1': {'5': [118, 132, 154], '6': [118, 132, 154]}} <class 'dict'>
+
+                                    if logging_on:
+                                        logger.debug('    allowed_depbases_dict: ' + str(allowed_depbases_dict))
 
                                     schoolbase_pk_int = int(schoolbase_pk_str)
                                     if schoolbase_pk_int not in schoolbase_pk_arr:
@@ -2491,6 +2500,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
                                                             # if depbase_pk_int == this_depbase_pk_only:
                                                             #    this_dep_subjbase_pk_arr.append(subjbase_pk_int)
 
+
                                                     r_lvlbase_dict[lvlbase_pk_int] = lvl_base_subjbases_arr
 
                                             r_depbase_dict[depbase_pk_int] = r_lvlbase_dict
@@ -2510,7 +2520,6 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, 
                                 user_dict['allowed_subjbases_title'] = subjbases_name
                                 if subjbase_pk_list:
                                     user_dict['allowed_subjbase_pk_list'] = subjbase_pk_list
-
 
                                 cluster_pk_list, cluster_name_list = get_allowed_clusters(allowed_cluster_pk_arr, all_clusters_dict)
                                 user_dict['allowed_clusters_pk'] = cluster_pk_list

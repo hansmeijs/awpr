@@ -516,6 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.permit_calc_results){
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
+            //AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
         };
         AddSubmenuButton(el_submenu, loc.Short_gradelist, function() {MRM_Open()}, ["tab_show", "tab_btn_result"]);
         if(permit_dict.requsr_same_school){
