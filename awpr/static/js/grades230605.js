@@ -1254,7 +1254,6 @@ document.addEventListener("DOMContentLoaded", function() {
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
 
-        console.log("field_name", field_name);
             const is_status_field = (field_name !== "note_status" && field_name.includes("_status"));
             const skip_left_border = (field_name === "download_conv_table" || is_status_field);
 
@@ -2756,8 +2755,6 @@ const is_allowed_cluster = true;
         //console.log("mod_dict.el_focus: ", mod_dict.el_focus);
         if (mod_dict.el_focus) { set_focus_on_el_with_timeout(mod_dict.el_focus, 150)};
     };  // ModMessageClose
-
-
 
 //========= MOD APPROVE GRADE ==================================== PR2022-03-09
     function MAG_Open (open_mode ) {
@@ -4383,7 +4380,7 @@ console.log( "......filter_value", filter_value);
 
 //=========  MSED_Response  ================ PR2020-12-18  PR2021-05-10
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
         new_setting.page = setting_dict.sel_page;

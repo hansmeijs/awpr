@@ -1200,7 +1200,9 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
             #PR2022-04-22 Kevin Weert JPD error: cannot submit Ex2 because subjects are not approved
             # turned out to be deleted grade. Forgot to add 'NOT tobedeleted' filter
 
-            "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted AND NOT grd.deleted"
+            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+            "AND NOT grd.deleted AND NOT grd.tobedeleted"
         ]
 
         if sel_lvlbase_pk:
@@ -4332,7 +4334,6 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
                 "AND NOT stud.deleted ",
                 "AND NOT studsubj.deleted ",
                 "AND NOT grd.deleted "
-
                 ]
 # - schools can only view their own exams
         # when ETE: show all CUR exams + ETE exams of SXM

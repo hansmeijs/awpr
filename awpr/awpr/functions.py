@@ -688,7 +688,10 @@ def format_DMY_from_dte(dte, lang, month_abbrev=True):  # PR2019-06-09  # PR2020
                     month_locale = c.MONTHS_LONG[lang]
             month_str = month_locale[dte.month]
 
-            date_DMY = ' '.join([day_str, month_str, year_str])
+            if lang == 'en':
+                date_DMY = ''.join([month_str, ' ',day_str, ', ', year_str])
+            else:
+                date_DMY = ' '.join([day_str, month_str, year_str])
         except:
             pass
     #logger.debug('... date_DMY: ' + str(date_DMY) + ' type:: ' + str(type(dte)) + ' lang: ' + str(lang))
@@ -2036,7 +2039,8 @@ def get_long_pws_title_pws_subjectsONCEONLY(request):
 
                 "WHERE ey.code = %(ey_code)s::INT",
                 "AND (LENGTH(TRIM(studsubj.pws_title))>60 OR LENGTH(TRIM(studsubj.pws_subjects))>50)",
-                "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted",
+                "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
                 "ORDER BY sbase.code, depbase.code, stud.lastname, stud.firstname"
             ]
             sql = ' '.join(sql_list)
@@ -2097,7 +2101,9 @@ def recalc_exemption_countNIU(request):
                     "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
                     "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                     "WHERE grd.examperiod =", str(c.EXAMPERIOD_EXEMPTION),
-                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                    "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                    "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                    "AND NOT grd.deleted AND NOT grd.tobedeleted",
                     "GROUP BY studsubj.id"
             ]
             sub_sql = ' '.join(sub_sql_list)
@@ -2125,7 +2131,8 @@ def recalc_exemption_countNIU(request):
                             "FROM students_studentsubject AS studsubj",
                             "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                             "WHERE studsubj.has_exemption",
-                            "AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
                             "GROUP BY stud.id"
                             ]
             sub_sql = ' '.join(sub_sql_list)
@@ -2180,7 +2187,9 @@ def recalc_reex_count(request):
                     "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
                     "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                     "WHERE grd.examperiod =", str(c.EXAMPERIOD_SECOND),
-                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                    "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                    "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                    "AND NOT grd.deleted AND NOT grd.tobedeleted",
                     "GROUP BY studsubj.id"
             ]
             sub_sql = ' '.join(sub_sql_list)
@@ -2208,7 +2217,8 @@ def recalc_reex_count(request):
                             "FROM students_studentsubject AS studsubj",
                             "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                             "WHERE studsubj.has_reex",
-                            "AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
                             "GROUP BY stud.id"
                             ]
             sub_sql = ' '.join(sub_sql_list)

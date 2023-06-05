@@ -286,8 +286,10 @@ def calcreex_get_students_with_final_grades(examyear, school, department, level,
 
                 "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
 
-                "WHERE NOT stud.tobedeleted AND NOT stud.deleted AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
-                "AND ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
+                "WHERE NOT stud.deleted AND NOT stud.tobedeleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+
+                "AND ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT"
                 # TODO add filter failed: "AND stud.result = " + str(c.RESULT_FAILED) + "::INT"
                 ]
 

@@ -690,9 +690,9 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
             "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
 
             "WHERE dep.base_id = %(depbase_pk)s::INT",
-            "AND NOT stud.tobedeleted AND NOT stud.deleted ",
-            "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted ",
-            "AND NOT grd.tobedeleted AND NOT grd.deleted" # TODO deprecate tobedeleted, only deleted is used PR2023-01-24
+            "AND NOT stud.deleted AND NOT stud.tobedeleted ",
+            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted ",
+            "AND NOT grd.deleted AND NOT grd.tobedeleted"
         ]
 
         if student_pk_list:

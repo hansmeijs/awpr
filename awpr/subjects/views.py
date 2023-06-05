@@ -4086,9 +4086,10 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
                         "AND ey.id =", str(sel_examyear.pk), "::INT",
                         "AND grd.examperiod =", str(sel_examperiod), "::INT",
                         "AND ce_exam.ete_exam",
-                        "AND NOT grd.tobedeleted AND NOT grd.deleted",
-                        "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
-                        "AND NOT stud.tobedeleted AND NOT stud.deleted",
+
+                        "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                        "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                        "AND NOT grd.deleted AND NOT grd.tobedeleted",
 
                         "AND si.weight_ce > 0"
                         ]
@@ -4744,7 +4745,11 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                 if lvlbase_pk:
                     sub_sql_list.append("AND lvl.base_id = %(lb_pk)s::INT")
 
-                sub_sql_list.append("AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted ")
+                sub_sql_list.extend((
+                    "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                    "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                    "AND NOT grd.deleted AND NOT grd.tobedeleted"
+                ))
                 if is_test:
                     sub_sql_list.append("ORDER BY schoolbase.code, dep.sequence, lvl.sequence, stud.lastname, stud.firstname")
 
@@ -7627,7 +7632,10 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06 PR2023-05-18
                             "AND grd.ce_exam_published_id IS NOT NULL",
 
                             "AND grd.ce_exam_score IS NOT NULL",
-                            "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+
+                            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                            "AND NOT grd.deleted AND NOT grd.tobedeleted"
                             ]
 
                 if sel_lvlbase_pk:
@@ -7751,7 +7759,10 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06 PR2023-05-18
 
                             "AND grd.ce_exam_score IS NOT NULL",
                             "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
-                            "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+
+                            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                            "AND NOT grd.deleted AND NOT grd.tobedeleted"
                             ]
 
                 sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
@@ -8285,8 +8296,6 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
                             "(grd.cescore IS NOT NULL AND grd.cescore IS DISTINCT FROM grd.ce_exam_score) AS diff, ",
                             "(grd.cescore IS NOT NULL AND grd.cescore IS NOT DISTINCT FROM grd.ce_exam_score) AS same, ",
 
-
-
                             "(grd.ce_auth1by_id IS NOT NULL OR grd.ce_auth2by_id IS NOT NULL OR ",
                             "grd.ce_auth3by_id IS NOT NULL OR grd.ce_auth4by_id IS NOT NULL OR ",
                             "grd.ce_published_id IS NOT NULL) AS appr "
@@ -8312,11 +8321,12 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
                             "AND grd.ce_exam_score IS NOT NULL ",
 
             # grdae, subj and stud may not be deleted or tobedeleted must be published
-                            "AND NOT grd.tobedeleted AND NOT grd.deleted ",
-                            "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted ",
-                            "AND NOT stud.tobedeleted AND NOT stud.deleted ",
+                            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+                            "AND NOT grd.deleted AND NOT grd.tobedeleted",
+
             # exam must be published
-                            "AND grd.ce_exam_published_id IS NOT NULL ",
+                            "AND grd.ce_exam_published_id IS NOT NULL "
                             ]
 
             # set this filter only when updating
@@ -8353,7 +8363,7 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
             if sql_clause:
                 sub_sql_list.append(sql_clause)
 
-            return ''.join(sub_sql_list)
+            return ' '.join(sub_sql_list)
 
         def test_scores():
             updated_list_sorted = []

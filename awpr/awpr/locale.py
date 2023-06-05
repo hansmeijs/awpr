@@ -1827,12 +1827,26 @@ def get_locale_dict(table_dict, user_lang, request):
             'verif_03': _("The verification code expires in 30 minutes."),
         }
 
+
+        dict['MRM_level_info'] = {
+            'lvl_0': _("The selection contains only candidates of the learning path"),
+            'lvl_1': _("Select 'All learning paths' in the vertical gray bar on the left to download all learning paths."),
+            'all_0': _("The selection contains the candidates of all learning paths."),
+            'all_1': _("Select a learning path in the vertical gray bar on the left to download one learning path."),
+        }
+
+        dict['No_candidates'] = _('There are no candidates.')
+        dict['not_entered'] = _('not entered')
+
+        dict['Please_select_one_or_more_classes'] = _('Please select one or more classes')
+        dict['from_available_classes_list'] = _('from the list of available classes.')
+
         dict['The_short_gradelist'] = _('The short gradelist')
         #dict['Short_grade_list'] = _('Short_grade_list')
 
         dict['Download_gradelist'] = _('Download grade list')
         dict['Download_diploma'] = _('Download diploma')
-        dict['Download_short_gradelist'] = _('Download short grade list')
+        dict['Short_gradelist'] = _('Short grade list')
         dict['Download_result_overview'] = _('Download result overview')
         dict['Download_Ex_form'] = _('Download Ex form')
 

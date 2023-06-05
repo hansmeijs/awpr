@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let mod_dict = {};
     let mod_MAG_dict = {};
+    const mod_MRM_dict = {};
 
     let mod_MSTUDSUBJ_dict = {}; // stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
     //let mod_studsubj_dict = {};  // stores studsubj of selected candidate in MSTUDSUBJ
@@ -74,12 +75,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     urls.url_calc_results = get_attr_from_el(el_data, "data-url_calc_results");
     urls.url_calc_reex = get_attr_from_el(el_data, "data-url_calc_reex");
+
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_result_download_ex5 = get_attr_from_el(el_data, "data-url_result_download_ex5");
     urls.url_result_download_overview = get_attr_from_el(el_data, "data-url_result_download_overview");
-    urls.url_result_download_short_gradelist = get_attr_from_el(el_data, "data-url_result_download_short_gradelist");
+    urls.url_result_download_shortgradelist = get_attr_from_el(el_data, "data-url_result_download_shortgradelist");
     urls.url_change_birthcountry = get_attr_from_el(el_data, "data-url_change_birthcountry");
+
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
 
     // columns_hidden and mod_MCOL_dict.columns are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
     // mod_MCOL_dict.columns contains the fields and captions that can be hidden
@@ -217,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_school_response)}, false );
         };
 
 // ---  SIDEBAR ------------------------------------
@@ -238,8 +242,8 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, SBR_MSSSS_Response)}, false);
         };
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
-        if (el_SBR_select_showall){
-            el_SBR_select_showall.addEventListener("click", function() {SBR_show_all(FillTblRows)}, false);
+        if(el_SBR_select_showall){
+            el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(SBR_show_all_response)}, false);
             add_hover(el_SBR_select_showall);
         };
 
@@ -301,6 +305,18 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         const el_MAG_btn_cancel = document.getElementById("id_MAG_btn_cancel");
 
+// ---  MODAL REPORT FOR RESULT MEETING ------------------------------------
+        const el_MRM_info_container = document.getElementById("id_MRM_info_container");
+        const el_MRM_tblBody_available = document.getElementById("id_MRM_tblBody_available");
+        const el_MRM_tblBody_selected = document.getElementById("id_MRM_tblBody_selected");
+        const el_MRM_loader = document.getElementById("id_MRM_loader");
+        const el_MRM_sort_by_class = document.getElementById("id_MRM_sort_by_class");
+        const el_MRM_link = document.getElementById("id_MRM_link");
+        const el_MRM_btn_save = document.getElementById("id_MRM_btn_save");
+        if (el_MRM_btn_save){
+            el_MRM_btn_save.addEventListener("click", function() {MRM_Save()}, false );
+        };
+
 // ---  MOD CONFIRM ------------------------------------
         const el_confirm_header = document.getElementById("id_modconfirm_header");
         const el_confirm_loader = document.getElementById("id_modconfirm_loader");
@@ -351,9 +367,24 @@ document.addEventListener('DOMContentLoaded', function() {
         SetMenubuttonActive(document.getElementById("id_plg_page_student"));
 
     if(may_view_page){
-        // period also returns emplhour_list
+        DatalistDownload({page: "page_result"});
+    };
+//  #############################################################################################################
+
+//========= DatalistDownload  ===================== PR2020-07-31 PR2021-11-18
+    function DatalistDownload(request_item_setting, skip_messages) {
+        console.log( "=== DatalistDownload ")
+        console.log("request_item_setting: ", request_item_setting)
+
+// ---  Get today's date and time - for elapsed time
+        let startime = new Date().getTime();
+
+// ---  show loader
+        el_loader.classList.remove(cls_visible_hide)
+        el_hdr_left.classList.add(cls_hide)
+
         const datalist_request = {
-                setting: {page: "page_result"},
+                setting: request_item_setting,
                 schoolsetting: {setting_key: "page_result"},
                 locale: {page: ["page_result", "page_student"]},
                 examyear_rows: {get: true},
@@ -366,21 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 check_birthcountry_rows: {get: true}
             };
 
-        DatalistDownload(datalist_request);
-    };
-//  #############################################################################################################
 
-//========= DatalistDownload  ===================== PR2020-07-31 PR2021-11-18
-    function DatalistDownload(datalist_request, skip_messages) {
-        console.log( "=== DatalistDownload ")
-        console.log("request: ", datalist_request)
-
-// ---  Get today's date and time - for elapsed time
-        let startime = new Date().getTime();
-
-// ---  show loader
-        el_loader.classList.remove(cls_visible_hide)
-        el_hdr_left.classList.add(cls_hide)
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -499,13 +516,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.permit_calc_results){
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
-            AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
         };
+        AddSubmenuButton(el_submenu, loc.Short_gradelist, function() {MRM_Open()}, ["tab_show", "tab_btn_result"]);
         if(permit_dict.requsr_same_school){
             AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
-        };
-
-        //AddSubmenuButton(el_submenu, loc.Download_short_gradelist, function() {ModConfirmOpen("short_gradelist")}, ["tab_show", "tab_btn_result"]);
+        };-
 
         AddSubmenuButton(el_submenu, loc.Preliminary_ex5_form, function() {ModConfirmOpen("prelim_ex5")}, ["tab_show", "tab_btn_result"]);
 
@@ -926,7 +941,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
-
 //========= HandleInputChange  =============== PR2022-06-19
     function HandleInputChange(el_input){
         //console.log(" --- HandleInputChange ---")
@@ -976,20 +990,12 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("selected_base_pk: ", selected_base_pk);
 
         const key_str = (tblName === "lvlbase") ? "sel_lvlbase_pk" : (tblName === "sctbase") ? "sel_sctbase_pk" : null;
-        const new_setting = {page: "page_result"};
+        const request_item_setting = {page: "page_result"};
         if (key_str){
-            new_setting[key_str] = selected_base_pk;
-        }
-        console.log("key_str: ", key_str);
-        console.log("new_setting: ", new_setting);
-        const datalist_request = {
-                setting: new_setting,
-                student_rows: {cur_dep_only: true}
-            };
-
-        DatalistDownload(datalist_request, true); // true = skip_messages
+            request_item_setting[key_str] = selected_base_pk;
+        };
+        DatalistDownload(request_item_setting, true); // true = skip_messages
     };  // Response_from_SBR_select_level_sector
-
 
 //========= UploadToggle  ============= PR2022-06-05
     function UploadToggle(el_input) {
@@ -1028,7 +1034,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }; //   if(permit_dict.permit_approve_subject)
     };  // UploadToggle
-
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
@@ -1306,8 +1311,7 @@ function RefreshDataRowsAfterUpload(response) {
         };  // if(!isEmpty(update_dict))
     };  // RefreshDatarowItem
 
-
-// +++++++++++++++++ MODAL GRADEIST +++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++ MODAL GRADELIST +++++++++++++++++++++++++++++++++++++++++++
 //=========  MGL_Open  ================ PR2021-11-18 PR2021-12-28  PR2022-06-08
     function MGL_Open(mode) {
         console.log(" -----  MGL_Open   ----")
@@ -1668,16 +1672,6 @@ function RefreshDataRowsAfterUpload(response) {
             el_confirm_btn_cancel.innerText = loc.Cancel;
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
-        } else if(mode === "short_gradelist"){
-            show_modal = true;
-            header_text = loc.Download_short_gradelist;
-            msg_html = ["<p>", loc.The_short_gradelist, " ", loc.will_be_downloaded_sing, "</p><p>"].join("");
-
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
-                const url_str = urls.url_result_download_short_gradelist;
-                el_modconfirm_link.setAttribute("href", url_str);
-            };
         } else if(mode === "prelim_ex5"){
             show_modal = true;
 
@@ -1780,7 +1774,7 @@ function RefreshDataRowsAfterUpload(response) {
                         };
                 UploadChanges(upload_dict, urls.url_change_birthcountry);
             };
-        } else if(["prelim_ex5", "short_gradelist", "overview"].includes(mod_dict.mode)){
+        } else if(["prelim_ex5", "overview"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 el_modconfirm_link.click();
@@ -1864,9 +1858,9 @@ function RefreshDataRowsAfterUpload(response) {
         UploadChanges(upload_dict, urls.url_user_modmsg_hide)
     }  // ModMessageHide
 
-
+//###########################
 //========= MOD APPROVE GRADE ================ PR2022-06-12
-    function MAG_Open (mode ) {
+    function MAG_Open (open_mode ) {
          console.log("===  MAG_Open  =====") ;
         console.log("    open_mode", open_mode) ;
         //console.log("    selected_btn", selected_btn, typeof selected_btn) ;
@@ -2391,6 +2385,9 @@ function RefreshDataRowsAfterUpload(response) {
         }
      };  // MAG_InputVerifcode
 
+
+
+
 //=========  upload_examtype  ================ PR2022-06-12
     function upload_examtype(new_examtype) {
         console.log("----- upload_examtype -----");
@@ -2417,8 +2414,183 @@ function RefreshDataRowsAfterUpload(response) {
         FillTblRows();
     }  // upload_examtype
 
+//###########################################################################
 
-/////////////////////////////////////////////
+//========= MOD REPORT FOR RESULT MEETING ================ PR2023-06-03
+    function MRM_Open (mode ) {
+         console.log("===  MRM_Open  =====") ;
+        //console.log("    selected_btn", selected_btn, typeof selected_btn) ;
+
+        b_clear_dict(mod_MRM_dict);
+        MRM_fill_class_dict();
+        MRM_fill_table();
+// --- hide filter subject, level and cluster when submitting Ex2 Ex2a form. Leave level visible if sel_dep_level_req, MPC must be able to submit per level
+        const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req;
+
+        console.log("    show_subj_lvl_cls_container", show_subj_lvl_cls_container) ;
+        const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_code : "<" + loc.All_levels + ">";
+
+        const show_lvl_info_box = (setting_dict.sel_dep_level_req);
+        add_or_remove_class(el_MRM_info_container, cls_hide, !show_lvl_info_box);
+        let level_txt = null;
+        if (show_lvl_info_box) {
+            if (setting_dict.sel_lvlbase_pk){
+                const lvl_code = (setting_dict.sel_lvlbase_code) ? setting_dict.sel_lvlbase_code : '-';
+                level_txt = [loc.MRM_level_info.lvl_0, " <b>", lvl_code, "</b>.<br>", loc.MRM_level_info.lvl_1].join("");
+            } else {
+                level_txt = [loc.MRM_level_info.all_0, loc.MRM_level_info.all_1].join("<br>");
+            };
+        };
+        el_MRM_info_container.innerHTML = level_txt;
+
+        el_MRM_sort_by_class.checked = (setting_dict.sortby_class) ? true : false;
+
+        MRML_enable_save_btn();
+
+// --- open modal
+        $("#id_mod_shortgradelist").modal({backdrop: true});
+
+    };  // MRM_Open
+
+//=========  MRM_Save  ================
+    function MRM_Save(save_mode) {
+        console.log("    mod_MRM_dict", mod_MRM_dict) ;
+        console.log("    mod_MRM_dict.examperiod", mod_MRM_dict.examperiod) ;
+        console.log("    mod_MRM_dict.examtype", mod_MRM_dict.examtype) ;
+        // save_mode = 'save' or 'delete'
+
+        console.log(" -----  MRM_Save   ----")
+        const upload_dict = {};
+        const upload_classshown_list = []
+        for (const [sortby, dict] of Object.entries(mod_MRM_dict.class_dict)) {
+            if (dict.show) {
+                if ( !upload_classshown_list.includes(sortby)){
+                    upload_classshown_list.push(sortby);
+                };
+            };
+        };
+        upload_classshown_list.sort();
+        const sortby_class = (el_MRM_sort_by_class) ? el_MRM_sort_by_class.checked : false;
+        upload_dict.page_result = {
+            sel_classes: upload_classshown_list,
+            sortby_class: sortby_class
+            };
+
+        setting_dict.sel_classes = upload_classshown_list
+        setting_dict.sortby_class = sortby_class
+
+    console.log("    upload_dict", upload_dict);
+    console.log("    urls.url_usersetting_upload", urls.url_usersetting_upload);
+
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+        // convert dict to json and add as parameter in link
+        const upload_str = JSON.stringify(upload_dict.page_result);
+        const href_str = urls.url_result_download_shortgradelist.replace("-", upload_str);
+        console.log("    href_str", href_str);
+
+        el_MRM_link.href = href_str;
+        el_MRM_link.click();
+
+        setTimeout(function (){ $("#id_mod_shortgradelist").modal("hide") }, 2000);
+
+    };  // MRM_Save
+
+    function MRM_fill_class_dict() {
+        mod_MRM_dict.class_dict = {};
+        console.log("    mod_MRM_dict.class_dict", mod_MRM_dict.class_dict) ;
+        if (student_rows.length){
+
+            const sel_classes_arr = (setting_dict.sel_classes && Array.isArray(setting_dict.sel_classes)) ? setting_dict.sel_classes : [];
+
+            for (let i = 0, classname, sortby, row; row = student_rows[i]; i++) {
+                classname = (row.classname) ? row.classname : "<" + loc.not_entered + ">"
+                sortby = (row.classname) ? row.classname.toLowerCase() : "zz_blank";
+                if (!(sortby in mod_MRM_dict.class_dict)){
+                    const is_show = (sel_classes_arr.includes(sortby));
+                    mod_MRM_dict.class_dict[sortby] = {classname: classname, show: is_show}
+                };
+            };
+        } else {
+
+        };
+        console.log("    mod_MRM_dict.class_dict", mod_MRM_dict.class_dict) ;
+    };  // MRM_fill_class_dict
+
+//=========  MRM_fill_table  ================ PR2023-06-03
+    function MRM_fill_table(just_linked_sortby) {
+        //console.log("===  MRM_fill_table == ");
+        //console.log("    mod_MRM_dict.class_dict", mod_MRM_dict.class_dict) ;
+
+        el_MRM_tblBody_available.innerHTML = null;
+        el_MRM_tblBody_selected.innerHTML = null;
+
+//+++ loop through dict of fields
+
+        if(isEmpty(mod_MRM_dict.class_dict)){
+            el_MRM_tblBody_available.innerHTML = ["<p class='text-muted px-2 pt-2'>", loc.No_candidates, "</p>"].join("");
+        } else {
+
+            for (const [sortby, dict] of Object.entries(mod_MRM_dict.class_dict)) {
+                const tBody_select = (dict.show) ? el_MRM_tblBody_selected : el_MRM_tblBody_available;
+        // ---  lookup index where this row must be inserted
+                const row_index = b_recursive_tblRow_lookup(tBody_select, setting_dict.user_lang, sortby);
+        // --- insert tblRow into tblBody at row_index
+                const tblRow = tBody_select.insertRow(row_index);
+        // ---  add data-sortby attribute to tblRow, for ordering new rows
+                tblRow.setAttribute("data-ob1", sortby);
+                tblRow.setAttribute("data-show", dict.show);
+        // --- add EventListener to tblRow
+                tblRow.addEventListener("click", function() {MRML_select_item(tblRow)}, false);
+
+//- add hover to tableBody row
+                add_hover(tblRow);
+// - insert td into tblRow
+                const td = tblRow.insertCell(-1);
+                td.innerText = dict.classname;
+                td.classList.add("tw_240");
+
+// --- if new appended row: highlight row for 1 second
+                if (just_linked_sortby && just_linked_sortby === sortby) {
+                    let cell = tblRow.cells[0];
+                    tblRow.classList.add("tsa_td_unlinked_selected");
+                    setTimeout(function (){tblRow.classList.remove("tsa_td_unlinked_selected")  }, 1000);
+                };
+            };
+            if (!el_MRM_tblBody_selected.rows.length){
+                el_MRM_tblBody_selected.innerHTML = [
+                    "<p class='text-muted px-2 pt-2'>", loc.Please_select_one_or_more_classes,
+                    "</p><p class='text-muted px-2'>", loc.from_available_classes_list, "</p>"
+                ].join("");
+            };
+        };
+    }; // MRM_fill_table
+
+//=========  MRML_select_item  ================ PR2023-06-03
+    function MRML_select_item(tr_clicked) {
+        console.log("===  MRML_select_item == ");
+        console.log("    tr_clicked", tr_clicked);
+        console.log("    mod_MRM_dict.class_dict", mod_MRM_dict.class_dict);
+
+        const sortby = get_attr_from_el(tr_clicked, "data-ob1")
+        const show = get_attr_from_el(tr_clicked, "data-show")
+
+        const data_dict = mod_MRM_dict.class_dict[sortby];
+        if (data_dict){
+            data_dict.show = !data_dict.show;
+        };
+        MRM_fill_table(sortby);
+        MRML_enable_save_btn()
+    };// MRML_select_item
+
+//=========  MRML_select_item  ================ PR2023-06-03
+    function MRML_enable_save_btn() {
+        let has_show = false;
+        for (const dict of Object.values(mod_MRM_dict.class_dict)) {
+            if (dict.show) {has_show = true};
+        }
+        el_MRM_btn_save.disabled = !has_show;
+    }  // MRML_enable_save_btn
 
 
 //###########################################################################
@@ -2621,36 +2793,54 @@ function RefreshDataRowsAfterUpload(response) {
 // functions are in table.js, except for MSED_Response
 
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
-    function MSED_Response(new_setting) {
+    function MSED_Response(request_item_setting) {
         console.log( "===== MSED_Response ========= ");
-        console.log( "new_setting", new_setting);
+        console.log( "request_item_setting", request_item_setting);
 
 // --- reset table
         tblBody_datatable.innerText = null;
 
+        el_SBR_item_count.innerText = null;
+
 // ---  upload new selected_pk
-        new_setting.page = setting_dict.sel_page;
+        request_item_setting.page = setting_dict.sel_page;
 
-// also retrieve the tables that have been changed because of the change in examyear / dep
-        const datalist_request = {
-                setting: new_setting,
-                student_rows: {get: true},
-                studentsubject_rows: {get: true},
-                grade_rows: {get: true},
-                schemeitem_rows: {get: true},
-                schoolsetting: {setting_key: "import_student"}
-            };
-        DatalistDownload(datalist_request);
-
+        DatalistDownload(request_item_setting);
     };  // MSED_Response
 
+//=========  MSSSS_school_response  ================ PR2023-06-03
+    function MSSSS_school_response(tblName, selected_dict, selected_pk) {
+        console.log( "===== MSSSS_school_response ========= ");
+        console.log( "selected_dict", selected_dict);
+        console.log( "selected_pk", selected_pk);
+        console.log( "tblName", tblName);
+
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
+
+        // ---  upload new setting and refresh page
+        const request_item_setting = {page: "page_result",
+                sel_schoolbase_pk: selected_pk,
+                //sel_depbase_pk: null,
+                //sel_lvlbase_pk: null,
+                //sel_sctbase_pk: null,
+                sel_cluster_pk: null,
+                sel_student_pk: null
+                };
+        DatalistDownload(request_item_setting);
+
+    };
 
 // +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++
 
 //=========  SBR_select_lvlbase_sctbase  ================ PR2022-12-07
     function SBR_select_lvlbase_sctbase(mode, el_select) {
         console.log("=== SBR_select_Level_Sector");
-        //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        console.log( "mode: ", mode)
+
         // mode = "level" or "sector"
 
 // --- reset table rows, also delete header
@@ -2668,21 +2858,14 @@ function RefreshDataRowsAfterUpload(response) {
 
 // ---  upload new setting and download datarows
         const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
-        const sel_pk_key_str = (mode === "sector") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
-        const new_setting_dict = {page: "page_student"}
-        new_setting_dict[sel_pk_key_str] = sel_pk_int;
+        const sel_pk_key_str = (mode === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
 
-        const datalist_request = {
-            setting: new_setting_dict,
-            // not necessary:
-            //  level_rows: {cur_dep_only: true},
-            //  sector_rows: {cur_dep_only: true},
-            student_rows: {cur_dep_only: true},
-        };
+        const request_item_setting = {page: "page_result"}
+        request_item_setting[sel_pk_key_str] = sel_pk_int;
+        console.log( "    request_item_setting: ", request_item_setting)
 
-        DatalistDownload(datalist_request);
-
-    }  // SBR_select_lvlbase_sctbase
+        DatalistDownload(request_item_setting);
+    };  // SBR_select_lvlbase_sctbase
 
 
 //=========  SBR_MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26 PR2022-12-07
@@ -2703,33 +2886,20 @@ function RefreshDataRowsAfterUpload(response) {
 // ---  upload new setting and download datarows
         const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
         const sel_pk_key_str = (mode === "sector") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
-        const new_setting_dict = {page: "page_student"}
-        new_setting_dict[sel_pk_key_str] = sel_pk_int;
 
+        const request_item_setting = {page: "page_result"}
+        request_item_setting[sel_pk_key_str] = sel_pk_int;
 
-// ---  upload new setting and refresh page
-        const datalist_request = {
-            setting: new_setting_dict,
-            // not necessary:
-            //  level_rows: {cur_dep_only: true},
-            //  sector_rows: {cur_dep_only: true},
-            student_rows: {cur_dep_only: true},
-        };
-        DatalistDownload(datalist_request);
-
-
+        DatalistDownload(request_item_setting);
     };  // SBR_MSSSS_Response
 
-
-
-
-
-
-
 //=========  SBR_show_all  ================ PR2020-12-17 like in grades.js
-    function SBR_show_all() {
-        console.log("=====  SBR_show_all  ========");
-
+    function SBR_show_all_response() {  // PR2023-06-03
+        //PR2023-06-03 TODO organize better:
+        // - t_SBR_show_all already uploads settings
+        // better way to rest settings in single call via DatalistDownload
+        console.log("===== SBR_show_all_response =====");
+        // this is response of t_SBR_show_all
         // don't reset setting_dict.sel_depbase_pk
 
         setting_dict.sel_lvlbase_pk = null;
@@ -2756,22 +2926,8 @@ function RefreshDataRowsAfterUpload(response) {
 // --- reset SBR_item_count
         el_SBR_item_count.innerText = null;
 
-// ---  upload new setting and refresh page
-        const datalist_request = {
-                setting: {
-                    page: "page_result",
-                    sel_lvlbase_pk: null,
-                    sel_sctbase_pk: null,
-                    sel_student_pk: null
-                },
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-                student_rows: {get: true},
-            };
-            DatalistDownload(datalist_request);
+        DatalistDownload({page: "page_result"});
     };  // SBR_show_all
-
-
 
 //========= get_recursive_integer_lookup  ========  PR2021-09-08
     function get_recursive_integer_lookup(tblRow) {
@@ -2786,7 +2942,6 @@ function RefreshDataRowsAfterUpload(response) {
 
         return found_dict;
     };  // get_recursive_integer_lookup
-
 
 //========= get_datadict_from_tblRow ============= PR2022-06-19
     function get_datadict_from_tblRow(tblRow) {

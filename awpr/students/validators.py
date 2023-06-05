@@ -1879,7 +1879,8 @@ def get_diplomanumberlist_gradelistnumberlist_from_database(field, sel_school):
             "FROM students_student AS stud ",
             "WHERE stud.school_id = %(sch_id)s::INT ",
             "AND stud.", field, " IS NOT NULL ",
-            "AND NOT stud.tobedeleted"]
+            "AND NOT stud.deleted AND NOT stud.tobedeleted"
+            ]
         sql = ''.join(sql_list)
 
         with connection.cursor() as cursor:
@@ -1908,11 +1909,12 @@ def validate_diplomanumberlist_gradelistnumberlist_exists(field, value, sel_scho
 
             "WHERE school.examyear_id = %(ey_id)s::INT",
             "AND TRIM(stud.", field, ") ILIKE %(val)s::TEXT",  # ILIKE is case insensitive
-            "AND NOT stud.tobedeleted"
+            "AND NOT stud.deleted AND NOT stud.tobedeleted",
 
             "WHERE stud.school_id = %(sch_id)s::INT ",
             "AND stud.", field, " IS NOT NULL ",
-            "AND NOT stud.tobedeleted"]
+            "AND AND NOT stud.deleted AND NOT stud.tobedeleted"
+            ]
         sql = ''.join(sql_list)
 
         with connection.cursor() as cursor:

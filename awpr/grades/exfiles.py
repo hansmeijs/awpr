@@ -220,7 +220,7 @@ class GetEx3infoView(View):  # PR2021-10-06 PR2023-05-30
 
                 "AND NOT stud.deleted AND NOT stud.tobedeleted",
                 "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
-                "AND NOT grd.deleted AND NOT grd.tobedeleted",
+                "AND NOT grd.deleted AND NOT grd.tobedeleted"
             ))
             if secret_exams_only:
                 sql_list.append("AND exam.secret_exam")
@@ -457,7 +457,6 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                 subject_list = upload_dict.get('subject_list') or []
                 sel_layout = upload_dict.get('sel_layout')
 
-
 # - save sel_layout and lvlbase_pk_list and in usersetting
                 setting_dict = {'sel_layout': sel_layout, 'lvlbase_pk_list': lvlbase_pk_list}
                 acc_view.set_usersetting_dict(c.KEY_EX3, setting_dict, request)
@@ -638,7 +637,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
             subject_filter,
             "AND NOT stud.deleted AND NOT stud.tobedeleted",
             "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
-            "AND NOT grd.deleted AND NOT grd.tobedeleted",
+            "AND NOT grd.deleted AND NOT grd.tobedeleted"
         ))
         if secret_exams_only:
             sql_list.append("AND exam.secret_exam")

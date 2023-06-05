@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
+from django.utils.translation import activate, gettext, gettext_lazy as _
 from django.views.generic import View
 
 # PR2019-01-04  https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
@@ -191,123 +191,192 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
 
 
 @method_decorator([login_required], name='dispatch')
-class GradeDownloadShortGradelist(View):  # PR2022-06-06
+class GradeDownloadShortGradelist(View):  # PR2022-06-05
 
-    def get(self, request):
-        logging_on = s.LOGGING_ON
+    def get(self, request, lst):
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GradeDownloadShortGradelist ============= ')
+            logger.debug('     list: ' + str(lst))
+            # list: {"sel_classes":["4a1","zz_blank"],"sortby_class":true}
+
         response = None
 
         req_user = request.user
-        if req_user and req_user.country and req_user.schoolbase:
+        if req_user and req_user.country and req_user.schoolbase and lst:
 
 # - reset language
             user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
+            upload_dict = json.loads(lst)
+
 # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-
-# - get selected examperiod and sel_subject_pk from usersettings
-            sel_examperiodNIU, sel_examtype_NIU, sel_subject_pk = \
-                acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
-
+            sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
             if logging_on:
                 logger.debug('sel_school: ' + str(sel_school))
                 logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
 
             if sel_school and sel_department:
 
-                # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
-                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-                sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
+# +++ get grade_dictlist
+                sortby_class = upload_dict.get('sortby_class') or False
+                sel_classes = upload_dict.get('sel_classes')
+                include_class_blank = False
                 if logging_on:
-                    logger.debug('sel_school: ' + str(sel_school))
-                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('sel_classes: ' + str(sel_classes))
 
-                if sel_school and sel_department:
+                if sel_classes:
+                    if 'zz_blank' in sel_classes:
+                        include_class_blank = True
+                        sel_classes.remove('zz_blank')
 
-                    # - get library from examyearsetting
-                    library = awpr_lib.get_library(sel_examyear, ['gradelist'])
+                grade_dict, classname_list = get_shortgradelist_dict(
+                    examyear=sel_examyear,
+                    school=sel_school,
+                    department=sel_department,
+                    level=sel_level,
+                    sel_classes=sel_classes,
+                    include_class_blank=include_class_blank,
+                    sortby_class=sortby_class
+                )
 
-                    # +++ get grade_dictlist
-                    student_list = get_gradelist_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk,
-                                                      sel_sctbase_pk, None)
+                af.register_font_arial()
 
-                    # +++ get name of chairperson and secretary
-                    # auth_dict = get_pres_secr_dict(request)
+                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
-                    # - get arial font
-                    try:
-                        filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
-                        ttfFile = TTFont('Arial', filepath)
-                        pdfmetrics.registerFont(ttfFile)
-                    except Exception as e:
-                        logger.error(getattr(e, 'message', str(e)))
+                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+                # temp_file = tempfile.TemporaryFile()
+                # canvas = Canvas(temp_file)
 
-                    # - get Palace_Script_MT font - for testing - it works 2021-10-14
-                    """
-                    try:
-                        filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
-                        ttfFile = TTFont('Palace_Script_MT', filepath)
-                        pdfmetrics.registerFont(ttfFile)
-                    except Exception as e:
-                        logger.error(getattr(e, 'message', str(e)))
-                    """
-                    # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+                # - set the corners of the rectangle
+                # - 72 points = 1 inch   -  1 point = 20 pixels  - 1 mm = 2,8346 points
+                # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 12 mm from bottom, 15 mm from left
+                top, right, bottom, left = 282 * mm, 195 * mm, 12 * mm, 15 * mm
+                top, right, bottom, left = 272 * mm, 195 * mm, 12 * mm, 15 * mm
+                # width = right - left  # 190 mm
+                # height = top - bottom  # 275 mm
+                border = [top, right, bottom, left]
+                coord = [left, top]
+                middle_x = ((left + right) / 2 ) + 10 * mm
+                middle_y = ((top + bottom) / 2 ) + 5 * mm
+                line_height = 5.5 * mm
+                offset_bottom = 1.375 * mm
+                page_title = ' - '.join((gettext('Short grade list'), sel_school.name, sel_department.base.code, str(sel_examyear.code)))
 
-                    # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
-                    # temp_file = tempfile.TemporaryFile()
-                    # canvas = Canvas(temp_file)
+                col_tab_list = (0, 25, 38, 51, 64, 80)
 
-                    buffer = io.BytesIO()
-                    canvas = Canvas(buffer)
+                buffer = io.BytesIO()
+                canvas = Canvas(buffer)
 
-                    for student_dict in student_list:
+                canvas.setLineWidth(0.5)
+                canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
+
+                for classname in classname_list:
+
+                    class_dict = grade_dict.get(classname)
+                    student_list = class_dict.get('student_list')
+
+                    student_list_sorted = sorted(student_list, key=lambda d: d['sortname'])
+                    list_len = len(student_list_sorted)
+                    pages = 1 + int(list_len/4)
+                    page_index = 0
+                    item_count = 0
+                    item_index = 0
+
+                    has_extrafacilities, has_extra_nocount, has_thumbrule, has_extra_counts = False, False, False, False
+                    has_use_exem, has_use_reex, has_use_reex3 = False, False, False
+
+                    print_page_header = True
+                    for stud_dict in student_list_sorted:
+                        student_pk = stud_dict.get('id')
+                        student_dict = class_dict.get(student_pk)
+
+                        if not has_extrafacilities and student_dict.get('extrafacilities'):
+                            has_extrafacilities = True
+                        if not has_extra_nocount and student_dict.get('has_extra_nocount'):
+                            has_extra_nocount = True
+                        if not has_thumbrule and student_dict.get('has_thumbrule'):
+                            has_thumbrule = True
+                        if not has_extra_counts and student_dict.get('has_extra_counts'):
+                            has_extra_counts = True
+                        if not has_use_exem and student_dict.get('has_use_exem'):
+                            has_use_exem = True
+                        if not has_use_reex and student_dict.get('has_use_reex'):
+                            has_use_reex = True
+                        if not has_use_reex3 and student_dict.get('has_use_reex3'):
+                            has_use_reex3 = True
+
+                        if print_page_header:
+                            print_page_header = False
+                            draw_shortgradelist_page_header(canvas, top, left, border, line_height, page_title)
+
+                        coord[0] = middle_x if item_index in (1, 3) else left
+                        coord[1] = middle_y if item_index in (2, 3) else top
+
+                        item_index += 1
+                        item_count += 1
+                        show_page = False
+                        if item_count == list_len:
+                            show_page = True
+                        else:
+                            if item_index > 3:
+                                item_index = 0
+                                show_page = True
+                                print_page_header = True
+
                         # recalc result before printing the gradelist
-                        draw_short_gradelist(canvas, library, student_dict, request)
-                        canvas.showPage()
+                        draw_short_gradelist(canvas, coord, line_height,offset_bottom, col_tab_list, student_dict, page_title)
 
-                    canvas.save()
-                    pdf = buffer.getvalue()
-                    # pdf_file = File(temp_file)
+                        if show_page:
+                            draw_shortgradelist_page_footer(canvas, border, page_index, pages,
+                                                       has_extrafacilities, has_extra_nocount, has_thumbrule,
+                                                       has_extra_counts, has_use_exem, has_use_reex, has_use_reex3,
+                                                       user_lang)
 
-                    # was: buffer.close()
+                            page_index += 1
+                            canvas.showPage()
 
-                    """
-                    # TODO as test try to save file in
-                    studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
-                    content_type='application/pdf'
-                    file_name = 'test_try.pdf'
-                    if studsubjnote and pdf_file:
-                        instance = stud_mod.Noteattachment(
-                            studentsubjectnote=studsubjnote,
-                            contenttype=content_type,
-                            filename=file_name,
-                            file=pdf_file)
-                        instance.save()
-                        logger.debug('instance.saved: ' + str(instance))
-                    # gives error: 'bytes' object has no attribute '_committed'
-                    """
+                            has_extrafacilities, has_extra_nocount, has_thumbrule, has_extra_counts = False, False, False, False
+                            has_use_exem, has_use_reex, has_use_reex3 = False, False, False
 
-                    response = HttpResponse(content_type='application/pdf')
-                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
-                    # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+                canvas.save()
+                pdf = buffer.getvalue()
+                # pdf_file = File(temp_file)
 
-                    response.write(pdf)
+                # was: buffer.close()
 
-            # except Exception as e:
-            #     logger.error(getattr(e, 'message', str(e)))
-            #     raise Http404("Error creating Ex2A file")
+                """
+                # TODO as test try to save file in
+                studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
+                content_type='application/pdf'
+                file_name = 'test_try.pdf'
+                if studsubjnote and pdf_file:
+                    instance = stud_mod.Noteattachment(
+                        studentsubjectnote=studsubjnote,
+                        contenttype=content_type,
+                        filename=file_name,
+                        file=pdf_file)
+                    instance.save()
+                    logger.debug('instance.saved: ' + str(instance))
+                # gives error: 'bytes' object has no attribute '_committed'
+                """
+
+                response = HttpResponse(content_type='application/pdf')
+                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+
+                response.write(pdf)
+
+        # except Exception as e:
+        #     logger.error(getattr(e, 'message', str(e)))
+        #     raise Http404("Error creating Ex2A file")
 
         if response:
             return response
         else:
-            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of GradeDownloadShortGradelist
 
@@ -680,6 +749,7 @@ class DownloadPokView(View):  # PR2022-07-02
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of DownloadPokView
 
+####################################
 
 def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):  # PR2021-11-19
 
@@ -751,7 +821,8 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted"
+                "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted"
                 ]
 
     if student_pk_list:
@@ -773,12 +844,13 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
         cursor.execute(sql, sql_keys)
         grade_rows = af.dictfetchall(cursor)
 
+    if logging_on:
+        logger.debug('len grade_rows: ' + str(len(grade_rows)))
+
     # - add full name to rows, and array of id's of auth
     if grade_rows:
         for row in grade_rows:
             stud_id = row.get('stud_id')
-            if logging_on:
-                logger.debug('row: ' + str(row))
 
             if stud_id not in grade_dict:
                 #full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
@@ -1008,7 +1080,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
 
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
                 "AND (stud.ep01_result = %(passed)s::INT OR stud.ep02_result = %(passed)s::INT OR stud.result = %(passed)s::INT)",
-                "AND NOT stud.tobedeleted"
+                "AND NOT stud.deleted AND NOT stud.tobedeleted"
                 ]
 
     if student_pk_list:
@@ -2377,188 +2449,160 @@ def get_final_grade(subj_dict, key_str):
 
 #############################################
 
-def draw_short_gradelist(canvas, library, student_dict, request):
-    logging_on = s.LOGGING_ON
+def draw_short_gradelist(canvas, coord, line_height, offset_bottom, col_tab_list, student_dict, page_title):
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_gradelist -----')
-        logger.debug('student_dict: ' + str(student_dict))
+        #logger.debug('    student_dict: ' + str(student_dict))
 
-    is_lexschool = student_dict.get('islexschool', False)
-    has_profiel = student_dict.get('has_profiel', False)
-
-    # - set the corners of the rectangle
-    # - 72 points = 1 inch   -  1 point = 20 pixels  - 1 mm = 2,8346 points
-    # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 12 mm from bottom, 15 mm from left
-    top, right, bottom, left = 282 * mm, 195 * mm, 12 * mm, 15 * mm
-    # width = right - left  # 190 mm
-    # height = top - bottom  # 275 mm
-    border = [top, right, bottom, left]
-    coord = [left, top]
-
-    canvas.setLineWidth(0.5)
-    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
-    col_tab_list = (10, 25, 40, 55, 70)
-
-# - draw border around page
-    draw_page_border(canvas, border)
-
-# - draw page header
-    draw_shortlist_page_header(canvas, coord, col_tab_list, library, student_dict)
+# - draw student header
+    draw_shortgradelist_student_header(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict)
 
 # - draw column header
-    draw_short_list_colum_header(canvas, coord, col_tab_list, library, is_lexschool)
+    draw_short_list_colum_header(canvas, coord, col_tab_list, line_height, offset_bottom)
 
-# - loop through subjecttypes
-
-    # combi, stage and werkstuk have text keys, rest has integer key
-    for sequence in range(0, 10):  # range(start_value, end_value, step), end_value is not included!
-        # sjtp_dict = {'sjtp_code': 'combi', 'sjtp_name': '', 2168: {'subj_name': 'Culturele en Artistieke Vorming',
-        sjtp_dict = student_dict.get(sequence)
-        if sjtp_dict:
-            for key, subj_dict in sjtp_dict.items():
-                if isinstance(key, int):
-                    draw_shortlist_subject_row(canvas, coord, col_tab_list, subj_dict)
-
-# - get combi subjects
-    # also check if combi contains werkstuk
-    combi_dict = student_dict.get('combi')
-    wst_subj_dict = {}
-
-    if combi_dict:
-        #draw_shortlist_combi_header(canvas, coord, col_tab_list, library, combi_dict, student_dict, True)
-
-        for key, subj_dict in combi_dict.items():
+# get no-combi subject
+    sjtp_dict = student_dict.get('nocombi')
+    if sjtp_dict:
+        for key, subj_dict in sjtp_dict.items():
             if isinstance(key, int):
-                sjtp_code = subj_dict.get('sjtp_code')
-                if sjtp_code == 'wst':
-                    wst_subj_dict = subj_dict
-                    wst_subj_dict['is_combi'] = True
+                draw_shortgradelist_subject_row(canvas, coord, col_tab_list, line_height, offset_bottom, subj_dict)
 
-                #draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict, True)
+    # get combi header
+    draw_shortgradelist_combi_header(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict)
 
-# - get werkstuk rows
-    # if wst not found in combi (in Havo Vwo), lookup with key 'wst' ( in Vsbo)
-    if not wst_subj_dict:
-        wst_dict = student_dict.get('wst')
-        if wst_dict:
-            # there can only be one werkstuk
-            for key, subj_dict in wst_dict.items():
-                if isinstance(key, int):
-                    wst_subj_dict = subj_dict
-                    wst_subj_dict['is_combi'] = False
-                    break
-    #if wst_subj_dict:
-    #    draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, wst_subj_dict, has_profiel)
-
-# - get stage rows
-    stg_dict = student_dict.get('stg')
-    if stg_dict:
-        stg_subj_dict = {}
-        # there can only be one stage
-        for key, subj_dict in stg_dict.items():
+# get combi subjects
+    sjtp_dict = student_dict.get('combi')
+    if sjtp_dict:
+        for key, subj_dict in sjtp_dict.items():
             if isinstance(key, int):
-                stg_subj_dict = subj_dict
-                break
-        #if stg_subj_dict:
-        #    draw_gradelist_stage_row(canvas, coord, col_tab_list, stg_subj_dict)
+                draw_shortgradelist_subject_row(canvas, coord, col_tab_list, line_height, offset_bottom, subj_dict)
 
-# - draw 'Gemiddelde der cijfers' row
-    #draw_gradelist_avg_final_row(canvas, coord, col_tab_list, library, student_dict)
+# get result header
+    draw_shortgradelist_result_header(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict)
 
-# - draw 'Uitslag op grond van de resultaten:' row
-    print_reex = False
-    #draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict, print_reex)
+    draw_shortgradelist_avg_row(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict)
+
 # - end of draw_short_gradelist
 
 
-def draw_shortlist_page_header(canvas, coord, col_tab_list, library, student_dict):
-    # loop through rows of page_header
+def draw_shortgradelist_page_header(canvas, top, left, border, line_height, page_title):
+    x = left
+    y = top + line_height
+    y_line =  top + line_height /2
+
+# draw text (schoolname etc
+    canvas.setFont('Times-Bold', 14)
+    canvas.drawString(x, y, page_title)
+    canvas.setFont('Times-Roman', 11)
+
+# - draw horizontal line below page title
+    canvas.setStrokeColorRGB(0, 0, 0)
+    canvas.line(border[3], y_line, border[1], y_line)
+    canvas.setStrokeColorRGB(.5, .5, .5)
+
+
+
+# - end of draw_shortgradelist_page_header
+
+
+
+def draw_shortgradelist_student_header(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict):
 
     x = coord[0]
 
-    #school_name = student_dict.get('school_name', '---')
-    #txt_list = [{'txt': school_name, 'font': 'Times-Bold', 'size': 11, 'x': x}]
-    #draw_shortlist_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list)
-
-    # draw_shortlist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, draw_line_below, vertical_lines, text_list, dont_print=False)
+    # draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, draw_line_below, vertical_lines, text_list, dont_print=False)
     full_name = student_dict.get('fullname', '---')
+    if student_dict.get('extrafacilities'):
+        full_name += ' *'
     txt_list = [{'txt': full_name, 'font': 'Times-Bold', 'size': 11, 'x': x}]
-    draw_shortlist_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list)
+    draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, False, None, txt_list)
 
     level_req = student_dict.get('level_req', False)
     depbase_code = student_dict.get('depbase_code', '---')
     sctbase_code = student_dict.get('sctbase_code') or '---'
-    txt_list = [ {'txt': depbase_code, 'size': 11, 'x': x}]
+
+    class_name = student_dict.get('classname')
+    class_txt = ' '.join((gettext('Class').lower(), class_name)) if class_name else None
+
+
+    txt_list = [ {'txt': depbase_code, 'size': 11, 'x': x + 2 * mm}]
     if level_req:
         lvlbase_code = student_dict.get('lvlbase_code') or '---'
-        txt_list.append({'txt': lvlbase_code, 'size': 11, 'x': x + 15 * mm})
-        txt_list.append({'txt': sctbase_code, 'size': 11, 'x': x + 30 * mm})
+        txt_list.append({'txt': lvlbase_code, 'size': 11, 'x': x + 17 * mm})
+        txt_list.append({'txt': sctbase_code, 'size': 11, 'x': x + 32 * mm})
     else:
-        txt_list.append({'txt': sctbase_code, 'size': 11, 'x': x + 15 * mm})
-    draw_shortlist_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list)
-# - end of draw_gradelist_page_header
+        txt_list.append({'txt': sctbase_code, 'size': 11, 'x': x + 17 * mm})
+
+    if class_txt:
+        txt_list.extend((None, None, {'txt': class_txt, 'align': 'r', 'size': 11, 'x': x + 78 * mm}))
+
+    draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, False, None, txt_list)
+
+    info_list = []
+    if student_dict.get('bis_exam'):
+        info_list.append(gettext('Bis candidate'))
+    if student_dict.get('iseveningstudent'):
+        info_list.append(gettext('Evening student'))
+    if student_dict.get('islexstudent'):
+        info_list.append(gettext('Landsexamen'))
+    if student_dict.get('partial_exam'):
+        info_list.append(gettext('Partial exam'))
+    if info_list:
+        info_txt = ', '.join(info_list)
+        txt_list = [{'txt': info_txt, 'size': 11, 'x': x + 2 * mm}]
+        #coord[1] -= line_height
+        draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, False, None, txt_list)
+
+# - end of draw_shortgradelist_student_header
 
 
-def draw_short_list_colum_header(canvas, coord, col_tab_list, library, is_lexschool):
-    #     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
-
-    header_height = 13 * mm
+def draw_short_list_colum_header(canvas, coord, col_tab_list, line_height, offset_bottom):
     x = coord[0]
-    y = coord[1] - 5 * mm
+    y = coord[1] - 2 * mm
     coord[1] = y
 
-# - draw horizontal lines above and below column header
     left = coord[0] + col_tab_list[0] * mm
-    right = coord[0] + col_tab_list[4] * mm
+    right = coord[0] + col_tab_list[5] * mm
+
+# - set background color
+    canvas.setFillColor(colors.HexColor("#f0f0f0"))
+    canvas.rect(left, y - line_height, right - left, line_height, stroke=0, fill=1) # canvas.rect(left, bottom, width, height)
+    canvas.setFillColor(colors.HexColor("#000000"))
+
+# - draw horizontal lines above and below column header
+    # line below header will be added in draw_shortgradelist_one_line
+
+    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
     canvas.line(left, y, right, y)
 
-    y1 = y - header_height
-    canvas.line(left, y1, right, y1)
-
-# - draw vertical lines of columns
-    y_top = coord[1]
-    y_top_minus = y_top - 5 * mm  # line height - 1 mm
-    y_bottom = y_top - header_height
-    """
-    for index in range(0, len(col_tab_list) - 1):  # range(start_value, end_value, step), end_value is not included!
-        line_x = coord[0] + col_tab_list[index] * mm
-        y1_mod = y_top_minus if index in (2, 4) else y_top
-        canvas.line(line_x, y1_mod, line_x, y_bottom)
-    """
-
-    # - draw subject_row
     txt_list = [
-        {'txt': str(_('Subject')), 'font': 'Times-Roman', 'padding': 4, 'x': x + col_tab_list[0] * mm},
-        {'txt': 's', 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm},
-        {'txt': 'c', 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
-        {'txt': 'e', 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm}
+        {'txt': gettext('Subject'), 'font': 'Times-Bold', 'padding': 2, 'x': x + col_tab_list[0] * mm},
+        {'txt': 's', 'font': 'Times-Bold', 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm},
+        {'txt': 'c', 'font': 'Times-Bold', 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
+        {'txt': 'e', 'font': 'Times-Bold', 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm},
+        {'txt': gettext('retake'), 'font': 'Times-Bold', 'align': 'c', 'x': x + (col_tab_list[4] + col_tab_list[5]) / 2 * mm}
     ]
-    vertical_lines = (0, 1, 2)
-    draw_shortlist_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-
-
-
-
+    vertical_lines = (0, 1, 2, 3, 4, 5)
+    draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, True, vertical_lines, txt_list)
 # - end of draw_short_list_colum_header
 
 
-def draw_shortlist_combi_header(canvas, coord, col_tab_list, library, sjtp_dict, student_dict, is_combi=False):
+def draw_shortgradelist_combi_header(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict):
     #     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
-
-    header_height = 5 * mm
 
     x = coord[0]
     y = coord[1]
 
-# - draw recangle and fill background
+# - draw rectangle and fill background
     left = x + col_tab_list[0] * mm
-    right = coord[0] + col_tab_list[4] * mm
-    width = (col_tab_list[4] - col_tab_list[0]) * mm
+    right = coord[0] + col_tab_list[5] * mm
+    width = (col_tab_list[5] - col_tab_list[0]) * mm
 
-    y1 = y - header_height
+    y1 = y - line_height
 
     canvas.setFillColor(colors.HexColor("#f0f0f0"))
-    canvas.rect(left, y1, width, header_height, stroke=0, fill=1) # canvas.rect(left, bottom, page_width, height)
+    canvas.rect(left, y1, width, line_height, stroke=0, fill=1) # canvas.rect(left, bottom, page_width, height)
     canvas.setFillColor(colors.HexColor("#000000"))
 
 # also draw upper line - otherwise it will be covered by fill rectangle
@@ -2566,32 +2610,67 @@ def draw_shortlist_combi_header(canvas, coord, col_tab_list, library, sjtp_dict,
     canvas.line(left, y, right, y)
 
 # - draw sjtp text
-    if is_combi:
-        sjtp_name = library.get('combi_grade', '---')
-    else:
-        sjtp_name = sjtp_dict.get('sjtp_name', '---')
 
     combi_grade, combi_grade_in_letters = get_final_grade(student_dict, 'combi_avg')
 
-    font_str = 'Times-Roman' if is_combi else 'Times-Bold'
-    txt_list = [ {'txt': sjtp_name, 'font': font_str, 'padding': 4, 'x': x + col_tab_list[0] * mm}]
+    txt_list = [
+        {'txt': 'Combi', 'font': 'Times-Bold', 'padding': 2, 'x': x + col_tab_list[0] * mm},
+        {},
+        {},
+        {'txt': combi_grade, 'font': 'Times-Bold', 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm},
+    ]
 
-    vertical_lines = (0, 3, 4, 5) if is_combi else (0, 5)
-    if is_combi:
-        txt_list.extend([
-            {'txt': combi_grade, 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm}
-        ])
-
-    draw_shortlist_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-# - end of draw_shortlist_combi_header
+    vertical_lines = (0, 3, 4, 5)
+    draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, True, vertical_lines, txt_list)
+# - end of draw_shortgradelist_combi_header
 
 
-def draw_shortlist_subject_row(canvas, coord, col_tab_list, subj_dict, is_combi=False):
+def draw_shortgradelist_result_header(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict):
+    #     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
+
+    line_height = 5 * mm
+
+    x = coord[0]
+    y = coord[1]
+
+# - draw rectangle and fill background
+    left = x + col_tab_list[0] * mm
+    right = coord[0] + col_tab_list[5] * mm
+    width = (col_tab_list[5] - col_tab_list[0]) * mm
+
+    y1 = y - line_height
+
+    canvas.setFillColor(colors.HexColor("#f0f0f0"))
+    canvas.rect(left, y1, width, line_height, stroke=0, fill=1) # canvas.rect(left, bottom, page_width, height)
+    canvas.setFillColor(colors.HexColor("#000000"))
+
+# also draw upper line - otherwise it will be covered by fill rectangle
+    canvas.setStrokeColorRGB(.5, .5, .5)
+    canvas.line(left, y, right, y)
+
+# - draw sjtp text
+
+    result_status = student_dict.get('result_status')
+    font_str = 'Times-Bold'
+    txt_list = [
+        {'txt': gettext('Result'), 'font': font_str, 'padding': 2, 'x': x + col_tab_list[0] * mm},
+        None,
+        {'txt': result_status, 'font': font_str, 'padding': 2, 'x': x + col_tab_list[3]  * mm}
+    ]
+
+    vertical_lines = (0, 5)
+
+    draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, True, vertical_lines, txt_list)
+# - end of draw_shortgradelist_result_header
+
+
+def draw_shortgradelist_subject_row(canvas, coord, col_tab_list, line_height, offset_bottom, subj_dict, is_combi=False):
     #     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
 
     x = coord[0]
 
     subj_name = subj_dict.get('subjbase_code', '---')
+    """
     if is_combi:
         subj_name += " *"
     if subj_dict.get('is_extra_nocount', False):
@@ -2599,23 +2678,128 @@ def draw_shortlist_subject_row(canvas, coord, col_tab_list, subj_dict, is_combi=
     if subj_dict.get('is_extra_counts', False):
         subj_name += " ++"
     if subj_dict.get('grlst_use_exem', False):
+        subj_name += " (d)"
+    if subj_dict.get('grlst_use_exem', False):
         subj_name += " (vr)"
-
-    finalgrade, finalgrade_in_letters = get_final_grade(subj_dict, 'finalgrade')
+    if subj_dict.get('grlst_use_reex', False):
+        subj_name += " (" + gettext('retake') + ")"
+    if subj_dict.get('grlst_use_reex3', False):
+        subj_name += " (" + gettext('retake3') + ")"
+    """
+    segrade = subj_dict.get('segrade') or ''
+    pecegrade = subj_dict.get('pecegrade') or ''
+    finalgrade = subj_dict.get('finalgrade') or ''
 
 # - draw subject_row
     txt_list = [
-        {'txt': subj_name, 'font': 'Times-Roman', 'padding': 4, 'x': x + col_tab_list[0] * mm},
-        {'txt': subj_dict.get('segrade', '---'), 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm},
-        {'txt': subj_dict.get('pecegrade', '---'), 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
+        {'txt': subj_name, 'font': 'Times-Roman', 'padding': 2, 'x': x + col_tab_list[0] * mm},
+        {'txt': segrade, 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm},
+        {'txt': pecegrade, 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
         {'txt': finalgrade, 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm}
     ]
-    vertical_lines = (0, 1, 2)
-    draw_shortlist_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-# - end of draw_shortlist_subject_row
+    vertical_lines = (0, 1, 2, 3, 4, 5)
+    draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, True, vertical_lines, txt_list)
+# - end of draw_shortgradelist_subject_row
 
 
-def draw_shortlist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
+def draw_shortgradelist_avg_row(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict):
+    #     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
+
+    x = coord[0]
+
+    ce_avg = student_dict.get('ce_avg')
+    final_avg = student_dict.get('final_avg')
+    if ce_avg:
+        ce_avg.replace('.', ',')
+    if final_avg:
+        final_avg.replace('.', ',')
+
+    # - draw subject_row
+    txt_list = [
+        {'txt': gettext('average'), 'font': 'Times-Roman', 'padding': 2, 'x': x + col_tab_list[0] * mm},
+        None,
+        {'txt': ce_avg, 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
+        {'txt': final_avg, 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm}
+    ]
+
+    vertical_lines = (0, 1, 2, 3, 4, 5)
+    draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, True, vertical_lines, txt_list)
+# - end of draw_shortgradelist_subject_row
+
+
+def draw_shortgradelist_page_footer(canvas, border, page_index, pages,
+                               has_extrafacilities, has_extra_nocount, has_thumbrule,
+                               has_extra_counts, has_use_exem, has_use_reex, has_use_reex3,
+                               user_lang):
+    # PR2021-10-08 PR2023-06-04
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ----- draw_shortgradelist_page_footer ----- ')
+        logger.debug('    has_extrafacilities: ' + str(has_extrafacilities))
+
+    footer_height = 10 * mm
+    padding_left = 4 * mm
+    padding_bottom = 2 * mm
+
+    #  border = [top, right, bottom, left]
+    right = border[1]
+    bottom = border[2]
+    left = border[3]
+
+    x = left + padding_left
+    y = bottom + padding_bottom
+    y_top = bottom + footer_height
+
+    footer_list = []
+    if has_extra_nocount:
+        footer_list.append('+ : ' + gettext('Extra subject does not count'))
+    if has_extra_counts:
+        footer_list.append('++ :  ' + gettext('Extra subject counts'))
+    if has_thumbrule:
+        footer_list.append('d : ' + gettext('Thumb rule'))
+    if has_use_exem:
+        footer_list.append('vr: ' + gettext('Exemption'))
+    if has_use_reex:
+        footer_list.append('her: ' + gettext('Re-examination'))
+    if has_use_reex3:
+        footer_list.append('her 3e tv: ' + gettext('Re-examination 3rd period'))
+
+    footer_txt = ', '.join(footer_list)
+
+    logger.debug('footer_txt: ' + str(footer_txt))
+
+# - draw horizontal line above page footer
+    canvas.setStrokeColorRGB(0, 0, 0)
+    canvas.line(border[3], y_top, border[1], y_top)
+    canvas.setStrokeColorRGB(.5, .5, .5)
+
+    canvas.setFont('Arial', 8, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+
+
+    # - column 0 'Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1.'
+    if has_extrafacilities:
+        line_height = 4 * mm
+        canvas.drawString(x, y + line_height, '*: ' + gettext('Candidate uses extra facilities'))
+
+        if logging_on:
+            logger.debug('    if has_extrafacilities: ' + str(has_extrafacilities))
+    if footer_txt:
+        logger.debug('x: ' + str(x))
+        canvas.drawString(x, y, footer_txt)
+
+    today_dte = af.get_today_dateobj()
+    today_formatted = af.format_DMY_from_dte(today_dte, user_lang, True)  # True = month_abbrev
+    canvas.drawRightString(right - padding_bottom, y, today_formatted)
+
+    if pages > 1:
+        page_txt = ''.join((gettext('Page'), ' ', str(page_index + 1), gettext(_(' of ')), str(pages)))
+        canvas.drawString(right - 60 * mm, y, page_txt)
+
+# - end of draw_shortgradelist_page_footer
+
+
+def draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
                        draw_line_below, vertical_lines, text_list, dont_print=False):
     # function creates one line with text for each item in list PR2021-11-16
     # x-coord[0] is not in use
@@ -2623,41 +2807,42 @@ def draw_shortlist_one_line(canvas, coord, col_tab_list, line_height, offset_bot
 
     # still call this function when dont_print, to keep track of y_pos
 
-    y_pos_line = coord[1] - line_height * mm
-    y_pos_txt = y_pos_line + offset_bottom * mm
+    y_pos_line = coord[1] - line_height
+    y_pos_txt = y_pos_line + offset_bottom
 
     if not dont_print:
         for text_dict in text_list:
+            if text_dict and isinstance(text_dict, dict):
     # - get info from text_dict
-            text = text_dict.get('txt')
-            if text:
-                font_type = text_dict.get('font', 'Times-Roman')
-                font_size = text_dict.get('size', 10)
-                font_hexcolor = text_dict.get('color', '#000000')
-                text_align = text_dict.get('align', 'l')
+                text = text_dict.get('txt')
+                if text:
+                    font_type = text_dict.get('font', 'Times-Roman')
+                    font_size = text_dict.get('size', 10)
+                    font_hexcolor = text_dict.get('color', '#000000')
+                    text_align = text_dict.get('align', 'l')
 
-                x_pos = text_dict.get('x', 0)
+                    x_pos = text_dict.get('x', 0)
 
-                # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
-                canvas.setFont(font_type, font_size, leading=None)
-                canvas.setFillColor(colors.HexColor(font_hexcolor))
-                if text_align == 'c':
-                    x_pos_txt = x_pos
-                    canvas.drawCentredString(x_pos_txt, y_pos_txt, text)
-                elif text_align == 'r':
-                    x_pos_txt = x_pos - text_dict.get('padding', 0) * mm
-                    canvas.drawRightString(x_pos_txt, y_pos_txt, text)
-                else:
-                    x_pos_txt = x_pos + text_dict.get('padding', 0) * mm
-                    canvas.drawString(x_pos_txt, y_pos_txt, text)
+                    # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+                    canvas.setFont(font_type, font_size, leading=None)
+                    canvas.setFillColor(colors.HexColor(font_hexcolor))
+                    if text_align == 'c':
+                        x_pos_txt = x_pos
+                        canvas.drawCentredString(x_pos_txt, y_pos_txt, text)
+                    elif text_align == 'r':
+                        x_pos_txt = x_pos - text_dict.get('padding', 0) * mm
+                        canvas.drawRightString(x_pos_txt, y_pos_txt, text)
+                    else:
+                        x_pos_txt = x_pos + text_dict.get('padding', 0) * mm
+                        canvas.drawString(x_pos_txt, y_pos_txt, text)
 
-                #draw_red_cross(canvas, x_pos_txt, y_pos_txt)
+                    #draw_red_cross(canvas, x_pos_txt, y_pos_txt)
 
         # - draw line at bottom of row
         if draw_line_below:
             canvas.setStrokeColorRGB(.5, .5, .5)
             left = coord[0] + col_tab_list[0] * mm
-            right = coord[0] + col_tab_list[4] * mm
+            right = coord[0] + col_tab_list[5] * mm
             canvas.line(left, y_pos_line, right, y_pos_line)
 
     # - draw vertical lines of columns
@@ -2671,7 +2856,7 @@ def draw_shortlist_one_line(canvas, coord, col_tab_list, line_height, offset_bot
                 canvas.line(line_x, y_top, line_x, y_bottom)
 
     coord[1] = y_pos_line
-# - end of draw_shortlist_one_line
+# - end of draw_shortgradelist_one_line
 
 #############################################
 
@@ -2985,4 +3170,234 @@ def draw_pok_colum_headerNIU(canvas, coord, col_tab_list, library, is_lexschool)
     ]
     draw_text_one_line(canvas, coord, col_tab_list, 4, 1.25, False, None, txt_list)
 # - end of draw_pok_colum_header
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+def get_shortgradelist_dict(examyear, school, department, level, sel_classes, include_class_blank, sortby_class):
+    # PR2023-06-04
+
+    # NOTE: don't forget to filter deleted = false!! PR2021-03-15
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_gradelist_dictlist -----')
+        logger.debug('sel_classes: ' + str(sel_classes) + ' ' + str(type(sel_classes)))
+        logger.debug('include_class_blank: ' + str(include_class_blank))
+        logger.debug('sortby_class: ' + str(sortby_class))
+
+    # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}
+
+    # values of sel_layout are:"none", "level", "class", "cluster"
+    # "none" or None: all students of subject on one form
+    # "level:" seperate form for each leeerweg
+    #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
+    #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
+
+    #sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
+    #if logging_on:
+    #    logger.debug('sql_keys: ' + str(sql_keys))
+
+    sql_list = ["SELECT studsubj.id AS studsubj_id, stud.id AS stud_id,",
+                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+                "stud.classname, stud.bis_exam,"
+                
+                "stud.extrafacilities, stud.iseveningstudent, stud.islexstudent, stud.partial_exam,"
+
+                "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
+
+                "depbase.code AS depbase_code, dep.level_req, lvlbase.code AS lvlbase_code, sctbase.code AS sctbase_code,",
+
+                "studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
+                "studsubj.is_extra_nocount, studsubj.is_thumbrule, studsubj.is_extra_counts,",
+                "studsubj.gradelist_use_exem, studsubj.gl_examperiod,",
+
+                "subj.id AS subj_id, subjbase.code AS subjbase_code, subj.sequence, si.is_combi",
+
+                "FROM students_studentsubject AS studsubj",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+                "LEFT JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
+
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                "WHERE stud.school_id = ", str(school.pk), "::INT ",
+                "AND dep.id = ", str(department.pk), "::INT",
+
+                "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted"
+                ]
+
+    class_blank_clause = "stud.classname IS NULL"
+    if sel_classes:
+        sel_classes_clause = ''.join(("LOWER(stud.classname) IN (SELECT UNNEST(ARRAY", str(sel_classes), "::TEXT[]))"))
+        if include_class_blank:
+            sql_list.extend(("AND (", sel_classes_clause, " OR ", class_blank_clause, ")"))
+        else:
+            sql_list.extend(("AND ", sel_classes_clause))
+    else:
+        if include_class_blank:
+            sql_list.extend(("AND ", class_blank_clause))
+        else:
+            sql_list.extend(("AND FALSE"))
+
+    if level:
+        sql_list.extend(("AND lvl.base_id = ", str(level.base.pk), "::INT"))
+
+    sql_list.append("ORDER BY subj.sequence")
+
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        grade_rows = af.dictfetchall(cursor)
+        if logging_on:
+            logger.debug('len grade_rows: ' + str(len(grade_rows)))
+
+
+    grade_dict = {}
+    classname_list = []
+
+    if grade_rows:
+        for row in grade_rows:
+            stud_id = row.get('stud_id')
+            row_classname = row.get('classname')
+
+            if not sortby_class:
+                classname = 'all'
+            elif row_classname is None:
+                classname = ''.join(('<', gettext('not entered'), '>'))
+            else:
+                classname = row_classname.lower()
+
+            if classname not in grade_dict:
+                grade_dict[classname] = {}
+                classname_list.append(classname)
+
+            class_dict = grade_dict[classname]
+
+            if stud_id not in class_dict:
+                last_name = row.get('lastname') or '---'
+                first_name = row.get('firstname') or '---'
+                prefix = row.get('prefix')
+                full_name = stud_fnc.get_lastname_firstname_initials(
+                    last_name=last_name,
+                    first_name=first_name,
+                    prefix=prefix,
+                    has_extrafacilities=False
+                )
+                sort_name = (last_name.lower() + c.STRING_SPACE_30)[:30] + first_name.lower()
+
+                class_dict[stud_id] = {
+                    'depbase_code': row.get('depbase_code'),
+                    'lvlbase_code': row.get('lvlbase_code'),
+                    'level_req': row.get('level_req', False),
+
+                    'sctbase_code': row.get('sctbase_code'),
+                    'classname': row_classname,
+
+                    'fullname': full_name,
+                    'sortname': sort_name,
+
+                    'examnumber': row.get('examnumber'),
+
+                    'bis_exam': row.get('bis_exam'),
+                    'extrafacilities': row.get('extrafacilities'),
+                    'iseveningstudent': row.get('iseveningstudent'),
+                    'islexstudent': row.get('islexstudent'),
+                    'partial_exam': row.get('partial_exam'),
+
+                    'ce_avg': row.get('gl_ce_avg'),
+                    'combi_avg': row.get('gl_combi_avg'),
+                    'final_avg': row.get('gl_final_avg'),
+                    'result_status': row.get('result_status'),
+                }
+                student_list = class_dict.get('student_list')
+                if student_list:
+                    student_list.append({'id': stud_id, 'sortname': sort_name})
+                else:
+                    class_dict['student_list'] = [{'id': stud_id, 'sortname': sort_name}]
+
+            # - add subjecttype dict
+            student_dict = class_dict.get(stud_id)
+            if student_dict:
+                # put combi subjects in dict with key: 'combi', others in dict with key: subjecttype_id
+                # werkstuk Havo/Vwo is combi subject, is added to list of combi subjects
+                # werkstuk Vsbo TKL is not a combi subject, it is added with key 'wst', grade is shown in draw_wst
+                # stage it is added with key 'stg', grade is shown in draw_stg
+                is_combi = row.get('is_combi', False)
+                if is_combi:
+                    sjtp_sequence = 'combi'
+                else:
+                    sjtp_sequence = 'nocombi'
+
+                if sjtp_sequence not in student_dict:
+                    student_dict[sjtp_sequence] = {
+                        'combi_avg': row.get('gl_combi_avg')
+                    }
+
+                sjtp_dict = student_dict.get(sjtp_sequence)
+                subj_id = row.get('subj_id')
+                if subj_id not in sjtp_dict:
+                    segrade = row.get('gradelist_sesrgrade').replace('.', ',') if row.get(
+                        'gradelist_sesrgrade') else None
+                    pecegrade = row.get('gradelist_pecegrade').replace('.', ',') if row.get(
+                        'gradelist_pecegrade') else None
+                    finalgrade = row.get('gradelist_finalgrade')
+
+                    sjtp_dict[subj_id] = {
+                        'segrade': segrade,
+                        'pecegrade': pecegrade,
+                        'finalgrade': finalgrade
+                    }
+                subj_dict = sjtp_dict[subj_id]
+
+                # - check if studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.gradelist_use_exem is True
+                # if so: add 'has_extra_nocount' = True to student-dict
+                # used to add foornote in gradelist
+                info_list = []
+                if row.get('is_extra_nocount', False):
+                    info_list.append('+')
+                    student_dict['has_extra_nocount'] = True
+                if row.get('is_extra_counts', False):
+                    info_list.append('++')
+                    student_dict['has_extra_counts'] = True
+                if row.get('is_thumbrule', False):
+                    info_list.append('d')
+                    student_dict['has_thumbrule'] = True
+
+                if row.get('gradelist_use_exem', False):
+                    info_list.append('vr')
+                    student_dict['has_use_exem'] = True
+
+                gl_examperiod = row.get('gl_examperiod', 0)
+                if gl_examperiod == c.EXAMPERIOD_SECOND:
+                    info_list.append('her')
+                    student_dict['has_use_reex'] = True
+                elif gl_examperiod == c.EXAMPERIOD_THIRD:
+                    info_list.append('her 3e tv')
+                    student_dict['has_use_reex3'] = True
+
+                subjbase_code = row.get('subjbase_code') or '-'
+                if info_list:
+                    info_txt = ', '.join(info_list)
+                    subjbase_code += ''.join((' (', info_txt, ')'))
+                subj_dict['subjbase_code'] = subjbase_code
+
+    classname_list.sort()
+
+    if logging_on:
+        logger.debug('    grade_dict: ' + str(grade_dict))
+        logger.debug('    classname_list: ' + str(classname_list))
+
+    return grade_dict, classname_list
+# - end of get_shortgradelist_dict
 

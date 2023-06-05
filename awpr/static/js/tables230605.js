@@ -2762,8 +2762,8 @@ const mod_MCOL_dict = {
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02 PR2022-05-15 PR2022-07-21 PR2023-01-12
     function t_MCOL_Open(page) {
         console.log(" -----  t_MCOL_Open   ----")
-    console.log("    mod_MCOL_dict", mod_MCOL_dict)
-    console.log("    mod_MCOL_dict.cols_skipped", mod_MCOL_dict.cols_skipped)
+    //console.log("    mod_MCOL_dict", mod_MCOL_dict)
+    //console.log("    mod_MCOL_dict.cols_skipped", mod_MCOL_dict.cols_skipped)
 
         // note: this function uses global variable 'selected_btn'
 
@@ -2786,15 +2786,15 @@ const mod_MCOL_dict = {
             };
         };
 
-    console.log("    cols_skipped_list", cols_skipped_list)
+    //console.log("    cols_skipped_list", cols_skipped_list)
 
 // - fill columns_excl_skipped
         mod_MCOL_dict.columns_excl_skipped = [];
         // loop through values of key 'all' and key selected_btn
         for (const [key, dict] of Object.entries(mod_MCOL_dict.columns)) {
-    console.log("....key", key)
-    console.log("    dict", dict)
-    console.log("    mod_MCOL_dict.selected_btn", mod_MCOL_dict.selected_btn)
+    //console.log("....key", key)
+    //console.log("    dict", dict)
+    //console.log("    mod_MCOL_dict.selected_btn", mod_MCOL_dict.selected_btn)
             if (key === mod_MCOL_dict.selected_btn || key === 'all'){
                 for (const [field, value] of Object.entries(dict)) {
                     // translate value, caption = 'Profile' when dep has_profile and field - sctbase_id
@@ -2802,15 +2802,15 @@ const mod_MCOL_dict = {
         // add 'skip' if field is in cols_skipped
             // note: 'skip' fields are also added to preserve 'is_hidden' of skipped fields'
                     const skip = (cols_skipped_list.includes(field));
-    console.log("    skip", skip)
+    //console.log("    skip", skip)
                     const is_hidden = (field && mod_MCOL_dict.cols_hidden.includes(field));
-    console.log("    is_hidden", is_hidden)
+    //console.log("    is_hidden", is_hidden)
                     mod_MCOL_dict.columns_excl_skipped.push({field: field, sortby: caption, skip: skip, hidden: is_hidden});
         }}};
 
     // sort by field 'sortby'
         mod_MCOL_dict.columns_excl_skipped.sort(b_comparator_sortby);
-    console.log("mod_MCOL_dict.columns_excl_skipped", mod_MCOL_dict.columns_excl_skipped)
+    //console.log("mod_MCOL_dict.columns_excl_skipped", mod_MCOL_dict.columns_excl_skipped)
         t_MCOL_FillSelectTable();
 
 // ---  disable save btn

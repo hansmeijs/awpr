@@ -542,7 +542,6 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         add_or_remove_class(el_header_left.parentNode, cls_visible_hide, !keep_loader_hidden);
 
-
         const datalist_request = {
                 setting: request_item_setting,
                 locale: {page: ["page_exams", "page_grade", "upload"]},

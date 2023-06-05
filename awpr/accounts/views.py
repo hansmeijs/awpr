@@ -182,8 +182,11 @@ class UserUploadView(View):
 # - get selected examyear from usersettings,
             # - checks if country is locked and if examyear is missing, not published or locked
             # - skip allow_not_published when req_usr is admin (ETE) or system
-            allow_not_published = req_usr.role >= c.ROLE_064_ADMIN
-            sel_examyear, err_lst = get_selected_examyear_from_usersetting(request, allow_not_published)
+            sel_examyear, err_lst = get_selected_examyear_from_usersetting(
+                request=request,
+                allow_not_published=req_usr.role >= c.ROLE_064_ADMIN,
+                page='page_user'
+            )
             if err_lst:
                 border_class = c.HTMLCLASS_border_bg_invalid
                 err_lst.append(acc_prm.err_txt_cannot_make_changes())
@@ -704,7 +707,7 @@ class UserUploadMultipleView(View):
             else:
 
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
-                    get_selected_ey_school_dep_lvl_from_usersetting(request)
+                    get_selected_ey_school_dep_lvl_from_usersetting(request, page='page_user')
                 if err_list:
                     border_class = 'border_bg_invalid'
                     err_list.extend(('<br>', gettext('You cannot make changes.')))
@@ -4289,7 +4292,7 @@ def get_settings_page(request, request_item_setting, page, setting_dict):
         logger.debug(' ------- get_settings_page -------')
 
 # settings 'sel_btn' can be changed by calling download, also changes by b_UploadSettings
-# settings 'cols_hidden' cannot be changed by calling downloads function
+# settings 'cols_hidden' and 'class_hidden' cannot be changed by calling downloads function
 # value of key 'sel_page' is set and retrieved in get_headerbar_param
 
     if logging_on:
@@ -4340,6 +4343,18 @@ def get_settings_page(request, request_item_setting, page, setting_dict):
         cols_hidden = saved_page_dict.get(c.KEY_COLS_HIDDEN)
         if cols_hidden:
             setting_dict[c.KEY_COLS_HIDDEN] = cols_hidden
+
+# - add list of hidden classes PR2023-06-03 - class_hidden cannot be changed by calling downloads function
+        # used in mod report resultmeeting in result page
+        sel_classes = saved_page_dict.get(c.KEY_SEL_CLASSES)
+        if sel_classes:
+            setting_dict[c.KEY_SEL_CLASSES] = sel_classes
+
+        sortby_class = saved_page_dict.get(c.KEY_SORTBY_CLASS)
+        if sortby_class:
+            setting_dict[c.KEY_SORTBY_CLASS] = sortby_class
+
+
 # - end of get_settings_page
 
 
@@ -5173,7 +5188,7 @@ def message_diff_exyr(request, sel_examyear_instance):
 
 ############## end of moved from downloads 2022-12-18 ###########################
 
-def get_selected_examyear_from_usersetting(request, allow_not_published=False):
+def get_selected_examyear_from_usersetting(request, allow_not_published=False, page=None):
     # PR2021-09-08 PR2022-02-26 PR2022-04-16 PR2022-08-04 PR2023-04-13
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -5211,7 +5226,11 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
                 logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
     # - add info to msg_list, will be sent back to client
-            msg_list = message_examyear_missing_notpublished_locked(sel_examyear, allow_not_published)
+            msg_list = message_examyear_missing_notpublished_locked(
+                sel_examyear=sel_examyear,
+                allow_not_published=allow_not_published,
+                page=page
+            )
 
     may_edit = not msg_list
     if not may_edit:
@@ -5392,8 +5411,8 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, page=None, skip_all
                                           'exyr': str(sel_examyear_instance.code)}
 
     # - add message when examyear is locked PR22021-12-04
-            # not when page_examyear PR2022-08-09
-            if request.user.role != c.ROLE_064_ADMIN or page != 'page_examyear':
+            # not when page_examyear PR2022-08-09 or page users PR2023-06-03
+            if sel_examyear_instance.locked and page not in ('page_user', 'page_examyear'):
                 if sel_examyear_instance.locked:
                     err_html = gettext('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}
 
@@ -6217,12 +6236,12 @@ def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
 # - end of get_selected_lvlbase_sctbase_from_usersetting
 
 
-def message_examyear_missing_notpublished_locked(sel_examyear, allow_not_published=False):
+def message_examyear_missing_notpublished_locked(sel_examyear, allow_not_published=False, page=None):
     # PR2021-12-04 PR2022-08-04 PR2023-04-13
     err_list = []
     if sel_examyear is None :
         err_list.append(gettext('There is no exam year selected.'))
-    elif sel_examyear.locked:
+    elif sel_examyear.locked and page not in ('page_user', 'page_examyear'):
         err_list.append(gettext('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)})
     elif not allow_not_published and not sel_examyear.published:
         err_list.append(gettext("%(admin)s has not yet published examyear %(exyr)s.") % \
