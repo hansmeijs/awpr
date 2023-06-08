@@ -379,6 +379,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
 // ---  show loader
         el_loader.classList.remove(cls_visible_hide)
         el_hdr_left.classList.add(cls_hide)
@@ -514,31 +518,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_submenu = document.getElementById("id_submenu")
 
-        if(permit_dict.permit_calc_results){
-            AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
-            //AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
+        //PR2023-06-08 debug: to prevent creating submenu multiple times: skip if btn columns exists
+        if (!document.getElementById("id_submenu_columns")){
+
+            if(permit_dict.permit_calc_results){
+                AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
+                //AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
+            };
+            AddSubmenuButton(el_submenu, loc.Short_gradelist, function() {MRM_Open()}, ["tab_show", "tab_btn_result"]);
+            if(permit_dict.requsr_same_school){
+                AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
+            };
+
+            AddSubmenuButton(el_submenu, loc.Preliminary_ex5_form, function() {ModConfirmOpen("prelim_ex5")}, ["tab_show", "tab_btn_result"]);
+
+            if (permit_dict.requsr_same_school && permit_dict.permit_submit_ex5){
+                AddSubmenuButton(el_submenu, loc.Submit_Ex5, function() {MAG_Open("submit_ex5")}, ["tab_show", "tab_btn_result"]);
+            };
+
+            if(permit_dict.requsr_same_school && permit_dict.permit_submit_gl_dipl){
+                AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
+                AddSubmenuButton(el_submenu, loc.Diplomas, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
+                AddSubmenuButton(el_submenu, loc.Ex6_pok, function() {MGL_Open("pok")}, ["tab_show", "tab_btn_result"]);
+            };
+
+            AddSubmenuButton(el_submenu, loc.Download_result_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_result")}, [], "id_submenu_columns");
+            el_submenu.classList.remove(cls_hide);
         };
-        AddSubmenuButton(el_submenu, loc.Short_gradelist, function() {MRM_Open()}, ["tab_show", "tab_btn_result"]);
-        if(permit_dict.requsr_same_school){
-            AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
-        };-
-
-        AddSubmenuButton(el_submenu, loc.Preliminary_ex5_form, function() {ModConfirmOpen("prelim_ex5")}, ["tab_show", "tab_btn_result"]);
-
-        if (permit_dict.requsr_same_school && permit_dict.permit_submit_ex5){
-            AddSubmenuButton(el_submenu, loc.Submit_Ex5, function() {MAG_Open("submit_ex5")}, ["tab_show", "tab_btn_result"]);
-        };
-
-        if(permit_dict.requsr_same_school && permit_dict.permit_submit_gl_dipl){
-            AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
-            AddSubmenuButton(el_submenu, loc.Diplomas, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
-            AddSubmenuButton(el_submenu, loc.Ex6_pok, function() {MGL_Open("pok")}, ["tab_show", "tab_btn_result"]);
-        };
-
-        AddSubmenuButton(el_submenu, loc.Download_result_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_result")}, [], "id_submenu_columns");
-        el_submenu.classList.remove(cls_hide);
-
     };//function CreateSubmenu
 
 //###########################################################################

@@ -701,60 +701,63 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25 PR2021-05-25 PR2023-05-05
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
         //console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
         let el_submenu = document.getElementById("id_submenu")
         // PR2022-05-19 Only CUR admin can add exams!!! It will get messed-up if SXM starts enetering stuff here
         // PR2022-06-02 sp DUO must be added by SXM, anble SXM to enter exams.
         // was: if (permit_dict.requsr_role_admin && permit_dict.requsr_country_pk === 1){
-        if(permit_dict.permit_crud && permit_dict.requsr_role_admin ){
-            if (permit_dict.requsr_country_is_cur){
-                AddSubmenuButton(el_submenu, loc.Add_ETE_exam, function() {MEXQ_Open()}, ["tab_show", "tab_btn_ete_exams"]);
+
+        //PR2023-06-08 debug: to prevent creating submenu multiple times: skip if btn columns exists
+        if (!document.getElementById("id_submenu_columns")){
+            if(permit_dict.permit_crud && permit_dict.requsr_role_admin ){
+                if (permit_dict.requsr_country_is_cur){
+                    AddSubmenuButton(el_submenu, loc.Add_ETE_exam, function() {MEXQ_Open()}, ["tab_show", "tab_btn_ete_exams"]);
+                };
+                AddSubmenuButton(el_submenu, loc.Add_CVTE_exam, function() {MDEC_Open()}, ["tab_show", "tab_btn_duo_exams"]);
+                if (permit_dict.requsr_country_is_cur){
+                    AddSubmenuButton(el_submenu, loc.Delete_ETE_exam, function() {ModConfirmOpen_delete("ete_exam", "delete")}, ["tab_show", "tab_btn_ete_exams"]);
+                };
+                AddSubmenuButton(el_submenu, loc.Delete_CVTE_exam, function() {ModConfirmOpen_delete("duo_exam", "delete")}, ["tab_show", "tab_btn_duo_exams"]);
+                if (permit_dict.requsr_country_is_cur){
+                    AddSubmenuButton(el_submenu, loc.Copy_exam, function() {ModConfirmOpen("ete_exam", "copy")}, ["tab_show", "tab_btn_ete_exams"]);
+                };
+                AddSubmenuButton(el_submenu, loc.Link_CVTE_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
+                AddSubmenuButton(el_submenu, loc.Link_exam_to_grades, function() {ModConfirm_link_exam_to_grades_Open()}, ["tab_show", "tab_btn_ete_exams", "tab_btn_duo_exams"]);
+             }
+            if (permit_dict.requsr_role_admin){
+                if (permit_dict.permit_approve_exam && permit_dict.requsr_country_is_cur){
+                    AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_admin")}, ["tab_show", "tab_btn_ete_exams"]);
+                };
+                if (permit_dict.permit_publish_exam && permit_dict.requsr_country_is_cur){
+                    AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit_admin")}, ["tab_show", "tab_btn_ete_exams"]);
+                    AddSubmenuButton(el_submenu, loc.Undo_published, function() {ModConfirmOpen("ete_exam", "undo_published")}, ["tab_show", "tab_btn_ete_exams"]);
+                };
+           // } else if (permit_dict.requsr_role_school){
+           //     if (permit_dict.permit_approve_exam ){
+           //         AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
+           //     };
             };
-            AddSubmenuButton(el_submenu, loc.Add_CVTE_exam, function() {MDEC_Open()}, ["tab_show", "tab_btn_duo_exams"]);
-            if (permit_dict.requsr_country_is_cur){
-                AddSubmenuButton(el_submenu, loc.Delete_ETE_exam, function() {ModConfirmOpen_delete("ete_exam", "delete")}, ["tab_show", "tab_btn_ete_exams"]);
+
+            if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
+                AddSubmenuButton(el_submenu, loc.Upload_ntermen, function() {MDNT_Open()}, ["tab_show", "tab_btn_ntermen"], "id_submenu_upload_dnt");
+                AddSubmenuButton(el_submenu, loc.Copy_ntermen_to_exams, function() {ModConfirmOpen("results", "copy_ntermen")}, ["tab_show", "tab_btn_ntermen"]);
+
+                AddSubmenuButton(el_submenu, loc.Download_JSON, function() {ModConfirmOpen("ete_exam", "json")}, ["tab_show", "tab_btn_results"]);
             };
-            AddSubmenuButton(el_submenu, loc.Delete_CVTE_exam, function() {ModConfirmOpen_delete("duo_exam", "delete")}, ["tab_show", "tab_btn_duo_exams"]);
-            if (permit_dict.requsr_country_is_cur){
-                AddSubmenuButton(el_submenu, loc.Copy_exam, function() {ModConfirmOpen("ete_exam", "copy")}, ["tab_show", "tab_btn_ete_exams"]);
-            };
-            AddSubmenuButton(el_submenu, loc.Link_CVTE_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
-            AddSubmenuButton(el_submenu, loc.Link_exam_to_grades, function() {ModConfirm_link_exam_to_grades_Open()}, ["tab_show", "tab_btn_ete_exams", "tab_btn_duo_exams"]);
-         }
-        if (permit_dict.requsr_role_admin){
-            if (permit_dict.permit_approve_exam && permit_dict.requsr_country_is_cur){
-                AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_admin")}, ["tab_show", "tab_btn_ete_exams"]);
-            };
-            if (permit_dict.permit_publish_exam && permit_dict.requsr_country_is_cur){
-                AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit_admin")}, ["tab_show", "tab_btn_ete_exams"]);
-                AddSubmenuButton(el_submenu, loc.Undo_published, function() {ModConfirmOpen("ete_exam", "undo_published")}, ["tab_show", "tab_btn_ete_exams"]);
-            };
-       // } else if (permit_dict.requsr_role_school){
-       //     if (permit_dict.permit_approve_exam ){
-       //         AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
-       //     };
+
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_exams")}, [], "id_submenu_columns")
+
+            //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
+            //if (permit.approve_grade){
+            //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MASE_Open("approve")});
+            //}
+            //if (permit.submit_grade){
+            //    AddSubmenuButton(el_submenu, loc.Submit_Ex_form, function() {MASE_Open("submit")});
+            //};
+            el_submenu.classList.remove(cls_hide);
         };
-
-        if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
-            AddSubmenuButton(el_submenu, loc.Upload_ntermen, function() {MDNT_Open()}, ["tab_show", "tab_btn_ntermen"], "id_submenu_upload_dnt");
-            AddSubmenuButton(el_submenu, loc.Copy_ntermen_to_exams, function() {ModConfirmOpen("results", "copy_ntermen")}, ["tab_show", "tab_btn_ntermen"]);
-
-            AddSubmenuButton(el_submenu, loc.Download_JSON, function() {ModConfirmOpen("ete_exam", "json")}, ["tab_show", "tab_btn_results"]);
-        };
-
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_exams")}, [], "id_submenu_columns")
-
-        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
-        //if (permit.approve_grade){
-        //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MASE_Open("approve")});
-        //}
-        //if (permit.submit_grade){
-        //    AddSubmenuButton(el_submenu, loc.Submit_Ex_form, function() {MASE_Open("submit")});
-        //};
-        el_submenu.classList.remove(cls_hide);
-
     };//function CreateSubmenu
 
 //###########################################################################
@@ -1723,43 +1726,51 @@ document.addEventListener("DOMContentLoaded", function() {
 //###########################################################################
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++++++++++++++++++++++++++
 
-//========= UploadToggle  ============= PR2022-05-16 PR2022-06-15
+//========= UploadToggle  ============= PR2022-05-16 PR2022-06-15 PR2023-06-08
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
-
         // only called by field 'secret_exam', can be duo and ete exam
+
         if (permit_dict.permit_crud && permit_dict.requsr_role_admin){
             const fldName = get_attr_from_el(el_input, "data-field");
 
             const tblName = get_tblName_from_selectedBtn();
             const data_dict = get_datadict_from_table_element(el_input);
 
-        console.log( "  data_dict", data_dict);
-
             if(!isEmpty(data_dict)){
                 const exam_pk = data_dict.id;
-                // subj_id is used in ete_exam_dicts,  subj_id is used PR2023-06-02
-                const subject_pk = data_dict.subj_id;
-                const examyear_pk = data_dict.ey_id;
+                const published_id = data_dict.published_id;
+                if (data_dict.published_id){
+                    b_show_mod_message_html(loc.err_list.This_exam_is_published + "<br>" + loc.err_list.Remove_published_first);
 
-                console.log( "data_dict", data_dict);
+                // PR2023-06-08 TODO: block when exam is (partly approved, but let ETE first add secret_exams
+               // } else if (data_dict.auth1by_id || data_dict.auth2by_id){
+               //     b_show_mod_message_html(loc.err_list.This_exam_is_approved + "<br>" + loc.err_list.Remove_approvals_first);
 
-                const old_value = data_dict[fldName];
-                const new_value = (!old_value);
+                } else {
+                    // subj_id is used in ete_exam_dicts,  subj_id is used PR2023-06-02
+                    const subject_pk = data_dict.subj_id;
+                    const examyear_pk = data_dict.ey_id;
 
-    // ---  change icon, before uploading
-                add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+                    console.log( "data_dict", data_dict);
 
-                // ---  upload changes
-                const upload_dict = {
-                    table: tblName,
-                    examyear_pk: examyear_pk,
-                    examperiod: setting_dict.sel_examperiod,
-                    exam_pk: exam_pk,
-                    subject_pk: subject_pk
+                    const old_value = data_dict[fldName];
+                    const new_value = (!old_value);
+
+        // ---  change icon, before uploading
+                    add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+
+                    // ---  upload changes
+                    const upload_dict = {
+                        table: tblName,
+                        examyear_pk: examyear_pk,
+                        examperiod: setting_dict.sel_examperiod,
+                        exam_pk: exam_pk,
+                        subject_pk: subject_pk
+                    };
+                    upload_dict[fldName] = new_value;
+                    UploadChanges(upload_dict, urls.url_exam_upload);
                 };
-                upload_dict[fldName] = new_value;
-                UploadChanges(upload_dict, urls.url_exam_upload);
             };
         };
     }  // UploadToggle
@@ -2129,17 +2140,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  RefreshDatarowItemNEW  ================ PR2020-08-16 PR2020-09-30 PR2022-01-23 PR2022-04-13 PR2022-05-17
     function RefreshDatarowItemNEW(tblName, field_setting, col_hidden, update_dict, data_dicts) {
-        console.log(" --- RefreshDatarowItemNEW  ---");
-        console.log("    tblName", tblName);
-        console.log("    update_dict", update_dict);
-        console.log("    data_dicts", data_dicts);
+        //console.log(" --- RefreshDatarowItemNEW  ---");
+        //console.log("    tblName", tblName);
+        //console.log("    update_dict", update_dict);
+        //console.log("    data_dicts", data_dicts);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
 
         const map_id = update_dict.mapid;
 
-        console.log("    map_id", map_id);
+    //console.log("    map_id", map_id);
 
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
@@ -2156,7 +2167,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     error_columns.push(err_field);
                 };
             };
-        console.log("    error_columns", error_columns);
+    //console.log("    error_columns", error_columns);
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -2196,9 +2207,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++ get existing data_dict from data_dicts.
                 const data_dict = (data_dicts.hasOwnProperty(map_id)) ? data_dicts[map_id] : null;
 
-    console.log("    data_dicts", data_dicts)
-    console.log("    map_id", map_id)
-    console.log("    data_dict", data_dict);
+    //console.log("    data_dicts", data_dicts)
+    //console.log("    map_id", map_id)
+    //console.log("    data_dict", data_dict);
 
                 if(data_dict){
 
@@ -2639,22 +2650,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= HandleInputChange  ===============PR2020-08-16 PR2021-03-25 PR2021-09-20 PR2022-05-07
     function HandleInputChange(el_input){
-        console.log(" --- HandleInputChange ---")
-        // function is only called by field 'cesuur', table 'ete_exam
-        const tblRow = t_get_tablerow_selected(el_input);
-        const tblName = get_attr_from_el(tblRow, "data-table");
-        const fldName = get_attr_from_el(el_input, "data-field");
-        console.log("fldName", fldName)
+        console.log(" --- HandleInputChange ---");
 
+        // function is only called by field 'cesuur' in table 'ete_exam
 
-    // ---  lookup exam_dict in exam_rows
-        const data_dicts = (tblName === "duo_exam") ? duo_exam_dicts : ete_exam_dicts;
-        const mapid = selected.map_id;
-        const data_dict = (data_dicts.hasOwnProperty(mapid)) ? data_dicts[mapid] : null;
-console.log("data_dicts", data_dicts)
-console.log("mapid", mapid)
+        const data_dict = get_datadict_from_table_element(el_input);
+        console.log("data_dict", data_dict);
 
-        console.log("data_dict", data_dict)
         const old_value = data_dict[fldName];
 
         const has_permit = (permit_dict.permit_crud && permit_dict.requsr_role_admin);
@@ -6567,14 +6569,8 @@ console.log("    mimp.import_table", mimp.import_table);
             const header_text = loc.Link_exam_to_grades;
 
             const tblName = get_tblName_from_selectedBtn();
-            const selected_pk = setting_dict.sel_exam_pk;
 
             mod_dict.table = tblName;
-
-console.log("    tblName", tblName );
-console.log("    selected_pk", selected_pk );
-console.log("    selected.mapid", selected.mapid );
-console.log("    selected.map_id", selected.map_id );
 
 // ---  lookup exam_dict in exam_rows
             const data_dicts = get_datadicts_from_sel_btn();
@@ -7379,11 +7375,14 @@ console.log("exam_dict", exam_dict);
                 (selected_btn === "btn_results") ? grade_exam_result_dicts : null;
     };
 
-//========= get_datadict_from_table_element  ============= PR2022-04-29
+//========= get_datadict_from_table_element  ============= PR2022-04-29  PR2023-06-08
     function get_datadict_from_table_element(el){
 // ---  lookup exam_dict in ete_exam_rows or in grade_exam_rows
         const tblRow = t_get_tablerow_selected(el);
         const map_id = (tblRow) ? tblRow.id : null;
+
+        selected.map_id = tblRow.id;
+
         const data_dicts = get_datadicts_from_sel_btn();
         const data_dict = (data_dicts && data_dicts.hasOwnProperty(map_id)) ? data_dicts[map_id] : null;
         return data_dict;

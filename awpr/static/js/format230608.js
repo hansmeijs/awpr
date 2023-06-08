@@ -240,9 +240,9 @@
 
 
 
-//=========  f_format_status_grade  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24
+//=========  f_format_status_grade  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24 PR2023-06-07
     function f_format_status_grade(field_name, fld_value, data_dict) {
-    //NOT IN USE YET, must replace UpdateFieldStatus in grades.js
+    //only uses in secretexam, must also replace UpdateFieldStatus in grades.js
         //console.log("=========  f_format_status_grade =========");
         //console.log("    field_name", field_name);
         //console.log("    fld_value", fld_value);
@@ -252,7 +252,8 @@
         const prefix_str = field_arr[0];
         // field_name = "se_status", "sr_status", "pe_status", "ce_status", "note_status"
         let className = "diamond_" + icon_blank;  // diamond_3_4 is blank img
-        let title_text = null, filter_value = null;
+        let filter_value = null;
+        const title_list = [];
         if (prefix_str === "note"){
             // dont show note icon when user has no permit_read_note
             className = "note_" + ( (permit_dict.permit_read_note && fld_value && fld_value !== "0") ?
@@ -283,19 +284,25 @@
                 const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
                 const is_blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
 
+                // auth3_must_sign
                 // - auth3 does not have to sign when secret exam (aangewezen examen)
                 // - auth3 also does not have to sign when exemption (vrijstelling) PR2023-02-02
 
                 // PR2023-02-07 debug: this is not correct value: !data_dict.examperiod === 4, must be: data_dict.examperiod !== 4
-                const auth3_must_sign = (!data_dict.secret_exam && data_dict.examperiod !== 4);
+                // - examinors don't have to sign exemption
+                // - examinors of school don't have to signsecret exam
+                const auth3_must_sign = (data_dict.examperiod !== 4);
 
                 // - auth4 does not have to sign when secret exam (aangewezen examen) or when se-grade
                 // - auth4 does not have to sign when se-grade
                 // - auth4 also does not have to sign when exemption (vrijstelling) PR2023-02-02
 
                 // PR2023-02-07 debug: this is not correct value: !data_dict.examperiod === 4, must be: data_dict.examperiod !== 4
-                const auth4_must_sign = (!data_dict.secret_exam && data_dict.examperiod !== 4
-                                            && ["pe_status", "ce_status"].includes(field_name));
+                //const auth4_must_sign = (!data_dict.secret_exam && data_dict.examperiod !== 4
+               //                             && ["pe_status", "ce_status"].includes(field_name));
+
+                const auth4_must_sign = (!["pe_status", "ce_status"].includes(field_name) &&
+                                        data_dict.examperiod !== 4);
 
                 className = f_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
                 filter_value = className;
@@ -307,37 +314,58 @@
                     const modified_dateJS = parse_dateJS_from_dateISO(publ_modat);
                     formatted_publ_modat = format_datetime_from_datetimeJS(loc, modified_dateJS);
                 };
+
                 if (is_blocked) {
                     if (published_id){
-                        title_text = loc.blocked_11 + "\n" + loc.blocked_12 + formatted_publ_modat + "\n" + loc.blocked_13;
+                        title_list.push(...[loc.unlocked_11, loc.unlocked_12 + formatted_publ_modat, loc.unlocked_13]);
                     } else {
-                        title_text = loc.blocked_01 + "\n" + loc.blocked_02 + "\n" + loc.blocked_03;
+                        title_list.push(...[loc.unlocked_01, loc.unlocked_02, loc.unlocked_03]);
                     };
 
-                } else if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
-                    title_text = (data_dict.secret_exam) ? loc.Designated_exam + "\n" : "";
-                    title_text += loc.Approved_by + ": ";
-                    for (let i = 1; i < 5; i++) {
-                        const auth_id = (i === 1) ? auth1by_id :
-                                        (i === 2) ? auth2by_id :
-                                        (i === 3) ? auth3by_id :
-                                        (i === 4) ?  auth4by_id : null;
-                        const prefix_auth = prefix_str + "_auth" + i;
-                        if(auth_id){
-                            const function_str = (i === 1) ?  loc.Chairperson :
-                                                (i === 2) ? loc.Secretary :
-                                                (i === 3) ?  loc.Examiner :
-                                                (i === 4) ? loc.Corrector : "";
-                            const field_usr = prefix_auth + "by_usr";
-                            const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
+                } else {
 
-                            title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
+
+                };
+                if (data_dict.secret_exam){
+
+                    title_list.push(loc.Designated_exam);
+                } else {
+
+
+                    if (is_blocked) {
+                        if (published_id){
+                            title_list.push(...[loc.unlocked_11, loc.unlocked_12 + formatted_publ_modat, loc.unlocked_13]);
+                        } else {
+                            title_list.push(...[loc.unlocked_01, loc.unlocked_02, loc.unlocked_03]);
+                        };
+
+                    } else if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
+                        title_list.push(loc.Approved_by + ": ");
+
+                        for (let i = 1; i < 5; i++) {
+                            const auth_id = (i === 1) ? auth1by_id :
+                                            (i === 2) ? auth2by_id :
+                                            (i === 3) ? auth3by_id :
+                                            (i === 4) ?  auth4by_id : null;
+                            const prefix_auth = prefix_str + "_auth" + i;
+                            if(auth_id){
+                                const function_str = (i === 1) ?  loc.Chairperson :
+                                                    (i === 2) ? loc.Secretary :
+                                                    (i === 3) ?  loc.Examiner :
+                                                    (i === 4) ? loc.Corrector : "";
+                                const field_usr = prefix_auth + "by_usr";
+                                const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
+
+                                title_list.push(function_str.toLowerCase() + ": " + auth_usr);
+                            };
                         };
                     };
                 };
             };
         };
-        return [className, title_text, filter_value]
+
+        const title_text = (title_list.length) ? title_list.join("\n") : null;
+        return [className, title_text, filter_value];
     };  // f_format_status_grade
 
 

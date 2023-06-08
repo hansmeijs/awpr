@@ -680,7 +680,10 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===  CreateSubmenu == ");
         //console.log("permit_dict", permit_dict);
         let el_submenu = document.getElementById("id_submenu")
-        if(el_submenu){
+
+        //PR2023-06-08 debug: to prevent creating submenu multiple times: skip if btn columns exists
+        if (!document.getElementById("id_submenu_columns")){
+
             if(permit_dict.requsr_same_school){
                 // btns are btn_exem btn_ep_01 btn_reex btn_reex03 btn_pok
                 if (permit_dict.permit_approve_subject){

@@ -1940,6 +1940,8 @@ function RefreshDataRowsAfterUpload(response) {
             mod_MSTUD_dict.active_el.value = new_value;
 
             b_setCaretPosition(mod_MSTUD_dict.active_el, mod_MSTUD_dict.caret_at + 1);
+
+            el_MSTUD_btn_save.disabled = false;
         };
     };
 

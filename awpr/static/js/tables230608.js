@@ -256,13 +256,16 @@
 //=========  t_MSED_CreateSelectRowNew  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24 PR2022-08-02
     function t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk) {
         //console.log( "===== t_MSED_CreateSelectRowNew ========= ");
-        //console.log( "code_value", code_value);
-        //console.log( "is_locked", is_locked);
+        //console.log( "    code_value", code_value);
+        //console.log( "    is_locked", is_locked);
+        //console.log( "    tblName", tblName);
 
         const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
 
 // ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
-        let tblRow = tblBody_select.insertRow(-1);
+        // PR2023-06-07 order examyears descending
+        const insert_index = (tblName === "examyear") ? 0 : -1;
+        const tblRow = tblBody_select.insertRow(insert_index);
         tblRow.setAttribute("data-table", tblName)
         tblRow.setAttribute("data-pk", pk_int);
 
