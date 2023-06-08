@@ -3491,7 +3491,8 @@ def create_exam_approve_publish_msg_list(req_usr, count_dict, requsr_auth, is_ap
             else:
                 msg_str = ' '.join((
                     get_exam_count_text(committed),
-                    get_will_be_text(committed), str(_('approved.'))
+                    get_will_be_text(committed),
+                    gettext('approved') + '.'
                 ))
         else:
             if not committed:
@@ -3500,7 +3501,7 @@ def create_exam_approve_publish_msg_list(req_usr, count_dict, requsr_auth, is_ap
                 else:
                     msg_str = _("The exams cannot be published.")
             else:
-                approve_txt = str(_('approved.') if is_approve else _('published.'))
+                approve_txt = (gettext('approved') if is_approve else gettext('published')) + '.'
                 msg_str = ' '.join((
                     get_exam_count_text(committed).capitalize(),
                     get_will_be_text(committed), approve_txt))

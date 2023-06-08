@@ -1947,7 +1947,7 @@ def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent
 
     #TODO URGENT student doesnt fail when garde insufficient PR2023-04-26
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug( ' -----  calc_rule_issufficient  -----')
         logger.debug('    subj: ' + str(use_studsubj_ep_dict.get('subj')) + ' max_ep: ' + str(use_studsubj_ep_dict.get('max_ep')))

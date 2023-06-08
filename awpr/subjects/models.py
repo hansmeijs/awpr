@@ -521,6 +521,7 @@ class Envelopsubject(sch_mod.AwpBaseModel):  # PR2022-10-09
     has_errata = BooleanField(default=False)
     secret_exam = BooleanField(default=False)  # PR2023-03-31 added
 
+
 class Enveloplabelbase(Model):  # PR2022-08-03
     objects = AwpModelManager()
 

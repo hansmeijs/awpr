@@ -3908,7 +3908,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                             subject_count_txt = get_subject_count_text(examperiod, committed)
                             will_be_text = get_will_be_text(committed)
                             msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
-                                                str(will_be_text), str(_('approved.'))))
+                                                str(will_be_text),
+                                                gettext('approved') + '.'
+                                                ))
                             if logging_on:
                                 logger.debug('    is_approve msg_str: ' + str(not msg_str))
 
@@ -8455,11 +8457,12 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
         # PR0222-09-06 mail Nancy Josephina Insp: cannot validate.
         # must show alls subjects to Insp, also when they are not published
         # added: 'and not request.user.role == c.ROLE_032_INSP:'
-        if not requsr_same_school and not request.user.role == c.ROLE_032_INSP:
-            # PR2022-12-16 NIU: there are no examyears before 2022
-            #   PR2021-09-04 debug: examyears before 2022 have no subj_published_id. Show them to others anyway
-            #   if sel_examyear is None or sel_examyear.code >= 2022:
-            sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
+        # PR2023-06-08 filter published removed
+        #if not requsr_same_school and not request.user.role == c.ROLE_032_INSP:
+        #    # PR2022-12-16 NIU: there are no examyears before 2022
+        #    #   PR2021-09-04 debug: examyears before 2022 have no subj_published_id. Show them to others anyway
+        #    #   if sel_examyear is None or sel_examyear.code >= 2022:
+        #    sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
 
         sql_studsubjects = ' '.join(sql_studsubj_list)
 

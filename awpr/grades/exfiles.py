@@ -209,8 +209,10 @@ class GetEx3infoView(View):  # PR2021-10-06 PR2023-05-30
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
             ]
+            #PR2023-06-08 debug TODO turn off for now
             if secret_exams_only:
-                sql_list.append("INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)")
+                pass
+                # sql_list.append("INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)")
 
             # admin only deals with secret exams of their own school, therefore filter on examyear.pk
             sql_list.extend((
@@ -222,8 +224,10 @@ class GetEx3infoView(View):  # PR2021-10-06 PR2023-05-30
                 "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
                 "AND NOT grd.deleted AND NOT grd.tobedeleted"
             ))
+            #PR2023-06-08 debug TODO turn off for now
             if secret_exams_only:
-                sql_list.append("AND exam.secret_exam")
+                pass
+                # sql_list.append("AND exam.secret_exam")
             else:
                 sql_list.extend(("AND school.id = ",  str(school.pk), "::INT "))
 
@@ -448,9 +452,6 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                 logger.debug('    sel_department: ' + str(sel_department))
 
             if sel_examperiod and sel_school and sel_department:
-                sel_layout = upload_dict.get('sel_layout')
-                lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
-                subject_list = upload_dict.get('subject_list', [])
                 secret_exams_only = upload_dict.get('secret_exams_only') or False
 
                 lvlbase_pk_list = upload_dict.get('lvlbase_pk_list') or []
@@ -465,8 +466,9 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                 exform_text = awpr_lib.get_library(sel_examyear, ['exform', 'ex3'])
 
 # +++ get ex3_grade_rows
+                is_requsr_admin = req_user.role == c.ROLE_064_ADMIN
                 ex3_dict = self.get_ex3_grade_rows(sel_examyear, sel_school, sel_department,
-                                                   lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout)
+                    lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout, is_requsr_admin)
                 """
                 ex3_dict: { 
                     2168: { 'subj_name': 'Culturele en Artistieke Vorming', 
@@ -475,6 +477,12 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
 
                 """
 
+                #PR202306-08 TODO for now: change sel_school when admin, mus change to: if secret exam
+                if req_user.role == c.ROLE_064_ADMIN:
+                    sel_school = sch_mod.School.objects.get_or_none(
+                        base=req_user.schoolbase,
+                        examyear=sel_examyear
+                    )
         # - get arial font
                 try:
                     filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial220815.ttf'
@@ -576,7 +584,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
 # - end of DownloadEx3View
 
     def get_ex3_grade_rows (self, examyear, school, department,
-                            lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout):
+                            lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout, is_requsr_admin=False):
 
         # note: don't forget to filter deleted = false!! PR2021-03-15
         # grades that are not published are only visible when 'same_school'
@@ -622,11 +630,19 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
 
             "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
             "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-            "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)"
         ]
+
+        #PR2023-06-08 debug TODO change to secret_exams_only
+        if is_requsr_admin:
+            sql_list.append("LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.ete_cluster_id)")
+        else:
+            sql_list.append("LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)")
+
+        #PR2023-06-08 debug TODO turn off for now
         if secret_exams_only:
-            sql_list.append("INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)")
+            pass
+            # sql_list.append("INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)")
 
         # admin only deals with secret exams of their own school, therefore filter on examyear.pk
         sql_list.extend((
@@ -640,7 +656,9 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
             "AND NOT grd.deleted AND NOT grd.tobedeleted"
         ))
         if secret_exams_only:
-            sql_list.append("AND exam.secret_exam")
+            # PR2023-06-08 debug TODO turn off for now
+            pass
+            # sql_list.append("AND exam.secret_exam")
         else:
             sql_list.extend(("AND school.id = ",  str(school.pk), "::INT "))
 

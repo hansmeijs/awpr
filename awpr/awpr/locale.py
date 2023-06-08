@@ -1329,7 +1329,12 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'This_exam_is_submitted': _('This exam is submitted.'),
             'This_exam_is_published': _('This exam is published.'),
+            'Remove_published_first': _("You must remove %(cpt)s first before you can make changes.") \
+                                      % {'cpt': ''.join(("'", gettext('published'), "'"))},
             'This_exam_is_approved': _('This exam is approved.'),
+
+            'Remove_approvals_first': _("You must remove %(cpt)s first before you can make changes.") \
+                                      % {'cpt': _('the approvals')},
             'You_cannot_change_approval': TXT_You_cannot_change_approval,
             'You_cannot_make_changes': _('You cannot make changes.'),
             'You_cannot_change_exam': _('You cannot change the exam.'),
@@ -1625,6 +1630,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
         dict['Designated_exam'] = _('Designated exam')
+        dict['Designated_exam_2lines'] = _('Desig-\nnated exam')
         dict['This_is_designated_exam'] = _("This is a designated exam.")
 
         dict['Attachment'] = _('Attachment')
@@ -1643,7 +1649,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['unlocked_01'] = _('The Inspectorate has unlocked this grade.')
         dict['unlocked_02'] = _('Make corrections and approve and submit this grade again.')
-        dict['unlocked_03'] = _("Click the icon in the column 'Notes' to view the explanation.")
+        dict['unlocked_03'] = _("Click the icon in the column 'Notes' to add an explanation.")
 
         dict['unlocked_11'] = _('The Inspectorate has unlocked this grade.')
         dict['unlocked_12'] = _('It has been submitted again at ')

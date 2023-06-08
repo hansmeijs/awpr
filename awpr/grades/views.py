@@ -3640,8 +3640,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
         userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
         if logging_on:
-            logger.debug(
-                '    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(type(userallowed_sections_dict)))
+            logger.debug('    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(type(userallowed_sections_dict)))
             # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
 
         # - only when requsr_same_school the not-published grades are visible
@@ -3745,7 +3744,8 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
             # show ete_cluster
             sql_list.extend((
                 "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
-                "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+                # was: "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+                "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
                 "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.ete_cluster_id)"
             ))
         else:
@@ -3775,8 +3775,11 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     ))
 
         # PR2023-05-22 skip schoolbase clause when secret_exams_only
+        # PR2023-06-08 Joan SXM wants to see the secret exams before publishing them.
+        # TODO temove this filter for now
         if secret_exams_only:
-            sql_list.append("AND exam.secret_exam")
+            pass
+            #sql_list.append("AND exam.secret_exam")
         else:
             if sel_schoolbase:
                 sql_list.extend(("AND school.base_id=", str(sel_schoolbase.pk), "::INT"))
@@ -3828,16 +3831,27 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     logger.debug('     sql_clause_sctbase:  ' + str(sql_clause_sctbase))
 
     # - filter on selected subjectbase
-            saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
-            if logging_on:
-                logger.debug('     saved_subjbase_pk:  ' + str(saved_subjbase_pk))
-            if saved_subjbase_pk:
-                sql_clause_subjbase_pk = ''.join(("AND (subj.base_id = ", str(saved_subjbase_pk), "::INT)"))
-                #sql_list.append(sql_clause_subjbase_pk)
-                if logging_on:
-                    logger.debug('     sql_clause_subjbase_pk:  ' + str(sql_clause_subjbase_pk))
+            # not in use yet
+            #saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+            #if logging_on:
+            #    logger.debug('     saved_subjbase_pk:  ' + str(saved_subjbase_pk))
+            #if saved_subjbase_pk:
+            #    sql_clause_subjbase_pk = ''.join(("AND (subj.base_id = ", str(saved_subjbase_pk), "::INT)"))
+            #    sql_list.append(sql_clause_subjbase_pk)
+            #    if logging_on:
+            #        logger.debug('     sql_clause_subjbase_pk:  ' + str(sql_clause_subjbase_pk))
 
-    # - filter on selected cluster_pk
+    # - filter on selected subject_pk - tobe deprecated
+            saved_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+            if logging_on:
+                logger.debug('     saved_subject_pk:  ' + str(saved_subject_pk))
+            if saved_subject_pk:
+                sql_clause_subject_pk = ''.join(("AND (subj.id = ", str(saved_subject_pk), "::INT)"))
+                sql_list.append(sql_clause_subject_pk)
+                if logging_on:
+                    logger.debug('     sql_clause_subject_pk:  ' + str(sql_clause_subject_pk))
+
+            # - filter on selected cluster_pk
             # don't filter on allowed clusters. Allowed clusters give permit to edit and approve, but others mat be viewed
             saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
             if saved_cluster_pk:
@@ -3887,7 +3901,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                 sql_list.append(sql_clause)
 
         sql_list.append('ORDER BY grd.id')
-        if logging_on:
+        if logging_on and False:
             for sql_txt in sql_list:
                 logger.debug(' > ' + str(sql_txt))
 
@@ -4236,7 +4250,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     # when DOE: show all SXM exams
     # when school: show all exams of this school
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))
