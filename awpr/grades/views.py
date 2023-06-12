@@ -3605,7 +3605,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
     # PR2023-05-22 when secret_exams_only = True: shiws grdaes of all schools, but secret_exams_only
 
-    # PR2-23-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
+    # PR2023-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
     # must rename secret_exam to ceex_secret_exam etc
 
     logging_on = s.LOGGING_ON
@@ -3879,7 +3879,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
             if (req_usr.role == c.ROLE_016_CORR):
                 # - skip if auth1 or auth2 is in requsr_usergroup_list
                 requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(req_usr)
-                return_false_when_no_allowedsubjects = not requsr_usergroup_list  or ('auth1' not in requsr_usergroup_list and 'auth2' not in requsr_usergroup_list)
+                return_false_when_no_allowedsubjects = not requsr_usergroup_list or ('auth1' not in requsr_usergroup_list and 'auth2' not in requsr_usergroup_list)
 
                 if logging_on:
                     logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))

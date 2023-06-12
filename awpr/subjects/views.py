@@ -5455,6 +5455,9 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "ex.datum, ex.begintijd, ex.eindtijd, ex.has_errata, ex.subject_color,",
 
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
+
+        "ex.cesuur_auth1by_id, ex.cesuur_auth2by_id, ex.cesuur_published_id,",
+
         "sb.code AS subjbase_code, subj.name_nl AS subj_name_nl, subj.name_en AS subj_name_en, subj.name_pa AS subj_name_pa,",
         "bundle.id AS bundle_id, bundle.name AS bundle_name,"
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",

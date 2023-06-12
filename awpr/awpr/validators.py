@@ -814,6 +814,25 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
 
     msg = ''.join((
+        '<p><b>', gettext("The results will be announced this week"), '</b></p>',
+        "</p><p class='pb-0'>", gettext("Please note the following"), ":</p>",
+        "<ul class='manual_bullet mb-0 pb-2'><li>",
+        gettext("If AWP has not yet calculated the results, you can click <i>Calculate results</i> in the page <i>Results</i>."),
+        "<br>", gettext("AWP will then recalcuate the results of the selected candidates."),
+        "<br>", gettext("A log file will be downloaded with the details of how AWP has calculated the results."),
+        "</li><li>", gettext("AWP has now a short grade list that can be used in the results meeting."),
+        "<br>", gettext("Click on <i>Short grade list</i> in the page <i>Results</i> to download it."),
+        "</li><li>", gettext("The short grade list contains a column <i>reex</i>."),
+        "<br>", gettext("If a candidate has failed, the possible re-examinations and the minimum grade, that must be achieved to pass, are listed here."),
+        "<br>", gettext("The '>' sign indicates the re-examination with the lowest difference from the CE grade."), "</li></ul>"
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+        msg = ''.join((
         '<p><b>', gettext("Wolf scores can now be copied to the CE scores in the page <i>Grades</i>"), ':</b></p>',
         "<p class='pb-2'>", gettext("AWP will not automatically copy the Wolf scores to the CE scores in the page <i>Grades</i>."), "<br>",
         gettext("You can copy them by clicking <i>Copy Wolf scores to page Grades</i> in the menu bar."),
@@ -824,12 +843,6 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
         "<p>", gettext("AWP will give you information before the scores will be copied."), "</p>"
     ))
 
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
-    
         '<p><b>', gettext("Bug when adding allowed clusters to Second correctors"), '</b></p>',
         "<p class='pb-2'>",
         gettext("The following bug has occurred in the program"), ": ",

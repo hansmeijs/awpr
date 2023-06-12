@@ -7,10 +7,13 @@
 
 
 let student_rows = [];
+const student_dicts = {}; //PR2023-06-10, TODO replace student_rows by student_dicts.  student_rows is used i nselect student
 let results_per_school_rows = [];
 let pres_secr_dict = {};
 //let school_rows = [];
-
+const cols_overview_left_border = [5, 8, 11, 14, 17, 20, 23];
+const cols_stud_left_border = [1, 2, 3, 4, 5, 6,  8];
+const cols_group_header = [0, 1, 2, 3, 4, 5, 8, 11, 14, 17, 20, 23];
 //const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -82,6 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_result_download_overview = get_attr_from_el(el_data, "data-url_result_download_overview");
     urls.url_result_download_shortgradelist = get_attr_from_el(el_data, "data-url_result_download_shortgradelist");
     urls.url_change_birthcountry = get_attr_from_el(el_data, "data-url_change_birthcountry");
+    urls.url_approve_result = get_attr_from_el(el_data, "data-url_approve_result");
 
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
 
@@ -92,28 +96,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // either 'all' or selected_btn are used in a page
 
     mod_MCOL_dict.columns.btn_result = {
-        idnumber: "ID_number", lvl_abbrev: "Learning_path", sct_abbrev: "Sector", classname: "Class",
-        examnumber: "Examnumber", regnumber: "Regnumber", result_status: "Result", withdrawn: "Withdrawn", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
+        lvl_abbrev: "Learning_path", sct_abbrev: "Sector", classname: "Class",
+        examnumber: "Examnumber", result_status: "Result", withdrawn: "Withdrawn"  // idnumber: "ID_number", regnumber: "Regnumber", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
     };
 
     mod_MCOL_dict.columns.btn_overview = {
-        idnumber: "ID_number", lvl_abbrev: "Learning_path", sct_abbrev: "Sector", classname: "Class",
-        examnumber: "Examnumber", regnumber: "Regnumber", result_status: "Result", withdrawn: "Withdrawn"
+    db_code: "Department", lvl_code: "Level", sb_code: "Code", sch_name: "School"
     };
+
 // --- get field_settings
     // declared as global: let field_settings = {};
     field_settings.student = {
-        field_caption: ["", "Examnumber_twolines", "Name", "Learning_path", "Sector", "Class",  "Result", "Withdrawn_2lines", "Diplomanumber_2lines", "Gradelistnumber_2lines"],
-        field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "classname", "result_status", "withdrawn", "diplomanumber", "gradelistnumber"],
-        field_tags:["div", "div", "div", "div","div", "div", "div", "div", "input", "input"],
+        field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "classname",
+                    "result_status", "gl_status", "withdrawn"],  //  "diplomanumber", "gradelistnumber"],
+        field_caption: ["", "Ex_nr", "Name", "Learningpath_twolines", "Sector", "Class",  "Result", "", "Withdrawn_2lines"],  // "Diplomanumber_2lines", "Gradelistnumber_2lines"],
+        field_tags:["div", "div", "div", "div","div", "div", "div", "div", "div"],  // ,"input", "input"],
 
-        filter_tags: ["select", "text", "text", "text" ,"text", "text", "text", "toggle", "text", "text"],
-        field_width:  ["020", "120", "390", "090", "090", "090", "120", "090", "120", "120"],
-        field_align: ["c", "l", "l", "l", "l", "l", "l", "c", "c", "c"]
+        filter_tags: ["select", "text", "text", "text" ,"text", "text", "text", "toggle", "toggle"],  // "text", "text"],
+        field_width:  ["020", "060", "390", "060", "060", "090", "120", "032","090"],  // "120", "120"],
+        field_align: ["c", "c", "l", "c", "c", "c", "l", "c", "c"],  // "c", "c"]
     };
     field_settings.overview = {
-        field_caption: ["", "", "", "", "",
-                        "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T"],
         field_names: ["select", "db_code", "lvl_code", "sb_code", "sch_name",
                         "c_m", "c_v", "c_t",
                         "r_p_m", "r_p_v", "r_p_t",
@@ -121,6 +124,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         "r_f_m", "r_f_v", "r_f_t",
                         "r_w_m", "r_w_v", "r_w_t",
                         "r_n_m", "r_n_v", "r_n_t"],
+
+        field_caption: ["", "", "", "", "",
+                        "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T"],
         field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div",
                     "div", "div", "div", "div", "div", "div", "div", "div", "div"],
 
@@ -130,49 +136,54 @@ document.addEventListener('DOMContentLoaded', function() {
         field_align: ["c", "c", "c", "c", "l", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c","c", "c", "c", "c"]
     };
     field_settings.group_header = {
-        field_caption: ["", "Department", "Level", "Code", "School",
-                        "Total_candidates", "", "",
-                        "Passed", "", "",
-                        "Re_examination", "", "",
-                        "Failed", "", "",
-                        "Withdrawn_2lines", "", "",
-                        "No_result", "", ""],
         field_names: ["select", "db_code", "lvl_code", "sb_code", "sch_name",
                         "count", "count", "count",
                         "pass", "pass", "pass",
                         "reex", "reex", "reex",
                         "fail", "fail", "fail",
                         "wdr", "wdr", "wdr",
-                        "nores", "nores", "nores"],
-
+                        "nores", "nores", "nores"
+                        ],
+        field_caption: ["", "Department", "Level", "Code", "School",
+                        "Total_candidates", "", "",
+                        "Passed", "", "",
+                        "Re_examination", "", "",
+                        "Failed", "", "",
+                        "Withdrawn_2lines", "", "",
+                        "No_result", "", ""
+                        ],
         field_tags: ["div", "div", "div", "div", "div",
                         "div", "div", "div",
                         "div", "div", "div",
                         "div", "div", "div",
                         "div", "div", "div",
                         "div", "div", "div",
-                        "div", "div", "div"],
+                        "div", "div", "div"
+                        ],
         filter_tags: ["select", "text", "text", "text", "text",
                         "text", "text", "text",
                         "text", "text", "text",
                         "text", "text", "text",
                         "text", "text", "text",
                         "text", "text", "text",
-                         "text", "text", "text"],
+                         "text", "text", "text"
+                         ],
         field_width:  ["020", "075", "075", "075", "180",
                         "032", "032", "032",
                         "032", "032", "032",
                         "032", "032", "032",
                         "032", "032", "032",
                         "032", "032", "032",
-                        "032", "032", "032"],
+                        "032", "032", "032"
+                        ],
         field_align: ["c", "c", "c", "c", "l",
                         "c", "c", "c",
                         "c", "c", "c",
                         "c", "c", "c",
                         "c", "c", "c",
                         "c", "c", "c",
-                        "c", "c", "c"]
+                        "c", "c", "c"
+                        ]
     };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -323,8 +334,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
 
         const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        const el_confirm_btn_reject = document.getElementById("id_modconfirm_btn_reject");
+        if(el_confirm_btn_reject){ el_confirm_btn_reject.addEventListener("click", function() {ModConfirmSave("reject")}) };
+
         const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
-        if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
+        if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave("save")}) };
 
 // ---  MOD MESSAGE ------------------------------------
         const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
@@ -400,8 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 results_per_school_rows: {get: true},
                 check_birthcountry_rows: {get: true}
             };
-
-
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -486,6 +498,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
+                    b_fill_datadicts("student", "id", null, response.student_rows, student_dicts);
+                    console.log("    student_dicts", student_dicts)
                 };
                 if ("results_per_school_rows" in response) {
                     results_per_school_rows = response.results_per_school_rows;
@@ -672,9 +686,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const tblRow_header = tblHead_datatable.insertRow (-1);
         const tblRow_filter = tblHead_datatable.insertRow (-1);
 
+        const col_left_border = (selected_btn === "btn_overview") ? cols_overview_left_border : cols_stud_left_border;
+
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
+        console.log("field_name", field_name);
             let th_header = null, el_header = null;
 
     // skip columns if in columns_hidden
@@ -690,8 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ++++++++++ insert columns in group header row +++++++++++++++
                 if (selected_btn === "btn_overview"){
             // --- add th to tblRow_header
-                    if([0, 1, 2, 3, 4, 5, 8, 11, 14, 17, 20, 23].includes(j)){
-
+                    if(cols_group_header.includes(j)){
 
     // --- add left border, not when status field
                         const key = field_settings.group_header.field_caption[j];
@@ -703,13 +719,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         const el_header = document.createElement("div");
             // --- add innerText to el_header
                         th_header.innerText = field_caption;
+
             // --- add width, text_align, right padding in examnumber
                         th_header.classList.add(class_width, class_align);
                         el_header.classList.add(class_width, class_align);
+
             // --- add  left border before each group
-                        if(selected_btn === "btn_overview" && [5, 8, 11, 14, 17, 20, 23].includes(j)){
-                            th_header.classList.add("border_left");
-                        };
+                        if(col_left_border.includes(j)){th_header.classList.add("border_left")};
 
                         // if(field_name === "examnumber"){el_header.classList.add("pr-2")};
                         if(j > 4){
@@ -731,10 +747,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     th_header.classList.add(class_width, class_align);
                     el_header.classList.add(class_width, class_align);
                     // if(field_name === "examnumber"){el_header.classList.add("pr-2")};
+
         // --- add  left border before each group
-                    if(selected_btn === "btn_overview" && [5, 8, 11, 14, 17, 20, 23].includes(j)){
-                        th_header.classList.add("border_left");
-                    };
+                    if(col_left_border.includes(j)){th_header.classList.add("border_left")};
 
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
@@ -780,10 +795,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add width, text_align
                 // PR2021-05-30 debug. Google chrome not setting width without th_filter class_width
                 th_filter.classList.add(class_width, class_align);
+
         // --- add  left border before each group
-                if(selected_btn === "btn_overview" && [5, 8, 11, 14, 17, 20, 23].includes(j)){
-                    th_filter.classList.add("border_left");
-                };
+                if(col_left_border.includes(j)){th_filter.classList.add("border_left")};
 
                 // el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
                 th_filter.appendChild(el_filter)
@@ -794,7 +808,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        //console.log("=========  CreateTblRow =========", tblName);
+        console.log("=========  CreateTblRow =========", tblName);
         //console.log("data_dict", data_dict);
 
         const field_names = field_setting.field_names;
@@ -802,6 +816,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_align = field_setting.field_align;
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
+
+        const col_left_border = (selected_btn === "btn_overview") ? cols_overview_left_border : cols_stud_left_border;
 
 // ---  lookup index where this row must be inserted
         const ob1 = (data_dict.lastname) ? data_dict.lastname.toLowerCase() : "";
@@ -846,9 +862,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.classList.add(class_width, class_align);
 
         // --- add  left border before each group
-                if(selected_btn === "btn_overview" && [5, 8, 11, 14, 17, 20, 23].includes(j)){
-                    td.classList.add("border_left");
-                };
+                if(col_left_border.includes(j)){td.classList.add("border_left")};
 
         // --- append element
                 td.appendChild(el);
@@ -859,6 +873,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                        // this is done in add_hover:  td.classList.add("pointer_show");
+                    };
+                } else if (field_name === "gl_status") {
+                    if(permit_dict.permit_approve_result && permit_dict.requsr_role_insp){
+                        td.addEventListener("click", function() {UploadToggle(el)}, false)
+                        add_hover(td);
                     };
                 } else if (["diplomanumber", "gradelistnumber"].includes(field_name)){
                     td.addEventListener("change", function() {HandleInputChange(el)}, false)
@@ -893,9 +912,10 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("fld_value", fld_value);
 
             if(field_name){
-                let filter_value = null;
+                let title_text = null, filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
+
                 } else if (field_name === "withdrawn") {
                     el_div.className = (data_dict.withdrawn) ? "tickmark_2_2" : "tickmark_0_0";
                     filter_value = (data_dict.withdrawn) ? "1" : "0";
@@ -922,6 +942,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_div.title = data_dict.result_info.replaceAll("|", "\n"); // replace | with \n // g modifier replaces all occurances
                     };
 
+                } else if (field_name ==="gl_status"){
+                    const [gl_status_className, gl_status_title_text, gl_status_filter_val] = f_format_gl_status(data_dict);
+                    filter_value = gl_status_filter_val;
+                    el_div.className = gl_status_className;
+                    el_div.title = gl_status_title_text
+
                 } else if (["diplomanumber", "gradelistnumber"].includes(field_name)){
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
                     // "NBSP (non-breaking space)" is necessary to show green box when field is empty
@@ -946,6 +972,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
+
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
@@ -1010,38 +1037,51 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( " ==== UploadToggle ====");
         console.log( "el_input", el_input);
         // (still) only called in brn Exemptions
-        if (permit_dict.permit_crud && permit_dict.requsr_same_school){
 
-            const tblRow = t_get_tablerow_selected(el_input);
-            const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-            const field_name = get_attr_from_el(el_input, "data-field");
-            console.log( "pk_int", pk_int);
-            console.log( "field_name", field_name);
+        const tblRow = t_get_tablerow_selected(el_input);
+        const field_name = get_attr_from_el(el_input, "data-field");
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        const data_dict = get_datadict_from_tblRow(tblRow);
 
-            if (field_name === "withdrawn"){
+        const old_value = get_attr_from_el_int(el_input, "data-value");
+        const full_name = (data_dict.fullname) ? data_dict.fullname : "---";
+
+        if (field_name === "withdrawn" && permit_dict.permit_crud && permit_dict.requsr_same_school){
+            const new_value = (!old_value);
     // --- get existing data_dict from data_rows
-                const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
-                const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-
-                const old_value = get_attr_from_el_int(el_input, "data-value");
-                const full_name = (data_dict.fullname) ? data_dict.fullname : "---";
-            console.log( "old_value", old_value, typeof old_value);
-                const new_value = (!old_value);
-            console.log( "new_value", new_value, typeof new_value);
-                mod_dict = {
-                    table: "student",
-                    mode: "withdrawn",
-                    student_pk: pk_int,
-                    full_name: full_name,
-                    withdrawn: new_value,
-                    el_input: el_input,
-                    data_dict: data_dict
-                };
-        // open mod confirm
-                ModConfirmOpen("withdrawn");
+            mod_dict = {
+                table: "student",
+                mode: "withdrawn",
+                student_pk: pk_int,
+                full_name: full_name,
+                withdrawn: new_value,
+                el_input: el_input,
+                data_dict: data_dict
             };
-        }; //   if(permit_dict.permit_approve_subject)
+
+    // open mod confirm
+            ModConfirmOpen("withdrawn");
+
+        } else if (field_name === "gl_status" && permit_dict.permit_approve_result && permit_dict.requsr_role_insp){
+
+            mod_dict = {
+                table: "student",
+                mode: "gl_status",
+                student_pk: pk_int,
+                full_name: full_name,
+                result: data_dict.result,
+                gl_status: data_dict.gl_status,
+                el_input: el_input,
+                data_dict: data_dict,
+                show_btn_reject: true
+            };
+
+            UploadToggle_get_selected_rows();
+    // open mod confirm
+            ModConfirmOpen("gl_status");
+        };
     };  // UploadToggle
+
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
@@ -1108,6 +1148,41 @@ document.addEventListener('DOMContentLoaded', function() {
             });  // $.ajax({
         }  //  if(!!row_upload)
     };  // UploadChanges
+
+//=========  UploadToggle_get_selected_rows  ================ PR2023-06-10
+    function UploadToggle_get_selected_rows() {
+        console.log(" --- UploadToggle_get_selected_rows --- ");
+
+        const sel_mapid =  mod_dict.data_dict.mapid;
+
+
+        mod_dict.student_pk_list = [];
+        //mod_dict.gl_status_approved_count = 0;
+        //mod_dict.gl_status_rejected_count = 0;
+        //mod_dict.gl_status_novalue_count = 0;
+
+// ---  loop through tblBody.rows and fill mod_dict.student_pk_list
+        for (let i = 0, tblRow; tblRow = tblBody_datatable.rows[i]; i++) {
+            if (tblRow.classList.contains(cls_selected) || tblRow.id === sel_mapid) {
+                const data_dict = student_dicts[tblRow.id];
+                if (data_dict){
+                    if (data_dict.result === 1 || data_dict.result === 2) {
+                        mod_dict.student_pk_list.push(data_dict.id);
+                        //if(data_dict.gl_result === 1) {
+                        //    mod_dict.gl_status_approved_count += 1;
+                        //} else if (data_dict.gl_result === 2) {
+                        //    mod_dict.gl_status_rejected_count += 1;
+                        //} else {
+                        //    mod_dict.gl_status_novalue_count += 1;
+                        //};
+        }}}};
+        mod_dict.student_pk_count = (mod_dict.student_pk_list) ? mod_dict.student_pk_list.length : 0;
+
+        console.log("    mod_dict.student_pk_list ", mod_dict.student_pk_list);
+        console.log("    mod_dict.student_pk_count ", mod_dict.student_pk_count);
+    };  // UploadToggle_get_selected_rows
+
+
 
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 //=========   OpenLogfile   ====================== PR2021-11-20 PR2022-06-20
@@ -1621,7 +1696,7 @@ function RefreshDataRowsAfterUpload(response) {
     function ModConfirmOpen(mode, response) {
         console.log(" -----  ModConfirmOpen   ----")
         // values of mode are : "check_birthcountry", "prelim_ex5", "pok", "overview", "withdrawn"
-
+        // respons contains response from server, only used in "check_birthcountry"
         const tblName = "student";
         let show_modal = false;
 
@@ -1641,6 +1716,7 @@ function RefreshDataRowsAfterUpload(response) {
 
         let msg01_txt = null, msg02_txt = null, msg03_txt = null;
         let hide_save_btn = false;
+        let caption_save = loc.OK, caption_cancel = loc.Cancel;
 
         if (mode === "check_birthcountry"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
@@ -1658,10 +1734,7 @@ function RefreshDataRowsAfterUpload(response) {
                     el_modconfirm_link.setAttribute("href", url_str);
                 };
 
-                //"Click <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>here</a> to go to its manual;</li>",
-                //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
-                el_confirm_btn_save.innerText = loc.Yes_change;
-                el_confirm_btn_cancel.innerText = loc.Cancel;
+                caption_save = loc.Yes_change;
                 add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
             };
         } else if(mode === "overview"){
@@ -1676,18 +1749,12 @@ function RefreshDataRowsAfterUpload(response) {
                 el_modconfirm_link.setAttribute("href", url_str);
             };
 
-            el_confirm_btn_save.innerText = loc.OK;
-            el_confirm_btn_cancel.innerText = loc.Cancel;
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
         } else if(mode === "prelim_ex5"){
             show_modal = true;
 
             const has_selected_item = (!isEmpty(map_dict));
-
-            //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
-            el_confirm_btn_save.innerText = loc.OK;
-            el_confirm_btn_cancel.innerText = loc.Cancel;
 
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
@@ -1699,8 +1766,6 @@ function RefreshDataRowsAfterUpload(response) {
                 const url_str = urls.url_result_download_ex5;
                 el_modconfirm_link.setAttribute("href", url_str);
             };
-
-
 
         } else if(mode === "withdrawn"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
@@ -1715,6 +1780,32 @@ function RefreshDataRowsAfterUpload(response) {
                 msg02_txt = loc.Do_you_want_to_continue;
             };
 
+        } else if(mode === "gl_status"){
+            if (permit_dict.permit_approve_result && permit_dict.requsr_role_insp){
+
+                if (!mod_dict.student_pk_count){
+                    b_show_mod_message_html(loc.Select_candidates_first);
+                } else {
+                    show_modal = true;
+                    header_text = loc.Approve_or_reject_result;
+
+                    if (mod_dict.student_pk_count === 1){
+                        msg_html = ["<p>",
+                            loc.About_to_approve_reject_result_of, ":<br>&emsp;", mod_dict.full_name,
+                            "</p><p class='pt-2'>", loc.Do_you_want_to_continue, "</p>"
+                        ].join("");
+                    } else {
+                        msg_html = ["<p>",
+                            loc.About_to_approve_reject_result_of, " ",
+                            mod_dict.student_pk_count, " ", loc.candidates, ". ",
+                            "</p><p class='pt-2'>", loc.Do_you_want_to_continue, "</p>"
+                        ].join("");
+                    };
+
+                    caption_save = loc.Approve_result;
+                    el_confirm_btn_reject.innerText = loc.Reject_result;
+                };
+            };
         } else if (mode === "pok"){
             show_modal = true;
 
@@ -1729,15 +1820,8 @@ function RefreshDataRowsAfterUpload(response) {
                 el_modconfirm_link.setAttribute("href", url_str);
             };
 
-            //"Click <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>here</a> to go to its manual;</li>",
-            //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
-            el_confirm_btn_save.innerText = loc.Yes_change;
-            el_confirm_btn_cancel.innerText = loc.Cancel;
+            caption_save = loc.Yes_change;
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
-
-
-
-
         };
 
         el_confirm_header.innerText = header_text;
@@ -1750,9 +1834,14 @@ function RefreshDataRowsAfterUpload(response) {
         if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
         el_confirm_msg_container.innerHTML = msg_html
 
-        const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
         el_confirm_btn_save.innerText = caption_save;
+        el_confirm_btn_cancel.innerText = caption_cancel;
         add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
+
+// show / hide btn_reject PR2023-06-09
+        if (el_confirm_btn_reject){
+            add_or_remove_class (el_confirm_btn_reject, cls_hide, !mod_dict.show_btn_reject);
+        };
 
 // set focus to cancel button
         set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
@@ -1766,13 +1855,14 @@ function RefreshDataRowsAfterUpload(response) {
         };
     };  // ModConfirmOpen
 
-//=========  ModConfirmSave  ================ PR2019-06-23
-    function ModConfirmSave() {
+//=========  ModConfirmSave  ================ PR2019-06-23 PR2023-06-09
+    function ModConfirmSave(mode) {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
 
+        const is_reject = mode === "reject";
+        // mode : "save" "reject"'"
 // ---  Upload Changes
-
         if (mod_dict.mode === "check_birthcountry"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
             if(may_edit){
@@ -1782,6 +1872,7 @@ function RefreshDataRowsAfterUpload(response) {
                         };
                 UploadChanges(upload_dict, urls.url_change_birthcountry);
             };
+
         } else if(["prelim_ex5", "overview"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
@@ -1791,6 +1882,7 @@ function RefreshDataRowsAfterUpload(response) {
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
             };
+
         } else if(mod_dict.mode === "withdrawn"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
             if(may_edit){
@@ -1801,6 +1893,25 @@ function RefreshDataRowsAfterUpload(response) {
                         withdrawn: mod_dict.withdrawn
                         };
                 UploadChanges(upload_dict, urls.url_student_upload);
+     // ---  change icon, before uploading
+                // when validation on server side fails, the old value is reset by RefreshDataRowItem PR2022-05-27
+                // updated_studsubj_rows must contain ie err_fields: ['has_reex']
+                add_or_remove_class(mod_dict.el_input, "tickmark_1_2", mod_dict.withdrawn, "tickmark_0_0");
+            };
+
+        } else if(mod_dict.mode === "gl_status"){
+            const may_edit = (permit_dict.permit_approve_result && permit_dict.requsr_role_insp);
+            if (permit_dict.permit_approve_result && permit_dict.requsr_role_insp){
+
+                const gl_status = (mode === "reject") ? 2 : 1;
+                const upload_dict = {
+                        mode: mod_dict.mode,
+                        table: "student",
+                        //student_pk: mod_dict.student_pk,
+                        student_pk_list: mod_dict.student_pk_list,
+                        gl_status: gl_status
+                        };
+                UploadChanges(upload_dict, urls.url_approve_result);
      // ---  change icon, before uploading
                 // when validation on server side fails, the old value is reset by RefreshDataRowItem PR2022-05-27
                 // updated_studsubj_rows must contain ie err_fields: ['has_reex']
@@ -2963,5 +3074,11 @@ function RefreshDataRowsAfterUpload(response) {
 
         return data_dict;
     }  //  get_datadict_from_tblRow
+
+//========= get_datadict_from_table_element  ============= PR2023-06-29
+    function get_datadict_from_table_element(el){
+        return get_datadict_from_tblRow(t_get_tablerow_selected(el));
+    };  // get_datadict_from_table_element
+
 
 })  // document.addEventListener('DOMContentLoaded', function()

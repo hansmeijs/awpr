@@ -1193,7 +1193,8 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
                 sel_schoolbase=school.base,
                 sel_depbase=department.base,
                 append_dict=append_dict,
-                student_pk=student_instance.pk)
+                student_pk_list=[student_instance.pk] if student_instance else []
+            )
 
             if rows and rows[0]:
                 student_dict = rows[0]

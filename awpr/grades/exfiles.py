@@ -753,6 +753,13 @@ class DownloadEx3BackpageView(View):  # PR2022-02-26
 
             if sel_school:
 
+                # PR202306-08 TODO for now: change sel_school when admin, mus change to: if secret exam
+                if req_user.role == c.ROLE_064_ADMIN:
+                    sel_school = sch_mod.School.objects.get_or_none(
+                        base=req_user.schoolbase,
+                        examyear=sel_examyear
+                    )
+
 # - get exform_text from examyearsetting
                 exform_text = awpr_lib.get_library(sel_examyear, ['exform', 'ex3'])
 

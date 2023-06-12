@@ -141,7 +141,7 @@ class OrderlistsListView(View): # PR2021-07-04
 
 
 #/////////////////////////////////////////////////////////////////
-def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, append_dict, show_deleted=False, student_pk=None):
+def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, append_dict, show_deleted=False, student_pk_list=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15  PR2023-01-11
     # - show only students that are not tobedeleted
     logging_on = False  # s.LOGGING_ON
@@ -293,12 +293,14 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
                 "st.linked, st.notlinked, st.sr_count, st.reex_count, st.reex03_count, st.withdrawn,",
                 "st.gl_ce_avg, st.gl_combi_avg, st.gl_final_avg,",
 
+                "st.gl_status, st.gl_auth1by_id, st.gl_modifiedat,",
+                "gl_auth1.last_name AS gl_auth1_username,",
+
                 "st.ep01_result, st.ep02_result, st.result, st.result_status, st.result_info, st.deleted, st.tobedeleted,",
 
                 "CASE WHEN studsubj.student_id IS NOT NULL THEN TRUE ELSE FALSE END AS has_submitted_subjects,",
 
-                "st.modifiedby_id, st.modifiedat,",
-                "au.last_name AS modby_username",
+                "st.modifiedby_id, st.modifiedat, au.last_name AS modby_username",
 
                 "FROM students_student AS st",
                 "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
@@ -308,7 +310,10 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
                 "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
                 "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
+
                 "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
+
+                "LEFT JOIN accounts_user AS gl_auth1 ON (gl_auth1.id = st.gl_auth1by_id)",
 
                 "LEFT JOIN studsubj ON (studsubj.student_id = st.id)",
 
@@ -324,9 +329,12 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
             #  show deleted students only when SBR 'Show all' is clicked
             if not show_deleted:
                 sql_list.append('AND NOT st.deleted')
-            if student_pk:
-                sql_list.append('AND st.id = %(st_id)s::INT')
-                sql_keys['st_id'] = student_pk
+
+            if student_pk_list:
+                if len(student_pk_list) == 1:
+                    sql_list.extend(("AND st.id = ", str(student_pk_list[0]), "::INT"))
+                else:
+                    sql_list.extend(("AND st.id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[]))"))
             else:
                 # sql_clause = acc_view.get_userfilter_allowed_school_dep_lvl_sct(request)
                 if logging_on:
@@ -357,8 +365,8 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
                     row['name_first_init'] = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
 
         # - add messages to student_row
-            if student_pk and student_rows and append_dict:
-                # when student_pk has value there is only 1 row
+            if student_pk_list and len(student_pk_list) == 1 and student_rows and append_dict:
+                # when updating single student  student_pk_list has only 1 row
                 row = student_rows[0]
                 if row:
                     for key, value in append_dict.items():
@@ -477,7 +485,7 @@ def create_check_birthcountry_rows(sel_examyear, sel_schoolbase, sel_depbase):
             logger.error(getattr(e, 'message', str(e)))
 
     return log_list, msg_html
-# --- end of create_student_rows
+# --- end of create_check_birthcountry_rows
 
 
 def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
@@ -1667,7 +1675,8 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                             sel_schoolbase=sel_school.base,
                             sel_depbase=sel_department.base,
                             append_dict=append_dict,
-                            student_pk=student_instance.pk)
+                            student_pk_list=[student_instance.pk]
+                        )
 
                         if restored_student_success and updated_rows:
                             for row in updated_rows:
@@ -1683,7 +1692,124 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of StudentUploadView
 
+#####################
 
+@method_decorator([login_required], name='dispatch')
+class StudentApproveResultView(View):  # PR2023-06-11
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= StudentApproveResultView ============= ')
+
+        def update_students(gl_status_value, student_pk_list):
+            err_html = None
+            updated_student_rows = []
+
+            if student_pk_list:
+                try:
+                    modifiedby_pk_str = str(request.user.pk)
+                    modifiedat_str = str(timezone.now())
+
+                    sql_list = ["UPDATE students_student SET gl_status=", str(gl_status_value),
+                                ", gl_auth1by_id=", modifiedby_pk_str, ", gl_modifiedat='", modifiedat_str, "'",
+                                "WHERE NOT tobedeleted AND NOT deleted ",
+                                "AND id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[])) "
+                                "RETURNING id;"
+                                ]
+                    sql = ''.join(sql_list)
+
+                    if logging_on:
+                        for sql_txt in sql_list:
+                            logger.debug('    > ' + str(sql_txt))
+
+                    with connection.cursor() as cursor:
+                        cursor.execute(sql)
+                        rows = cursor.fetchall()
+                        if rows:
+                            for row in rows:
+                                updated_student_rows.append(row[0])
+                        if logging_on:
+                            logger.debug('    updated_student_rows: ' + str(updated_student_rows))
+
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+                    err_html = acc_prm.msghtml_error_occurred_with_border(e, _('The changes have not been saved.'))
+
+            return updated_student_rows, err_html
+########################
+
+        msg_html = None
+        border_class = None
+        update_wrap = {}
+
+    # - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+
+    # - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+    # - get permit
+            has_permit = acc_prm.get_permit_of_this_page('page_result', 'approve_result', request)
+            if logging_on:
+                logger.debug('    has_permit:' + str(has_permit))
+
+            if not has_permit:
+                msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
+
+            else:
+                updated_rows = []
+
+    # ----- get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('    may_edit:       ' + str(may_edit))
+                    logger.debug('    sel_msg_list:       ' + str(sel_msg_list))
+                    logger.debug('    upload_dict:       ' + str(upload_dict))
+                """
+                sel_msg_list = msg_list.append(str(_("You don't have permission to view department %(val)s.") % {'val': sel_depbase.code}))
+                upload_dict:  {'table': 'student', 'mode': 'create', 'lastname': 'aa', 'firstname': 'aa', 'gender': 'M', 'idnumber': '2000101010', 'level': 6, 'sector': 12}
+
+                """
+                if sel_msg_list:
+                    msg_html = acc_prm.msghtml_from_msglist_with_border(sel_msg_list, c.HTMLCLASS_border_bg_warning)
+                else:
+
+        # - get variables
+                    gl_status = upload_dict.get('gl_status')
+                    student_pk_list = upload_dict.get('student_pk_list')
+
+                    updated_student_rows, err_html = update_students(gl_status, student_pk_list)
+                    if err_html:
+                        msg_html = err_html
+                    elif updated_student_rows:
+                        updated_rows, error_dictNIU = create_student_rows(
+                            request=request,
+                            sel_examyear=sel_school.examyear,
+                            sel_schoolbase=sel_school.base,
+                            sel_depbase=sel_department.base,
+                            append_dict={},
+                            student_pk_list=updated_student_rows
+                        )
+
+                update_wrap['updated_student_rows'] = updated_rows
+
+        # - addd msg_html to update_wrap
+        if msg_html:
+            update_wrap['msg_html'] = msg_html
+        # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+# - end of StudentApproveResultView
+
+
+##################
 @method_decorator([login_required], name='dispatch')
 class ChangeBirthcountryView(View):  # PR2022-06-20
 
@@ -1909,15 +2035,15 @@ class StudentLinkStudentView(View):  # PR2021-09-06
 
 
                         # - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
-                            #TODO this is not used, check if can be removed
-                            student_pk = cur_student.pk if cur_student else None
-                            updated_rows, error_dictNIU = create_student_rows(
-                                request=request,
-                                sel_examyear=sel_school.examyear,
-                                sel_schoolbase=sel_school.base,
-                                sel_depbase=sel_department.base,
-                                append_dict=append_dict,
-                                student_pk=student_pk)
+                            #this is not used, check if can be removed
+                            # student_pk = cur_student.pk if cur_student else None
+                            #updated_rows, error_dictNIU = create_student_rows(
+                            #    request=request,
+                            #    sel_examyear=sel_school.examyear,
+                            #    sel_schoolbase=sel_school.base,
+                            #    sel_depbase=sel_department.base,
+                            #    append_dict=append_dict,
+                            #    student_pk=student_pk)
 
                             # bewijs van vrijstelling is valid for 10 years when evening or lex school
                             if sel_school.iseveningschool or sel_school.islexschool:
@@ -7538,6 +7664,23 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         setattr(instance, 'result', result_index)
                         setattr(instance, 'result_status', result_status)
                         setattr(instance, 'result_info', None)
+
+
+                elif field == 'gl_status': # PR2023-06-10
+                    if not new_value:
+                        new_value = 0
+                    saved_value = getattr(instance, field) or False
+                    if logging_on:
+                        logger.debug('new_value: ' + str(new_value))
+                        logger.debug('saved_value: ' + str(saved_value))
+
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
+
+                        setattr(instance, 'gl_auth1by', request.user)
+                        setattr(instance, 'gl_modifiedat', timezone.now())
+
 
     # - save changes in other fields
                 elif field in ('iseveningstudent', 'islexstudent', 'partial_exam', 'extrafacilities'):

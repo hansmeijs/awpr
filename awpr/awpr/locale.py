@@ -1183,6 +1183,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve_wolf_exams'] = _("Approve Wolf exams")
         dict['_by_'] = TXT__by_
 
+        dict['Dont_enter_wolf_scores_of_ep02'] = _("You don't have to enter the Wolf scores of the second exam period.")
+        dict['Enter_total_scores_in_page_grades'] = _("Enter the total score in the column 'CE score' on the page 'Grades'.")
 
         dict['Copy_wolf_scores_to_grades'] = _("Copy Wolf scores to page Grades")
 
@@ -1763,6 +1765,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Failed'] = _('Failed')
         dict['Withdrawn'] = _('Withdrawn')
 
+        dict['Ex_nr'] = _('Ex.#')
+
         dict['Grade_improvement'] = _('Grade improvement')
         dict['Gimp_2lines'] = pgettext_lazy('2lines', 'Grade improvement')
         dict['Withdrawn_2lines'] = pgettext_lazy('2lines', 'Withdrawn')
@@ -1773,6 +1777,19 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['will_be_withdrawn'] = pgettext_lazy('singular', ' will be withdrawn.')
         dict['Status_withdrawn_of'] = _("The status 'Withdrawn' of ")
         dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
+
+        dict['Approve_or_reject_result'] = _('Approve or reject result')
+        dict['Approve_result'] = _('Approve result')
+        dict['Reject_result'] = _('Reject result')
+        dict['Remove_approval'] = _('Remove approval')
+        dict['Remove_rejection'] = _('Remove rejection')
+        dict['About_to_approve_reject_result_of'] = _('You are about to approve or reject the result of')
+        dict['Select_candidates_first'] = _('Please select one ore more candidates first.')
+
+        dict['Approved_by_Inspectorate'] = _('This result is approved by the Inspectorate.')
+        dict['Rejected_by_Inspectorate'] = _('This result is rejected by the Inspectorate.')
+        dict['Not_yet_approved_by_Inspectorate'] = _('This result has not yet been approved by the Inspectorate.')
+        dict['Contact_the_Inspectorate'] = _('Please contact the Inspectorate.')
 
         dict['Preliminary_gradelist'] = _('Preliminary grade list')
         dict['Final_gradelist'] = _('Final grade list')

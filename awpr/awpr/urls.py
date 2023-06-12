@@ -325,6 +325,9 @@ urlpatterns = [
         path('result_download_overview', grade_excel.GradeDownloadResultOverviewView.as_view(), name='url_result_download_overview'),
 
         path('change_birthcountry', student_views.ChangeBirthcountryView.as_view(), name='url_change_birthcountry'),
+
+        path('approve_result', student_views.StudentApproveResultView.as_view(), name='url_approve_result'),
+
     ])),
 
 # ===== ARCHIVES ========================== PR2022-03-09

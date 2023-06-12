@@ -816,6 +816,8 @@ document.addEventListener("DOMContentLoaded", function() {
        // FillTblRows();
 
         const request_item_setting = {page: "page_secretexam"};
+
+        const sel_pk_key_str = (tblName === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
         request_item_setting[sel_pk_key_str] = sel_pk_int;
 
         DatalistDownload(request_item_setting);

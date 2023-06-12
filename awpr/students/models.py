@@ -173,12 +173,16 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
 
-    # PR2023-05-28
+    # PR2023-06-09 TODO replace resap_status etc by gl_status etc
     # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
     # status 1 = accepted, 2 = declined
     resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     resap_status = DateTimeField(null=True)
     resap_modifiedat = DateTimeField(null=True)
+
+    gl_status = PositiveSmallIntegerField(default=0)
+    gl_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    gl_modifiedat = DateTimeField(null=True)
 
     tobedeleted = BooleanField(default=False)
     deleted = BooleanField(default=False)
@@ -328,12 +332,16 @@ class Student_log(sch_mod.AwpBaseModel):
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
 
-    # PR2023-05-28
+    # PR2023-06-09 TODO replace resap_status etc by gl_status etc
     # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
     # status 1 = accepted, 2 = declined
     resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     resap_status = DateTimeField(null=True)
     resap_modifiedat = DateTimeField(null=True)
+
+    gl_status = PositiveSmallIntegerField(default=0)
+    gl_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    gl_modifiedat = DateTimeField(null=True)
 
     tobedeleted = BooleanField(default=False)
     deleted = BooleanField(default=False)

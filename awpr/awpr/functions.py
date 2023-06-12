@@ -3220,6 +3220,21 @@ def register_font_garamond():  # PR2023-03-02
         logger.error(getattr(e, 'message', str(e)))
 
 
+def register_font_palace_script():  # PR2023-06-10
+    # PR2022-09-04 Sentry error: Can't open file "/home/uaw/awpr/awpr/static/fonts/Palace_Script_MT.ttf"
+    # because extension in filename is TTF instead of ttf > change filename to Palace_Script_MT.TTF
+    # but loading ttfFile went ok, is apparently not case-sensitive
+    try:
+        filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.TTF'  # was: 'Palace_Script_MT.ttf'
+        ttfFile = TTFont('Palace_Script_MT', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT_Semi_Bold.ttf'
+        ttfFile = TTFont('Palace_Script_MT_Semi_Bold', filepath)
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
 
 def register_font_palatino():  # PR2023-03-02 for enveleop receipt header
     try:

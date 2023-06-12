@@ -425,6 +425,50 @@
         return [className, title_text, filter_value]
     };  // f_format_status_subject
 
+
+
+
+//=========  f_format_gl_status  ================ PR2023-06-09
+    function f_format_gl_status(data_dict) {
+        //console.log("=========  f_format_gl_status =========");
+        //console.log("    data_dict", data_dict);
+
+        const show_status = (data_dict.result && [1,2].includes( data_dict.result)) ? true : false;
+    //console.log("    data_dict.result", data_dict.result);
+    //console.log("  >>>>>>>  show_status", show_status);
+
+        const gl_status = data_dict.gl_status;
+        const className = (![1, 2].includes( data_dict.result)) ? "diamond_" + icon_blank :
+                            (gl_status === 1) ? "diamond_" + icon_blue :
+                            (gl_status === 2) ? "diamond_" + icon_red : "diamond_" + icon_auth_0;
+        const filter_value = className;
+        let title_text = null;
+
+        if (show_status){
+            const modifiedat_dateJS = parse_dateJS_from_dateISO(data_dict.gl_modifiedat);
+            const modifiedat_formatted = format_datetime_from_datetimeJS(loc, modifiedat_dateJS);
+
+            title_text = (gl_status === 2) ? loc.Rejected_by_Inspectorate :
+                        (gl_status === 1) ? loc. Approved_by_Inspectorate : loc.Not_yet_approved_by_Inspectorate;
+
+            // only inspectorate and admin may see gl_auth1_username
+            if (permit_dict.requsr_role >= 32 && data_dict.gl_auth1_username){
+                title_text += "\n    " + loc._by_ + data_dict.gl_auth1_username + loc._on_ + modifiedat_formatted;
+            };
+            if (gl_status === 2){
+                title_text += "\n" + loc.Contact_the_Inspectorate;
+            };
+        };
+
+    //console.log("   title_text", title_text);
+        return [className, title_text, filter_value]
+
+    };  // f_format_gl_status
+
+
+
+
+
     function f_get_status_auth_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
         //console.log( " ==== f_get_status_auth_iconclass ====");
         //console.log("   publ", publ, "blocked", blocked)

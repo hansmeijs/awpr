@@ -492,7 +492,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(request_item_setting, keep_loader_hidden) {
         console.log( "=== DatalistDownload ")
-        console.log("    request_item_setting: ", request_item_setting)
+        //console.log("    request_item_setting: ", request_item_setting)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -525,6 +525,7 @@ document.addEventListener("DOMContentLoaded", function() {
             all_exam_rows: {get: true}
         };
 
+        console.log("    datalist_request: ", datalist_request)
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -833,17 +834,12 @@ document.addEventListener("DOMContentLoaded", function() {
         selected.item_count = 0;
         t_set_sbr_itemcount_txt(loc, selected.item_count, null, null, setting_dict.user_lang);
 
-// ---  put value in  setting_dict
-        // happens in t_SBR_select_level_secto
-        //const sel_pk_key_str = (tblName === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
-        //setting_dict[sel_pk_key_str] = sel_pk_int;
-        //setting_dict[sel_code_key_str] = sel_code;
-        //console.log("setting_dict", setting_dict);
-
-        const request_item_setting = {page: "page_grade"}
+// ---  put value in  request_item_setting
+        const request_item_setting = {page: "page_grade"};
+        const sel_pk_key_str = (tblName === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
         request_item_setting[sel_pk_key_str] = selected_pk_int;
 
-        // reset student and  cluster filter
+// --- reset student and  cluster filter
         request_item_setting.sel_student_pk = null;
         request_item_setting.sel_cluster_pk = null;
 

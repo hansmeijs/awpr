@@ -294,7 +294,6 @@ class UserCompensationUploadView(View):
                     usercompensation_instance = acc_mod.UserCompensation.objects.get_or_none(
                         id=usercompensation_pk
                     )
-
                     if usercompensation_instance:
                         if logging_on:
                             logger.debug('    usercompensation_instance: ' + str(usercompensation_instance))
@@ -1722,9 +1721,9 @@ def create_usercomp_agg_rows(sel_examyear, request):
 
                             # for testimg only: "AND u.last_name ILIKE '%%jeska%%'"
                             ]
-            # only show correctors of this uc_school when role = school
+            # only show correctors of this school when role = school
                 if request.user.role == c.ROLE_008_SCHOOL:
-                    sql_list.extend(("AND uc_school.base_id=", str(request.user.schoolbase.pk), "::INT"))
+                    sql_list.extend(("AND school.base_id=", str(request.user.schoolbase.pk), "::INT"))
 
             # show only this corr when ug = corrector and not auth1, auth2
                 requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)

@@ -195,7 +195,7 @@
 //=========  t_MSED_FillSelectRows  ================
 //  PR2022-08-02 PR2023-01-08
     function t_MSED_FillSelectRows(tblName, MSED_Response, selected_pk) {
-        //console.log( "===== t_MSED_FillSelectRows ========= ");
+        console.log( "===== t_MSED_FillSelectRows ========= ");
         //console.log( "tblName", tblName);
         //console.log( "all_countries", all_countries);
         //console.log( "permit_dict", permit_dict);
@@ -218,13 +218,13 @@
                                    (tblName === "department") ? data_dict.base_id : null;
 
         // permit_dict.requsr_country_pk
-                    const is_locked = (data_dict) ? data_dict.examyear_locked : false;
+                    const is_locked = (data_dict && data_dict.locked) ? true : false;
                     const code_value = (tblName === "examyear") ? (data_dict.examyear_code) ? data_dict.examyear_code : "---" :
                                     (tblName === "department") ? (data_dict.base_code) ? data_dict.base_code : "---" : "---";
 
-    //console.log( "data_dict", data_dict);
-    //console.log( "code_value", code_value);
-    //console.log( "is_locked", is_locked);
+    console.log( "data_dict", data_dict);
+    console.log( "code_value", code_value);
+    console.log( "is_locked", is_locked);
                     let skip_row = false;
                     if(tblName === "examyear") {
                         skip_row = (permit_dict.requsr_country_pk !== data_dict.country_id);

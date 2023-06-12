@@ -600,7 +600,7 @@ def get_sqlclause_allowed_depbase_from_allowed_sections(userallowed_sections_dic
 
 def get_sqlclause_allowed_clusters(table, allowed_clusters_of_sel_school):
     # PR2023-02-09 PR2023-05-29
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_sqlclause_allowed_clusters -----')
         logger.debug('    allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
@@ -631,7 +631,7 @@ def get_sqlclause_allowed_clusters(table, allowed_clusters_of_sel_school):
 
 def get_allowed_clusters_of_sel_school(sel_schoolbase_pk, allowed_cluster_pk_list):
     # PR2023-05-29
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_allowed_clusters_of_sel_school -----')
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
@@ -793,8 +793,10 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         for userallowed_schoolbase_dict in userallowed_sections_dict.values():
             for userallowed_depbase_dict in userallowed_schoolbase_dict.values():
                 for userallowed_lvlbase_list in userallowed_depbase_dict.values():
-                     if userallowed_lvlbase_list:
+                    if userallowed_lvlbase_list:
                         has_subjbases = True
+                        # PR 2023-06-11 TODO test if it is allowed
+                        break
 
         if logging_on:
             logger.debug('    has_subjbases: ' + str(has_subjbases))
@@ -807,6 +809,10 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         else:
 
 # +++++ loop through schools
+            # PR2023-06-11 debug: sel_schoolbase_pk may not be in  userallowed_schoolbass,
+            # when changing userallowed_schoolbass
+            # make sure that sel_schoolbase_pk is in userallowed_schoolbass when retrieveing sel_schoolbase_pk
+
             sch_dep_lvl_subjbase_clause_arr = []
             for schoolbase_pk_str, userallowed_schoolbase_dict in userallowed_sections_dict.items():
                 # add_to_list when schoolbase_pk_str = sel_schoolbase_pk or = -9

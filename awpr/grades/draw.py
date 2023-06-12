@@ -644,7 +644,7 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
     left = 19 * mm # was:  18 * mm
 
     origin = [left, top]
-    #draw_red_cross(canvas, origin[0], origin[1])
+    # draw_red_cross(canvas, origin[0], origin[1])
 
     tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 115 * mm, 127 * mm]
 
@@ -660,6 +660,17 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
     size_normal = 12
     size_small = 10
     size_large = 36 if is_lex_cur else 16
+
+# - leerweg
+    level_req = student_dict.get('level_req', False)
+    if level_req:
+        lvl_txt = student_dict.get('lvl_name') or '---'
+        lvl_txt_upper = lvl_txt.upper()
+        canvas.setFont(font_normal, 14)
+        y_level = origin[1] + 8 * mm
+        right = 210 * mm - left
+        x_center = (right + left) / 2
+        canvas.drawCentredString(x_center, y_level, lvl_txt_upper)
 
 # - full name
     canvas.setFont(font_bold_fancy, size_large)
@@ -688,6 +699,8 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
     text = ' '.join((library.get(key_str), student_dict.get('dep_abbrev'), library.get('conform')))
     canvas.drawString(origin[0], y_pos, text)
     y_pos -= lineheight_10mm
+
+
 
 # - conform_sector / profiel
     canvas.setFont(font_normal, size_normal)
@@ -1256,7 +1269,7 @@ def draw_page_border(canvas, border):
 
     canvas.rect(left, bottom, width, height)
 
-    # draw_red_cross(canvas, left, bottom)
+    #draw_red_cross(canvas, left, bottom)
 
 
 # - end of draw_page_border
@@ -1682,13 +1695,20 @@ def draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict
     label = library.get('result', '---')
     result_status = student_dict.get('result_status', '---')
     result = student_dict.get('result', 0)
-    # TODO add result (integer) to student_dict
+    # PR2023-06-10 ep01_result is added to print 'passed' when student does reex
+    ep01_result = student_dict.get('ep01_result', 0)
+
+    gl_status = student_dict.get('gl_status') or 0
+
     if print_reex and result_status == 'Afgewezen':
         result_status = 'Herexamen'
+    logging_on = s.LOGGING_ON
 
-    logger.debug('print_reex: ' + str(print_reex))
-    logger.debug('result: ' + str(result))
-    logger.debug('result_status: ' + str(result_status))
+    if logging_on:
+        logger.debug('print_reex: ' + str(print_reex))
+        logger.debug('result: ' + str(result))
+        logger.debug('result_status: ' + str(result_status))
+        logger.debug('gl_status: ' + str(gl_status))
 
     txt_list = [
         {'txt': label, 'font': 'Times-Bold', 'padding': 4, 'x': coord[0] + col_tab_list[0] * mm},
@@ -1905,12 +1925,12 @@ def draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
 # - end of draw_text_one_line
 
 
-# def draw_red_cross(canvas, x, y):
-# draw red cross, for outlining while designing
+def draw_red_cross(canvas, x, y):
+    # draw red cross, for outlining while designing
 
-# canvas.setStrokeColorRGB(1, 0, 0)
-# canvas.line(x, y + 5 * mm, x, y - 5 * mm)
-# canvas.line(x - 5 * mm, y , x + 5 * mm, y )
+    canvas.setStrokeColorRGB(1, 0, 0)
+    canvas.line(x, y + 5 * mm, x, y - 5 * mm)
+    canvas.line(x - 5 * mm, y , x + 5 * mm, y )
 
 #############################################
 

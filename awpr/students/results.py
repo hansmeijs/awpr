@@ -332,6 +332,28 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of GradeDownloadShortGradelist
 
+        """
+        email 31 3 2023
+        Ik stel voor het registratienummer op de diploma’s en cijferlijsten als volgt in te richten:
+        
+        23c01k999999
+        Waarbij:
+        •	De eerste twee cijfers zijn het jaartal
+        •	De derde letter is ‘c’ voor Curaçao en ‘s’ voor Sint Maarten
+        •	Het vierde en vijfde cijfer is het nummer van de schoolcode
+        •	Het zesde teken geeft de afdeling en leerweg weer: b voor pbl, k voor pkl, t voor tkl, h voor Havo en v voor vwo
+        •	Het getal daarna bestaat uit 6 cijfers en is een uniek nummer dat door AWP wordt gegenereerd.
+        De afwisseling tussen cijfers en kleine letters verhoogt de leesbaarheid.
+        
+        Het registratienummer  komt in het midden onderaan het waardepapier. Het sedulanummer komt links onder, rechts onder staat het ‘batch’ nummer van het waardepapier.
+        
+        Om na te gaan of een diploma of cijferlijst authentiek is kun je het registratienummer opzoeken in AWP. 
+        Als het nummer voorkomt in AWP wordt het opgeslagen waardepapier weergegeven. 
+        
+        Als het registratienummer van een waardepapier niet voorkomt in AWP of wanneer het niet overeenkomt met de opgeslagen versie, is er sprake van een vervalsing.
+        
+        """
+
 @method_decorator([login_required], name='dispatch')
 class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
@@ -384,6 +406,7 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                     )
 
 # - print 'Herexamen' instead of 'Afgewezen', only when prelim gradelist is printed
+                # also print 'Geslaagd' when 'cijferverbetering' PR203-06-10
                 print_reex = upload_dict.get('print_reex', False) if is_prelim else False
                 if logging_on:
                     logger.debug('     mode: ' + str(mode))
@@ -426,12 +449,13 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 # auth_dict = get_pres_secr_dict(request)
 
         # - get arial font
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
-                    ttfFile = TTFont('Arial', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
+                af.register_font_arial()
+                #try:
+                #    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
+                #    ttfFile = TTFont('Arial', filepath)
+                #    pdfmetrics.registerFont(ttfFile)
+                #except Exception as e:
+                #    logger.error(getattr(e, 'message', str(e)))
 
         # - get Garamond font
                 #try:
@@ -442,38 +466,39 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 #    logger.error(getattr(e, 'message', str(e)))
 
        # - get Garamond font
-                # TODO replace by af.register_font_garamond
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Bold.ttf'
-                    ttfFile = TTFont('Garamond_Bold', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
+                af.register_font_garamond()
+                #try:
+                #    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Bold.ttf'
+                #    ttfFile = TTFont('Garamond_Bold', filepath)
+                #    pdfmetrics.registerFont(ttfFile)
+                #except Exception as e:
+                #    logger.error(getattr(e, 'message', str(e)))
                 # - get Garamond font
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Regular.ttf'
-                    ttfFile = TTFont('Garamond_Regular', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
+                #try:
+                #    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Regular.ttf'
+                #    ttfFile = TTFont('Garamond_Regular', filepath)
+                #    pdfmetrics.registerFont(ttfFile)
+                #except Exception as e:
+                #    logger.error(getattr(e, 'message', str(e)))
 
         # - get Palace_Script_MT font - for testing - it works 2021-10-14
+                af.register_font_palace_script()
                 # PR2022-09-04 Sentry error: Can't open file "/home/uaw/awpr/awpr/static/fonts/Palace_Script_MT.ttf"
                 # because extension in filename is TTF instead of ttf > change filename to Palace_Script_MT.TTF
                 # but loading ttfFile went ok, is apparently not case-sensitive
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.TTF' # was: 'Palace_Script_MT.ttf'
-                    ttfFile = TTFont('Palace_Script_MT', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
+                #try:
+                #    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.TTF' # was: 'Palace_Script_MT.ttf'
+                #    ttfFile = TTFont('Palace_Script_MT', filepath)
+                #    pdfmetrics.registerFont(ttfFile)
+               # except Exception as e:
+                #    logger.error(getattr(e, 'message', str(e)))
 
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT_Semi_Bold.ttf'
-                    ttfFile = TTFont('Palace_Script_MT_Semi_Bold', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
+                #try:
+                #    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT_Semi_Bold.ttf'
+                #    ttfFile = TTFont('Palace_Script_MT_Semi_Bold', filepath)
+                #    pdfmetrics.registerFont(ttfFile)
+                #except Exception as e:
+                #    logger.error(getattr(e, 'message', str(e)))
 
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
@@ -702,7 +727,8 @@ class DownloadPokView(View):  # PR2022-07-02
 
 ####################################
 
-def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):  # PR2021-11-19
+def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):
+    # PR2021-11-19 PR2023-06-10
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
@@ -732,7 +758,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
                 "stud.birthdate, stud.birthcountry, stud.birthcity, stud.bis_exam,"
                 "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
-
+                "stud.gl_status, stud.ep01_result,",
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,",
                 "ey.code::TEXT AS examyear_txt, c.name AS country,",
@@ -992,7 +1018,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
 
 def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk,
-                           student_pk_list):  # PR2022-06-16 PR2022-06-24
+                           student_pk_list):  # PR2022-06-16 PR2022-06-24 PR2023-06-10
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
     # PR2022-06-24 Marisela Cijntje Radulphus: cannot print diploma of passed students with reex
@@ -1013,7 +1039,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
                 "stud.birthdate, stud.birthcountry, stud.birthcity, stud.bis_exam,",
                 "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
                 "stud.ep01_result, stud.ep02_result, stud.result,"
-                
+                "stud.gl_status,"
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
                 "ey.code::TEXT AS examyear_txt, c.name AS country,",
@@ -1445,3 +1471,9 @@ def get_shortgradelist_dict(school, department, level, sel_classes, include_clas
     return grade_dict, classname_list, failed_student_pk_list
 # - end of get_shortgradelist_dict
 
+
+def draw_red_cross(canvas, x, y):
+    # draw red cross, for outlining while designing
+    canvas.setStrokeColorRGB(1, 0, 0)
+    canvas.line(x, y + 5 * mm, x, y - 5 * mm)
+    canvas.line(x - 5 * mm, y , x + 5 * mm, y )

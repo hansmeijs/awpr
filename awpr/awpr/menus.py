@@ -307,12 +307,11 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
                 logger.debug('  ..allowed_depbases_pk_arr: ' + str(allowed_depbases_pk_arr))
 
             # - get sel_depbase_instance
-            sel_depbase_instance, sel_depbase_tobesavedNIU, allowed_schoolbase_dict, allowed_depbases_arr = \
+            sel_depbase_instance, sel_depbase_tobesavedNIU, allowed_depbases_arr = \
                 acc_view.get_sel_depbase_instance(
                     sel_school_instance=sel_school_instance,
                     page=sel_page,
                     request=request,
-                    request_item_depbase_pk=None,
                     allowed_schoolbase_dict=allowed_schoolbase_dict,
                     selected_pk_dict=selected_pk_dict
                 )
