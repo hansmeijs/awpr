@@ -466,9 +466,11 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                 exform_text = awpr_lib.get_library(sel_examyear, ['exform', 'ex3'])
 
 # +++ get ex3_grade_rows
-                is_requsr_admin = req_user.role == c.ROLE_064_ADMIN
+                #PR202306-08 TODO for now: change sel_school when admin, mus change to: if secret exam
+                is_secret_exam = req_user.role == c.ROLE_064_ADMIN
+
                 ex3_dict = self.get_ex3_grade_rows(sel_examyear, sel_school, sel_department,
-                    lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout, is_requsr_admin)
+                    lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout, is_secret_exam)
                 """
                 ex3_dict: { 
                     2168: { 'subj_name': 'Culturele en Artistieke Vorming', 
@@ -477,29 +479,20 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
 
                 """
 
-                #PR202306-08 TODO for now: change sel_school when admin, mus change to: if secret exam
-                if req_user.role == c.ROLE_064_ADMIN:
+                if is_secret_exam:
                     sel_school = sch_mod.School.objects.get_or_none(
                         base=req_user.schoolbase,
                         examyear=sel_examyear
                     )
         # - get arial font
-                try:
-                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial220815.ttf'
-                    ttfFile = TTFont('Arial', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
+                af.register_font_arial()
+                #try:
+                #    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial220815.ttf'
+                #    ttfFile = TTFont('Arial', filepath)
+                #    pdfmetrics.registerFont(ttfFile)
+                #except Exception as e:
+                #    logger.error(getattr(e, 'message', str(e)))
 
-        # - get Palace_Script_MT font - for testing - it works 2021-10-14
-                """
-                try:
-                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
-                    ttfFile = TTFont('Palace_Script_MT', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
-                """
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
                 # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
@@ -509,7 +502,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                 buffer = io.BytesIO()
                 canvas = Canvas(buffer)
 
-                # PR2022-05-05 debug Oscap Panneflek Vpco lines not printing on Ex3
+                # PR2022-05-05 debug Oscar Panneflek Vpco lines not printing on Ex3
                 # turn off setLineWidth (0)
                 # canvas.setLineWidth(0)
 
@@ -540,7 +533,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                                 logger.debug('    last_row_of_page_plus_one: ' + str(last_row_of_page_plus_one))
                                 logger.debug('    row_range: ' + str(row_range))
 
-                            draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
+                            draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, is_secret_exam, exform_text,
                                      page_dict, student_list, row_range, line_height, page_index, pages_roundup, user_lang)
                             canvas.showPage()
 
@@ -584,7 +577,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
 # - end of DownloadEx3View
 
     def get_ex3_grade_rows (self, examyear, school, department,
-                            lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout, is_requsr_admin=False):
+                            lvlbase_pk_list, subject_list, secret_exams_only, sel_examperiod, sel_layout, is_secret_exam=False):
 
         # note: don't forget to filter deleted = false!! PR2021-03-15
         # grades that are not published are only visible when 'same_school'
@@ -617,6 +610,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
             "SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
             "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.extrafacilities,",
             "stud.classname, cl.name AS cluster_name,",
+            "school.abbrev AS school_abbrev,",
             "stud.level_id, lvl.name AS lvl_name",
 
             "FROM students_grade AS grd",
@@ -633,8 +627,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
             "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)"
         ]
 
-        #PR2023-06-08 debug TODO change to secret_exams_only
-        if is_requsr_admin:
+        if is_secret_exam:
             sql_list.append("LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.ete_cluster_id)")
         else:
             sql_list.append("LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)")
@@ -691,6 +684,14 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                     prefix=row.get('prefix'),
                     has_extrafacilities=False # dont add astrisk after fullname, but use separate column
                 )
+                lastname_initials = stud_fnc.get_lastname_initials(
+                    last_name=row.get('lastname'),
+                    first_name=row.get('firstname'),
+                    prefix=row.get('prefix'),
+                    has_extrafacilities=False  # dont add astrisk after fullname, but use separate column
+                )
+
+                school_abbrev = row.get('school_abbrev', '-')
 
                 if sel_layout == "level":
                     key = (subj_pk, level_id)
@@ -712,7 +713,12 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                     ex3_dict[key]['students'] = []
 
                 student_list = ex3_dict[key].get('students', [])
-                student_dict = {'examnumber': examnumber, 'full_name': full_name, 'extrafacilities': extrafacilities}
+                student_dict = {
+                    'examnumber': examnumber,
+                    'full_name': full_name,
+                    'lastname_initials': lastname_initials,
+                    'school_abbrev': school_abbrev,
+                    'extrafacilities': extrafacilities}
                 student_list.append( student_dict)
 
         if logging_on:
@@ -867,7 +873,7 @@ def test_pdf(canvas):
         doc.build(Story, onFirstPage=myFirstPage, onLaterPages=myLaterPages)
 
 
-def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
+def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, is_secret_exam, exform_text,
              page_dict, student_list, row_range, line_height, page_index, pages, user_lang):
     # PR2023-01-07
     logging_on = s.LOGGING_ON
@@ -985,7 +991,7 @@ def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department,
             row_data = student_list[index]
         if logging_on:
             logger.debug('    row_data: ' + str(row_data))
-        extrafacilities = draw_Ex3_row(canvas, row_data, left, right, y_bottom, coord, line_height, col_width_list)
+        extrafacilities = draw_Ex3_row(canvas, row_data, left, right, y_bottom, coord, line_height, col_width_list, is_secret_exam)
         if extrafacilities:
             has_extrafacilities = True
 
@@ -1219,7 +1225,7 @@ def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, 
 
 ###########
 
-def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_width_list):
+def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_width_list, is_secret_exam):
     # PR2023-01-07
 
     x = left
@@ -1242,8 +1248,16 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
             pl_exnr = pb if len(examnumber) > 8 else pl
             canvas.drawString(x + pl_exnr, y + pb, examnumber)
 
+            logger.debug('    row: ' + str(row))
             x += col_width_list[0] * mm
-            fullname = row.get('full_name', '---')
+            if is_secret_exam:
+                school_abbrev = row.get('school_abbrev', '-')
+                lastname_initials = row.get('lastname_initials', '---')
+                logger.debug('    school_abbrev: ' + str(school_abbrev))
+                logger.debug('    lastname_initials: ' + str(lastname_initials))
+                fullname = ' '.join((lastname_initials, school_abbrev))
+            else:
+                fullname = row.get('full_name', '---')
             canvas.drawString(x + 2 * mm, y + pb, fullname)
 
             extrafacilities = row.get('extrafacilities', False)

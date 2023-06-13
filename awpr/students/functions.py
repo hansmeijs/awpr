@@ -348,9 +348,43 @@ def get_firstname_initials(first_name):  # PR2021-07-26
     return firstname_initials
 
 
+def get_initials(first_name):  # PR2023-06-13
+    initials = ''
+    first_name = first_name.strip() if first_name else ''
+    if first_name:
+        # strings '', ' ' and '   ' give empty list [] which is False
+        firstnames_arr = first_name.split()
+        if firstnames_arr:
+            for item in firstnames_arr:
+                if item:
+                    initials += item[:1] # dont add dot. was: + '.'
+    return initials
+
+
 def get_lastname_firstname_initials(last_name, first_name, prefix, has_extrafacilities=False):  # PR2021-07-26 PR2023-01-07
     firstname_initials = get_firstname_initials(first_name)
     return get_full_name(last_name, firstname_initials, prefix, has_extrafacilities)
+
+
+def get_lastname_initials(last_name, first_name, prefix, has_extrafacilities=False):  # PR2023-06-13
+    initials = get_initials(first_name)
+
+    last_name = last_name.strip() if last_name else ''
+    prefix = prefix.strip() if prefix else ''
+
+    if prefix:
+        lastname_initials = ' '.join((prefix, last_name))
+    else:
+        lastname_initials = last_name
+
+    if initials:
+        lastname_initials = ' '.join((lastname_initials, initials))
+
+    if has_extrafacilities:
+        lastname_initials += ' *'
+
+    return lastname_initials
+
 
 # NOT IN USE
 def SplitPrefix(name, is_firstname):

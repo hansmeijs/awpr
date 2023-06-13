@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     "text", "text", "text", "toggle",
                     "text", "grade_status", "text", "text", "toggle", "text", "text"],
         field_width: ["020", "060", "240", "075", "150", "060", "060",
-                        "120", "075", "240",  "090",
+                        "090", "075", "240",  "090",
                         "090", "020", "090", "032", "240", "032"],
         field_align: ["c", "r", "l", "c", "l", "c", "c",
                         "l", "c", "l", "c",
@@ -141,7 +141,7 @@ document.addEventListener("DOMContentLoaded", function() {
                       "text", "text", "text","toggle",
                     "text", "grade_status", "text", "text", "toggle", "text", "text"],
         field_width: ["020", "060", "240", "075", "150", "060", "060",
-                    "020", "075", "240",  "090",
+                    "090", "075", "240",  "090",
                     "090", "020", "090", "032", "240", "032"],
         field_align: ["c", "r", "l", "c", "l", "c", "c",
                     "l", "c", "l", "c",
@@ -779,12 +779,16 @@ document.addEventListener("DOMContentLoaded", function() {
         request_item_setting.sel_student_pk = null;
         request_item_setting.sel_cluster_pk = null;
 
+// --- reset table rows, also delete header, item_count
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
         // hide itemcount
         t_set_sbr_itemcount_txt(loc, 0)
 
         DatalistDownload(request_item_setting);
     };  // SBR_lvl_sct_response
-
+/*
 //=========  HandleSbrLevelSector  ================ PR2021-03-06 PR2021-12-03
     function HandleSbrLevelSector(mode, el_select) {
         console.log("=== HandleSbrLevelSector");
@@ -823,6 +827,7 @@ document.addEventListener("DOMContentLoaded", function() {
         DatalistDownload(request_item_setting);
 
     }  // HandleSbrLevelSector
+*/
 
 //=========  FillOptionsSelectLevelSector  ================ PR2021-03-06
     function FillOptionsSelectLevelSector(tblName, rows) {
@@ -5656,8 +5661,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                         delete update_dict.created;
                     };
                     if (update_dict.deleted){
-                        if (map_id && map_id in cluster_dictsNEW){
-                            delete cluster_dictsNEW[map_id];
+                        if (update_dict.mapid && update_dict.mapid in cluster_dictsNEW){
+                            delete cluster_dictsNEW[update_dict.mapid];
                         };
                     } else {
                         cluster_dictsNEW[map_id] = update_dict;
