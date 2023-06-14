@@ -604,7 +604,7 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
             subsql_list = ["SELECT st.id AS stud_id,",
                            "(LOWER(st.gender) = 'm')::INT AS m,",
                            "(LOWER(st.gender) = 'v')::INT AS v,",
-        # partal exam and tobedeleted are filtered out
+        # partal exam and tobedeleted are filtered out PR2023-06-14 debug: also st.deleted added
         # return withdrawn if result is withdrawn
                 "CASE WHEN result = 4 THEN 4 ELSE",
         # return passed if any result is passed, also when reex_count > 0
@@ -619,7 +619,8 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
                 "END AS resultcalc",
                 "FROM students_student AS st",
                 "WHERE NOT st.partial_exam",
-                "AND NOT st.tobedeleted"]
+                "AND NOT st.deleted AND NOT st.tobedeleted"
+            ]
             sub_sql = ' '.join(subsql_list)
 
             sql_list = ["WITH subsql AS (" + sub_sql + ")",

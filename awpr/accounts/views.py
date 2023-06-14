@@ -5416,7 +5416,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-
 def get_selected_ey_school_dep_lvl_from_usersetting(request, page=None, skip_allowed_filter=False):
     # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31 PR2023-04-10
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
         logger.debug(' +++++ get_selected_ey_school_dep_lvl_from_usersetting +++++ ' )
@@ -5432,8 +5432,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, page=None, skip_all
 
     # PR2023-04-10 # message 'You cannot make changes' must be created outside this function, text depends on situation
     sel_examyear_instance, sel_school_instance, sel_department_instance, sel_level_instance = None, None, None, None
-    # PR2023-06-02 TODO finish skip_allowed_filter, not in use yet
-
+    # PR2023-06-14 skip_allowed_filter, added in exam uplaod
 
     def get_sel_examyear_instance():
         err_html = None
@@ -5575,15 +5574,17 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, page=None, skip_all
         if saved_depbase_pk is None:
             msg_list.append(gettext("There is no %(cpt)s selected.") % {'cpt': _('department')})
 
-        elif saved_depbase_pk not in allowed_depbases_list:
-            msg_list.append(gettext("%(cpt)s is not in your list of allowed %(cpt2)s.") % {'cpt': _('This department'), 'cpt2':  _('departments')})
-
         else:
-# - get sel_department_instance
-            sel_department_instance = sch_mod.Department.objects.get_or_none(
-                base_id=saved_depbase_pk,
-                examyear=sel_examyear_instance
-            )
+            # PR2023-06-14 debug: exam page doesnt retrun sel_department. solved by adding  not skip_allowed_filter
+            if not skip_allowed_filter and saved_depbase_pk not in allowed_depbases_list:
+                msg_list.append(gettext("%(cpt)s is not in your list of allowed %(cpt2)s.") % {'cpt': _('This department'), 'cpt2':  _('departments')})
+
+            else:
+    # - get sel_department_instance
+                sel_department_instance = sch_mod.Department.objects.get_or_none(
+                    base_id=saved_depbase_pk,
+                    examyear=sel_examyear_instance
+                )
 
         return sel_department_instance
     # - end of get_department_instance

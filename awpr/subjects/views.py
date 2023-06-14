@@ -495,7 +495,7 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
     # PR2022-01-06 PR2022-12-25 PR2023-02-09 PR2023-05-29
     # called by page users, correctors,
     # grades, secretexam, studentsubject, wolf
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
@@ -1559,7 +1559,7 @@ class ExamListView(View):  # PR2021-04-04 PR2022-12-16
 # ============= ExamUploadView ============= PR2021-04-04
 @method_decorator([login_required], name='dispatch')
 class ExamUploadView(View):
-    # PR2021-04-04 PR2022-05-14 PR2023-05-04
+    # PR2021-04-04 PR2022-05-14 PR2023-05-04 PR2023-06-14
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
@@ -1581,6 +1581,11 @@ class ExamUploadView(View):
             upload_dict = json.loads(upload_json)
             if logging_on:
                 logger.debug('upload_dict' + str(upload_dict))
+            """
+            upload_dict{'table': 'duo_exam', 'mode': 'update', 'exam_pk': 495, 'lvlbase_pk': None, 
+            'examtype': 'duo', 'subject_pk': 241, 'subject_code': 'Aardrijkskunde', 'examperiod': 1, 
+            'version': 'Cariben', 'secret_exam': False}
+            """
 
             mode = upload_dict.get('mode')
 
@@ -1600,7 +1605,6 @@ class ExamUploadView(View):
                     logger.debug('    has_permit: ' + str(has_permit))
 
             if not has_permit:
-                border_class = c.HTMLCLASS_border_bg_invalid
                 msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
             else:
                 append_dict = {}
@@ -1617,11 +1621,12 @@ class ExamUploadView(View):
                 upload_dict{'table': 'ete_exam', 'mode': 'update', 'exam_pk': 187, 'examyear_pk': 1, 'subject_pk': 118, 'cesuur': '44'}
    
                 upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk': 21, 'subject_pk': 126, 'envelopbundle_pk': 2}
-     
+                upload_dict: {'table': 'duo_exam', 'mode': 'update', 'exam_pk': 495, 'lvlbase_pk': None,  'examtype': 'duo', 'subject_pk': 241, 'subject_code': 'Aardrijkskunde', 'examperiod': 1, 'version': 'Cariben', 'secret_exam': False}
                 """
                 table = upload_dict.get('table')
-                # don't get it from usersettings, get it from upload_dict instead
-                subj_examyear_pk = upload_dict.get('examyear_pk')
+                # PR2023-06-14 I didnt know why this was necessary: was to give msg cant change exam of other country
+                #   don't get it from usersettings, get it from upload_dict instead
+                # subj_examyear_pk = upload_dict.get('examyear_pk')
                 depbase_pk = upload_dict.get('depbase_pk')
                 lvlbase_pk = upload_dict.get('lvlbase_pk')
 
@@ -1636,32 +1641,35 @@ class ExamUploadView(View):
 
 # - get selected examyear and from Usersetting
                 sel_examyear, sel_schoolNIU, sel_department, sel_level, may_editNIU, msg_listNIU = \
-                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
+                        request=request,
+                    skip_allowed_filter=True  # PR2023-06-14 debug added:skip_allowed_filter=True
+                    )
+                if logging_on:
+                    logger.debug('    sel_examyear.pk: ' + str(sel_examyear.pk))
+                    logger.debug('    sel_department: ' + str(sel_department))
 
                 # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
                 if sel_examyear and sel_department:
+       # - get subject
+                    subject = subj_mod.Subject.objects.get_or_none(pk=subject_pk)
                     if logging_on:
-                        logger.debug('    subj_examyear_pk: ' + str(subj_examyear_pk))
-                        logger.debug('    sel_examyear.pk: ' + str(sel_examyear.pk))
+                        logger.debug('    subject: ' + str(subject))
 
-                    if not subj_examyear_pk or sel_examyear.pk != subj_examyear_pk:
+                    if subject is None:
+                        err_txt = gettext('Subject not found.')
+                        msg_list.append(acc_prm.msghtml_from_msgtxt_with_border(err_txt, c.HTMLCLASS_border_bg_invalid))
+
+                    elif sel_examyear.pk != subject.examyear_id:
                         err_txt = ''
-                        subj_examyear = sch_mod.Examyear.objects.get_or_none(pk=subj_examyear_pk)
                         if logging_on:
-                            logger.debug('    subj_examyear: ' + str(subj_examyear))
+                            logger.debug('    subj_examyear: ' + str(subject.examyear))
 
-                        if subj_examyear:
-                            err_txt += str(_("This exam is created by %(country)s.") % {'country': subj_examyear.country.name}) + '<br>'
+                        if subject.examyear:
+                            err_txt += str(_("This exam is created by %(country)s.") % {'country': subject.examyear.country.name}) + '<br>'
                         err_txt += str(_("You cannot make changes in this exam."))
                         msg_list.append(acc_prm.msghtml_from_msgtxt_with_border(err_txt, c.HTMLCLASS_border_bg_invalid))
                     else:
-    # - get subject
-                        subject = subj_mod.Subject.objects.get_or_none(
-                            pk=subject_pk,
-                            examyear=sel_examyear
-                        )
-                        if logging_on:
-                            logger.debug('    subject: ' + str(subject))
 
 # +++++ Create new instance if is_create:
                         if mode == 'create':

@@ -1184,7 +1184,9 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
 
 
         version_lbl, version_txt = None, None
-        if is_ete_exam and sel_exam_instance.version:
+        #PR2023-06-14 Aardrijkskunde version 'Cariben' addded,
+        # was: if is_ete_exam and sel_exam_instance.version:
+        if sel_exam_instance.version:
             version_lbl = form_text.get('version', '-') + ':'
             version_txt = sel_exam_instance.version
 
