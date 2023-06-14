@@ -167,13 +167,15 @@
         if(el_hdrbar_department) {
             const display_department = (!!permit_dict.display_department);
 
-    //console.log("display_department", display_department )
-    //console.log("permit_dict.allowed_depbases", permit_dict.allowed_depbases )
+    //console.log("    display_department", display_department )
+    //console.log("    permit_dict.allowed_depbases", permit_dict.allowed_depbases )
             const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
-            const may_select_department = (display_department && allowed_depbases_count > 1);
+            //PR2023-06-14 debug: must get may_select_department from permit_dict
+            // was: const may_select_department = (display_department && allowed_depbases_count > 1);
+            const may_select_department = (display_department && permit_dict.may_select_department);
 
-    //console.log("allowed_depbases_count", allowed_depbases_count )
-    //console.log("may_select_department", may_select_department )
+    //console.log("    allowed_depbases_count", allowed_depbases_count )
+    //console.log("    may_select_department", may_select_department )
             add_or_remove_class(el_hdrbar_department, cls_hide, !display_department)
             // add pointer on hover when tehere are multiple departments
             add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )

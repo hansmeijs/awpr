@@ -1425,7 +1425,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateFieldStatus  ================ PR2021-12-19 PR2022-08-28 PR2023-01-24
     function UpdateFieldStatus(field_name, fld_value, data_dict) {
-        console.log("=========  UpdateFieldStatus =========");
+        //console.log("=========  UpdateFieldStatus =========");
 
         const [className, title_text, filter_value] = f_format_status_grade(field_name, fld_value, data_dict);
 

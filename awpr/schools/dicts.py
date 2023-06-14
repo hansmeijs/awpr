@@ -506,12 +506,21 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
 
 
 def create_department_rows(examyear, sel_school, sel_schoolbase, skip_allowed_filter, request):
-    # --- create rows of all departments of this examyear / country PR2020-09-30 PR2022-08-03 PR2023-01-09
-    logging_on = False  # s.LOGGING_ON
+    # PR2020-09-30 PR2022-08-03 PR2023-01-09 PR2023-06-14
+    # --- create rows of all departments of this examyear / country
+
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_department_rows ============= ')
         logger.debug('    examyear: ' + str(examyear))
         logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
+
+    # PR2022-10-16 debug: when setting depbase_pk in orderlist, 'Havo' switched back to 'Vsbo when refreshing page.
+    # cause: ETE user had Vsbo school selected, since it doesn't have Havo, it changed dp to Vsbo
+    # solution: skip this check when page = orderlist
+
+    # PR2022-10-17 debug: in page_orderlist dep returns Vsbo instead of 'All deps'
+    # also in page_exams
 
     sql_keys = {'ey_id': examyear.pk}
 

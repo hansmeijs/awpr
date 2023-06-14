@@ -540,7 +540,6 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(request_item_setting, keep_loader_hidden) {
         console.log( "=== DatalistDownload ")
-        console.log("    request_item_setting: ", request_item_setting)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -561,7 +560,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 locale: {page: ["page_exams", "page_grade", "upload"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
-                department_rows: {get: true},
+                department_rows: {skip_allowed_filter: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 subject_rows: {with_ce_only: true, cur_dep_only: true},
@@ -574,6 +573,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 ntermentable_rows: {get: true}
             };
 
+        console.log("    datalist_request: ", datalist_request)
 
 
         let param = {"download": JSON.stringify (datalist_request)};

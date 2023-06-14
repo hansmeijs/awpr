@@ -2667,19 +2667,20 @@ const is_allowed_cluster = true;
     function MAG_Open (open_mode ) {
         console.log("===  MAG_Open  =====") ;
         console.log("    open_mode", open_mode) ;
-        //console.log("    selected_btn", selected_btn, typeof selected_btn) ;
-        //console.log("    setting_dict.sel_examperiod", setting_dict.sel_examperiod, typeof setting_dict.sel_examperiod) ;
-        //console.log("    setting_dict.sel_examtype", setting_dict.sel_examtype) ;
-        //console.log("    setting_dict.sel_lvlbase_code", setting_dict.sel_lvlbase_code) ;
+        console.log("    selected_btn", selected_btn, typeof selected_btn) ;
+        console.log("    setting_dict.sel_examperiod", setting_dict.sel_examperiod, typeof setting_dict.sel_examperiod) ;
+        console.log("    setting_dict.sel_examtype", setting_dict.sel_examtype) ;
+        console.log("    setting_dict.sel_lvlbase_code", setting_dict.sel_lvlbase_code) ;
 
         // open_mode = 'approve' or 'submit_ex2' or 'submit_ex2a'
+        // allowed_examtype_list = ['se', 'sr', 'pe', 'ce']
 
         // TODO PR2022-11-28 debug: corrector can select id_MAG_examtype, must only show central exam
         b_clear_dict(mod_MAG_dict);
 
 // --- check sel_examperiod
         let msg_html = null;
-        if ([1,2,3, 4].includes(setting_dict.sel_examperiod) ){
+        if ([1, 2, 3, 4].includes(setting_dict.sel_examperiod) ){
             mod_MAG_dict.examperiod = setting_dict.sel_examperiod;
         } else {
             mod_MAG_dict.examperiod = null;
@@ -2715,16 +2716,8 @@ const is_allowed_cluster = true;
                 b_show_mod_message_html(loc.MAG_info.corrector_cannot_approve_exem);
 
             } else {
-            //TODO implement ant test
-            // PRE2023-03-25 when corrector and examtype = 'se', change to 'ce' instead of giving message
 
-                // when examtype is changed it will be updated in settings on server
-                //if (setting_dict.sel_auth_index === 4 && !["pe", "ce"].includes(setting_dict.sel_examtype) ){
-                //    setting_dict.sel_examtype = "ce";
-                //    mod_MAG_dict.examtype = "ce";
-                //};
-
-        // --- get sel_examtype
+    // --- get sel_examtype
                 MAG_get_sel_examtype(open_mode);
 
     // get has_permit
@@ -2757,22 +2750,34 @@ const is_allowed_cluster = true;
 
                         const examtype_list = []
                         if (setting_dict.sel_examperiod === 1){
-                            if (!mod_MAG_dict.is_submit_ex2a_mode) {
-                                examtype_list.push({value: 'se', caption: loc.examtype_caption.se})
-                            };
-                            if (!mod_MAG_dict.is_submit_ex2_mode) {
-                                examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce})
+                            if (mod_MAG_dict.is_submit_ex2a_mode) {
+                                examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce});
+                            } else if (mod_MAG_dict.is_submit_ex2_mode) {
+                                examtype_list.push({value: 'se', caption: loc.examtype_caption.se});
+                            } else {
+                                if (mod_MAG_dict.auth_index === 4){
+                                    examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce});
+                                } else {
+                                    examtype_list.push({value: 'se', caption: loc.examtype_caption.se});
+                                    examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce});
+                                };
                             };
                         } else if (setting_dict.sel_examperiod === 2){
                             examtype_list.push({value: 'ce', caption: loc.examtype_caption.reex})
                         } else if (setting_dict.sel_examperiod === 3){
                             examtype_list.push({value: 'ce', caption: loc.examtype_caption.reex03})
                         } else if (setting_dict.sel_examperiod === 4){
+                            if ([1, 2].includes(mod_MAG_dict.auth_index)){
                                 examtype_list.push({value: 'se', caption: loc.examtype_caption.se});
                                 examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce});
+                            };
                         };
+        console.log(" @@@@@@@@@@@@@@    examtype_list", examtype_list);
                         t_FillOptionsFromList(el_MAG_examtype, examtype_list, "value", "caption",
                             loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype);
+                        el_MAG_examtype.disabled = (examtype_list.length <= 1);
+
+        console.log(" @@@@@@@@@@@@@@    !examtype_list.length", !examtype_list.length) ;
                     };
 
     // --- hide filter subject, level and cluster when submitting Ex2 Ex2a form. Leave level visible if sel_dep_level_req, MPC must be able to submit per level
@@ -3037,7 +3042,6 @@ const is_allowed_cluster = true;
                 };
             } else if (mod_MAG_dict.step === 3) {
 
-
                 if(is_response){
                     msg_info_html = (response.approve_msg_html) ? response.approve_msg_html : null;
                 } else {
@@ -3069,7 +3073,7 @@ const is_allowed_cluster = true;
 
     // ---  disable select auth_index after step 1
         if (el_MAG_auth_index){
-            el_MAG_auth_index.disabled = false // (mod_MAG_dict.step > 1);
+            //el_MAG_auth_index.disabled = false // (mod_MAG_dict.step > 1);
         };
 
         console.log("  ===>  msg_info_html", msg_info_html) ;
@@ -3218,36 +3222,44 @@ const is_allowed_cluster = true;
             };
             t_FillOptionsFromList(el_MAG_auth_index, auth_list, "value", "caption",
                 loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
+console.log(" >>>>>>>>>>>>>>>> auth_list", auth_list)
+const is_disabled =  (!auth_list || auth_list.length <= 1);
+console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
+            el_MAG_auth_index.readOnly = (!auth_list || auth_list.length <= 1);
         };
     };  // MAG_fill_select_authindex
 
 //=========  MAG_get_sel_examtype  ================
-    function MAG_get_sel_examtype (mode) {  // PR2023-02-03
-        //console.log("===  MAG_get_sel_examtype  =====") ;
-        //console.log("    mod_MAG_dict.examperiod", mod_MAG_dict.examperiod);
-        //console.log("    mod_MAG_dict.auth_index", mod_MAG_dict.auth_index);
+    function MAG_get_sel_examtype (open_mode, examperiod, auth_index) {  // PR2023-02-03 PR2023-06-13
+        console.log("===  MAG_get_sel_examtype  =====") ;
+        console.log("    mod_MAG_dict.examperiod", mod_MAG_dict.examperiod);
+        console.log("    mod_MAG_dict.auth_index", mod_MAG_dict.auth_index);
+        console.log("    setting_dict.sel_examtype", setting_dict.sel_examtype);
 
         // parameters of this function are:
-        //      mode
+        //      open_mode
         //      mod_MAG_dict.examperiod
         //      mod_MAG_dict.auth_index
+        //      setting_dict.sel_examtype
         // output is:
         //      mod_MAG_dict.examtype
 
         // sel_examtype = "se", "sr", "pe", "ce",   PR2023-02-03 deprecated:  "reex", "reex03", "exem"
 
+// PR2023-06-13 debug slected examtype can still be 'se' when ex2a
+
+            //TODO implement ant test
+            // PRE2023-03-25 when corrector and examtype = 'se', change to 'ce' instead of giving message
+
+                // when examtype is changed it will be updated in settings on server
+                //if (setting_dict.sel_auth_index === 4 && !["pe", "ce"].includes(setting_dict.sel_examtype) ){
+                //    setting_dict.sel_examtype = "ce";
+                //    mod_MAG_dict.examtype = "ce";
+                //};
+
         let sel_examtype = null;
-        if ([1, 4].includes(mod_MAG_dict.examperiod) ){
-            sel_examtype = (["se", "ce"].includes(setting_dict.sel_examtype) ) ? setting_dict.sel_examtype : "se";
-        } else if ([2, 3].includes(mod_MAG_dict.examperiod) ){
-            sel_examtype = "ce";
-        } else {
-            sel_examtype = "se";
-        }
-        mod_MAG_dict.examtype = sel_examtype;
-        /*
         if (mod_MAG_dict.examperiod){
-            if (mode === 'approve'){
+            if (open_mode === 'approve'){
                 if ([1, 2].includes(mod_MAG_dict.auth_index) ){
                     // chairperson / secretary can approve all se - ce
                     if ([1, 4].includes(mod_MAG_dict.examperiod) ){
@@ -3256,29 +3268,28 @@ const is_allowed_cluster = true;
                         sel_examtype = "ce";
                     };
                 } else if (mod_MAG_dict.auth_index === 3) {
-                    // examiner can approve se and  ce, except exemptiion-se-ce
+                    // examiner can approve se and  ce, except exemption-se-ce
                     if (mod_MAG_dict.examperiod === 1 ){
                         sel_examtype = (["se", "ce"].includes(setting_dict.sel_examtype) ) ? setting_dict.sel_examtype : "se";
                     } else if ([2, 3].includes(mod_MAG_dict.examperiod) ){
                         sel_examtype = "ce";
                     };
                 } else if (mod_MAG_dict.auth_index === 4) {
-                    // corrector can only approve ce, except exemptiion-ce
+                    // corrector can only approve ce, except exemption-ce
                     if ([1, 2, 3].includes(mod_MAG_dict.examperiod) ){
                         sel_examtype = "ce";
                     };
                 };
-            } else if (mode === "submit_ex2") {
+            } else if (open_mode === "submit_ex2") {
                 sel_examtype = "se";
-            } else if (mode === "submit_ex2a") {
+            } else if (open_mode === "submit_ex2a") {
                 sel_examtype = "ce";
             };
         };
         mod_MAG_dict.examtype = sel_examtype;
-*/
+        setting_dict.sel_examtype = sel_examtype
 
-
-    //console.log("    mod_MAG_dict.examtype", mod_MAG_dict.examtype);
+    console.log("    mod_MAG_dict.examtype", mod_MAG_dict.examtype);
     };  // MAG_get_sel_examtype
 
 //=========  MAG_ExamtypeChange  ================ PR2022-05-29 PR2023-02-03
@@ -3914,10 +3925,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03 PR2023-04-03
     function RefreshDatarowItem(tblName, field_setting, data_dicts, update_dict, skip_show_ok) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-    console.log("update_dict", update_dict);
+    //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;

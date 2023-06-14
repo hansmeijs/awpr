@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-13 09:42+0200\n"
+"POT-Creation-Date: 2023-06-14 11:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,7 +21,7 @@ msgstr ""
 #: .\accounts\correctors.py:106 .\accounts\permits.py:1723
 #: .\accounts\views.py:713 .\accounts\views.py:4448 .\accounts\views.py:4675
 #: .\awpr\locale.py:87 .\awpr\locale.py:1341 .\awpr\locale.py:1414
-#: .\awpr\validators.py:335 .\grades\validators.py:86 .\grades\views.py:2705
+#: .\awpr\validators.py:335 .\grades\validators.py:86 .\grades\views.py:2725
 #: .\schools\imports.py:1506 .\students\validators.py:651
 #: .\students\views.py:5596 .\students\views.py:5620 .\students\views.py:5640
 #: .\subjects\orderlists.py:115 .\subjects\orderlists.py:443
@@ -62,7 +62,7 @@ msgstr "De vakken konden niet worden goedgekeurd."
 msgid "Compensation correctors"
 msgstr "Vergoeding gecommitteerden"
 
-#: .\accounts\correctors.py:1061 .\grades\views.py:1767
+#: .\accounts\correctors.py:1061 .\grades\views.py:1784
 #: .\students\views.py:3939 .\students\views.py:3956
 #, python-format
 msgid ""
@@ -81,7 +81,7 @@ msgctxt "plural"
 msgid "will be"
 msgstr "worden"
 
-#: .\accounts\correctors.py:1090 .\grades\views.py:1789
+#: .\accounts\correctors.py:1090 .\grades\views.py:1806
 #: .\students\validators.py:2375 .\students\views.py:454
 #: .\students\views.py:3991 .\students\views.py:4055 .\students\views.py:4120
 msgid "are"
@@ -205,7 +205,7 @@ msgstr "Het %(frm)s-formulier is %(not)s ingediend."
 msgid "The %(frm)s form has been saved as '%(val)s'."
 msgstr "Het %(frm)s-formulier is opgeslagen als '%(val)s'."
 
-#: .\accounts\correctors.py:1307 .\grades\views.py:1964 .\grades\views.py:2031
+#: .\accounts\correctors.py:1307 .\grades\views.py:1984 .\grades\views.py:2051
 #: .\students\views.py:4252
 msgid "Go to the page 'Archive' to download the file."
 msgstr "Ga naar de pagina 'Archief' om het bestand te downloaden."
@@ -561,7 +561,7 @@ msgid "View log"
 msgstr "Log openen"
 
 #: .\accounts\templates\user_edit.html:27 .\awpr\locale.py:173
-#: .\grades\views.py:3021
+#: .\grades\views.py:3041
 #: .\templates\includes\modselectschoolsubjectstudent.html:45
 msgid "Delete"
 msgstr "Wissen"
@@ -607,7 +607,7 @@ msgstr "alle"
 msgid "Permissions"
 msgstr "Permissies"
 
-#: .\accounts\views.py:1298 .\accounts\views.py:3015 .\grades\views.py:2883
+#: .\accounts\views.py:1298 .\accounts\views.py:3015 .\grades\views.py:2903
 #: .\schools\imports.py:1240 .\schools\views.py:3901 .\schools\views.py:4507
 #: .\schools\views.py:4516 .\students\views.py:1738 .\students\views.py:6165
 #: .\students\views.py:7857 .\subjects\orderlists.py:360
@@ -718,31 +718,31 @@ msgstr "De wijzigingen zijn met succes opgeslagen."
 msgid "Update user account"
 msgstr "Gebruikersaccount bijwerken"
 
-#: .\accounts\views.py:4434 .\accounts\views.py:5450 .\accounts\views.py:6231
+#: .\accounts\views.py:4434 .\accounts\views.py:5451 .\accounts\views.py:6230
 #, python-format
 msgid "%(admin)s has not yet published examyear %(exyr)s."
 msgstr "%(admin)s heeft het examenjaar %(exyr)s nog niet gepubliceerd."
 
-#: .\accounts\views.py:4435 .\accounts\views.py:5451
+#: .\accounts\views.py:4435 .\accounts\views.py:5452
 msgid "The Division of Examinations"
 msgstr "Het Expertisecentrum voor Toetsen & Examens"
 
-#: .\accounts\views.py:4436 .\accounts\views.py:6233
+#: .\accounts\views.py:4436 .\accounts\views.py:6232
 msgid "You cannot enter data."
 msgstr "Je kunt geen gegevens invoeren."
 
-#: .\accounts\views.py:4447 .\accounts\views.py:5458 .\awpr\validators.py:315
+#: .\accounts\views.py:4447 .\accounts\views.py:5459 .\awpr\validators.py:315
 #: .\subjects\views.py:1394
 #, python-format
 msgid "Exam year %(exyr)s is locked."
 msgstr "Examenjaar %(exyr)s is afgesloten."
 
-#: .\accounts\views.py:4673 .\accounts\views.py:5512
+#: .\accounts\views.py:4673 .\accounts\views.py:5513
 #, python-format
 msgid "Exam year %(exyr)s of this school is locked."
 msgstr "Examenjaar %(exyr)s van deze school is vergrendeld."
 
-#: .\accounts\views.py:5224
+#: .\accounts\views.py:5225
 #, python-format
 msgid ""
 "<b>Please note</b>:<br>The selected exam year %(exyr)s is different from the "
@@ -751,7 +751,7 @@ msgstr ""
 "<b>Let op</b>:<br>Het geselecteerde examenjaar %(exyr)s is niet gelijk aan "
 "het huidige examenjaar %(cur_ey)s."
 
-#: .\accounts\views.py:5250 .\accounts\views.py:5668 .\awpr\functions.py:3374
+#: .\accounts\views.py:5251 .\accounts\views.py:5669 .\awpr\functions.py:3374
 #: .\awpr\functions.py:3406 .\awpr\functions.py:3422 .\awpr\functions.py:3449
 #: .\awpr\functions.py:3476 .\awpr\menus.py:409
 #, python-format
@@ -760,11 +760,11 @@ msgstr ""
 "%(country)s heeft nog geen licentie om AWP-online dit examenjaar te "
 "gebruiken."
 
-#: .\accounts\views.py:5461
+#: .\accounts\views.py:5462
 msgid "Exam year is not found."
 msgstr "Het examenjaar is niet gevonden."
 
-#: .\accounts\views.py:5499 .\awpr\constants.py:500 .\awpr\excel.py:5236
+#: .\accounts\views.py:5500 .\awpr\constants.py:500 .\awpr\excel.py:5236
 #: .\awpr\excel.py:5278 .\awpr\excel.py:5585 .\awpr\excel.py:6137
 #: .\awpr\locale.py:120 .\awpr\menus.py:47 .\awpr\validators.py:35
 #: .\awpr\validators.py:90 .\awpr\validators.py:202 .\grades\calc_reex.py:2194
@@ -775,50 +775,50 @@ msgstr "Het examenjaar is niet gevonden."
 msgid "School"
 msgstr ""
 
-#: .\accounts\views.py:5500 .\accounts\views.py:5578
+#: .\accounts\views.py:5501 .\accounts\views.py:5579
 #, python-format
 msgid "%(cpt)s is not in your list of allowed %(cpt2)s."
 msgstr "%(cpt)s staat niet in je lijst met toegestane %(cpt2)s."
 
-#: .\accounts\views.py:5501
+#: .\accounts\views.py:5502
 msgid "schools"
 msgstr "scholen"
 
-#: .\accounts\views.py:5575
+#: .\accounts\views.py:5576
 #, python-format
 msgid "There is no %(cpt)s selected."
 msgstr "Er is geen %(cpt)s geselecteerd."
 
-#: .\accounts\views.py:5575 .\schools\imports.py:3007
+#: .\accounts\views.py:5576 .\schools\imports.py:3007
 msgid "department"
 msgstr "afdeling"
 
-#: .\accounts\views.py:5578 .\schools\imports.py:3605
+#: .\accounts\views.py:5579 .\schools\imports.py:3605
 msgid "This department"
 msgstr "Deze afdeling"
 
-#: .\accounts\views.py:5578
+#: .\accounts\views.py:5579
 msgid "departments"
 msgstr "afdelingen"
 
-#: .\accounts\views.py:5662
+#: .\accounts\views.py:5663
 msgid "User has no country."
 msgstr "De gebruiker heeft geen land."
 
-#: .\accounts\views.py:6227
+#: .\accounts\views.py:6226
 msgid "There is no exam year selected."
 msgstr "Er is geen examenjaar geselecteerd."
 
-#: .\accounts\views.py:6229 .\awpr\validators.py:334 .\awpr\validators.py:356
+#: .\accounts\views.py:6228 .\awpr\validators.py:334 .\awpr\validators.py:356
 #, python-format
 msgid "Exam year %(ey_code)s is locked."
 msgstr "Examenjaar %(ey_code)s is afgesloten."
 
-#: .\accounts\views.py:6242
+#: .\accounts\views.py:6241
 msgid "School not found in this exam year."
 msgstr "School niet gevonden in dit examenjaar."
 
-#: .\accounts\views.py:6244
+#: .\accounts\views.py:6243
 #, python-format
 msgid "Exam year %(ey_code)s of this school is locked."
 msgstr "Examenjaar %(ey_code)s of this school is vergrendeld."
@@ -848,7 +848,7 @@ msgid "Authorized"
 msgstr "Geautoriseerd"
 
 #: .\awpr\constants.py:66 .\awpr\locale.py:1012 .\grades\validators.py:911
-#: .\grades\views.py:3020 .\templates\includes\modnote.html:29
+#: .\grades\views.py:3040 .\templates\includes\modnote.html:29
 msgid "Approved"
 msgstr "Goedgekeurd"
 
@@ -3596,7 +3596,7 @@ msgid "Character"
 msgstr "Karakter"
 
 #: .\awpr\locale.py:636 .\awpr\locale.py:1584 .\awpr\printpdf.py:1446
-#: .\grades\views.py:755 .\grades\views.py:2172 .\grades\views.py:2182
+#: .\grades\views.py:755 .\grades\views.py:2192 .\grades\views.py:2202
 #: .\templates\includes\modstatus.html:43
 msgid "Grade"
 msgstr "Cijfer"
@@ -4367,7 +4367,7 @@ msgstr ""
 "Autorisatie\n"
 "secretaris"
 
-#: .\awpr\locale.py:970 .\grades\views.py:3020
+#: .\awpr\locale.py:970 .\grades\views.py:3040
 msgid "Submitted"
 msgstr "Ingediend"
 
@@ -4498,7 +4498,7 @@ msgstr "om wijzigingen aan te brengen in vakken van deze cluster"
 msgid "to approve subjects of this cluster"
 msgstr "om vakken van deze cluster goed te keuren"
 
-#: .\awpr\locale.py:1041 .\grades\views.py:1773 .\students\validators.py:660
+#: .\awpr\locale.py:1041 .\grades\views.py:1790 .\students\validators.py:660
 #: .\students\validators.py:735 .\students\views.py:3947
 #: .\students\views.py:4057 .\subjects\views.py:8567
 msgid "ATTENTION"
@@ -5696,14 +5696,14 @@ msgid "AWP is checking the %(sc_gr)s of the candidates..."
 msgstr "AWP is de %(sc_gr)s van de kandidaten aan het controleren..."
 
 #: .\awpr\locale.py:1525 .\awpr\locale.py:1528 .\awpr\menus.py:54
-#: .\grades\views.py:721 .\grades\views.py:758 .\grades\views.py:2175
-#: .\grades\views.py:2185 .\templates\students\grades.html:5
+#: .\grades\views.py:721 .\grades\views.py:758 .\grades\views.py:2195
+#: .\grades\views.py:2205 .\templates\students\grades.html:5
 #: .\templates\students\grades.html:18 .\templates\students\secretexam.html:16
 msgid "Grades"
 msgstr "Cijfers"
 
 #: .\awpr\locale.py:1526 .\awpr\locale.py:1529 .\grades\views.py:721
-#: .\grades\views.py:758 .\grades\views.py:2175 .\grades\views.py:2185
+#: .\grades\views.py:758 .\grades\views.py:2195 .\grades\views.py:2205
 msgid "Scores"
 msgstr ""
 
@@ -5717,13 +5717,14 @@ msgstr "De volgende %(cpt)s worden goedgekeurd:"
 msgid "An %(ex)s form with the following %(sc_gr)s will be submitted:"
 msgstr "Een %(ex)s-formulier met de volgende %(sc_gr)s wordt ingediend:"
 
-#: .\awpr\locale.py:1532 .\awpr\locale.py:1829 .\grades\views.py:2145
-#: .\schools\imports.py:292
+#: .\awpr\locale.py:1532 .\awpr\locale.py:1829 .\grades\views.py:1941
+#: .\grades\views.py:2165 .\schools\imports.py:292
 msgid "grades"
 msgstr "cijfers"
 
 #: .\awpr\locale.py:1533 .\awpr\printpdf.py:135 .\awpr\printpdf.py:420
-#: .\awpr\printpdf.py:1085 .\grades\views.py:2141 .\schools\imports.py:292
+#: .\awpr\printpdf.py:1085 .\grades\views.py:1941 .\grades\views.py:2161
+#: .\schools\imports.py:292
 msgid "scores"
 msgstr ""
 
@@ -5921,7 +5922,7 @@ msgstr ""
 "en <b>Ex3 achterblad</b>."
 
 #: .\awpr\locale.py:1582 .\awpr\printpdf.py:1080 .\awpr\printpdf.py:1445
-#: .\grades\views.py:755 .\grades\views.py:2172 .\grades\views.py:2182
+#: .\grades\views.py:755 .\grades\views.py:2192 .\grades\views.py:2202
 msgid "Score"
 msgstr ""
 
@@ -6570,7 +6571,7 @@ msgstr ""
 "Selecteer 'Alle leerwegen' in de verticale grijze balk links om alle "
 "leerwegen te downloaden."
 
-#: .\awpr\locale.py:1857 .\grades\views.py:1774 .\students\views.py:3948
+#: .\awpr\locale.py:1857 .\grades\views.py:1791 .\students\views.py:3948
 msgid "The selection contains the candidates of all learning paths."
 msgstr "De selectie bevat de kandidaten van alle leerwegen."
 
@@ -7484,7 +7485,7 @@ msgstr ""
 
 #: .\awpr\printpdf.py:135 .\awpr\printpdf.py:420 .\awpr\printpdf.py:1085
 #: .\grades\validators.py:330 .\grades\validators.py:452
-#: .\grades\validators.py:775
+#: .\grades\validators.py:775 .\grades\views.py:1936
 msgid "score"
 msgstr ""
 
@@ -7711,26 +7712,33 @@ msgstr ""
 "invoeren."
 
 #: .\awpr\validators.py:817
-msgid "The results will be announced this week"
-msgstr "De uitslagen worden deze week bekend gemaakt"
+msgid "The N-terms of the first exam period are published"
+msgstr "De N-termen van het eerste tijdvak zijn gepubliceerd."
 
 #: .\awpr\validators.py:818
-msgid "Please note the following"
-msgstr "Let op het volgende"
+msgid "Please do the following to calculate the results"
+msgstr "Doe het volgende om de uitslagen te berekenen"
 
 #: .\awpr\validators.py:820
 msgid ""
-"If AWP has not yet calculated the results, you can click <i>Calculate "
-"results</i> in the page <i>Results</i>."
+"Click on the blue button <i>Results</i> to go to the page <i>Results</i>."
 msgstr ""
-"Als AWP de uitslagen nog niet heeft berekend, kun je in de pagina "
-"<i>Uitslagen</i> klikken op <i>Bereken uitslagen</i>."
+"Klik op de blauwe knop <i>Uitslagen</i> om naar de pagina <i>Uitslagen</i> "
+"te gaan."
 
 #: .\awpr\validators.py:821
-msgid "AWP will then recalcuate the results of the selected candidates."
-msgstr "AWP berekent dan de uitslagen van de geselecteerde kandidaten opnieuw."
+msgid "Click in the black horizontal bar on the tab <i>Results</i>."
+msgstr "Klik in de zwarte horizontale balk op de tab <i>Uitslagen</i>."
 
 #: .\awpr\validators.py:822
+msgid "Click on the light gray button <i>Calculate results</i>."
+msgstr "Klik op de lichtgrijze knop <i>Bereken uitslagen</i>."
+
+#: .\awpr\validators.py:823
+msgid "AWP will now calculate the results of the selected candidates."
+msgstr "AWP berekent nu de uitslagen van de geselecteerde kandidaten."
+
+#: .\awpr\validators.py:824
 msgid ""
 "A log file will be downloaded with the details of how AWP has calculated the "
 "results."
@@ -7738,24 +7746,23 @@ msgstr ""
 "Er wordt een logbestand gedownload met de details hoe AWP de uitslag heeft "
 "berekend."
 
-#: .\awpr\validators.py:823
-msgid "AWP has now a short grade list that can be used in the results meeting."
-msgstr ""
-"AWP heeft nu een beknopte cijferlijst die in de examenvergadering kan worden "
-"gebruikt."
-
-#: .\awpr\validators.py:824
-msgid ""
-"Click on <i>Short grade list</i> in the page <i>Results</i> to download it."
-msgstr ""
-"Klik in the pagina <i>Uitslagen</i> op <i>Beknopte cijferlijst</i> om hem te "
-"downloaden."
-
 #: .\awpr\validators.py:825
+msgid "Click on the light gray button <i>Short grade list</i>."
+msgstr "Klik op de lichtgrijze knop <i>Beknopte cijferlijst</i>."
+
+#: .\awpr\validators.py:826
+msgid ""
+"AWP will download the short grade list that can be used in the results "
+"meeting."
+msgstr ""
+"AWP downloadt nu een beknopte cijferlijst die in de examenvergadering kan "
+"worden gebruikt."
+
+#: .\awpr\validators.py:827
 msgid "The short grade list contains a column <i>reex</i>."
 msgstr "De beknopte cijferlijst bevat een kolom <i>her</i>."
 
-#: .\awpr\validators.py:826
+#: .\awpr\validators.py:828
 msgid ""
 "If a candidate has failed, the possible re-examinations and the minimum "
 "grade, that must be achieved to pass, are listed here."
@@ -7763,13 +7770,19 @@ msgstr ""
 "Als een kandidaat is afgewezen worden hier de mogelijke herexamens en het "
 "cijfer, dat minimaal moet worden behaald om te slagen, vermeld."
 
-#: .\awpr\validators.py:827
+#: .\awpr\validators.py:829
 msgid ""
 "The '>' sign indicates the re-examination with the lowest difference from "
 "the CE grade."
 msgstr ""
 "Het '>' teken geeft het herexamen aan met het laagste verschil met het CE-"
 "cijfer."
+
+#: .\awpr\validators.py:830
+msgid ""
+"An empty column <i>reex</i> means that none of the retakes can give the "
+"result 'Passed'."
+msgstr "Een lege kolom <i>her</i> betekent dat geen enkel herexamen de uitslag 'Geslaagd' geeft."
 
 #: .\grades\calc_finalgrade.py:489
 #, python-format
@@ -8194,7 +8207,7 @@ msgid "This exam"
 msgstr "Dit examen"
 
 #: .\grades\validators.py:330 .\grades\validators.py:452
-#: .\grades\validators.py:775
+#: .\grades\validators.py:775 .\grades\views.py:1936
 msgid "grade"
 msgstr "cijfer"
 
@@ -8393,8 +8406,8 @@ msgstr "Als %(auth)s hoef je %(gradetype)s niet goed te keuren."
 msgid "Approve score"
 msgstr "Score goedkeuren"
 
-#: .\grades\views.py:626 .\grades\views.py:713 .\grades\views.py:1425
-#: .\grades\views.py:1784 .\subjects\views.py:3457
+#: .\grades\views.py:626 .\grades\views.py:713 .\grades\views.py:1442
+#: .\grades\views.py:1801 .\subjects\views.py:3457
 #, python-format
 msgid "The selection contains %(val)s."
 msgstr "De selectie bevat %(val)s."
@@ -8404,7 +8417,7 @@ msgstr "De selectie bevat %(val)s."
 msgid "The following %(cpt)s will be skipped"
 msgstr "De volgende %(cpt)s worden overgeslagen"
 
-#: .\grades\views.py:725 .\grades\views.py:1862 .\students\views.py:3996
+#: .\grades\views.py:725 .\grades\views.py:1879 .\students\views.py:3996
 #: .\students\views.py:4187
 #, python-format
 msgid "%(val)s already submitted"
@@ -8415,7 +8428,7 @@ msgstr "%(val)s al ingediend"
 msgid "  - %(val)s not fully approved"
 msgstr "  - %(val)s niet volledig goedgekeurd"
 
-#: .\grades\views.py:731 .\grades\views.py:1897
+#: .\grades\views.py:731 .\grades\views.py:1914
 msgid ", in a different function"
 msgstr ", in een andere functie"
 
@@ -8472,11 +8485,11 @@ msgstr "De goedkeuring van de cijfers is niet verwijderd."
 msgid "The grades have not been approved."
 msgstr "De cijfers zijn niet goedgekeurd."
 
-#: .\grades\views.py:1425 .\students\views.py:4534
+#: .\grades\views.py:1442 .\students\views.py:4534
 msgid "no subjects"
 msgstr "geen vakken"
 
-#: .\grades\views.py:1769 .\students\views.py:3943
+#: .\grades\views.py:1786 .\students\views.py:3943
 msgid ""
 "Select 'All learning paths' in the vertical gray bar on the left to submit "
 "all learning paths."
@@ -8484,7 +8497,7 @@ msgstr ""
 "Selecteer 'Alle leerwegen' in de verticale grijze balk links om alle "
 "leerwegen in te dienen."
 
-#: .\grades\views.py:1775 .\students\views.py:3949
+#: .\grades\views.py:1792 .\students\views.py:3949
 msgid ""
 "Select a learning path in the vertical gray bar on the left to submit one "
 "learning path."
@@ -8492,32 +8505,32 @@ msgstr ""
 "Selecteer een leerweg in de verticale grijze balk links om één leerweg in te "
 "dienen."
 
-#: .\grades\views.py:1789 .\students\validators.py:2375 .\students\views.py:454
+#: .\grades\views.py:1806 .\students\validators.py:2375 .\students\views.py:454
 #: .\students\views.py:4055 .\students\views.py:4120 .\subjects\views.py:3864
 #: .\subjects\views.py:3888 .\subjects\views.py:3897
 msgid "is"
 msgstr ""
 
-#: .\grades\views.py:1792
+#: .\grades\views.py:1809
 #, python-format
 msgid ""
 "There %(is_are)s %(val)s whose composition of the subjects is not correct."
 msgstr ""
 "Er %(is_are)s %(val)s waarvan de samenstelling van de vakken niet correct is."
 
-#: .\grades\views.py:1796
+#: .\grades\views.py:1813
 msgid ""
 "Make the necessary corrections in the subject composition or contact the  "
 "Inspectorate."
 msgstr ""
 "Breng de noodzakelijke correcties aan of neem contact op met de Inspectie."
 
-#: .\grades\views.py:1802
+#: .\grades\views.py:1819
 #, python-format
 msgid "%(val)s not yet submitted in an additional Ex1 form."
 msgstr "%(val)s nog niet ingediend met een Ex1-formulier."
 
-#: .\grades\views.py:1809
+#: .\grades\views.py:1826
 msgid ""
 "You have to submit an additional Ex1 form first, before you can submit the "
 "Ex2 form."
@@ -8525,27 +8538,27 @@ msgstr ""
 "Je moet eerst een aanvullend Ex1-formulier indienen voordat je het Ex2-"
 "formulier kunt indienen."
 
-#: .\grades\views.py:1819 .\subjects\views.py:3471
+#: .\grades\views.py:1836 .\subjects\views.py:3471
 #, python-format
 msgid "%(val)s not fully approved"
 msgstr "%(val)s niet volledig goedgekeurd"
 
-#: .\grades\views.py:1826
+#: .\grades\views.py:1843
 msgid " and examiner"
 msgstr " en examinator"
 
-#: .\grades\views.py:1826
+#: .\grades\views.py:1843
 msgid ", examiner and corrector"
 msgstr ", examinator en gecommitteerde"
 
-#: .\grades\views.py:1830
+#: .\grades\views.py:1847
 #, python-format
 msgid "All grades must be approved by the chairperson, secretary%(exam_comm)s"
 msgstr ""
 "Alle cijfers moeten goedgekeurd zijn door de voorzitter, secretaris"
 "%(exam_comm)s"
 
-#: .\grades\views.py:1831
+#: .\grades\views.py:1848
 msgid ""
 "except for the designated exams, they must only be approved by the "
 "chairperson and secretary."
@@ -8553,227 +8566,227 @@ msgstr ""
 "behalve de aangewezen examens, die hoeven alleen goedgekeurd te worden door "
 "de voorzitter en secretaris."
 
-#: .\grades\views.py:1834
+#: .\grades\views.py:1851
 #, python-format
 msgid "All grades must be approved by the chairperson, secretary%(exam_comm)s."
 msgstr ""
 "Alle cijfers moeten goedgekeurd zijn door de voorzitter, secretaris"
 "%(exam_comm)s."
 
-#: .\grades\views.py:1869
+#: .\grades\views.py:1886
 #, python-format
 msgid "%(val)s is unlocked by the Inspectorate"
 msgstr "%(val)s is ontgrendeld door de Inspectie."
 
-#: .\grades\views.py:1871
+#: .\grades\views.py:1888
 #, python-format
 msgid "%(val)s are unlocked by the Inspectorate"
 msgstr "%(val)s zijn ontgrendeld door de Inspectie."
 
-#: .\grades\views.py:1878
+#: .\grades\views.py:1895
 #, python-format
 msgid "%(val)s has no value"
 msgstr "%(val)s is niet ingevuld."
 
-#: .\grades\views.py:1880
+#: .\grades\views.py:1897
 #, python-format
 msgid "%(val)s have no value"
 msgstr "%(val)s zijn niet ingevuld."
 
-#: .\grades\views.py:1886
+#: .\grades\views.py:1903
 msgid "the CE score"
 msgstr "de CE-score"
 
-#: .\grades\views.py:1886
+#: .\grades\views.py:1903
 msgid "the SE grade"
 msgstr "het SE-cijfer"
 
-#: .\grades\views.py:1888
+#: .\grades\views.py:1905
 #, python-format
 msgid "%(val)s is exemption, %(se_ce)s is not entered."
 msgstr "%(val)s is vrijstelling, %(se_ce)s is niet ingevuld."
 
-#: .\grades\views.py:1891
+#: .\grades\views.py:1908
 msgid "the SE grades"
 msgstr "de SE-cijfers"
 
-#: .\grades\views.py:1891
+#: .\grades\views.py:1908
 msgid "the CE scores"
 msgstr "de CE-scores"
 
-#: .\grades\views.py:1892
+#: .\grades\views.py:1909
 #, python-format
 msgid "%(val)s are exemptions, %(se_ce)s are not entered."
 msgstr "%(val)s zijn vrijstellingen, %(se_ce)s zijn niet ingevuld."
 
-#: .\grades\views.py:1916 .\grades\views.py:1932 .\grades\views.py:1999
+#: .\grades\views.py:1933 .\grades\views.py:1952 .\grades\views.py:2019
 #, python-format
 msgid "The %(cpt)s form can not be submitted."
 msgstr "Het %(cpt)s-formulier kan niet worden ingediend."
 
-#: .\grades\views.py:1919
+#: .\grades\views.py:1937
 #, python-format
-msgid "One grade will be added to the %(cpt)s form."
-msgstr "Er wordt één cijfer opgenomen in het %(cpt)s-formulier."
+msgid "One %(sc_gr)s will be added to the %(cpt)s form."
+msgstr "Er wordt één %(sc_gr)s opgenomen in het %(cpt)s-formulier."
 
-#: .\grades\views.py:1922
+#: .\grades\views.py:1942
 #, python-format
-msgid "%(val)s grades will be added to the %(cpt)s form."
-msgstr "Er worden %(val)s cijfers opgenomen in het %(cpt)s-formulier."
+msgid "%(val)s %(sc_gr)s will be added to the %(cpt)s form."
+msgstr "Er worden %(val)s %(sc_gr)s opgenomen in het %(cpt)s-formulier."
 
-#: .\grades\views.py:1939 .\grades\views.py:2006
+#: .\grades\views.py:1959 .\grades\views.py:2026
 #, python-format
 msgid "The %(cpt)s form can be submitted."
 msgstr "Het %(cpt)s-formulier kan  worden ingediend."
 
-#: .\grades\views.py:1949 .\grades\views.py:2027
+#: .\grades\views.py:1969 .\grades\views.py:2047
 #, python-format
 msgid "The %(cpt)s form has not been submitted."
 msgstr "Het %(cpt)s-formulier is niet ingediend."
 
-#: .\grades\views.py:1955 .\grades\views.py:1958
+#: .\grades\views.py:1975 .\grades\views.py:1978
 #, python-format
 msgid "The %(cpt)s has been submitted."
 msgstr "Het %(cpt)s-formulier is ingediend."
 
-#: .\grades\views.py:1956
+#: .\grades\views.py:1976
 msgid "It contains 1 grade."
 msgstr "Het bevat 1 cijfer."
 
-#: .\grades\views.py:1959
+#: .\grades\views.py:1979
 #, python-format
 msgid "It contains %(val)s grades."
 msgstr "Het bevat %(val)s cijfers."
 
-#: .\grades\views.py:1962
+#: .\grades\views.py:1982
 #, python-format
 msgid "The %(cpt)s form has been saved as '%(val)s'."
 msgstr "Het %(cpt)s-formulier is opgeslagen als '%(val)s'."
 
-#: .\grades\views.py:2000
+#: .\grades\views.py:2020
 msgid "The following grades are not fully approved:"
 msgstr "De volgende cijfers zijn niet volledig goedgekeurd:"
 
-#: .\grades\views.py:2005
+#: .\grades\views.py:2025
 msgid "All grades are fully approved."
 msgstr "Alle cijfers zijn goedgekeurd."
 
-#: .\grades\views.py:2030
+#: .\grades\views.py:2050
 #, python-format
 msgid "The %(cpt)s form has been saved."
 msgstr "Het %(cpt)s-formulier is opgeslagen."
 
-#: .\grades\views.py:2141
+#: .\grades\views.py:2161
 msgid "no scores"
 msgstr "geen scores"
 
-#: .\grades\views.py:2141
+#: .\grades\views.py:2161
 msgid "1 score"
 msgstr "1 score"
 
-#: .\grades\views.py:2145
+#: .\grades\views.py:2165
 msgid "no grades"
 msgstr "geen cijfers"
 
-#: .\grades\views.py:2145
+#: .\grades\views.py:2165
 msgid "1 grade"
 msgstr "1 cijfer"
 
-#: .\grades\views.py:2153
+#: .\grades\views.py:2173
 msgid "no grades are"
 msgstr "geen cijfers zijn"
 
-#: .\grades\views.py:2153
+#: .\grades\views.py:2173
 msgid "1 grade is"
 msgstr "1 cijfer is"
 
-#: .\grades\views.py:2153
+#: .\grades\views.py:2173
 msgid "grades are"
 msgstr "cijfers zijn"
 
-#: .\grades\views.py:2157
+#: .\grades\views.py:2177
 msgid "no scores are"
 msgstr "er zijn geen scores"
 
-#: .\grades\views.py:2157
+#: .\grades\views.py:2177
 msgid "1 score is"
 msgstr "1 score is"
 
-#: .\grades\views.py:2157
+#: .\grades\views.py:2177
 msgid "scores are"
 msgstr "scores zijn"
 
-#: .\grades\views.py:2161 .\students\views.py:4545
+#: .\grades\views.py:2181 .\students\views.py:4545
 msgid "no subjects are"
 msgstr "er zijn geen vakken"
 
-#: .\grades\views.py:2161 .\students\views.py:4545
+#: .\grades\views.py:2181 .\students\views.py:4545
 msgid "no re-examinations are"
 msgstr "geen herexamens zijn"
 
-#: .\grades\views.py:2163 .\students\views.py:4547
+#: .\grades\views.py:2183 .\students\views.py:4547
 msgid "1 subject is"
 msgstr "1 vak is "
 
-#: .\grades\views.py:2163 .\students\views.py:4547
+#: .\grades\views.py:2183 .\students\views.py:4547
 msgid "1 re-examination is"
 msgstr "1 herexamen is"
 
-#: .\grades\views.py:2165 .\students\views.py:4549
+#: .\grades\views.py:2185 .\students\views.py:4549
 msgid "subjects are"
 msgstr "vakken zijn"
 
-#: .\grades\views.py:2165 .\students\views.py:4549
+#: .\grades\views.py:2185 .\students\views.py:4549
 msgid "re-examinations are"
 msgstr "herexamens zijn"
 
-#: .\grades\views.py:2173
+#: .\grades\views.py:2193
 #, python-format
 msgid "1 %(cpt)s is already approved"
 msgstr "1 %(cpt)s is al goedgekeurd"
 
-#: .\grades\views.py:2176
+#: .\grades\views.py:2196
 #, python-format
 msgid " %(cpts)s are already approved"
 msgstr " %(cpts)s zijn al goedgekeurd"
 
-#: .\grades\views.py:2183
+#: .\grades\views.py:2203
 #, python-format
 msgid "1 %(cpt)s is already approved by you"
 msgstr "1 %(cpt)s heb je al goedgekeurd"
 
-#: .\grades\views.py:2186
+#: .\grades\views.py:2206
 #, python-format
 msgid " %(cpts)s are already approved by you"
 msgstr " %(cpts)s heb je al goedgekeurd"
 
-#: .\grades\views.py:2890
+#: .\grades\views.py:2910
 msgid "Enter score"
 msgstr "Score invoeren"
 
-#: .\grades\views.py:2890
+#: .\grades\views.py:2910
 msgid "Enter grade"
 msgstr "Cijfer invoeren"
 
-#: .\grades\views.py:3017
+#: .\grades\views.py:3037
 msgid "this Wolf exam"
 msgstr "dit Wolf-examen"
 
-#: .\grades\views.py:3021
+#: .\grades\views.py:3041
 msgid "Change"
 msgstr "Wijzigen"
 
-#: .\grades\views.py:3022
+#: .\grades\views.py:3042
 #, python-format
 msgid "%(cpt)s' is already %(publ_appr_cpt)s."
 msgstr "%(cpt)s is al %(publ_appr_cpt)s."
 
-#: .\grades\views.py:3024
+#: .\grades\views.py:3044
 #, python-format
 msgid "You cannot %(ch_del)s %(cpt)s."
 msgstr "Je kunt %(cpt)s niet %(ch_del)s."
 
-#: .\grades\views.py:3166 .\schools\imports.py:2531 .\students\views.py:6366
+#: .\grades\views.py:3186 .\schools\imports.py:2531 .\students\views.py:6366
 msgid "An error occurred. The changes have not been saved."
 msgstr "Er is een fout opgetreden. De wijzigingen zijn niet opgeslagen."
 

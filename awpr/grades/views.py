@@ -1369,6 +1369,8 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
     # PR2023-02-27 debug: when submitting Ex2, examtype is always 'se'
                         if form_name == 'ex2':
                             sel_examtype = 'se'
+                        elif form_name == 'ex2a':
+                            sel_examtype = 'ce'
 
                         if logging_on:
                             logger.debug('     sel_examtype:   ' + str(sel_examtype))
@@ -1377,6 +1379,21 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                             logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
 
                         if sel_examperiod and sel_examtype:
+
+# - if examtype haschanged: save it in usersettings
+                            selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                            if selected_dict:
+                                save_setting = False
+                                saved_examperiod = selected_dict.get(c.KEY_SEL_EXAMPERIOD)
+                                saved_examtype = selected_dict.get(c.KEY_SEL_EXAMTYPE)
+                                if sel_examperiod != saved_examperiod:
+                                    selected_dict[c.KEY_SEL_EXAMPERIOD] = sel_examperiod
+                                    save_setting = True
+                                if sel_examtype != saved_examtype:
+                                    selected_dict[c.KEY_SEL_EXAMTYPE] = sel_examtype
+                                    save_setting = True
+                                if save_setting:
+                                    acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
 
     # - when mode = submit_submit: check verificationcode.
                             verification_is_ok = True
@@ -1916,11 +1933,14 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
                 msg_list.append(gettext("The %(cpt)s form can not be submitted.") % {'cpt': exform_txt })
             elif committed == 1:
                 class_str = 'border_bg_valid'
-                msg_list.append(gettext("One grade will be added to the %(cpt)s form.") % {'cpt': exform_txt })
+                sc_gr = gettext('score') if is_score else gettext('grade')
+                msg_list.append(gettext("One %(sc_gr)s will be added to the %(cpt)s form.") % \
+                                {'cpt': exform_txt, 'sc_gr': sc_gr})
             else:
                 class_str = 'border_bg_valid'
-                msg_list.append(gettext("%(val)s grades will be added to the %(cpt)s form.") % \
-                                         {'cpt': exform_txt, 'val': committed})
+                sc_gr = gettext('scores') if is_score else gettext('grades')
+                msg_list.append(gettext("%(val)s %(sc_gr)s will be added to the %(cpt)s form.") % \
+                                         {'cpt': exform_txt, 'val': committed, 'sc_gr': sc_gr})
             msg_list.append('</p>')
 
     # - warning if any subjects are not fully approved

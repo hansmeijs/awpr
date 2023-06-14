@@ -171,7 +171,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- schools
                 datalist_request_school_rows = datalist_request.get('school_rows')
                 if datalist_request_school_rows:
-                    skip_allowed_filter = datalist_request_school_rows.get('skip_allowed_filter')
+                    skip_allowed_filter = datalist_request_school_rows.get('skip_allowed_filter') or False
                     datalists['school_rows'] = school_dicts.create_school_rows(
                         request=request,
                         examyear=sel_examyear,
@@ -180,8 +180,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     )
 
 # ----- departments
-                if datalist_request.get('department_rows'):
-                    skip_allowed_filter = af.get_dict_value(datalist_request, ('department_rows', 'skip_allowed_filter'), False)
+                datalist_request_department_rows = datalist_request.get('department_rows')
+                if datalist_request_department_rows:
+                    skip_allowed_filter = datalist_request_department_rows.get('skip_allowed_filter') or False
                     datalists['department_rows'] = school_dicts.create_department_rows(
                         examyear=sel_examyear,
                         sel_schoolbase=sel_schoolbase,
@@ -726,7 +727,7 @@ def download_setting(request_item_setting, user_lang, request):
     if allowed_clusters_of_sel_school:
         permit_dict['allowed_clusters'] = allowed_clusters_of_sel_school
 
-    # ===== DEPARTMENTBASE =======================
+# ===== DEPARTMENTBASE =======================
     allowed_schoolbase_dict, allowed_depbases_pk_arr = \
         acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
             userallowed_sections_dict=requsr_allowed_sections_dict,
@@ -737,8 +738,6 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
         logger.debug('    allowed_depbases_pk_arr: ' + str(allowed_depbases_pk_arr))
 
-    # PR2023-03-04 debug: when sel_schoolbase_pk is a vsbo school, the selected dep will go to vsbo
-    # solved by resetting sel_schoolbase_pk to null in page orderlist,
     sel_depbase_instance, sel_depbase_tobesaved, sel_department_instance = \
         acc_view.get_settings_departmentbase(
             request=request,
@@ -915,11 +914,8 @@ def download_setting(request_item_setting, user_lang, request):
 
     # - save settings when they have changed
     if selected_pk_dict_has_changed:
-
         if logging_on:
             logger.debug('  >>> selected_pk_dict: ' + str(selected_pk_dict))
-
-
 
         acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
 

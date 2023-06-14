@@ -520,7 +520,7 @@ class UserUploadMultipleView(View):
     #  UserUploadMultipleView is called from userpage when clicked on Add_users_from_prev_year or send verifcode or update usergroup
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserUploadMultipleView ===============')
@@ -1102,7 +1102,7 @@ class UserpermitUploadView(View):
     #  it returns a HttpResponse, with ok_msg or err-msg
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserpermitUploadView ===============')
@@ -2641,7 +2641,7 @@ def create_permit_list(permit_pk=None):
 
 def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups_arr, is_validate_only,
                                      user_lang, sel_examyear, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  create_or_validate_user_instance  -----')
         logger.debug('    upload_dict:      ' + str(upload_dict))
@@ -4687,7 +4687,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
                                 allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10  PR2023-01-08 PR2023-06-11
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_departmentbase -------')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
@@ -4702,6 +4702,9 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
     #   - check if request_item_depbase_pk is allowed and exists
     #   - if not exists and not 'all_allowed': check if saved depbase is allowed and exists
     #   - if not exists and not 'all_allowed': get first available depbase that is allowed
+
+    # PR2023-03-04 debug: when sel_schoolbase_pk is a vsbo school, the selected dep will go to vsbo
+    # solved by resetting sel_schoolbase_pk to null in page orderlist,
 
     sel_depbase_instance, sel_depbase_tobesaved, allowed_depbase_pk_list = \
         get_sel_depbase_instance(
@@ -4728,11 +4731,10 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
     may_select_department = False
     if page == 'page_examyear':
         pass
-    elif page == 'page_exams' and request.user.role >= c.ROLE_064_ADMIN:
+    elif page in ('page_subject', 'page_orderlist','page_exams'):
         may_select_department = True
     else:
         may_select_department = allowed_depbases_len > 1
-
 
     permit_dict['may_select_department'] = may_select_department
     permit_dict['display_department'] = (page not in ('page_examyear', 'page_user'))
@@ -5023,7 +5025,6 @@ def get_sel_examperiod(selected_pk_dict, request_item_examperiod):  # PR2021-09-
 
 # ===== EXAMTYPE ======================= PR2022-12-11
 def get_settings_examtype(request_item_setting, setting_dict, selected_pk_dict, sel_examperiod):
-    # every user can change exam period
     # PR2022-12-11
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -5231,7 +5232,7 @@ def message_diff_exyr(request, sel_examyear_instance):
 
 def get_selected_examyear_from_usersetting(request, allow_not_published=False, page=None):
     # PR2021-09-08 PR2022-02-26 PR2022-04-16 PR2022-08-04 PR2023-04-13
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
     # this function gets sel_examyear, from req_usr and usersetting
@@ -5966,7 +5967,7 @@ def get_sel_depbase_instance(sel_school_instance, page, request, allowed_schoolb
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
@@ -6010,12 +6011,10 @@ def get_sel_depbase_instance(sel_school_instance, page, request, allowed_schoolb
     # solution: skip this check when page = orderlist
 
     # PR2022-10-17 debug: in page_orderlist dep returns Vsbo instead of 'All deps'
-    # also in page_exams when requsr = admin
-    select_all_allowed = (page == 'page_subject') or \
-                         (page == 'page_orderlist') or \
-                         (page == 'page_exams' and request.user.role == c.ROLE_064_ADMIN)
+    # also in page_exams
+    skip_allowed_filter = page in ('page_subject', 'page_orderlist', 'page_exams')
     if logging_on:
-        logger.debug('    select_all_allowed: ' + str(select_all_allowed))
+        logger.debug('    skip_allowed_filter: ' + str(skip_allowed_filter))
 
     # this was to check if clusters accidentally were connected to the wrong school.
     #   test_wrong_studsubjclusters()
@@ -6064,10 +6063,10 @@ def get_sel_depbase_instance(sel_school_instance, page, request, allowed_schoolb
         if request_item_depbase_pk:
             # is ok when allowed_sections_dict = None or all schoolbases are allowed or request_item_schoolbase_pk in allowed_sections_dict
 
-            if not select_all_allowed and request_item_depbase_pk not in allowed_depbase_pk_list:
+            if not skip_allowed_filter and request_item_depbase_pk not in allowed_depbase_pk_list:
                 request_item_depbase_pk = None
 
-        if not select_all_allowed and request_item_depbase_pk is None:
+        if not skip_allowed_filter and request_item_depbase_pk is None:
             if allowed_depbase_pk_list:
                 request_item_depbase_pk = allowed_depbase_pk_list[0]
                 if logging_on:

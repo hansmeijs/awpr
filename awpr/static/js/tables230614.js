@@ -83,13 +83,15 @@
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08 PR2023-01-08
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
         console.log( "===== t_MSED_Open ========= ", tblName);
-        //console.log( "setting_dict", setting_dict);
-        //console.log( "permit_dict", permit_dict);
+        console.log( "    setting_dict", setting_dict);
+        console.log( "    permit_dict", permit_dict);
         //console.log( "data_map", data_map);
         //console.log( "all_countries", all_countries);
         // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
 
         //console.log( "    tblName", tblName);
+
+        const skip_allowed_filter = (setting_dict && ["page_subject", "page_orderlist", , "page_exams"].includes(setting_dict.sel_page));
 
         let may_open_modal = false, selected_pk = null;
         if (tblName === "examyear") {
@@ -120,12 +122,12 @@
                 el_MSED_header_text.innerText = header_text;
             };
 // ---  fill select table
+
             //t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries);
-            t_MSED_FillSelectRows(tblName, MSED_Response, selected_pk)
+            t_MSED_FillSelectRows(skip_allowed_filter, tblName, MSED_Response, selected_pk)
 // ---  show modal
             $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
         };
-
     };  // t_MSED_Open
 
 //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
@@ -193,8 +195,8 @@
     }  // t_MMSED_Save
 
 //=========  t_MSED_FillSelectRows  ================
-//  PR2022-08-02 PR2023-01-08
-    function t_MSED_FillSelectRows(tblName, MSED_Response, selected_pk) {
+//  PR2022-08-02 PR2023-01-08 PR2023-06-14
+    function t_MSED_FillSelectRows(skip_allowed_filter, tblName, MSED_Response, selected_pk) {
         console.log( "===== t_MSED_FillSelectRows ========= ");
         //console.log( "tblName", tblName);
         //console.log( "all_countries", all_countries);
@@ -222,22 +224,25 @@
                     const code_value = (tblName === "examyear") ? (data_dict.examyear_code) ? data_dict.examyear_code : "---" :
                                     (tblName === "department") ? (data_dict.base_code) ? data_dict.base_code : "---" : "---";
 
-    console.log( "data_dict", data_dict);
-    console.log( "code_value", code_value);
-    console.log( "is_locked", is_locked);
+    //console.log( "data_dict", data_dict);
+    //console.log( "code_value", code_value);
+    //console.log( "is_locked", is_locked);
                     let skip_row = false;
                     if(tblName === "examyear") {
                         skip_row = (permit_dict.requsr_country_pk !== data_dict.country_id);
                     } else if(tblName === "department"){
-                        // all_countries is only used in exams.js
-                        // all_countries = true, used to let ETE select all deps, schools must only be able to select their deps
-                        if (permit_dict.allowed_depbases && permit_dict.allowed_depbases.length){
-                            skip_row = !permit_dict.allowed_depbases.includes(pk_int);
-                        } else {
-                            // must set skip_row = false when allowed_depbases = []? Don't know, it seems to be OK like this
-                            skip_row = true;
+                        if (!skip_allowed_filter){
+                            // all_countries is only used in exams.js
+                            // all_countries = true, used to let ETE select all deps, schools must only be able to select their deps
+                            if (permit_dict.allowed_depbases && permit_dict.allowed_depbases.length){
+                                skip_row = !permit_dict.allowed_depbases.includes(pk_int);
+                            } else {
+                                // must set skip_row = false when allowed_depbases = []? Don't know, it seems to be OK like this
+                                skip_row = true;
+                            };
                         };
                     };
+    //console.log( "permit_dict.allowed_depbases", permit_dict.allowed_depbases);
     //console.log( "skip_row", skip_row);
                     if(!skip_row){
                         t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk)

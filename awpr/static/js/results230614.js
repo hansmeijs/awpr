@@ -525,10 +525,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
+        //console.log("===  CreateSubmenu == ");
         //console.log("loc.Add_subject ", loc.Add_subject);
-        console.log("permit_dict ", permit_dict);
-        console.log("permit_dict.permit_calc_results ", permit_dict.permit_calc_results);
+        //console.log("permit_dict ", permit_dict);
+        //console.log("permit_dict.permit_calc_results ", permit_dict.permit_calc_results);
 
         const el_submenu = document.getElementById("id_submenu")
 
@@ -691,7 +691,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
-        console.log("field_name", field_name);
             let th_header = null, el_header = null;
 
     // skip columns if in columns_hidden
@@ -808,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        console.log("=========  CreateTblRow =========", tblName);
+        //console.log("=========  CreateTblRow =========", tblName);
         //console.log("data_dict", data_dict);
 
         const field_names = field_setting.field_names;
