@@ -124,7 +124,7 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
     # function creates a dict of auth1 and auth2 users
     # also retrieves the selected auth and printdate from schoolsettings
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_pres_secr_dict -----')
 

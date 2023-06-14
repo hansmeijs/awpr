@@ -2,7 +2,7 @@
 
 from django.db import connection
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import pgettext_lazy, gettext_lazy as _
+from django.utils.translation import pgettext_lazy, gettext, gettext_lazy as _
 
 from reportlab.pdfbase.pdfmetrics import stringWidth, registerFont
 from reportlab.pdfbase.ttfonts import TTFont
@@ -2532,12 +2532,12 @@ def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
 # --- end of validate_thumbrule_allowed
 
 
-def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08
-
-    logging_on = False  # s.LOGGING_ON
+def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08 PR2023-06-14
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- validate_thumbrule_allowed -------')
-        logger.debug('studsubj_instance: ' + str(studsubj_instance))
+        logger.debug(' ------- validate_extra_nocount_allowed -------')
+        logger.debug('    studsubj_instance: ' + str(studsubj_instance))
+
     err_list = []
     # when sxm has different rules
     # id_sxm_student = studsubj_instance.student.school.examyear.country.abbrev = 'Sxm'
@@ -2547,14 +2547,12 @@ def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08
 # PR2022-06-09 Ricahrd Westerink: also for havo Vwo, is correct: was in old AWP also allowed
         pass
         # was: err_list.append(str(_('This option is not applicable in %(cpt)s.') %{'cpt': depbase_code}))
-# - only in TKL
+# - only in Vsbo
     elif not studsubj_instance.student.level:
         err_list.append(str(_('Candidate has no learning path.')))
-# - only in TKL
-    elif studsubj_instance.student.level.abbrev != 'TKL':
-        err_list.append(str(_('This option is not applicable in %(cpt)s.') %{'cpt': studsubj_instance.student.level.abbrev}))
-# - not when mandatory subject
-    elif studsubj_instance.schemeitem.is_mand_subj:
+
+# - not when subject is mandatory
+    elif studsubj_instance.schemeitem.is_mandatory:
         err_list.append(str(_('This is a mandatory subject.')))
         err_list.append(str(_('This option is not allowed when a subject is mandatory.')))
 
@@ -2567,12 +2565,32 @@ def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08
     #    err_list.append(str(_("This option is only allowed when a subject has the character 'Overig vak'.")))
     else:
 # - only one allowed
-        has_extra_nocount = stud_mod.Studentsubject.objects.filter(
+        count_extra_nocount = stud_mod.Studentsubject.objects.filter(
             student=studsubj_instance.student,
             is_extra_nocount=True,
-            tobedeleted=False)
-        if has_extra_nocount:
-            err_list.append(str(_('Only one subject can be set as extra subject that does not count towards the result.')))
+            deleted=False,
+            tobedeleted=False
+        ).count()
+
+        if logging_on:
+            logger.debug('    count_extra_nocount: ' + str(count_extra_nocount))
+
+        # PR2023-06-14 whatapp msg Nancy Josephina Inspectorate: 2 extr subjects are allowed in TKL, 1 for PKL PBL
+        max_number_extra_nocount = 2 if studsubj_instance.student.level.abbrev.lower() == 'tkl' else 1
+
+        if logging_on:
+            logger.debug('    max_number_extra_nocount: ' + str(max_number_extra_nocount))
+
+        if count_extra_nocount >= max_number_extra_nocount:
+            # PR2023-06-14 whatapp msg Nancy Josephina Inspectorate: 2 extr subjects are allowed, 1 for PKL PBL
+            # TODO make it a field in schemitems
+            if max_number_extra_nocount == 1:
+                max_subjects = gettext('Only one subject can be set')
+            else:
+                max_subjects = gettext("Only %(max)s subjects can be set")\
+                                                                    % {'max': str(max_number_extra_nocount)}
+            max_subjects += gettext(' as extra subject, that does not count towards the result.')
+            err_list.append(max_subjects)
 
     return err_list
 # --- end of validate_extra_nocount_allowed
