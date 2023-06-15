@@ -1809,7 +1809,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
-
         dict['Ex6_pok'] = ' '.join(('Ex6', str(_('Proof of knowledge'))))
         dict['Download_Ex6_pok'] = _('Download Ex6 Proof of knowledge')
 
@@ -1820,21 +1819,19 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Request_verifcode'] = TXT_Request_verifcode
 
+        dict['Submit_Ex5_form'] = _('Submit Ex5 form')
+
         dict['Check_grades'] = _('Check grades')
 
         dict['Submitted_by'] = TXT_Submitted_by
 
         dict['MAG_ex5_info'] = {
+            'awp_is_checking_grades': _('AWP is checking the %(sc_gr)s of the candidates...') % {'sc_gr': gettext('Grades').lower()},
             'subheader_approve': _('The following grades will be approved:'),
             'subheader_submit_ex5': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex5', 'sc_gr': _('grades')},
-            'approve_0': _("Click 'Check grades' to check the grades before submitting the Ex5 form."),
-            'approve_1_ex2': _('The grades are already approved,'),
-            'approve_2_ex2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2'},
 
             'submit_0': _("Click 'Check grades' to check the grades before submitting the Ex5 form."),
             'submit_1': _("If the check is OK, click 'Request verification code' to submit the Ex5 form."),
-
-            'submit_ok_ex5': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex5'},
 
             'unlock_01': _("You are about to block this grade."),
             'unlock_02': _("The diploma and final grade list can not be printed when a grade is unlocked."),
@@ -1848,8 +1845,12 @@ def get_locale_dict(table_dict, user_lang, request):
             'verif_01': _("You need a 6 digit verification code to submit the Ex form."),
             'verif_02': _("Click 'Request verification code' and we will send you an email with the verification code."),
             'verif_03': _("The verification code expires in 30 minutes."),
-        }
+            'sending_verifcode': TXT_Sending_verifcode,
 
+            'creating_ex5_form': _("AWP is creating %(ex)s...") % {'ex': gettext('The Ex5 form').lower()},
+            'submit_ok_ex5': _("%(ex)s is succesfully created.") % {'ex': _('The Ex5 form')},
+
+        }
 
         dict['MRM_level_info'] = {
             'lvl_0': _("The selection contains only candidates of the learning path"),

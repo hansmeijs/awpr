@@ -1658,6 +1658,7 @@ class GradeDownloadEx5View(View):  # PR2022-02-17
                         examyear=sel_examyear,
                         school=sel_school,
                         department=sel_department,
+                        level=sel_level,
                         examperiod=c.EXAMPERIOD_FIRST,
                         save_to_disk=save_to_disk,
                         request=request,
@@ -2837,8 +2838,7 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, i
 
 #@@@@@@@@@@@@@@@@@@@@@@@
 
-def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk, published_instance,
-                              lvlbase_pk=None):
+def create_ex5_rows_dict(examyear, school, department, level, examperiod, save_to_disk, published_instance):
     # PR2022-02-17 PR2022-03-09
     # this function is only called by create_ex2_xlsx
     logging_on = False  # s.LOGGING_ON
@@ -2933,7 +2933,8 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
                 "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
                 "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
-                "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted"
+                "AND NOT st.deleted AND NOT st.tobedeleted",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted"
                 ]
 
     if save_to_disk:
@@ -2944,9 +2945,8 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
         sql_keys['published_id'] = published_pk
         #sql_list.append("AND grd." + se_ce + "_published_id = %(published_id)s::INT ")
 
-    if lvlbase_pk:
-        sql_keys['lvlbase_id'] = lvlbase_pk
-        sql_list.append("AND lvl.base_id = %(lvlbase_id)s::INT ")
+    if level:
+        sql_list.extend(("AND lvl.base_id = ", str(level.base_id) , "::INT "))
 
     if level_req:
         sql_list.append("ORDER BY LOWER(lvl.abbrev), LOWER(st.lastname), LOWER(st.firstname)")
@@ -3233,7 +3233,7 @@ def count_number_reex_for_ex5(school, department):
 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-def create_ex5_xlsx(published_instance, examyear, school, department, examperiod,
+def create_ex5_xlsx(published_instance, examyear, school, department, level, examperiod,
                      save_to_disk, request, user_lang):
     # PR2022-05-13
     # called by GradeDownloadEx5View
@@ -3269,7 +3269,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
     """
 
 # +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
-    ex5_rows_dict = create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk, published_instance)
+    ex5_rows_dict = create_ex5_rows_dict(examyear, school, department, level, examperiod, save_to_disk, published_instance)
 
     if logging_on and False:
         logger.debug('ex5_rows_dict: ' + str(ex5_rows_dict))

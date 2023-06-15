@@ -1151,18 +1151,17 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 # --- end of create_grade_approve_rows
 
 
-def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, sel_lvlbase_pk):
+def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk):
     # PR2022-06-12 PR2022-07-12
-    # called by GradeApproveView, GradeSubmitEx2Ex2aView
+    # only called by GradeSubmitEx5View
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- check_ex5_grade_approved_rows -----')
-        logger.debug('     sel_examperiod: ' + str(sel_examperiod))
 
     log_list = []
     try:
-        sql_keys = {'ey_id': sel_examyear_pk, 'experiod': sel_examperiod, 'schoolbase_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk}
+        sql_keys = {'ey_id': sel_examyear_pk, 'schoolbase_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk}
 
         # PR2022-05-11 Sentry debug: syntax error at or near "FROM"
         # in: grd.pecegrade, grd.finalgrade, FROM students_grade AS grd
@@ -1206,13 +1205,11 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
         ]
 
         if sel_lvlbase_pk:
-            sql_keys['lvl_pk'] = sel_lvlbase_pk
-            sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
+            sql_list.extend(("AND lvl.base_id = ", str(sel_lvlbase_pk) , "::INT"))
 
         sql_list.append('ORDER BY stud.lastname, stud.firstname, subj.name_nl')
 
         sql = ' '.join(sql_list)
-
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
@@ -1238,7 +1235,7 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
                     if not_fully_approved:
                         stud_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
                         log_list.append(' - '.join((stud_name, row.get('subj_name', '-'))))
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('row: ' + str(row))
 
     except Exception as e:
@@ -1570,7 +1567,7 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
 
 
 @method_decorator([login_required], name='dispatch')
-class GradeSubmitEx5View(View):  # PR2022-06-12
+class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
     # function creates new published_instance, Ex5 xlsx and sets published_id in grade
 
     def post(self, request):
@@ -1588,12 +1585,10 @@ class GradeSubmitEx5View(View):  # PR2022-06-12
 # - get permit
         has_permit = False
         req_usr = request.user
-        if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = acc_prm.get_permit_list('page_result', req_usr)
-            if permit_list:
-                has_permit = 'permit_submit_ex5' in permit_list
-        # TODO replace by: PR2023-01-24
-        # has_permit = acc_prm.get_permit_of_this_page('page_result', 'submit_ex5', request)
+
+        has_permit = acc_prm.get_permit_of_this_page('page_result', 'submit_ex5', request)
+        if logging_on:
+            logger.debug('     has_permit: ' + str(has_permit))
         if has_permit:
 
 # -  get user_lang
@@ -1646,6 +1641,10 @@ class GradeSubmitEx5View(View):  # PR2022-06-12
                             sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
                             sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
 
+                        if logging_on:
+                            logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                            logger.debug('     sel_examperiod: ' + str(sel_examperiod))
+
                         if sel_examperiod:
 
     # - when mode = submit_submit: check verificationcode.
@@ -1666,17 +1665,18 @@ class GradeSubmitEx5View(View):  # PR2022-06-12
                                         examyear=sel_examyear
                                     )
 
+                                if logging_on:
+                                    logger.debug('     sel_level: ' + str(sel_level))
 # - check ex5_grade_approved_rows
                                 log_list = check_ex5_grade_approved_rows(
                                     sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
                                     sel_schoolbase_pk=sel_school.base_id if sel_school else None,
                                     sel_depbase_pk=sel_department.base_id if sel_department else None,
-                                    sel_lvlbase_pk=sel_lvlbase_pk,
-                                    sel_examperiod=sel_examperiod
+                                    sel_lvlbase_pk=sel_level.base_id if sel_level else None
                                 )
                                 test_is_ok = not len(log_list)
 
-                                msg_dict = create_submit_ex5_test_msg_dict(log_list, test_is_ok)
+                                msg_html = create_submit_ex5_test_msg_html(sel_department, sel_level, log_list, test_is_ok)
 
                                 if test_is_ok:
 
@@ -1721,12 +1721,13 @@ class GradeSubmitEx5View(View):  # PR2022-06-12
                                             examyear=sel_examyear,
                                             school=sel_school,
                                             department=sel_department,
+                                            level=sel_level,
                                             examperiod=sel_examperiod,
                                             save_to_disk=True,
                                             request=request,
                                             user_lang=user_lang)
 
-                                        msg_dict = create_submit_ex5_saved_msg_dict(saved_is_ok)
+                                        msg_html = create_submit_ex5_saved_msg_html(saved_is_ok)
 
 # - add  msg_html to update_wrap
         update_wrap['test_is_ok'] = test_is_ok
@@ -2006,53 +2007,82 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
 # - end of create_ex2_ex2a_msg_html
 
 
-def create_submit_ex5_test_msg_dict(log_list, test_is_ok): # PR2022-06-12
+def create_submit_ex5_test_msg_html(sel_department, sel_level, log_list, test_is_ok):
+    # PR2022-06-12 PR2023-06-15
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug('  ----- create_submit_ex5_test_msg_dict -----')
+        logger.debug('  ----- create_submit_ex5_test_msg_html -----')
 
-    # TODO: ordering of msg list is done in MAG_SetMsgContainer - to be put here
+    msg_list = []
 
-    msg_dict = {}
     if not test_is_ok:
+        class_str = 'border_bg_invalid'
         auth_missing_txt = '<br>'.join((_("The %(cpt)s form can not be submitted.") % {'cpt': 'Ex5'},
                                        str(_("The following grades are not fully approved:"))))
         for log_str in log_list:
             auth_missing_txt += '<br>&emsp;&emsp;' + log_str
-        msg_dict['auth_missing_text'] = auth_missing_txt
+        msg_list.append(auth_missing_txt)
     else:
+        class_str = 'border_bg_valid'
         saved_text = str(_("All grades are fully approved."))
         saved_text += '<br>' + _("The %(cpt)s form can be submitted.") % {'cpt': 'Ex5' }
-        msg_dict['saved_text'] = saved_text
+        msg_list.append(saved_text)
 
-    if logging_on:
-        logger.debug('msg_dict: ' + str(msg_dict))
+    msg_html = ''.join((
+            "<div class='p-2 ", class_str, "'>",
+            ''.join(msg_list),
+            '</div>'
+    ))
+    # - create line with 'only candidates of the learning path'
+    if sel_department and sel_department.level_req:
+        if sel_level and sel_level.abbrev:
+            abbrev = sel_level.abbrev if sel_level.abbrev else '-'
+            level_txt = ''.join((
+                gettext('The selection contains only candidates of the learning path'), ' <b>', abbrev,
+                '</b>.<br>',
+                gettext(
+                    "Select 'All learning paths' in the vertical gray bar on the left to submit all learning paths.")
+            ))
+        else:
+            level_txt = ''.join((
+                '<b>', gettext('ATTENTION'), '</b>: ',
+                gettext('The selection contains the candidates of all learning paths.'), '<br>',
+                gettext('Select a learning path in the vertical gray bar on the left to submit one learning path.')
+            ))
+        msg_html += ''.join(("<div class='mt-2 p-2 border_bg_warning'>", level_txt, '</div>'))
 
-    return msg_dict
-# - end of create_submit_ex5_test_msg_dict
+    return msg_html
+# - end of create_submit_ex5_test_msg_html
 
 
-def create_submit_ex5_saved_msg_dict(saved_is_ok): # PR2022-06-12
+def create_submit_ex5_saved_msg_html(saved_is_ok):
+    # PR2022-06-12 PR2023-06-15
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug('  ----- create_submit_ex5_msg_dict -----')
+        logger.debug('  ----- create_submit_ex5_saved_msg_html -----')
 
-    msg_dict = {}
-    # TODO: ordering of msg list is done in MAG_SetMsgContainer - to be put here
+    msg_list = []
 
-    saved = msg_dict.get('saved', 0)
     if not saved_is_ok:
-        msg_dict['saved_text'] = _("The %(cpt)s form has not been submitted.") % {'cpt': 'Ex5' }
+        class_str = 'border_bg_invalid'
+        msg_list.append(gettext("The %(cpt)s form has not been submitted.") % {'cpt': 'Ex5' })
     else:
    # if file_name:
-        msg_dict['file_name'] = ''.join((str(_("The %(cpt)s form has been saved.") % {'cpt': 'Ex5'}),
-                                         '<br>', str(_("Go to the page 'Archive' to download the file."))))
-    if logging_on:
-        logger.debug('msg_dict: ' + str(msg_dict))
+        class_str = 'border_bg_valid'
+        msg_list.append(''.join((gettext("The %(cpt)s form has been saved.") % {'cpt': 'Ex5'},
+                                         '<br>', gettext("Go to the page 'Archive' to download the file."))))
 
-    return msg_dict
+    msg_html = ''.join((
+            "<div class='p-2 ", class_str, "'>",
+            ''.join(msg_list),
+            '</div>'
+    ))
+    if logging_on:
+        logger.debug('    msg_html: ' + str(msg_html))
+
+    return msg_html
 # - end of create_submit_ex5_msg_dict
 
 
