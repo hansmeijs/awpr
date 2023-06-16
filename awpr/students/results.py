@@ -450,55 +450,10 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
         # - get arial font
                 af.register_font_arial()
-                #try:
-                #    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
-                #    ttfFile = TTFont('Arial', filepath)
-                #    pdfmetrics.registerFont(ttfFile)
-                #except Exception as e:
-                #    logger.error(getattr(e, 'message', str(e)))
-
-        # - get Garamond font
-                #try:
-                #    filepath = s.STATICFILES_FONTS_DIR + 'Garamond.ttf'
-                #    ttfFile = TTFont('Garamond', filepath)
-                #    pdfmetrics.registerFont(ttfFile)
-                #except Exception as e:
-                #    logger.error(getattr(e, 'message', str(e)))
-
        # - get Garamond font
                 af.register_font_garamond()
-                #try:
-                #    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Bold.ttf'
-                #    ttfFile = TTFont('Garamond_Bold', filepath)
-                #    pdfmetrics.registerFont(ttfFile)
-                #except Exception as e:
-                #    logger.error(getattr(e, 'message', str(e)))
-                # - get Garamond font
-                #try:
-                #    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Regular.ttf'
-                #    ttfFile = TTFont('Garamond_Regular', filepath)
-                #    pdfmetrics.registerFont(ttfFile)
-                #except Exception as e:
-                #    logger.error(getattr(e, 'message', str(e)))
-
-        # - get Palace_Script_MT font - for testing - it works 2021-10-14
+        # - get Palace_Script_MT font
                 af.register_font_palace_script()
-                # PR2022-09-04 Sentry error: Can't open file "/home/uaw/awpr/awpr/static/fonts/Palace_Script_MT.ttf"
-                # because extension in filename is TTF instead of ttf > change filename to Palace_Script_MT.TTF
-                # but loading ttfFile went ok, is apparently not case-sensitive
-                #try:
-                #    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.TTF' # was: 'Palace_Script_MT.ttf'
-                #    ttfFile = TTFont('Palace_Script_MT', filepath)
-                #    pdfmetrics.registerFont(ttfFile)
-               # except Exception as e:
-                #    logger.error(getattr(e, 'message', str(e)))
-
-                #try:
-                #    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT_Semi_Bold.ttf'
-                #    ttfFile = TTFont('Palace_Script_MT_Semi_Bold', filepath)
-                #    pdfmetrics.registerFont(ttfFile)
-                #except Exception as e:
-                #    logger.error(getattr(e, 'message', str(e)))
 
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 

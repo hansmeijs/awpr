@@ -1,4 +1,5 @@
 import re # PR2018-12-31
+from random import randint
 
 from awpr import settings as s
 from students import models as stud_mod
@@ -80,7 +81,7 @@ def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
 
 
 
-def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
+def calc_regnumber_OLD(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
     # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19 PR2021-11-17
     #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
     #    '12345:     SchoolID: CUR01 etc, BON01,
@@ -151,7 +152,99 @@ def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_co
                     reg05 = '4'
                 elif levelbase_code_lc == 'pbl':
                     reg05 = '5'
+
+    if bis_exam:
+        examnumber_str += 'b'
     regnumber = ''.join((reg01, reg02, reg03, reg04, reg05 ))
+
+    if logging_on:
+        logger.debug('regnumber: ' + str(regnumber))
+    return regnumber
+# - end of calc_regnumber
+
+
+
+def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
+    # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19 PR2021-11-17
+    #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
+    #    '12345:     SchoolID: CUR01 etc, BON01,
+    #    '6:         M=1, V = 2
+    #    '78910:     schooljaar
+    #    '11,12,13:   volgnr leerling
+    #    '14:        1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = pbl
+    logging_on = s.LOGGING_ON
+    """
+    Het registratienummer bestaat uit 13 tekens en is als volgt opgebouwd:
+        1 tm 5: Schoolregistratienr:   CUR17
+        6:       Geslacht:              M=1, V = 2" & vbCrLf & _
+        7 tm 8:  Examenjaar             22 (schooljaar 2021-2022)
+        9 tm 12: Examennummer           0001 etc. (001b voor bis examen)
+        13:      Studierichting:        1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = Pbl
+    """
+    """
+    email 31 3 2023
+    Ik stel voor het registratienummer op de diploma’s en cijferlijsten als volgt in te richten:
+
+    23c01k999999
+    Waarbij:
+    •	De eerste twee cijfers zijn het jaartal
+    •	De derde letter is ‘c’ voor Curaçao en ‘s’ voor Sint Maarten
+    •	Het vierde en vijfde cijfer is het nummer van de schoolcode
+    •	Het zesde teken geeft de afdeling en leerweg weer: b voor pbl, k voor pkl, t voor tkl, h voor Havo en v voor vwo
+    •	Het getal daarna bestaat uit 6 cijfers en is een uniek nummer dat door AWP wordt gegenereerd.
+    De afwisseling tussen cijfers en kleine letters verhoogt de leesbaarheid.
+
+    Het registratienummer  komt in het midden onderaan het waardepapier. Het sedulanummer komt links onder, rechts onder staat het ‘batch’ nummer van het waardepapier.
+
+    Om na te gaan of een diploma of cijferlijst authentiek is kun je het registratienummer opzoeken in AWP. 
+    Als het nummer voorkomt in AWP wordt het opgeslagen waardepapier weergegeven. 
+
+    Als het registratienummer van een waardepapier niet voorkomt in AWP of wanneer het niet overeenkomt met de opgeslagen versie, is er sprake van een vervalsing.
+
+    """
+
+    if logging_on:
+        logger.debug(' ------- calc_regnumber -------')
+        logger.debug('school_code: ' + str(school_code))
+        logger.debug('gender:       ' + str(gender))
+        logger.debug('examyear_str:     ' + str(examyear_str) + ' ' + str(type(examyear_str)))
+        logger.debug('examnumber:   ' + str(examnumber_str) + ' ' + str(type(examnumber_str)))
+        logger.debug('depbase_code:      ' + str(depbase_code))
+        logger.debug('levelbase_code:    ' + str(levelbase_code))
+
+    reg_list = []
+# - first 2 characters is examenjaar
+    reg_list.append(examyear_str[2:4] if examyear_str else '--')
+
+# - character 3 id 'c' or 's'
+    reg_list.append(school_code[0].lower() if school_code else '-')
+
+# - character 4 and 5 are digits of schoolcode - lex has 3 characters:  4, 5, 6
+    reg_list.append(school_code[3:].lower() if school_code and len(school_code) > 3 else '--')
+
+# - character 6: h = havo, v = vwo, t = tkl, k = pkl, b = pbl
+    dep_lvl = '-'
+    if depbase_code:
+        depbase_code_lc = depbase_code.lower()
+        if depbase_code_lc == 'havo':
+            dep_lvl = 'h'
+        elif depbase_code_lc == 'vwo':
+            dep_lvl = 'v'
+        elif depbase_code_lc == 'vsbo':
+            if levelbase_code:
+                levelbase_code_lc = levelbase_code.lower()
+                if levelbase_code_lc == 'tkl':
+                    dep_lvl = 't'
+                elif levelbase_code_lc == 'pkl':
+                    dep_lvl = 'k'
+                elif levelbase_code_lc == 'pbl':
+                    dep_lvl = 'b'
+    reg_list.append(dep_lvl)
+
+    reg_list.append(str(randint(1000000, 1999999))[-6:])
+    if bis_exam:
+        reg_list.append('b')
+    regnumber = ''.join(reg_list)
 
     if logging_on:
         logger.debug('regnumber: ' + str(regnumber))

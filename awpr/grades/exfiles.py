@@ -7,7 +7,7 @@ from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate
+from django.utils.translation import activate, gettext
 from django.views.generic import View
 
 from reportlab.pdfgen.canvas import Canvas
@@ -476,7 +476,6 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                     2168: { 'subj_name': 'Culturele en Artistieke Vorming', 
                             'student_list': [
                                 {'examnumber': '010', 'full_name': 'van Wamel, Chris', 'extrafacilities': False},
-
                 """
 
                 if is_secret_exam:
@@ -486,12 +485,6 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                     )
         # - get arial font
                 af.register_font_arial()
-                #try:
-                #    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial220815.ttf'
-                #    ttfFile = TTFont('Arial', filepath)
-                #    pdfmetrics.registerFont(ttfFile)
-                #except Exception as e:
-                #    logger.error(getattr(e, 'message', str(e)))
 
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
@@ -608,7 +601,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
         logger.debug('subject_filter: ' + str(subject_filter))
         sql_list = [
             "SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
-            "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.extrafacilities,",
+            "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.idnumber, stud.extrafacilities,",
             "stud.classname, cl.name AS cluster_name,",
             "school.abbrev AS school_abbrev,",
             "stud.level_id, lvl.name AS lvl_name",
@@ -676,6 +669,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                 level_id = row.get('level_id')
                 lvl_name = row.get('lvl_name', '---')
                 examnumber = row.get('examnumber', '---')
+                idnumber = row.get('idnumber', '---')
 
                 extrafacilities = row.get('extrafacilities', False)
                 full_name = stud_fnc.get_lastname_firstname_initials(
@@ -715,6 +709,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07 PR2023-05-30
                 student_list = ex3_dict[key].get('students', [])
                 student_dict = {
                     'examnumber': examnumber,
+                    'idnumber': idnumber,
                     'full_name': full_name,
                     'lastname_initials': lastname_initials,
                     'school_abbrev': school_abbrev,
@@ -958,7 +953,7 @@ def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department,
 
 # - draw column header
     header_height = 17 * mm
-    draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, exform_text)
+    draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, exform_text, is_secret_exam)
 
 # - draw vertical lines of columns
     x = coord[0]
@@ -999,7 +994,7 @@ def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department,
     # sequence is not  implemented: scanning all Ex3 forms separately is too much work, evaluation schools aug 2022
     # sequence is number to be added to pages to be used when uploading Ex3 forms with signatures
     sequence = 0
-    draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, has_extrafacilities, user_lang)
+    draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, is_secret_exam, has_extrafacilities, user_lang)
 
 # - end of draw_Ex3_page
 
@@ -1071,7 +1066,7 @@ def draw_Ex3_page_header(canvas, coord, text_list):
 # - end of draw_Ex3_page_header
 
 
-def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, has_extrafacilities, user_lang):
+def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, is_secret_exam, has_extrafacilities, user_lang):
     # PR2021-10-08 PR2023-04-29
     footer_height = 10 * mm
     padding_left = 4 * mm
@@ -1093,11 +1088,13 @@ def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, 
 
 # - column 0 'Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1.'
     if has_extrafacilities:
-        line_height = 4 * mm
-        canvas.drawString(x, y + line_height, exform_text.get('footer_01', '-'))
+        if not is_secret_exam:
+            line_height = 4 * mm
+            canvas.drawString(x, y + line_height, exform_text.get('footer_01', '-'))
         canvas.drawString(x, y, '2) ' + exform_text.get('extrafacilities', ''))
     else:
-        canvas.drawString(x, y, exform_text.get('footer_01', '-'))
+        if not is_secret_exam:
+            canvas.drawString(x, y, exform_text.get('footer_01', '-'))
 
     today_dte = af.get_today_dateobj()
     today_formatted = af.format_DMY_from_dte(today_dte, user_lang, True)  # True = month_abbrev
@@ -1114,7 +1111,7 @@ def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, 
 # - end of draw_Ex3_page_footer
 
 
-def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, exform_text):
+def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, exform_text, is_secret_exam):
 
     line_height = 4 * mm
 
@@ -1140,8 +1137,11 @@ def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, 
 # - column 0 'Examennr.'
     col_index = 0
     x_center = x + col_width_list[col_index] * mm / 2
-    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_00_00', '-'))  # 'col_00_00': 'Examennr.'
-    canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_00_01', '-'))  # ''col_00_01': '1)'
+    if is_secret_exam:
+        canvas.drawCentredString(x_center, y_txt1, gettext('ID-number'))
+    else:
+        canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_00_00', '-'))  # 'col_00_00': 'Examennr.'
+        canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_00_01', '-'))  # ''col_00_01': '1)'
 
 # - column 1 'Naam en voorletters van de kandidaat',
     col_index += 1
@@ -1240,7 +1240,7 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
         # col_width = (25, 65, 17, 22, 22, 22, 17)  # last col is 17 mm
         # draw empty row when row is None, to draw lines till end of page
         if row is not None:
-            examnumber = row.get('examnumber', '---')
+            examnumber = row.get('idnumber', '---') if is_secret_exam else row.get('examnumber', '---')
             # canvas.drawString(tab_list[0], y, examnumber)
             # canvas.drawCentredString(x + pl + pb, y + pb, examnumber)
 
@@ -1258,6 +1258,7 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
                 fullname = ' '.join((lastname_initials, school_abbrev))
             else:
                 fullname = row.get('full_name', '---')
+
             canvas.drawString(x + 2 * mm, y + pb, fullname)
 
             extrafacilities = row.get('extrafacilities', False)

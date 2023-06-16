@@ -666,7 +666,9 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
     if level_req:
         lvl_txt = student_dict.get('lvl_name') or '---'
         lvl_txt_upper = lvl_txt.upper()
-        canvas.setFont(font_normal, 14)
+        # PR2023-06-16 was:
+        # canvas.setFont(font_normal, 14)
+        canvas.setFont('Times-Roman', 11.5)
         y_level = origin[1] + 8 * mm
         right = 210 * mm - left
         x_center = (right + left) / 2
@@ -1335,8 +1337,17 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
                  'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, not is_prelim)
 
-    dont_print_leerweg = not level_req or not is_prelim
-    txt_list = [{'txt': leerweg_txt, 'font': 'Times-Bold', 'size': 14, 'align': 'c',
+    # PR202-06-16 print level on final gradelist, only when cur
+    # was: dont_print_leerweg = not level_req or not is_prelim
+    dont_print_leerweg = not level_req or is_sxm
+
+    # PR2023-06-16 was:  font_name = 'Times-Bold'
+    font_name = 'Garamond_Regular'
+    #font_name = 'Garamond_Bold'
+    font_name = 'Times-Roman'
+    font_size = 11.5
+    leerweg_upper = leerweg_txt.upper()
+    txt_list = [{'txt': leerweg_upper, 'font': font_name, 'size': font_size, 'align': 'c',
                  'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, dont_print_leerweg)
 
@@ -1386,8 +1397,6 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
         txt_list = [{'txt': eex_article_txt, 'x': 25 * mm}]
         draw_text_one_line(canvas, coord, col_tab_list, eex_article_lineheight, 0, False, None, txt_list)
         eex_article_lineheight = 4 if is_sxm else 5
-
-
 # - end of draw_gradelist_page_header
 
 
@@ -1457,8 +1466,6 @@ def draw_gradelist_colum_header(canvas, coord, col_tab_list, library, is_lexscho
          'offset_bottom': 1.25, 'line_height': 0},
     ]
     draw_text_one_line(canvas, coord, col_tab_list, 3, 1.25, False, None, txt_list)
-
-
 # - end of draw_gradelist_colum_header
 
 
@@ -1504,8 +1511,6 @@ def draw_gradelist_sjtp_header(canvas, coord, col_tab_list, library, sjtp_dict, 
         ])
 
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-
-
 # - end of draw_gradelist_sjtp_header
 
 
@@ -1542,22 +1547,23 @@ def draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict, is_combi=
     if subj_dict.get('grlst_use_exem', False):
         subj_name += " (vr)"
 
+    # PR2023-06-16 debug this obne doesnt print the '---'
+    # was:  pecegrade = subj_dict.get('pecegrade', '---')
+    segrade = subj_dict.get('segrade') or '---'
+    pecegrade = subj_dict.get('pecegrade') or '---'
     finalgrade, finalgrade_in_letters = get_final_grade(subj_dict, 'finalgrade')
 
     # - draw subject_row
     txt_list = [
         {'txt': subj_name, 'font': 'Times-Roman', 'padding': 4, 'x': x + col_tab_list[0] * mm},
-        {'txt': subj_dict.get('segrade', '---'), 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm},
-        {'txt': subj_dict.get('pecegrade', '---'), 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
+        {'txt': segrade, 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm},
+        {'txt': pecegrade, 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
         {'txt': finalgrade, 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm},
         {'txt': finalgrade_in_letters, 'align': 'c', 'x': x + (col_tab_list[4] + col_tab_list[5]) / 2 * mm}
     ]
-    logger.debug('     txt_list: ' + str(txt_list))
 
     vertical_lines = (0, 1, 2, 3, 4, 5)
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-
-
 # - end of draw_gradelist_subject_row
 
 
@@ -1635,8 +1641,6 @@ def draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, subj_dict,
         {'txt': pws_subjects, 'font': 'Times-Italic', 'padding': 4, 'x': x + col_tab_list[1] * mm}
     )
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-
-
 # - end of draw_gradelist_werkstuk_row
 
 
@@ -1650,8 +1654,6 @@ def draw_gradelist_stage_row(canvas, coord, col_tab_list, subj_dict):
     ]
     vertical_lines = (0, 3, 4, 5)
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-
-
 # - end of draw_gradelist_stage_row
 
 
@@ -1686,8 +1688,6 @@ def draw_gradelist_avg_final_row(canvas, coord, col_tab_list, library, student_d
             vertical_lines.append(4)
 
         draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-
-
 # - end of draw_gradelist_avg_final_row
 
 
@@ -1716,8 +1716,6 @@ def draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict
     ]
     vertical_lines = (0, 5)
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
-
-
 # - end of draw_gradelist_stage_row
 
 
@@ -1753,8 +1751,6 @@ def draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_di
             logger.debug('txt_list: ' + str(txt_list))
         vertical_lines = ()
         draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, False, vertical_lines, txt_list)
-
-
 # - end of draw_gradelist_footnote_row
 
 
@@ -1763,13 +1759,13 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, li
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
     """
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug((' ----- draw_gradelist_signature_row -----'))
         # logger.debug(('student_dict: ' + str(student_dict)))
-        logger.debug('auth1_name: ' + str(auth1_name))
-        logger.debug('auth2_name: ' + str(auth2_name))
-        logger.debug('printdate: ' + str(printdate))
+        logger.debug('    auth1_name: ' + str(auth1_name))
+        logger.debug('    auth2_name: ' + str(auth2_name))
+        logger.debug('    printdate: ' + str(printdate))
 
     # border = [top, right, bottom, left]
     bottom = border[2]
@@ -1842,9 +1838,9 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, li
     draw_text_one_line(canvas, coord_auth_label, col_tab_list, 0, 1.25, False, None, txt_list)
 
     if logging_on:
-        logger.debug('coord: ' + str(coord))
-        logger.debug('coord_auth: ' + str(coord_auth))
-        logger.debug('bottom: ' + str(bottom))
+        logger.debug('    coord: ' + str(coord))
+        logger.debug('    coord_auth: ' + str(coord_auth))
+        logger.debug('    bottom: ' + str(bottom))
 
     # - regnumber and idnumber are just above lower line of rectangle
     id_number = student_dict.get('idnumber') or '---'
@@ -1857,8 +1853,6 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, li
     coord_regnr = [coord[0], bottom]
 
     draw_text_one_line(canvas, coord_regnr, col_tab_list, 0, 1.25, False, None, txt_list)
-
-
 # - end of draw_gradelist_signature_row
 
 

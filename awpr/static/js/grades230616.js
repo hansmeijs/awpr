@@ -477,6 +477,8 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  MODAL SELECT COLUMNS ------------------------------------
     const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
     if(el_MCOL_btn_save){
+        // PR2023-06-16 parameters of HandleBtnSelect in t_MCOL_Save are:
+        //              HandleBtnSelect(mod_MCOL_dict.selected_btn, true)  // true = skip_upload
         el_MCOL_btn_save.addEventListener("click", function() {
             t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
     };
@@ -571,7 +573,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 };
 
-
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     isloaded_permits = true;
@@ -584,7 +585,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
 
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
-                if (isloaded_loc && isloaded_permits) {CreateSubmenu()};
+                if (isloaded_loc && isloaded_permits) {
+                    CreateSubmenu()
+                };
                 if(isloaded_settings || isloaded_permits){
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
@@ -707,27 +710,44 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2020-11-14 PR2021-03-15
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
+
+        //console.log( "    skip_upload: ", skip_upload);
+        //console.log( "    selected_btn: ", selected_btn);
+        //console.log( "    setting_dict.sel_examperiod: ", setting_dict.sel_examperiod);
+        //console.log( "    setting_dict.sel_btn: ", setting_dict.sel_btn);
         // function is called by select_btn.click, t_MCOL_Save, DatalistDownload after response.setting_dict
-        // skip_upload = true when called by DatalistDownload
+
+        // PR2023-06-16 parameters of HandleBtnSelect in t_MCOL_Save are:
+        //              HandleBtnSelect(mod_MCOL_dict.selected_btn, true)  // true = skip_upload
+
+        // skip_upload = true when called by DatalistDownload or t_MCOL_Save
         //  PR2021-09-07 debug: gave error because old btn name was still in saved setting
 
+        // PR2023-06-16 debug: sel_btn and sel_examperiod did not match, empty list as result
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
-        if (!data_btn) {data_btn = selected_btn};
-        if (data_btn && ["btn_exem", "btn_ep_01", "btn_reex", "btn_reex03"].includes(data_btn)) {
-            selected_btn = data_btn;
+        if (skip_upload) {
+            selected_btn = (setting_dict.sel_examperiod === 4) ? "btn_exem" :
+                            (setting_dict.sel_examperiod === 3) ? "btn_reex03" :
+                            (setting_dict.sel_examperiod === 2) ? "btn_reex" : "btn_ep_01";
+
         } else {
-            selected_btn = "btn_ep_01";
+            if (data_btn && ["btn_exem", "btn_ep_01", "btn_reex", "btn_reex03"].includes(data_btn)) {
+                selected_btn = data_btn;
+            } else {
+                selected_btn = "btn_ep_01";
+            };
+        };
+// ---  upload new selected_btn, when changed)
+        if (selected_btn !== setting_dict.se_btn){
+            setting_dict.se_btn = selected_btn;
+            const upload_dict = {page_grade: {sel_btn: selected_btn}};
+    //console.log( "  upload_dict ", upload_dict);
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
         const el_submenu_approve = document.getElementById("id_submenu_approve");
         if (el_submenu_approve){
             el_submenu_approve.innerText = (selected_btn === "btn_exem") ? loc.Approve_exemptions : loc.Approve_grades;
-        };
-// ---  upload new selected_btn, not after loading page (then skip_upload = true)
-        if(!skip_upload){
-            const upload_dict = {page_grade: {sel_btn: selected_btn}};
-    //console.log( "  upload_dict ", upload_dict);
-            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
 // ---  highlight selected button
@@ -737,7 +757,7 @@ document.addEventListener("DOMContentLoaded", function() {
         b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
         if(skip_upload){
-        // skip_upload = true when called by DatalistDownload.
+        // skip_upload = true when called by DatalistDownload or t_MCOL_Save.
         //  - don't call DatalistDownload, otherwise it cretaed an indefinite loop
         //  - but fill table with new data
 
@@ -773,7 +793,9 @@ document.addEventListener("DOMContentLoaded", function() {
                   sel_examtype = "se";
                 };
             }
-            // upload new sel_examperiod and / or sel_examtype if changed
+
+        console.log( "sel_examtype: ", sel_examtype);
+
             const request_item_setting = {
                     page: "page_grade",
                     sel_btn: selected_btn,
@@ -952,6 +974,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const tblName = get_tblName_from_selectedBtn()
         const field_setting = field_settings[selected_btn];
         const data_rows = grade_dicts;
+    //console.log( "data_rows", data_rows);
 
 // ---  get list of hidden columns
         const col_hidden = get_column_is_hidden();
