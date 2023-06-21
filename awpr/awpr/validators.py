@@ -813,6 +813,43 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     # called only once by Loggedin, to reset before setting is retrieved
     # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
 
+    """
+    Goedkeuring uitslagen doro Inpectie:
+    De Inspectie dient voortaan de uitslagen goed te keuren, voordat de deiniteieve cijferlijste ne diploma’s kunnen worden geprint.
+    Het ruitje achter de uitslag geeft de status van de goedkeuring weer.
+    De voorlopige cijferlijst kan wel worden gedownload zonder goedkeuring va nde Inspectie
+    Definitieve cijferlijst en diploma worden opgeslagen
+    AWP slaat voortaan de definitieve cijferlijst en diploma op.
+    Het registratienummer op het diploma en cijferlijst wordt voortaan door AWP aangemaakt en is uniek voor elk waardepapier. Het is niet meer nodig om het diplomanummer en cijferlijstnummer in te voeren.
+    De waardepapieren zijn terug te vinden in de pagina Archief, tab Dipi=oma’s en cijferlijsten.
+    """
+
+
+    msg = ''.join((
+        '<p><b>', gettext("The results need the approval of the Inspectorate"), '</b></p>',
+        "<ul class='manual_bullet mb-0 pb-2'><li>",
+        gettext("From now on, the Inspectorate must approve the results, before you can print a final grade list or diploma."),
+        "</li><li>", gettext("A blue diamond icon beside the result indicates, that the result has been approved."),
+        "</li><li>", gettext("You still can print the preliminary grade list without approval by the Inspectorate."), "</li></ul>"
+                                                                                                                      
+        '<p><b>', gettext("The final grade lists and diploma's will be saved in AWP."), '</b></p>',
+        "<ul class='manual_bullet mb-0 pb-2'><li>",
+        gettext("When downloading the final grade lists and diploma's, AWP will save a copy of each document."),
+        "<br>", gettext("Go to the page <i>Archive</i>, tab <i>Diploma's and grade lists</i> to download them."),
+        "</li><li>", gettext("AWP will print a unique registration number on each document."),
+        "<br>", gettext("This way you can always look up a final grade list or diploma that has been downladed."),
+        "</li><li>", gettext("If necessary, you can create a new final grade list or diploma. It will receive a new registration number."),
+        "</li><li>", gettext("You no longer have to enter the diploma numbers and grade list numbers in AWP."),
+        "</li></ul>"
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+    
+
     msg = ''.join((
         '<p><b>', gettext("The N-terms of the first exam period are published"), '</b></p>',
         "</p><p class='pb-0'>", gettext("Please do the following to calculate the results"), ":</p>",
@@ -829,12 +866,7 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
         "<br>", gettext("The '>' sign indicates the re-examination with the lowest difference from the CE grade."),
         "<br>", gettext("An empty column <i>reex</i> means that none of the retakes can give the result 'Passed'."), "</li></ul>"
     ))
-
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
+    
         msg = ''.join((
         '<p><b>', gettext("Wolf scores can now be copied to the CE scores in the page <i>Grades</i>"), ':</b></p>',
         "<p class='pb-2'>", gettext("AWP will not automatically copy the Wolf scores to the CE scores in the page <i>Grades</i>."), "<br>",

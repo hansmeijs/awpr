@@ -177,7 +177,7 @@
 
 //========= f_format_last_modified ======== PR2021-08-21 PR223-03-30
     function f_format_last_modified_txt(prefix_txt, modifiedat, modified_by) {
-        let display_txt = null;
+        let display_txt = "";
         if (modifiedat || modified_by ) {
             if (prefix_txt) { display_txt = prefix_txt };
             if (modifiedat){
@@ -291,7 +291,8 @@
                 // PR2023-02-07 debug: this is not correct value: !data_dict.examperiod === 4, must be: data_dict.examperiod !== 4
                 // - examinors don't have to sign exemption
                 // - examinors of school don't have to signsecret exam
-                const auth3_must_sign = (data_dict.examperiod !== 4);
+                // - PR2023-06-20 secret exams olny have to be approved by auth1 and auth2
+                const auth3_must_sign = (data_dict.examperiod !== 4 && !data_dict.secret_exam);
 
                 // - auth4 does not have to sign when secret exam (aangewezen examen) or when se-grade
                 // - auth4 does not have to sign when se-grade
@@ -302,7 +303,7 @@
                //                             && ["pe_status", "ce_status"].includes(field_name));
 
                 const auth4_must_sign = (!["pe_status", "ce_status"].includes(field_name) &&
-                                        data_dict.examperiod !== 4);
+                                        data_dict.examperiod !== 4 && !data_dict.secret_exam);
 
                 className = f_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
                 filter_value = className;

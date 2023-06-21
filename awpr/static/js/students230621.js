@@ -236,6 +236,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MSTUD_msg_modified = document.getElementById("id_MSTUD_msg_modified");
 
+        const el_MSTUD_regnr_container = document.getElementById("id_MSTUD_regnr_container");
+
         // TODO add log
         const el_MSTUD_btn_log = document.getElementById("id_MSTUD_btn_log");
         const el_MSTUD_btn_save = document.getElementById("id_MSTUD_btn_save");
@@ -1416,6 +1418,14 @@ function RefreshDataRowsAfterUpload(response) {
     function MSTUD_InputMouseup(el_input, event){
         if (el_input){
             console.log( "  ---  MSTUD_InputMouseup  --- ")
+            //PR2023-06-20 debug. when changing date with calendar, changed event is not triggered
+            // enable save btn when mouseup event is triggered
+
+            const field_name = get_attr_from_el(el_input, "data-field");
+            if (field_name === "birthdate"){
+                el_MSTUD_btn_save.disabled = false;
+            };
+            console.log( "    field_name", field_name)
             mod_MSTUD_dict.active_el = el_input;
             mod_MSTUD_dict.caret_at = event.target.selectionStart;
         };
@@ -1751,6 +1761,11 @@ function RefreshDataRowsAfterUpload(response) {
             el_msg.innerText = null;
         };
 
+// - PR2023-06-20 hide fields department, regnumber, gradelistnumber, diplomanumber when exameyear >= 2023
+        if (el_MSTUD_regnr_container){
+            add_or_remove_class(el_MSTUD_regnr_container, cls_hide, setting_dict.sel_examyear_code > 2022)
+        };
+
 // ---  reset modified
         el_MSTUD_msg_modified.innerText = null;
 
@@ -1785,15 +1800,14 @@ function RefreshDataRowsAfterUpload(response) {
                     (fldName === "sct_id" && focus_field === "sctbase_id")){
                     set_focus_on_el_with_timeout(el, 150);
                 };
-            }
-        }
+            };
+        };
 
         let full_name = (mod_MSTUD_dict.fullname) ? mod_MSTUD_dict.lastname : "";
         document.getElementById("id_MSTUD_hdr").innerText = (mod_MSTUD_dict.fullname) ? mod_MSTUD_dict.fullname : loc.Add_candidate;
 
     // empty symbol buttons
         el_MSTUD_symbol_container.innerHTML = null;
-
 
     }  // MSTUD_SetElements
 

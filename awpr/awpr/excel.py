@@ -1628,7 +1628,7 @@ class GradeDownloadEx2aView(View):  # PR2022-02-17 PR2022-05-09
 class GradeDownloadEx5View(View):  # PR2022-02-17
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GradeDownloadEx5View ============= ')
         # function creates, Ex2 xlsx file based on settings in usersetting
@@ -3230,9 +3230,6 @@ def count_number_reex_for_ex5(school, department):
 # --- end of count_number_reex_for_ex5
 
 
-
-
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 def create_ex5_xlsx(published_instance, examyear, school, department, level, examperiod,
                      save_to_disk, request, user_lang):
     # PR2022-05-13
@@ -3410,7 +3407,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, level, exa
 # ---  student rows
                 for student_pk, student_dict in students_dict.items():
                     row_index = write_ex5_table_row(
-                        book=book,
+                        examyear=examyear,
                         sheet=sheet,
                         max_number_of_reex=max_number_of_reex,
                         row_index=row_index,
@@ -3672,19 +3669,22 @@ def write_ex5_table_header(book, sheet, max_number_of_reex, row_index, ex5_forma
     col_index = add_colnr_and_increase_index(col_index)
 
 # - Registratienummer
-    sheet.set_column(col_index, col_index, 15)
-    sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Registratienummer', th_align_center)
-    col_index = add_colnr_and_increase_index(col_index)
+        # PR2023-06-21 don't print Registratienummer as of examyear 2023
+    #sheet.set_column(col_index, col_index, 15)
+    #sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Registratienummer', th_align_center)
+    #col_index = add_colnr_and_increase_index(col_index)
 
 # - Diplomanummer
-    sheet.set_column(col_index, col_index, 11)
-    sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Diplomanummer', th_rotate)
-    col_index = add_colnr_and_increase_index(col_index)
+        # PR2023-06-21 don't print Diplomanummer as of examyear 2023
+    #sheet.set_column(col_index, col_index, 11)
+    #sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Diplomanummer', th_rotate)
+    #col_index = add_colnr_and_increase_index(col_index)
 
 # - Cijferlijstnummer
-    sheet.set_column(col_index, col_index, 11)
-    sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Cijferlijstnummer', th_rotate)
-    col_index = add_colnr_and_increase_index(col_index)
+        # PR2023-06-21 don't print Cijferlijstnummer as of examyear 2023
+    #sheet.set_column(col_index, col_index, 11)
+    #sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Cijferlijstnummer', th_rotate)
+    #col_index = add_colnr_and_increase_index(col_index)
 
 # - Opmerkingen
     sheet.set_column(col_index, col_index, 17)
@@ -3695,11 +3695,11 @@ def write_ex5_table_header(book, sheet, max_number_of_reex, row_index, ex5_forma
 # - end of write_ex5_table_header
 
 
-def write_ex5_table_row(book, sheet, max_number_of_reex, row_index, student_pk, student_dict, ex5_formats,
+def write_ex5_table_row(examyear, sheet, max_number_of_reex, row_index, student_pk, student_dict, ex5_formats,
         formatindex_first_subject, formatindex_number_subjects,
                         row_align_center, row_align_center_green, row_align_left_green):
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('------------------- write_ex5_table_row ---------------------')
         logger.debug('student_pk: ' + str(student_pk) + ' ' + str(type(student_pk)))
@@ -3909,19 +3909,24 @@ ep02_dict: {149: {'subj': 'wa', 's': '5.6', 'c': '4.8', 'f': '5'}, 155: {'subj':
         sheet.write(row_index, col_index, 'x' if stud_info_dict.get('wdr') else None, row_align_center)
         col_index += 1
 # Registratienummer
-        sheet.write(row_index, col_index, stud_info_dict.get('regnr'), row_align_center)
-        col_index += 1
+        # PR2023-06-21 don't print regnumber as of examyear 2023, regnumber is genereted when printing dp or gl
+        #regnumber = stud_info_dict.get('regnr') if examyear.code < 2023 else ''
+        #sheet.write(row_index, col_index, regnumber, row_align_center)
+        #col_index += 1
 # Diplomanummer
-        sheet.write(row_index, col_index, stud_info_dict.get('dipnr', ''), row_align_center)
-        col_index += 1
+        # PR2023-06-21 don't print Diplomanummer as of examyear 2023
+        #dipnr = stud_info_dict.get('dipnr') if examyear.code < 2023 else ''
+        #sheet.write(row_index, col_index, dipnr, row_align_center)
+        #col_index += 1
 # Cijferlijstnummer
-        sheet.write(row_index, col_index, stud_info_dict.get('glnr'), row_align_center)
-        col_index += 1
+        # PR2023-06-21 don't print Cijferlijstnummer as of examyear 2023
+        #glnr = stud_info_dict.get('glnr') if examyear.code < 2023 else ''
+        #sheet.write(row_index, col_index, glnr, row_align_center)
+        #col_index += 1
 
 # Opmerkingen
         sheet.write(row_index, col_index, 'Vrijstelling' if exemp_count else None,
                     row_align_left_green if exemp_count else row_align_center)
-
 
     return row_index
 # - end of write_ex5_table_row

@@ -1710,11 +1710,12 @@ class StudentApproveResultView(View):  # PR2023-06-11
 
             if student_pk_list:
                 try:
-                    modifiedby_pk_str = str(request.user.pk)
-                    modifiedat_str = str(timezone.now())
+                    # PR2023-06-20 remove modifiedby and modifiedat when removing approval or rejection
+                    modifiedby_pk_str = str(request.user.pk) if gl_status_value else 'NULL'
+                    modifiedat_str =''.join(("'", str(timezone.now()), "'")) if gl_status_value else 'NULL'
 
                     sql_list = ["UPDATE students_student SET gl_status=", str(gl_status_value),
-                                ", gl_auth1by_id=", modifiedby_pk_str, ", gl_modifiedat='", modifiedat_str, "'",
+                                ", gl_auth1by_id=", modifiedby_pk_str, ", gl_modifiedat=", modifiedat_str, " ",
                                 "WHERE NOT tobedeleted AND NOT deleted ",
                                 "AND id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[])) "
                                 "RETURNING id;"
@@ -2885,7 +2886,7 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 class StudentsubjectValidateTestView(View):
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= StudentsubjectValidateTestView ============= ')

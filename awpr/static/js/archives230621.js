@@ -6,7 +6,8 @@
 //let selected_btn = "btn_exform";
 
 //let school_rows = [];
-let published_rows = [];
+const published_dicts = {};
+const diplomagradelist_dicts = {};
 //const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -46,10 +47,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // key with btn name contains fields that will be hidden in this selected_btn
     // either 'all' or selected_btn are used in a page
 
-    mod_MCOL_dict.columns.all = {
-        name: "Name_ex_form", datepublished: "Date_submitted", url: "Download_Exform"
+    mod_MCOL_dict.columns.published = {
+        name: "Name_ex_form",
+        datepublished: "Date_submitted",
+        url: "Download_Exform"
     };
 
+    mod_MCOL_dict.columns.diplomagradelist = {
+        regnumber: "Regnumber",
+        datepublished: "Date_submitted",
+        modifiedby: "Submitted_by",
+        url: "Download_Exform"
+    };
 // --- get field_settings
     field_settings.published = {field_caption: ["", "Name_ex_form", "Date_submitted", "Submitted_by", "Download_Exform", ""],
                     field_names: ["select", "name", "datepublished", "modifiedby", "url", "delete"],
@@ -57,6 +66,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_tags: ["text", "text", "text",  "text", "toggle", ""],
                     field_width: ["020", "480",  "150", "180", "120", "032"],
                     field_align: ["c", "l", "c", "l", "c", "c"]};
+
+    field_settings.diplomagradelist = {field_caption: ["", "Candidate", "Document", "Regnumber_2lines", "Created_at", "Created_by", "Download"],
+                    field_names: ["select", "full_name", "doctype", "regnumber", "modifiedat", "modifiedby", "url"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "a"],
+                    filter_tags: ["text", "text", "text", "text", "text", "text", "toggle"],
+                    field_width: ["020", "360", "090", "150", "220", "180", "120"],
+                    field_align: ["c", "l", "l", "l",  "l", "l", "c"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -141,7 +157,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
 
-                published_rows: {get: true}
+                published_rows: {get: true},
+                diplomagradelist_rows: {get: true}
             };
 
         DatalistDownload(datalist_request);
@@ -229,10 +246,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("school_rows" in response)  {
                     school_rows =  response.school_rows;
-                    b_fill_datamap(school_map, response.school_rows)};
-
+                    b_fill_datamap(school_map, response.school_rows)
+                };
                 if ("published_rows" in response) {
-                    published_rows = response.published_rows;
+                    b_fill_datadicts("published", "id", null, response.published_rows, published_dicts);
+                };
+                if ("diplomagradelist_rows" in response) {
+                    b_fill_datadicts("diplomagradelist", "id", null, response.diplomagradelist_rows, diplomagradelist_dicts);
                 };
                 HandleBtnSelect(selected_btn, true);  // true = skip_upload
             },
@@ -315,13 +335,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ============== PR2021-06-16  PR2021-12-14
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
         //console.log( "setting_dict", setting_dict);
 
-        const tblName = "published";
+        const tblName = (selected_btn === "btn_diploma") ? "diplomagradelist" : "published";
         const field_setting = field_settings[tblName];
-        const data_rows = published_rows;
-        //console.log( "data_rows", data_rows);
+        const data_dicts = (selected_btn === "btn_diploma") ? diplomagradelist_dicts : published_dicts;
+    console.log( "data_dicts", data_dicts);
 
 // ---  get list of hidden columns
         // copy col_hidden from mod_MCOL_dict.cols_hidden
@@ -340,20 +360,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- create table header
         CreateTblHeader(field_setting, col_hidden);
 
-// --- loop through data_rows
-        if(data_rows && data_rows.length){
-            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-
-        console.log("data_dict.filename.charAt(0).toLowerCase()", data_dict.filename.charAt(0).toLowerCase());
-        console.log("data_dict.filename", data_dict.filename);
-
-                console.log ("data_dict", data_dict)
-            // TODO add field 'doctype' to table schools_published instead of filtering by name PR2023-04-18
+// --- loop through data_dicts
+        if(data_dicts){
+            for (const data_dict of Object.values(data_dicts)) {
                 const show_row =  (selected_btn === "btn_diploma") ?
-                                        (!!data_dict.regnumber) :
+                                        // show only latest dpgl? not for now PR2023-06-21
+                                        (data_dict.is_latest_dpgl || true) :
                                   (selected_btn === "btn_exform") ?
-
-                                        (data_dict.filename.charAt(0).toLowerCase() === "e") :
+                                        (data_dict.filename && data_dict.filename.charAt(0).toLowerCase() === "e") :
                                   (selected_btn === "btn_orderlist") ?
                                         (!data_dict.regnumber && data_dict.filename.charAt(0).toLowerCase() !== "e") :
                                         false;
@@ -476,8 +490,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const column_count = field_names.length;
 
 // ---  lookup index where this row must be inserted
-        const ob1 = (data_dict.name) ? data_dict.name : "";
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1);
+        const ob1 = (selected_btn === "btn_diploma") ?
+                        (data_dict.full_name) ? data_dict.full_name : "" :
+                        (data_dict.name) ? data_dict.name : "";
+        const ob2 = (selected_btn === "btn_diploma" && data_dict.doctype) ? (data_dict.doctype) : "zz";
+        const ob3 = (selected_btn === "btn_diploma") ? (data_dict.modifiedat) : "";
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2, ob3, false, false, true);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
@@ -488,6 +506,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
+        tblRow.setAttribute("data-ob2", ob2);
+        tblRow.setAttribute("data-ob3", ob3);
 
 // --- add EventListener to tblRow
         tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
@@ -519,6 +539,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // --- add data-field attribute
                 el.setAttribute("data-field", field_name);
+
+        // --- make row gray when not is_latest_dpgl PR2023-06-19
+                if (!data_dict.is_latest_dpgl) {
+                    el.classList.add("text-muted");
+                };
 
         // --- add  text_align
                 el.classList.add(class_width, class_align);
@@ -564,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("fld_value", fld_value);
 
             if(field_name){
-                let inner_text = null, h_ref = null, filter_value = null;
+                let inner_text = null, h_ref = null, title_text = null, filter_value = null;
                 if (field_name === "select") {
 
                 } else if (field_name === "url"){
@@ -581,11 +606,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     inner_text = (date_formatted) ? date_formatted : "\n";
                     filter_value = date_formatted;
 
+                } else if (field_name === "doctype"){
+                    inner_text = (fld_value === "dp") ? loc.diploma : (fld_value === "gl") ? loc.grade_list :"\n";
+                    filter_value = inner_text;
 
-                } else if (["name", "modifiedby"].includes(field_name)){
+                } else if (field_name === "regnumber"){
+                    inner_text = (fld_value) ? fld_value : "\n";
+                    filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
+                    if (fld_value) {
+                        const title_list =  [
+                            loc.regnumber_info[0],
+                            fld_value.substring(0,2) + " " + loc.regnumber_info[1],
+                            fld_value.substring(2,5) + " " + loc.regnumber_info[2],
+                            fld_value.substring(5,6) + "   " + loc.regnumber_info[3],
+                            fld_value.substring(6,12) + " " + loc.regnumber_info[4]
+                        ];
+                        if (fld_value.slice(-1) === 'b') {
+                            title_list.push(loc.regnumber_info[5])
+                        }
+                        title_text = title_list.join("\n");
+                    };
+
+                } else if (["full_name",  "name", , "modifiedby"].includes(field_name)){
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     inner_text = (fld_value) ? fld_value : "\n";
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
+
+                } else if (field_name === "modifiedat"){
+                    const modified_dateJS = parse_dateJS_from_dateISO(fld_value);
+                    inner_text = format_datetime_from_datetimeJS(loc, modified_dateJS);
+                    filter_value = inner_text;
                 };
 
 // ---  put value in innerText and title
@@ -595,6 +645,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerHTML = inner_text;
                 };
 
+    // ---  add attribute title
+                add_or_remove_attr (el_div, "title", !!title_text, title_text);
     // ---  add attribute filter_value
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
 
@@ -643,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log(" -----  ModConfirmOpen   ----")
         //console.log("mode", mode)
         //console.log("tblRow", tblRow)
-
+        // value of mode is only "delete"
 // reset  modal
         el_confirm_header.innerText = null;
         el_confirm_msg_container.innerHTML = null;
@@ -658,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get existing data_dict from data_rows
             const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-            const [index, data_dict, compare] = b_recursive_integer_lookup(published_rows, "id", pk_int);
+            const data_dict = published_dicts[pk_int];
 
 // skip if no tblRow selected or if exam has no envelopbundle
             if (!isEmpty(data_dict)){

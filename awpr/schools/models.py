@@ -196,6 +196,10 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     # PR2023-01-21, to skip thumbrule from 2023
     thumbrule_allowed = BooleanField(default=False)
 
+    # PR2023-06-18, requests from Dorothee Inspectorate SXM  to block reex requests
+    reex_requests_blocked = BooleanField(default=False)
+    reex03_requests_blocked = BooleanField(default=False)
+
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
@@ -248,6 +252,10 @@ class Examyear_log(AwpBaseModel):
 
     # PR2023-01-21, to skip thumbrule from 2023
     thumbrule_allowed = BooleanField(default=False)
+
+    # PR2023-06-18, requests from Dorothee Inspectorate SXM  to block reex requests
+    reex_requests_blocked = BooleanField(default=False)
+    reex03_requests_blocked = BooleanField(default=False)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
@@ -583,9 +591,6 @@ class Published(AwpBaseModel): # PR2020-12-02
 
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, null=True)
     examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption, 12 = ce + reex
-
-    # regnumber contains registration number when it is a diploma or gradelist PR2023-03-31
-    regnumber = CharField(max_length=c.MAX_LENGTH_IDNUMBER, db_index=True, null=True)
 
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     filename = CharField(max_length=255, null=True)

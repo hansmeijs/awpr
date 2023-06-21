@@ -93,12 +93,34 @@
                             </div>
                          </div>
                      </div>
-                     <div class="content_header">
-                         <div class="content_subheader_left mx-1 ">
-                            <label for="id_MSTUD_regnumber" class="label_margin_top_m3">{% trans 'Registration number' %}:</label>
-                            <input id="id_MSTUD_regnumber" type="text" data-field= "regnumber" class="form-control"
-                                readonly autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                     <div id="id_MSTUD_regnr_container">
+                         <div class="content_header">
+                             <div class="flex_1 mx-1 ">
+                                <label for="id_MSTUD_department" class="label_margin_top_m3">{% trans 'Department' %}:</label>
+                                <input id="id_MSTUD_department" data-field= "db_code" class="form-control"
+                                       readonly autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                             </div>
+
+                             <div class="content_subheader_left mx-1 ">
+                                <label for="id_MSTUD_regnumber" class="label_margin_top_m3">{% trans 'Registration number' %}:</label>
+                                <input id="id_MSTUD_regnumber" type="text" data-field= "regnumber" class="form-control"
+                                    readonly autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                             </div>
+
+                             <div class="content_subheader_left mx-1">
+                                <label for="id_MSTUD_diplomanumber" class="label_margin_top_m3">{% trans 'Diploma number' %}:</label>
+                                <input id="id_MSTUD_diplomanumber" type="text" data-field= "diplomanumber" class="form-control awp_input_text"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                             </div>
+                             <div class="content_subheader_left mx-1">
+                                <label for="id_MSTUD_gradelistnumber" class="label_margin_top_m3">{% trans 'Grade list number' %}:</label>
+                                <input id="id_MSTUD_gradelistnumber" type="text" data-field= "gradelistnumber" class="form-control awp_input_text"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                             </div>
                          </div>
+                     </div>
+                     <div class="content_header">
+
                          <div class="content_subheader_left mx-1">
                             <label for="id_MSTUD_examnumber" class="label_margin_top_m3">{% trans 'Exam number' %}:</label>
                             <input id="id_MSTUD_examnumber" type="text" data-field= "examnumber" class="form-control awp_input_text"
@@ -108,23 +130,7 @@
                             </div>
                          </div>
 
-                         <div class="content_subheader_left mx-1">
-                            <label for="id_MSTUD_diplomanumber" class="label_margin_top_m3">{% trans 'Diploma number' %}:</label>
-                            <input id="id_MSTUD_diplomanumber" type="text" data-field= "diplomanumber" class="form-control awp_input_text"
-                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                         </div>
-                         <div class="content_subheader_left mx-1">
-                            <label for="id_MSTUD_gradelistnumber" class="label_margin_top_m3">{% trans 'Grade list number' %}:</label>
-                            <input id="id_MSTUD_gradelistnumber" type="text" data-field= "gradelistnumber" class="form-control awp_input_text"
-                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                         </div>
-                     </div>
-                     <div class="content_header">
-                         <div class="flex_1 mx-1 ">
-                            <label for="id_MSTUD_department" class="label_margin_top_m3">{% trans 'Department' %}:</label>
-                            <input id="id_MSTUD_department" data-field= "db_code" class="form-control"
-                                   readonly autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                         </div>
+
                          <div id="id_MSTUD_level_div" class="flex_1 mx-1">
                             <label id="id_MSTUD_level_label" for="id_MSTUD_lvlbase_id" class="label_margin_top_m3">{% trans 'Learning path' %}:</label>
                             <select id="id_MSTUD_lvlbase_id" data-field= "lvlbase_id" class="form-control awp_input_text"

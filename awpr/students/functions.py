@@ -164,7 +164,7 @@ def calc_regnumber_OLD(school_code, gender, examyear_str, examnumber_str, depbas
 
 
 
-def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
+def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam, used_regnumber_list):
     # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19 PR2021-11-17
     #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
     #    '12345:     SchoolID: CUR01 etc, BON01,
@@ -174,6 +174,7 @@ def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_co
     #    '14:        1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = pbl
     logging_on = s.LOGGING_ON
     """
+    was:
     Het registratienummer bestaat uit 13 tekens en is als volgt opgebouwd:
         1 tm 5: Schoolregistratienr:   CUR17
         6:       Geslacht:              M=1, V = 2" & vbCrLf & _
@@ -211,41 +212,62 @@ def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_co
         logger.debug('examnumber:   ' + str(examnumber_str) + ' ' + str(type(examnumber_str)))
         logger.debug('depbase_code:      ' + str(depbase_code))
         logger.debug('levelbase_code:    ' + str(levelbase_code))
+        logger.debug('used_regnumber_list:    ' + str(used_regnumber_list))
 
-    reg_list = []
-# - first 2 characters is examenjaar
-    reg_list.append(examyear_str[2:4] if examyear_str else '--')
+# get regnumber
+    # - count is an extra safety to prevent infinite loops, deduct 1 after each loop till 0
+    count = 10
 
-# - character 3 id 'c' or 's'
-    reg_list.append(school_code[0].lower() if school_code else '-')
+    # start of while loop
+    exit_loop = False
+    regnumber = None
+    while not exit_loop:
+        count -= 1
+        if count < 1:
+            exit_loop = True
 
-# - character 4 and 5 are digits of schoolcode - lex has 3 characters:  4, 5, 6
-    reg_list.append(school_code[3:].lower() if school_code and len(school_code) > 3 else '--')
+        if not exit_loop:
 
-# - character 6: h = havo, v = vwo, t = tkl, k = pkl, b = pbl
-    dep_lvl = '-'
-    if depbase_code:
-        depbase_code_lc = depbase_code.lower()
-        if depbase_code_lc == 'havo':
-            dep_lvl = 'h'
-        elif depbase_code_lc == 'vwo':
-            dep_lvl = 'v'
-        elif depbase_code_lc == 'vsbo':
-            if levelbase_code:
-                levelbase_code_lc = levelbase_code.lower()
-                if levelbase_code_lc == 'tkl':
-                    dep_lvl = 't'
-                elif levelbase_code_lc == 'pkl':
-                    dep_lvl = 'k'
-                elif levelbase_code_lc == 'pbl':
-                    dep_lvl = 'b'
-    reg_list.append(dep_lvl)
+            reg_list = []
+        # - first 2 characters is examenjaar
+            reg_list.append(examyear_str[2:4] if examyear_str else '--')
 
-    reg_list.append(str(randint(1000000, 1999999))[-6:])
-    if bis_exam:
-        reg_list.append('b')
-    regnumber = ''.join(reg_list)
+        # - character 3 id 'c' or 's'
+            reg_list.append(school_code[0].lower() if school_code else '-')
 
+        # - character 4 and 5 are 2 digits of schoolcode
+            reg_list.append(school_code[3:5].lower() if school_code and len(school_code) > 3 else '--')
+
+        # - character 6: h = havo, v = vwo, t = tkl, k = pkl, b = pbl
+            dep_lvl = '-'
+            if depbase_code:
+                depbase_code_lc = depbase_code.lower()
+                if depbase_code_lc == 'havo':
+                    dep_lvl = 'h'
+                elif depbase_code_lc == 'vwo':
+                    dep_lvl = 'v'
+                elif depbase_code_lc == 'vsbo':
+                    if levelbase_code:
+                        levelbase_code_lc = levelbase_code.lower()
+                        if levelbase_code_lc == 'tkl':
+                            dep_lvl = 't'
+                        elif levelbase_code_lc == 'pkl':
+                            dep_lvl = 'k'
+                        elif levelbase_code_lc == 'pbl':
+                            dep_lvl = 'b'
+            reg_list.append(dep_lvl)
+
+            reg_list.append(str(randint(1000000, 1999999))[-6:])
+            if bis_exam:
+                reg_list.append('b')
+            try_regnumber = ''.join(reg_list)
+
+            if try_regnumber not in used_regnumber_list:
+                regnumber = try_regnumber
+    # add new regnumber to used_regnumber_list
+                used_regnumber_list.append(regnumber)
+                exit_loop = True
+    # end of while loop
     if logging_on:
         logger.debug('regnumber: ' + str(regnumber))
     return regnumber

@@ -11,7 +11,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, gettext_lazy as _, gettext
+from django.utils.translation import activate, gettext, pgettext, gettext_lazy as _
 from django.views.generic import View
 
 from reportlab.pdfgen.canvas import Canvas
@@ -1152,7 +1152,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 
 
 def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk):
-    # PR2022-06-12 PR2022-07-12
+    # PR2022-06-12 PR2022-07-12  PR2023-06-20
     # only called by GradeSubmitEx5View
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -1235,8 +1235,9 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
                     if not_fully_approved:
                         stud_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
                         log_list.append(' - '.join((stud_name, row.get('subj_name', '-'))))
-                    if logging_on and False:
-                        logger.debug('row: ' + str(row))
+                    if logging_on :
+                        logger.debug('    row: ' + str(row))
+                        logger.debug('    not_fully_approved: ' + str(not_fully_approved))
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -1295,7 +1296,7 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                 logger.debug('has_permit: ' + str(has_permit))
 
         if not has_permit:
-            acc_prm.err_html_no_permit()
+            msg_html = acc_prm.err_html_no_permit()
         else:
 
 # - get upload_dict from request.POST
@@ -1708,7 +1709,7 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
                                         logger.debug('     published_pk: ' + str(published_pk))
                                         logger.debug('     file_name:    ' + str(file_name))
 
-# +++ create Ex2_xlsx
+# +++ create Ex5_xlsx
                                     if not is_test:
                     # - get text from examyearsetting
                                         # just to prevent PyCharm warning on published_instance=published_instance
@@ -1846,7 +1847,7 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
             if secret_exam:
                 msg_txt = ',<br>'.join((
                     str(_("All grades must be approved by the chairperson, secretary%(exam_comm)s") % {'exam_comm': exam_comm}),
-                    str(_("except for the designated exams, they must only be approved by the chairperson and secretary."))))
+                    str(_("except for the designated exams, they will be approved by the Division of Examinations."))))
             else:
                 msg_txt = str(_(
                     "All grades must be approved by the chairperson, secretary%(exam_comm)s.") % {
@@ -2182,7 +2183,173 @@ def create_published_instance(sel_examyear, sel_school, sel_department, sel_leve
     return published_instance
 # - end of create_published_instance
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+
+def create_published_instance_gradelist_diploma(sel_examyear, sel_school, sel_department, lvlbase_code, student_pk,
+                              lastname_initials, regnumber, save_to_disk, is_diploma, now_arr, request):
+    # PR2023-06-17
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_published_instance_gradelist_diploma ----- ')
+
+    # TODO add field 'doctype' to table schools_published instead of filtering by name PR2023-04-18
+
+    # create new published_instance and save it when it is not a test
+    form_name = 'dp' if is_diploma else 'gl'
+
+    depbase_code = sel_department.base.code if sel_department.base.code else '-'
+    if lvlbase_code:
+        depbase_code += ' ' + lvlbase_code
+
+    school_abbrev = sel_school.abbrev if sel_school.abbrev else '-'
+
+    examyear = str(sel_examyear.code) if sel_examyear.code else '-'
+
+    today_date = af.get_date_from_arr(now_arr)
+    now_formatted = af.get_now_formatted_from_now_arr(now_arr)
+
+    file_name = ' '.join((
+        lastname_initials,
+        form_name,
+        depbase_code,
+        examyear,
+        school_abbrev,
+        now_formatted
+    ))
+    if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
+        file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
+
+    file_extension = '.pdf'
+    filename_ext = file_name + file_extension
+
+    if logging_on:
+        logger.debug('filename_ext: ' + str(filename_ext))
+
+    published_instance = stud_mod.DiplomaGradelist(
+        student_id=student_pk,
+        regnumber=regnumber,
+        doctype=form_name,
+        name=file_name,
+        filename=filename_ext,
+        datepublished=today_date
+    )
+
+    # Note: filefield 'file' gets value on creating Ex form
+    if save_to_disk:
+        published_instance.save(request=request)
+        if logging_on:
+            logger.debug('saved published_instance: ' + str(published_instance))
+            logger.debug('saved published_instance.pk: ' + str(published_instance.pk))
+
+    return published_instance
+# - end of create_published_instance_gradelist_diploma
+
+
+def create_published_diplomagradelist_rows(sel_school, sel_department):
+    # --- create rows of published records PR2021-01-21 PR2022-09-16 PR2023-04-19
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_published_diplomagradelist_rows -----')
+
+    # can't use sql because of file field > create mapped_dict to add url's, so you can use sql
+
+    published_diplomagradelist_rows = []
+
+# - create dict with urls
+    mapped_urls_dict = {}
+
+    rows = stud_mod.DiplomaGradelist.objects.filter(
+        student__school=sel_school,
+        student__department=sel_department
+    )
+    for row in rows:
+        if logging_on:
+            logger.debug('    row: ' + str(row))
+
+        if row.file:
+            file_url = row.file.url
+
+            # PR2022-06-12 There a a lot of published_instances saved without file_url
+            # that should not happen, but it does. I don't know why.Check out TODO
+            # for now: filter on file_url
+            if file_url:
+                mapped_urls_dict[row.pk] = file_url
+
+    # don't filter on deleted students
+    sub_sql = ''.join((
+        "SELECT dpgl.student_id, dpgl.doctype, ",
+        "ARRAY_AGG(dpgl.id ORDER BY dpgl.id DESC) AS dpgl_id_arr ",
+
+        "FROM students_diplomagradelist AS dpgl ",
+        "INNER JOIN students_student AS stud ON (stud.id = dpgl.student_id) ",
+        "WHERE stud.school_id=", str(sel_school.pk), "::INT ",
+        "AND stud.department_id=", str(sel_department.pk), "::INT "
+        "GROUP BY dpgl.student_id, dpgl.doctype"
+    ))
+
+    sql = ''.join(("WITH sub_sql AS (", sub_sql, ") ",
+            "SELECT dpgl.id, ",
+            "stud.lastname, stud.firstname, stud.prefix, sub_sql.dpgl_id_arr, "
+            "dpgl.regnumber, dpgl.name AS dpgl_name, dpgl.doctype, dpgl.datepublished, dpgl.modifiedat, ",
+            "au.last_name AS modby_username ",
+
+            "FROM students_diplomagradelist AS dpgl ",
+            "INNER JOIN students_student AS stud ON (stud.id = dpgl.student_id) ",
+            "LEFT JOIN sub_sql ON (sub_sql.student_id = dpgl.student_id AND sub_sql.doctype = dpgl.doctype) ",
+            "LEFT JOIN accounts_user AS au ON (au.id = dpgl.modifiedby_id) ",
+
+            "WHERE stud.school_id=", str(sel_school.pk), "::INT ",
+            "AND stud.department_id=", str(sel_department.pk), "::INT "
+    ))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = af.dictfetchall(cursor)
+
+    if rows:
+        for row in rows:
+            dpgl_id = row.get('id')
+            file_url = mapped_urls_dict.get(dpgl_id)
+
+            full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
+
+            dpgl_id_arr = row.get('dpgl_id_arr') or []
+
+            has_multiple_dpgl, is_latest_dpgl = False, False
+            if len(dpgl_id_arr) > 1:
+                has_multiple_dpgl = True
+                if dpgl_id_arr[0] == dpgl_id:
+                    is_latest_dpgl = True
+            else:
+                is_latest_dpgl = True
+
+            dict = {
+                'id': dpgl_id,
+                'mapid': 'diplomagradelist_' + str(dpgl_id),
+                'full_name': full_name,
+                'dpgl_name': row.get('dpgl_name'),
+                'regnumber': row.get('regnumber'),
+                'doctype': row.get('doctype'),
+                'datepublished': row.get('datepublished'),
+                'dpgl_id_arr': row.get('dpgl_id_arr'),
+                'has_multiple_dpgl': has_multiple_dpgl,
+                'is_latest_dpgl': is_latest_dpgl,
+                'selected': is_latest_dpgl,  # to enable showing multiple dpgl
+                'url': file_url,
+                'modifiedby': row.get('modby_username'),
+                'modifiedat': row.get('modifiedat')
+            }
+            published_diplomagradelist_rows.append(dict)
+
+    if logging_on:
+        logger.debug('saved published_diplomagradelist_rows: ' + str(published_diplomagradelist_rows))
+    return published_diplomagradelist_rows
+# --- end of create_published_diplomagradelist_rows
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$
 def get_grade_score_text(count, is_score):
     return get_score_text(count) if is_score else get_grade_text(count)
 
@@ -3653,12 +3820,12 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
     # grades that are not published are only visible when 'same_school'
     # note_icon is downloaded in separate call
 
-    # PR2023-05-22 when secret_exams_only = True: shiws grdaes of all schools, but secret_exams_only
+    # PR2023-05-22 when secret_exams_only = True: show grdaes of all schools, but secret_exams_only
 
     # PR2023-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
     # must rename secret_exam to ceex_secret_exam etc
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('    sel_examperiod:    ' + str(sel_examperiod))
@@ -3826,10 +3993,8 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
         # PR2023-05-22 skip schoolbase clause when secret_exams_only
         # PR2023-06-08 Joan SXM wants to see the secret exams before publishing them.
-        # TODO temove this filter for now
         if secret_exams_only:
-            pass
-            #sql_list.append("AND exam.secret_exam")
+            sql_list.append("AND exam.secret_exam")
         else:
             if sel_schoolbase:
                 sql_list.extend(("AND school.base_id=", str(sel_schoolbase.pk), "::INT"))

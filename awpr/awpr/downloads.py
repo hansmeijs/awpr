@@ -462,6 +462,16 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
                             sel_examtype=sel_examtype
                         )
+
+# ----- DiplomaGradelist
+                    if datalist_request.get('diplomagradelist_rows'):
+                        if sel_examyear:
+                            datalists['diplomagradelist_rows'] = gr_vw.create_published_diplomagradelist_rows(
+                                sel_school=sel_school,
+                                sel_department=sel_department,
+                            )
+
+
 # ----- mailbox
                 if datalist_request.get('mailmessage_rows'):
                     datalists['mailmessage_received_rows'] = school_dicts.create_mailmessage_received_rows(

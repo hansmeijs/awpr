@@ -814,11 +814,12 @@ class Grade_log(sch_mod.AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
-class DiplomaGradelist(sch_mod.AwpBaseModel): # PR2023-02-19
+class DiplomaGradelist(sch_mod.AwpBaseModel): # PR2023-02-19 PR2023-03-18
     objects = CustomManager()
 
     student = ForeignKey(Student, related_name='+', on_delete=PROTECT)
 
+    doctype = CharField(max_length=c.MAX_LENGTH_04, null=True)
     regnumber = CharField(db_index=True, max_length=c.MAX_LENGTH_IDNUMBER, null=True)
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     filename = CharField(max_length=255, null=True)
@@ -826,6 +827,7 @@ class DiplomaGradelist(sch_mod.AwpBaseModel): # PR2023-02-19
     file = FileField(storage=PrivateMediaStorage(), null=True)
 
     datepublished = DateField()
+
     deleted = BooleanField(default=False)
 
     def __str__(self):

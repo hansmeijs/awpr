@@ -779,6 +779,8 @@ class Schemeitem(sch_mod.AwpBaseModel):
     subjecttype = ForeignKey(Subjecttype, related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
+    # PR2023-06-18 TODO secret exam is also on Exam and Examsubjects. Inplement this one and remove at other
+    #secret_exam = BooleanField(default=False)  # PR2023-06-18 added
 
     # PR2021-10-11 request ETS Esther: subject may have different language per level,
     # therefore otherlang is moved from subject to schemeitem
@@ -800,8 +802,12 @@ class Schemeitem(sch_mod.AwpBaseModel):
     is_mand_subj = ForeignKey(Subject, related_name='+', null=True, on_delete=SET_NULL)
     is_combi = BooleanField(default=False)
 
+    # PR2023-06-18 TODO to be replaced by  min_extra_nocount, extra_count_allowed and  extra_count_allowed not in use
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
+
+    # PR2023-06-18 to be implemented ?? > also in subjecttype
+    #max_extra_nocount = PositiveSmallIntegerField(default=0)
 
     has_practexam = BooleanField(default=False)
     # schemeitem.has_pws is deprecated, use subjecttype.has_pws instead
@@ -837,7 +843,6 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
     # PR2022-08-22 tobe deprecated, moved to subject
     notatdayschool = BooleanField(default=False)
-
 
     #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
     #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
@@ -925,6 +930,10 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
+
+    # PR2023-06-18 TODO secret exam is also on Exam and Examsubjects. Inplement this one and remove at other
+    #secret_exam = BooleanField(default=False)  # PR2023-06-18 added
+
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     no_order = BooleanField(default=False)
@@ -943,6 +952,9 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
 
     extra_count_allowed = BooleanField(default=False)
     extra_nocount_allowed = BooleanField(default=False)
+
+    # PR2023-06-18 to be implemented ?? > also in subjecttype
+    #max_extra_nocount = PositiveSmallIntegerField(default=0)
 
     has_practexam = BooleanField(default=False)
 

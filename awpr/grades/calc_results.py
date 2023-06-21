@@ -3893,15 +3893,16 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
                     idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
             # - calc regnumber - don't get it from database table
-                    reg_number = stud_fnc.calc_regnumber(
-                        school_code=row.get('school_code'),
-                        gender=row.get('gender'),
-                        examyear_str=str(row.get('examyear_code')),
-                        examnumber_str=row.get('examnumber'),
-                        depbase_code=row.get('depbase_code'),
-                        levelbase_code=row.get('lvlbase_code'),
-                        bis_exam=row.get('bis_exam')
-                    )
+                    #reg_number = stud_fnc.calc_regnumber(
+                    #    school_code=row.get('school_code'),
+                    #    gender=row.get('gender'),
+                    #    examyear_str=str(row.get('examyear_code')),
+                    #    examnumber_str=row.get('examnumber'),
+                    #    depbase_code=row.get('depbase_code'),
+                    #    levelbase_code=row.get('lvlbase_code'),
+                    #    bis_exam=row.get('bis_exam')
+                    #)
+                    reg_number = '---'
 
                     proof_of_knowledge_dict[student_pk] = {
                         'school_name': row.get('school_name'),

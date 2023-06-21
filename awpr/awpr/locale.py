@@ -826,7 +826,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
         dict['Regnumber'] = _('Registration number')
-        dict['Regnumber_twolines'] = _('Registration\nnumber')
+        #dict['Regnumber_2lines'] = _('Registration\nnumber')
 
         dict['Extra_facilities'] = _('Extra facilities')
         dict['Extra_facilities_twolines'] = _('Extra\nfacilities')
@@ -1744,7 +1744,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
                     'Dont_haveto_approve_secretexam':  _("You don't have to approve designated exams."),
 
-                    'Dont_haveto_enter_score_secretexam': _("You don't have to enter the score of designated exams."),
+                    'You_cannot_enter_score_secretexam': _("You cannot enter the score of designated exams."),
                     'Score_willbe_entered_by_admin': _("The score will be entered by %(admin)s.") % {'admin': af.get_admin_name(request.user)},
 
                    'no_exam_linked_to_this_score': _("You cannot approve this score, because it is not linked to an exam yet."),
@@ -1784,6 +1784,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Remove_approval'] = _('Remove approval')
         dict['Remove_rejection'] = _('Remove rejection')
         dict['About_to_approve_reject_result_of'] = _('You are about to approve or reject the result of')
+        dict['About_to_remove_approval_of'] = _('You are about to remove the approval of the result of')
+        dict['About_to_remove_rejection_of'] = _('You are about to remove the rejection of the result of')
+
         dict['Select_candidates_first'] = _('Please select one ore more candidates first.')
 
         dict['Approved_by_Inspectorate'] = _('This result is approved by the Inspectorate.')
@@ -1931,6 +1934,24 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['is_not_a_valid_file'] = _(' is not a valid file.')
 
+        dict['diploma'] = _('diploma')
+        dict['grade_list'] = _('grade list')
+
+        dict['Regnumber'] = _('Registration number')
+        dict['Regnumber_2lines'] = _('Registration\nnumber')
+
+        dict['Created_at'] = _('Created at ')
+        dict['Created_by'] = _('Created by ')
+        dict['Download'] = _('Download')
+
+        dict['regnumber_info'] = (
+            _('The registration number is structured as follows:'),
+            _(' is the examyear'),
+            _(' is the schoolcode'),
+            _(' b=PBL, k=PKL, t=TKL, h=HAVO, v=VWO'),
+            _(' is a unique 6 digit code'),
+            _('b  is bis-candidate')
+        )
 
         dict['Only'] = _('Only ')
         dict['_and_'] = TXT__and_

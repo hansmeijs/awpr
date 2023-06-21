@@ -300,11 +300,18 @@ def update_library(examyear):
         ('gradelist', 'footnote_extra_nocount', '+ : Vak telt niet mee voor uitslag   '),
         ('gradelist', 'footnote_extra_counts', '++ :  Extra vak, telt mee voor uitslag'),
 
-
         ('gradelist', 'place', 'Plaats:'),
         ('gradelist', 'date', 'Datum:'),
-        ('gradelist', 'chairperson', 'voorzitter'),
-        ('gradelist', 'secretary', 'secretaris'),
+
+        # PR2023-06-20 was:
+        #   ('gradelist', 'chairperson', 'voorzitter'),
+        #   ('gradelist', 'secretary', 'secretaris'),
+        ('gradelist', 'chairperson', 'Voorzitter Examencommissie'),
+        ('gradelist', 'secretary', 'Secretaris Examencommissie'),
+
+        # PR2023-06-20 added:
+        ('gradelist', 'reg_nr', 'Registratienr.:'),
+        ('gradelist', 'id_nr', 'Id.nr.:'),
 
         ('diploma', 'born', 'geboren op'),
         ('diploma', 'born_at', 'te'),
@@ -322,11 +329,18 @@ def update_library(examyear):
 
 # heeft deelgenomen aan het eindexamen text for Curacao
         # text 2022 curacao
-        ('diploma', 'dpl_article01_cur', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de '),
+        # ('diploma', 'dpl_article01_cur', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de '),
+        # ('diploma', 'dpl_article02_cur', 'Landsverordening voortgezet onderwijs van de 21ste mei 2008, P.B. no. 33, (P.B. 1979, no 29),'),
+
+        # ('diploma', 'dpl_article03_cur', 'zoals gewijzigd en de Tijdelijke regeling afwijking centrale examens v.w.o., h.a.v.o., v.s.b.o.'),
+        # ('diploma', 'dpl_article04_cur', 'voor het schooljaar 2021-2022 P.B. 2022, no. 53 d.d. 10 juni 2022.'),
+
+        # text 2023 curacao
+        ('diploma', 'dpl_article01_cur', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de'),
         ('diploma', 'dpl_article02_cur', 'Landsverordening voortgezet onderwijs van de 21ste mei 2008, P.B. no. 33, (P.B. 1979, no 29),'),
 
-        ('diploma', 'dpl_article03_cur', 'zoals gewijzigd en de Tijdelijke regeling afwijking centrale examens v.w.o., h.a.v.o., v.s.b.o.'),
-        ('diploma', 'dpl_article04_cur', 'voor het schooljaar 2021-2022 P.B. 2022, no. 53 d.d. 10 juni 2022.'),
+        ('diploma', 'dpl_article03_cur', 'zoals gewijzigd.'),
+        ('diploma', 'dpl_article04_cur', None),
 
         ('diploma', 'place', 'Plaats:'),
         ('diploma', 'date', 'Datum:'),

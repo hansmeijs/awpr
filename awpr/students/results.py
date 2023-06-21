@@ -1,4 +1,7 @@
 # PR2021-11-15
+import tempfile
+from django.core.files import File
+
 from django.contrib.auth.decorators import login_required
 
 from django.db import connection
@@ -33,6 +36,7 @@ from awpr import functions as af
 from awpr import downloads as dl
 from awpr import library as awpr_lib
 
+from grades import views as grade_view
 from grades import calc_results as calc_res
 from grades import calc_reex as calc_reex
 from grades import exfiles as grd_exfiles
@@ -358,7 +362,7 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
 class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
     def get(self, request, lst):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= DownloadGradelistDiplomaView ============= ')
         response = None
@@ -393,9 +397,12 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
         # modes are "calc_results", "prelim", "final", "diploma"
                 mode = upload_dict.get('mode')
                 is_prelim = mode == 'prelim'
+                is_diploma = mode == 'diploma'
+                # PR2023-06-16 save final gradelist and diploma to disk
+                save_to_disk = not is_prelim
 
 # +++++ calc_batch_student_result ++++++++++++++++++++
-                if mode != 'diploma':
+                if not is_diploma:
                     calc_res.calc_batch_student_result(
                         sel_examyear=sel_examyear,
                         sel_school=sel_school,
@@ -433,33 +440,31 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 request.user.schoolbase.set_schoolsetting_dict(settings_key, new_setting_json)
 
 # - get library from examyearsetting
-                key_str = 'diploma' if mode == 'diploma' else 'gradelist'
+                key_str = 'diploma' if is_diploma else 'gradelist'
                 library = awpr_lib.get_library(sel_examyear, [key_str])
 
 # +++ get grade_dictlist / diploma_dictlist
-                if mode == 'diploma':
+
+# - get list of used regnumbers, to check unique regnumbers
+                used_regnumber_list = self.get_used_regnumber_list(sel_school, sel_department)
+
+# +++ get grade_dictlist / diploma_dictlist
+                if is_diploma:
                     student_list = get_diploma_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk,
                                                           sel_sctbase_pk,
-                                                          student_pk_list)
+                                                          student_pk_list, used_regnumber_list)
                 else:
-                    student_list = get_gradelist_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, sel_sctbase_pk,
-                                                  student_pk_list)
+                    student_list = get_gradelist_dictlist(sel_examyear, sel_school,
+                                                          sel_department, sel_lvlbase_pk, sel_sctbase_pk, is_prelim,
+                                                  student_pk_list, used_regnumber_list)
 
  # +++ get name of chairperson and secretary
                 # auth_dict = get_pres_secr_dict(request)
 
-        # - get arial font
+        # - get fonts
                 af.register_font_arial()
-       # - get Garamond font
                 af.register_font_garamond()
-        # - get Palace_Script_MT font
                 af.register_font_palace_script()
-
-                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
-
-                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
-                # temp_file = tempfile.TemporaryFile()
-                # canvas = Canvas(temp_file)
 
                 auth1_name, auth2_name = '---', '---'
                 # get auth1_pk from upload_dict, check if user exists and has auth1 permission
@@ -486,11 +491,24 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                     if auth2:
                         auth2_name = auth2.last_name
 
+                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+
+                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+                # temp_file = tempfile.TemporaryFile()
+                # canvas = Canvas(temp_file)
+
+
+    # - Create an in-memory output file for the new pdf to be downloaded (may have multiple students)
                 buffer = io.BytesIO()
                 canvas = Canvas(buffer)
 
                 for student_dict in student_list:
-                    if mode == 'diploma':
+
+                    if logging_on:
+                        logger.debug('     student_dict: ' + str(student_dict))
+
+        # print file to be downloaded, will not saved
+                    if is_diploma:
                         if is_sxm:
                             grd_draw.draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate)
                         else:
@@ -504,27 +522,82 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
                     canvas.showPage()
 
+        # +++  print and save pdf for each sudent separately
+                    if save_to_disk:
+                # - create new published_instance.
+                        now_arr = upload_dict.get('now_arr')
+                        published_instance = grade_view.create_published_instance_gradelist_diploma(
+                            sel_examyear=sel_examyear,
+                            sel_school=sel_school,
+                            sel_department=sel_department,
+                            lvlbase_code=student_dict.get('lvlbase_code'),
+                            student_pk=student_dict.get('stud_id'),
+                            lastname_initials=student_dict.get('lastname_initials'),
+                            regnumber=student_dict.get('regnumber') or '',
+                            save_to_disk=save_to_disk,
+                            is_diploma=is_diploma,
+                            now_arr=now_arr,
+                            request=request
+                        )
+                        published_pk = published_instance.pk if published_instance else None
+
+                        if logging_on:
+                            logger.debug('published_pk: ' + str(published_pk))
+                            logger.debug('published_instance.filename: ' + str(published_instance.filename))
+
+                        examyear_str = str(sel_examyear.code)
+                        school_code = sel_school.base.code if sel_school.base.code else '---'
+                        country_abbrev = sel_examyear.country.abbrev.lower()
+                        file_dir = '/'.join((country_abbrev, examyear_str, school_code, 'diploma'))
+                        file_path = '/'.join((file_dir, published_instance.filename))
+
+                        if logging_on:
+                            logger.debug('    file_dir: ' + str(file_dir))
+                            logger.debug('    filepath: ' + str(file_path))
+
+                        ########################
+
+           # - create separate file for each student when printing final diploma or gradelist
+                        # from https://docs.python.org/3/library/tempfile.html
+                        #temp_file = tempfile.TemporaryFile()
+                        #canvas_tobesaved = Canvas(temp_file)
+
+                        buffer_tobesaved = io.BytesIO()
+                        canvas_tobesaved = Canvas(buffer_tobesaved)
+
+                        if is_diploma:
+                            if is_sxm:
+                                grd_draw.draw_diploma_sxm(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
+                                                          printdate)
+                            else:
+                                grd_draw.draw_diploma_cur(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
+                                                          printdate)
+
+                        else:
+                            if is_sxm:
+                                grd_draw.draw_gradelist_sxm(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
+                                                            print_reex, auth1_pk, auth2_pk, printdate, request)
+                            else:
+                                grd_draw.draw_gradelist_cur(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
+                                                            print_reex, auth1_pk, auth2_pk, printdate, request)
+
+                        canvas_tobesaved.showPage()
+
+                        # PR2023-06-19 do't forget to save the canvas first! It took me 2 hours to find out
+                        canvas_tobesaved.save()
+
+                # Rewind the buffer.
+                        # seek(0) sets the pointer position at 0.
+                        buffer_tobesaved.seek(0)
+                        pdf_file = File(buffer_tobesaved, published_instance.filename)
+
+                        published_instance.file.save(file_path, pdf_file)
+
+                        # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
+                        published_instance.save(request=request)
+
                 canvas.save()
                 pdf = buffer.getvalue()
-                # pdf_file = File(temp_file)
-
-                # was: buffer.close()
-
-                """
-                # TODO as test try to save file in
-                studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
-                content_type='application/pdf'
-                file_name = 'test_try.pdf'
-                if studsubjnote and pdf_file:
-                    instance = stud_mod.Noteattachment(
-                        studentsubjectnote=studsubjnote,
-                        contenttype=content_type,
-                        filename=file_name,
-                        file=pdf_file)
-                    instance.save()
-                    logger.debug('instance.saved: ' + str(instance))
-                # gives error: 'bytes' object has no attribute '_committed'
-                """
 
                 file_name = 'Diploma' if mode == 'diploma' else 'Cijferlijst'
                 if len(student_list) == 1:
@@ -535,21 +608,42 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 file_name += '.pdf'
 
                 response = HttpResponse(content_type='application/pdf')
-                #response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
                 response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
                 # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
                 response.write(pdf)
-
-        # except Exception as e:
-        #     logger.error(getattr(e, 'message', str(e)))
-        #     raise Http404("Error creating Ex2A file")
 
         if response:
             return response
         else:
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+    def get_used_regnumber_list(self, sel_school, sel_department):
+        # PR2023-06-18
+        used_regnumber_list = []
+        try:
+            # don't filter on deleted students
+            sql = ' '.join(("SELECT dpgl.regnumber",
+                            "FROM students_diplomagradelist AS dpgl",
+                            "INNER JOIN students_student AS stud ON (stud.id = dpgl.student_id)",
+                            "WHERE stud.school_id = ", str(sel_school.pk) , "::INT",
+                            "AND stud.department_id = ", str(sel_department.pk) , "::INT"
+                            ))
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+
+            for row in rows:
+                used_regnumber_list.append(row[0])
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        return used_regnumber_list
+
+
 # - end of DownloadGradelistDiplomaView
 
 
@@ -682,11 +776,13 @@ class DownloadPokView(View):  # PR2022-07-02
 
 ####################################
 
-def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):
+def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, is_prelim, student_pk_list, used_regnumber_list):
     # PR2021-11-19 PR2023-06-10
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
+
+    # PR2023-06-20 when not prelim: filter on gl_status = 1, i.e. approved by Inspectorate
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -756,17 +852,24 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 "AND NOT stud.deleted AND NOT stud.tobedeleted",
                 "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted"
                 ]
+    if not is_prelim:
+        sql_list.extend(("AND stud.gl_status =", str(c.GL_STATUS_01_APPROVED), "::INT"))
 
     if student_pk_list:
-        sql_keys['student_pk_arr'] = student_pk_list
-        sql_list.append("AND stud.id IN ( SELECT UNNEST( %(student_pk_arr)s::INT[]))")
+        #sql_keys['student_pk_arr'] = student_pk_list
+        #sql_list.append("AND stud.id IN ( SELECT UNNEST( %(student_pk_arr)s::INT[]))")
+        sql_list.extend(("AND stud.id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[])) "))
+
     else:
         if sel_lvlbase_pk:
-            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+            #sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+            #sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+            sql_list.extend(("AND lvl.base_id = ", str(sel_lvlbase_pk), "::INT"))
+
         if sel_sctbase_pk:
-            sql_keys['sctbase_pk'] = sel_sctbase_pk
-            sql_list.append("AND sct.base_id = %(sctbase_pk)s::INT")
+            #sql_keys['sctbase_pk'] = sel_sctbase_pk
+            #sql_list.append("AND sct.base_id = %(sctbase_pk)s::INT")
+            sql_list.extend(("AND sct.base_id = ", str(sel_sctbase_pk), "::INT"))
 
     sql_list.append("ORDER BY subj.sequence")
 
@@ -790,7 +893,8 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 first_name = row.get('firstname') or '---'
                 prefix = row.get('prefix')
                 full_name = stud_fnc.get_firstname_prefix_lastname(last_name, first_name, prefix)
-                #sort_name = (last_name.lower() + c.STRING_SPACE_30)[:30] + first_name.lower()
+
+                lastname_initials = stud_fnc.get_lastname_initials(last_name, first_name, prefix)
 
                 birth_date = row.get('birthdate', '')
                 birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
@@ -818,7 +922,8 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                     examnumber_str=row.get('examnumber'),
                     depbase_code=row.get('depbase_code'),
                     levelbase_code=row.get('lvlbase_code'),
-                    bis_exam=row.get('bis_exam')
+                    bis_exam=row.get('bis_exam'),
+                    used_regnumber_list=used_regnumber_list
                 )
 
                 grade_dict[stud_id] = {
@@ -842,11 +947,12 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                     'sctbase_code':  row.get('sctbase_code'),
                     'has_profiel':  row.get('has_profiel', False),
 
+                    'stud_id': stud_id,
                     'firstname': first_name,
                     'lastname': last_name,
 
                     'fullname': full_name,
-                    #'sortname': sort_name,
+                    'lastname_initials': lastname_initials,
 
                     'idnumber': idnumber_withdots_no_char,
                     'gender': row.get('gender'),
@@ -973,7 +1079,8 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
 
 def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk,
-                           student_pk_list):  # PR2022-06-16 PR2022-06-24 PR2023-06-10
+                           student_pk_list, used_regnumber_list):
+    # PR2022-06-16 PR2022-06-24 PR2023-06-10
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
     # PR2022-06-24 Marisela Cijntje Radulphus: cannot print diploma of passed students with reex
@@ -1017,7 +1124,9 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
 
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
                 "AND (stud.ep01_result = %(passed)s::INT OR stud.ep02_result = %(passed)s::INT OR stud.result = %(passed)s::INT)",
-                "AND NOT stud.deleted AND NOT stud.tobedeleted"
+                "AND NOT stud.deleted AND NOT stud.tobedeleted",
+                # PR2023-06-20 only print diploma when Inspectorate has approved gl_result
+                "AND stud.gl_status =", str(c.GL_STATUS_01_APPROVED), "::INT"
                 ]
 
     if student_pk_list:
@@ -1053,6 +1162,8 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
             prefix = row.get('prefix')
             full_name = stud_fnc.get_firstname_prefix_lastname(last_name, first_name, prefix)
 
+            lastname_initials = stud_fnc.get_lastname_initials(last_name, first_name, prefix)
+
     # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
             idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
@@ -1064,7 +1175,8 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
                 examnumber_str=row.get('examnumber'),
                 depbase_code=row.get('depbase_code'),
                 levelbase_code=row.get('lvlbase_code'),
-                bis_exam=row.get('bis_exam')
+                bis_exam=row.get('bis_exam'),
+                used_regnumber_list=used_regnumber_list
             )
 
             birth_date = row.get('birthdate', '')
@@ -1103,7 +1215,9 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
                 'sctbase_code': row.get('sctbase_code'),
                 'has_profiel': row.get('has_profiel', False),
 
+                'stud_id': row.get('stud_id'),
                 'fullname': full_name,
+                'lastname_initials': lastname_initials,
                 'idnumber': idnumber_withdots_no_char,
                 'gender': row.get('gender'),
                 'birthdate': birth_date_formatted,

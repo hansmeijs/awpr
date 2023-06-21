@@ -192,7 +192,7 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_examt
                     'name': row.name,
                     'examtype': row.examtype,
                     'examperiod': row.examperiod,
-                    'regnumber': row.regnumber,
+                    #'regnumber': row.regnumber,
                     'datepublished': row.datepublished,
                     'filename': row.filename,
                     'sb_code': row.school.base.code,
@@ -209,9 +209,6 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_examt
 
     return published_rows
 # --- end of create_published_rows
-
-
-
 
 
 # === EXAMPAPER =====================================

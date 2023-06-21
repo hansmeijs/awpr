@@ -9,8 +9,8 @@
 //let school_rows = [];
 let student_rows = [];
 let studsubj_rows = [];
-let grade_rows = [];
-
+//let grade_rows = [];
+//grade_dictsNEW is declared in base.js PR2023-05-29 only used in secretaxam.js, for now
 //let subject_rows = [];
 
 let schemeitem_rows = [];
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const btns = el_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
                 const data_btn = get_attr_from_el(btn,"data-btn");
-                btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false );
+                btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false);
             };
         };
 
@@ -423,7 +423,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
     if(el_MCOL_btn_save){
         el_MCOL_btn_save.addEventListener("click", function() {
-            t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
+            // this returns HandleBtnSelect(mod_MCOL_dict.selected_btn, true)  // true = skip_upload
+            t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false)
     };
 
     if(may_view_page){
@@ -573,12 +574,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     //check_validation = true;
                 };
                 if ("grade_rows" in response) {
-                    grade_rows = response.grade_rows;
+                    b_fill_datadicts("grade", "id", null, response.grade_rows, grade_dictsNEW);
+
         // get icons of notes and status PR2021-04-21
                     DownloadGradeStatusAndIcons();
-                };
-                if ("grade_rows" in response) {
-                    b_fill_datadicts("grade", "id", null, response.grade_rows, grade_dictsNEW);
                 };
                 if ("cluster_rows" in response) {
                     b_fill_datadicts("cluster", "id", null, response.cluster_rows, cluster_dictsNEW);
@@ -616,13 +615,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // sel_btns are:  btn_reex btn_reex03
             if (permit_dict.permit_approve_grade){
-                AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")}, [], "id_submenu_approve");
+                AddSubmenuButton(el_submenu, loc.Approve_scores, function() {MAG_Open("approve")}, [], "id_submenu_approve");
             };
 
-            AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, function() {ModConfirmOpen("prelim_ex2a")} );
-            if (permit_dict.permit_submit_grade){
-                AddSubmenuButton(el_submenu, loc.Submit_Ex2A, function() {MAG_Open("submit_ex2a")});
-            };
+            // PR2023-06-20 Ex2a of secret exam cannot be submitted by admin, must be submitted by school
+            //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, function() {ModConfirmOpen("prelim_ex2a")} );
+            //if (permit_dict.permit_submit_grade){
+            //    AddSubmenuButton(el_submenu, loc.Submit_Ex2A, function() {MAG_Open("submit_ex2a")});
+            //};
 
             AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
             AddSubmenuButton(el_submenu, loc.Ex3_backpage, function() {MEX3_Backpage()}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
@@ -637,31 +637,32 @@ document.addEventListener("DOMContentLoaded", function() {
     }; //function CreateSubmenu
 
 //###########################################################################
-//=========  HandleBtnSelect  ================ PR2020-09-19 PR2020-11-14 PR2021-03-15
+//=========  HandleBtnSelect  ================ PR2020-09-19 PR2020-11-14 PR2021-03-15 PR2023-06-19
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
         // function is called by select_btn.click, t_MCOL_Save, DatalistDownload after response.setting_dict
-        // skip_upload = true when called by DatalistDownload
+        // skip_upload = true when called by DatalistDownload or t_MCOL_Save
+
+    // - change sel_examperiod if not "btn_reex" or "btn_reex03",
+        if (!setting_dict.sel_examperiod || ![2, 3].includes(setting_dict.sel_examperiod)) {
+            setting_dict.sel_examperiod = 2;
+            data_btn = "btn_reex";
+            skip_upload = false;
+        };
+
+        // skip_upload = true when called by DatalistDownload or t_MCOL_Save
         //  PR2021-09-07 debug: gave error because old btn name was still in saved setting
 
+        // PR2023-06-16 debug: sel_btn and sel_examperiod did not match, empty list as result
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
-        if (!data_btn) {data_btn = selected_btn};
-        if (data_btn && ["btn_reex", "btn_reex03"].includes(data_btn)) {
-            selected_btn = data_btn;
+        if (skip_upload) {
+            selected_btn = (setting_dict.sel_examperiod === 3) ? "btn_reex03" : "btn_reex" ;
         } else {
-            selected_btn = "btn_reex";
-        };
-
-        const el_submenu_approve = document.getElementById("id_submenu_approve");
-        if (el_submenu_approve){
-            el_submenu_approve.innerText = loc.Approve_grades;
-        };
-// ---  upload new selected_btn, not after loading page (then skip_upload = true)
-        if(!skip_upload){
-            const upload_dict = {page_secretexam: {sel_btn: selected_btn}};
-    //console.log( "  upload_dict ", upload_dict);
-            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
-
+            if (data_btn && ["btn_reex", "btn_reex03"].includes(data_btn)) {
+                selected_btn = data_btn;
+            } else {
+                selected_btn = "btn_reex";
+            };
         };
 
 // ---  highlight selected button
@@ -682,36 +683,21 @@ document.addEventListener("DOMContentLoaded", function() {
             FillTblRows();
         } else {
 
+// ---  upload new selected_btn, not after loading page (then skip_upload = true)
+            if (selected_btn !== setting_dict.selected_btn){
+                //setting_dict.selected_btn = selected_btn;
+                //const upload_dict = {page_secretexam: {sel_btn: selected_btn}};
+                //b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+            };
             // skip showing warning messages when clicking select btn, (msg 'Not current examyear' kept showing) PR2021-12-01
             skip_warning_messages = true;
-            const sel_examperiod = (selected_btn === "btn_reex03") ? 3 :
-                                   (selected_btn === "btn_reex") ? 2 : 1;
 
-        // - change sel_examtype if necessary
-            let sel_examtype = null;
-            if (sel_examperiod === 1){
-                if( ["se", "sr", "pe", "ce"].includes(setting_dict.sel_examtype) ) {
-                    sel_examtype = setting_dict.sel_examtype;
-                } else {
-                  sel_examtype = "se";
-                };
-
-            } else if([2, 3].includes(setting_dict.sel_examperiod) ) {
-                sel_examtype = "ce";
-
-            } else if (sel_examperiod === 4){
-                if(["se", "ce"].includes(setting_dict.sel_examtype)) {
-                    sel_examtype = setting_dict.sel_examtype;
-                } else {
-                  sel_examtype = "se";
-                };
-            }
             // upload new sel_examperiod and / or sel_examtype if changed
             const request_item_setting = {
                     page: "page_secretexam",
                     sel_btn: selected_btn,
-                    sel_examperiod: sel_examperiod,
-                    sel_examtype: sel_examtype
+                    sel_examperiod: setting_dict.sel_examperiod,
+                    sel_examtype: "ce"
                 };
             DatalistDownload(request_item_setting);
         };
@@ -923,13 +909,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
         //console.log( "field_settings", field_settings);
-        //console.log( "selected_btn", selected_btn);
+        console.log( "grade_dictsNEW", grade_dictsNEW);
 
         const tblName = "grades";
         const field_setting = field_settings[selected_btn];
-        const data_rows = grade_rows;
 
 // ---  get list of hidden columns
         const col_hidden = get_column_is_hidden();
@@ -942,19 +927,15 @@ document.addEventListener("DOMContentLoaded", function() {
         CreateTblHeader(field_setting, col_hidden);
 
 // --- create table rows
-        if(data_rows && data_rows.length){
-
-            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+        if(!isEmpty(grade_dictsNEW)){
+            for (const data_dict of Object.values(grade_dictsNEW)) {
             // only show rows of selected level / sector / student / subject
             // show only rows that has_practexam when sel_examtype = "pe"
                 // Note: filter of filterrow is done by t_Filter_TableRows
                 //       sel_lvlbase_pk and sel_sctbase_pk are filtered on server
                 const show_row = (tblName === "published") ? true :
-                                //(!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
-                                //(!setting_dict.sel_sctbase_pk || data_dict.sctbase_id === setting_dict.sel_sctbase_pk) &&
                                 (!setting_dict.sel_student_pk || data_dict.student_id === setting_dict.sel_student_pk) &&
-                                (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk) &&
-                                (setting_dict.sel_examtype !== "pe" || data_dict.has_practexam);
+                                (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk);
 
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);
@@ -1353,7 +1334,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     el_div.className = (data_dict[field_name]) ? "tickmark_1_2" : "tickmark_0_0";
                     el_div.setAttribute("data-value", filter_value);
 
-
                 } else if (field_name.includes("_status")){
 
                     // TODO enable this next year . It is turned off because empty scores were submitted
@@ -1515,8 +1495,9 @@ document.addEventListener("DOMContentLoaded", function() {
         if (map_id){
 
 // ---  get selected.data_dict
-            const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
-            const data_dict = b_get_datadict_by_integer_from_datarows(grade_rows, "id", grade_pk);
+            //const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
+            //const data_dict = b_get_datadict_by_integer_from_datarows(grade_rows, "id", grade_pk);
+            const data_dict = grade_dictsNEW[map_id];
 
             const fldName = get_attr_from_el(el_input, "data-field")
             const old_value = data_dict[fldName];
@@ -1720,11 +1701,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.log("response", response)
                 if ("grade_note_icon_rows" in response) {
                     const is_update = true, skip_show_ok = true;
-                    RefreshDataRows("grades", response.grade_note_icon_rows, grade_rows, is_update, skip_show_ok);
+                    RefreshDataRows("grades", response.grade_note_icon_rows, grade_dictsNEW, is_update, skip_show_ok);
                 }
                if ("grade_stat_icon_rows" in response) {
                     const tblName = "grades", is_update = true;
-                    RefreshDataRows(tblName, response.grade_stat_icon_rows, grade_rows, is_update);
+                    RefreshDataRows(tblName, response.grade_stat_icon_rows, grade_dictsNEW, is_update);
                 }
             },
             error: function (xhr, msg) {
@@ -1737,7 +1718,7 @@ document.addEventListener("DOMContentLoaded", function() {
      } // DownloadGradeStatusAndIcons
 
 /////////////////////////////////////////////
-//========= UploadStatus  ============= PR2020-07-31  PR2021-01-14 PR2022-03-20 PR2024-02-02
+//========= UploadStatus  ============= PR2020-07-31  PR2021-01-14 PR2022-03-20 PR2023-06-20
     function UploadStatus(el_input) {
         console.log( " ==== UploadStatus ====");
         console.log( "    permit_dict", permit_dict);
@@ -1749,10 +1730,9 @@ document.addEventListener("DOMContentLoaded", function() {
         if(permit_dict.permit_approve_grade || permit_dict.permit_block_grade){
             const tblName = "grade";
             const fldName = get_attr_from_el(el_input, "data-field");
-            const tblRow = t_get_tablerow_selected(el_input);
-            const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
-            const data_dict = get_gradedict_by_gradepk(grade_pk);
-            console.log( "    data_dict", data_dict);
+            const data_dict = get_datadict_by_el(el_input);
+
+    console.log( "    data_dict", data_dict);
 
             if(!isEmpty(data_dict)){
 
@@ -1878,7 +1858,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (is_published || is_blocked)  {
                             mod_dict = {tblName: tblName,
                                         fldName: fldName,
-                                        grade_pk: grade_pk,
+                                        grade_pk: data_dict.id,
                                         examtype_2char: examtype_2char,
                                         examperiod: examperiod,
                                         is_published: is_published,
@@ -2074,7 +2054,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         MAG_UpdateFromResponse(response)
                     };
                     if ("updated_grade_rows" in response) {
-                        RefreshDataRows("grades", response.updated_grade_rows, grade_rows, true); // true = is_update
+                        RefreshDataRows("grades", response.updated_grade_rows, grade_dictsNEW, true); // true = is_update
                         //$("#id_mod_approve_grade").modal("hide");
                     };
                     if ("updated_cluster_rows" in response) {
@@ -5115,6 +5095,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("el_input", el_input) ;
 
     // get has_note from grade_map
+
         const grade_dict = get_datadict_by_el(el_input);
         const has_note = !!get_dict_value(grade_dict, ["note_status"])
 
@@ -5289,7 +5270,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     //RefreshDataMap(tblName, field_names, response.grade_note_icon_rows, grade_map, false);  // false = don't show green ok background
 
 
-                    RefreshDataRows("grades", response.grade_note_icon_rows, grade_rows, true); // true = is_update
+                    RefreshDataRows("grades", response.grade_note_icon_rows, grade_dictsNEW, true); // true = is_update
                 }
 
             },  // success: function (response) {
@@ -5490,35 +5471,17 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataRowsAfterUploadFromExcel  ================ PR2021-07-20
-    function RefreshDataRowsAfterUploadFromExcel(response) {
-        console.log(" --- RefreshDataRowsAfterUploadFromExcel  ---");
-        console.log( "response", response);
-        const is_test = (!!response && !!response.is_test);
-        console.log( "is_test", is_test);
-
-        if(!is_test && response && "updated_grade_rows" in response) {
-            //RefreshDataRows("grade", response.updated_grade_rows, grade_rows, true)  // true = update
-
-            //DownloadValidationStatusNotes();
-        }
-        if(!is_test) {
-            DatalistDownload({page: "page_secretexam"});
-        };
-    };  //  RefreshDataRowsAfterUploadFromExcel
-
-
 //=========  RefreshDataRows  ================ PR2020-08-16 PR2020-09-30, PR2021-05-01 PR2021-09-20 PR2022-03-03
-    function RefreshDataRows(tblName, update_rows, data_rows, is_update, skip_show_ok) {
+    function RefreshDataRows(tblName, update_rows, data_dicts, is_update, skip_show_ok) {
         console.log(" --- RefreshDataRows  ---");
         console.log("is_update", is_update);
         console.log("update_rows", update_rows);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
-        if (update_rows && update_rows.length ) {
+        if (!isEmpty(data_dicts) ) {
             const field_setting = field_settings[selected_btn];
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(tblName, field_setting, data_rows, update_dict, skip_show_ok);
+                RefreshDatarowItem(tblName, field_setting, data_dicts, update_dict, skip_show_ok);
             }
         } else if (!is_update) {
             // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
@@ -5528,7 +5491,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
     }  //  RefreshDataRows
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03
-    function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict, skip_show_ok) {
+    function RefreshDatarowItem(tblName, field_setting, data_dicts, update_dict, skip_show_ok) {
         //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
@@ -5561,7 +5524,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 delete update_dict.created;
 
     // ---  add new item in data_rows at end
-                data_rows.push(update_dict);
+                //data_rows.push(update_dict);
+                data_dicts[update_dict.mapid] = update_dict;
 
     // ---  create row in table., insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, update_dict, col_hidden)
@@ -5581,8 +5545,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
             } else {
     // +++ get existing data_dict from data_rows. data_rows is ordered by grade.id'
-                const grade_pk = update_dict.id;
-                const data_dict = get_gradedict_by_gradepk(grade_pk);
+                //const grade_pk = update_dict.id;
+                //const data_dict = get_gradedict_by_gradepk(grade_pk);
+                const data_dict = data_dicts[update_dict.mapid];
 
     // ++++ updated row +++++++++++
     // ---  create list of updated fields
@@ -5681,13 +5646,19 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         return  found_dict;
     };  // get_gradedict_by_gradepk
 
-//========= get_datadict_by_el =============  PR2021-09-20
+
+//========= get_gradedict_by_gradepk =============  PR2023-06-19
+    function get_gradedict_by_tblRow(tblRow) {
+        //console.log( " ==== get_gradedict_by_gradepk ====");
+        return  (grade_dictsNEW[tblRow.id]) ? grade_dictsNEW[tblRow.id] : {};
+
+    };  // get_gradedict_by_gradepk
+
+//========= get_datadict_by_el =============  PR2023-06-20
     function get_datadict_by_el(el) {
         //console.log( " ==== get_datadict_by_el ====");
         const tblRow = t_get_tablerow_selected(el);
-        const grade_pk = get_attr_from_el_int(tblRow, "data-pk")
-        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(grade_rows, "id", grade_pk);
-        return  found_dict;
+        return (tblRow && grade_dictsNEW[tblRow.id]) ? grade_dictsNEW[tblRow.id] : {};
     };  // get_datadict_by_el
 
 //=========  fill_data_list  ================ PR2020-10-07
@@ -6126,7 +6097,6 @@ console.log( "......filter_value", filter_value);
             }
             time_col_index = 9
         }
-
 
 // don't open modal when locked and confirmstart / confirmend
         let allow_open = false;

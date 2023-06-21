@@ -738,8 +738,8 @@ document.addEventListener("DOMContentLoaded", function() {
             };
         };
 // ---  upload new selected_btn, when changed)
-        if (selected_btn !== setting_dict.se_btn){
-            setting_dict.se_btn = selected_btn;
+        if (selected_btn !== setting_dict.sel_btn){
+            setting_dict.sel_btn = selected_btn;
             const upload_dict = {page_grade: {sel_btn: selected_btn}};
     //console.log( "  upload_dict ", upload_dict);
             b_UploadSettings (upload_dict, urls.url_usersetting_upload);
@@ -1510,7 +1510,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // PR2-23-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
             const is_secret_exam = (data_dict.secret_exam || data_dict.ceex_secret_exam);
-            const hide_secret_exam = (is_secret_exam && field_name === "ce_status" && !permit_dict.requsr_role_admin )
+            const hide_secret_exam = false;  // (is_secret_exam && field_name === "ce_status" && !permit_dict.requsr_role_admin )
 
             const subj_has_weight = ( ["se_status", "sr_status"].includes(field_name) && data_dict.weight_se > 0 ||
                                 ["pe_status", "ce_status"].includes(field_name) && data_dict.weight_ce > 0 );
@@ -1760,7 +1760,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // - schools cannot enter score of secret exam
             } else if( data_dict.secret_exam && examtype_2char === "ce" && !permit_dict.requsr_role_admin){
                 msg_txt = [loc.This_is_designated_exam,
-                            loc.approve_err_list.Dont_haveto_enter_score_secretexam,
+                            loc.approve_err_list.You_cannot_enter_score_secretexam,
                             loc.approve_err_list.Score_willbe_entered_by_admin].join("<br>");
 
             } else if (!is_allowed_cluster){

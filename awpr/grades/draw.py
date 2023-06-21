@@ -643,10 +643,14 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
     top = 199 * mm # was: 197 * mm
     left = 19 * mm # was:  18 * mm
 
+    right = 210 * mm - left
+
     origin = [left, top]
     # draw_red_cross(canvas, origin[0], origin[1])
 
-    tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 115 * mm, 127 * mm]
+    # PR2023-06-20 mail Esther: right outline id-number. increase tab 6 and 7
+    # was: tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 115 * mm, 127 * mm]
+    tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 130 * mm, 142 * mm]
 
     lineheight_5mm = 5 * mm
     lineheight_8mm = 8 * mm
@@ -664,15 +668,17 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
 # - leerweg
     level_req = student_dict.get('level_req', False)
     if level_req:
-        lvl_txt = student_dict.get('lvl_name') or '---'
-        lvl_txt_upper = lvl_txt.upper()
+        lvl_name = student_dict.get('lvl_name') or '---'
+
+        # PR2023-06-20 email Esther: no uppercase
+        # lvl_name_upper = lvl_name.upper()
         # PR2023-06-16 was:
         # canvas.setFont(font_normal, 14)
         canvas.setFont('Times-Roman', 11.5)
         y_level = origin[1] + 8 * mm
-        right = 210 * mm - left
+
         x_center = (right + left) / 2
-        canvas.drawCentredString(x_center, y_level, lvl_txt_upper)
+        canvas.drawCentredString(x_center, y_level, lvl_name)
 
 # - full name
     canvas.setFont(font_bold_fancy, size_large)
@@ -701,8 +707,6 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
     text = ' '.join((library.get(key_str), student_dict.get('dep_abbrev'), library.get('conform')))
     canvas.drawString(origin[0], y_pos, text)
     y_pos -= lineheight_10mm
-
-
 
 # - conform_sector / profiel
     canvas.setFont(font_normal, size_normal)
@@ -736,13 +740,21 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
 
 # - welk examen werd afgenomen
     canvas.setFont(font_normal, size_normal)
-    canvas.drawString(origin[0], y_pos, library.get('dpl_article01_cur'))
+    dpl_article01_cur = library.get('dpl_article01_cur')
+    if dpl_article01_cur:
+        canvas.drawString(origin[0], y_pos, dpl_article01_cur)
     y_pos -= lineheight_5mm
-    canvas.drawString(origin[0], y_pos, library.get('dpl_article02_cur'))
+    dpl_article02_cur = library.get('dpl_article02_cur')
+    if dpl_article02_cur:
+        canvas.drawString(origin[0], y_pos, dpl_article02_cur)
     y_pos -= lineheight_5mm
-    canvas.drawString(origin[0], y_pos, library.get('dpl_article03_cur'))
+    dpl_article03_cur = library.get('dpl_article03_cur')
+    if dpl_article03_cur:
+        canvas.drawString(origin[0], y_pos, dpl_article03_cur)
     y_pos -= lineheight_5mm
-    canvas.drawString(origin[0], y_pos, library.get('dpl_article04_cur'))
+    dpl_article04_cur = library.get('dpl_article04_cur')
+    if dpl_article04_cur:
+        canvas.drawString(origin[0], y_pos, dpl_article04_cur)
     y_pos -= lineheight_10mm
 
 # - Plaats - datum
@@ -791,10 +803,13 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
 
     canvas.setFont(font_bold, size_small)
     canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('regnumber') or '-')
+
+    # PR2023-06-20 mail Esther: right outline id-number. increase tab 6 and 7
     canvas.drawString(origin[0] + tabstop[7], y_pos, student_dict.get('idnumber') or '-')
 
     #draw_red_cross(canvas, origin[0], y_pos)
     #draw_red_cross(canvas, right, y_pos)
+
 # - end of draw_diploma_cur
 
 
@@ -1309,7 +1324,7 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
     leerweg_label = library.get('leerweg') or '-'
 
     sector_profiel_txt = student_dict.get('sct_name') or '---'
-    leerweg_txt = student_dict.get('lvl_name') or '---'
+    lvl_name = student_dict.get('lvl_name') or '---'
 
     aan_article_txt = ' '.join((library.get('at_school', '-'), school_article))
 
@@ -1346,8 +1361,9 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
     #font_name = 'Garamond_Bold'
     font_name = 'Times-Roman'
     font_size = 11.5
-    leerweg_upper = leerweg_txt.upper()
-    txt_list = [{'txt': leerweg_upper, 'font': font_name, 'size': font_size, 'align': 'c',
+    # PR2023-06-20 email Esther: no uppercase
+    # lvl_name_upper = lvl_name.upper()
+    txt_list = [{'txt': lvl_name, 'font': font_name, 'size': font_size, 'align': 'c',
                  'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, dont_print_leerweg)
 
@@ -1379,7 +1395,7 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
     if level_req:
         txt_list.extend([
             {'txt': leerweg_label, 'size': 11, 'x': 95 * mm},
-            {'txt': leerweg_txt, 'font': 'Times-Bold', 'size': 11, 'padding': 0, 'x': 115 * mm}])
+            {'txt': lvl_name, 'font': 'Times-Bold', 'size': 11, 'padding': 0, 'x': 115 * mm}])
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
     # aan_article
@@ -1843,11 +1859,14 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, li
         logger.debug('    bottom: ' + str(bottom))
 
     # - regnumber and idnumber are just above lower line of rectangle
+    # PR2023-06-20 label added
     id_number = student_dict.get('idnumber') or '---'
+    regnumber_with_lbl = ' '.join((library.get('reg_nr'), reg_number))
+    idnumber_with_lbl = ' '.join((library.get('id_nr'), id_number))
     txt_list = [
-        {'txt': reg_number, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+        {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
          'x': x + col_tab_list[0] * mm},
-        {'txt': id_number, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+        {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
          'x': x + col_tab_list[1] * mm},
     ]
     coord_regnr = [coord[0], bottom]

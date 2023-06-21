@@ -334,6 +334,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         const el_confirm_btn_reject = document.getElementById("id_modconfirm_btn_reject");
         if(el_confirm_btn_reject){ el_confirm_btn_reject.addEventListener("click", function() {ModConfirmSave("reject")}) };
+        const el_confirm_btn_remove = document.getElementById("id_modconfirm_btn_remove");
+        if(el_confirm_btn_remove){ el_confirm_btn_remove.addEventListener("click", function() {ModConfirmSave("remove")}) };
 
         const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave("save")}) };
@@ -941,14 +943,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     // PR2023-04-18 Sentry error: data_dict.result_info.replaceAll is not a function
                     // dont know why
                     if (data_dict.result_info) {
-                        el_div.title = data_dict.result_info.replaceAll("|", "\n"); // replace | with \n // g modifier replaces all occurances
+                        title_text = data_dict.result_info.replaceAll("|", "\n"); // replace | with \n // g modifier replaces all occurances
                     };
 
                 } else if (field_name ==="gl_status"){
                     const [gl_status_className, gl_status_title_text, gl_status_filter_val] = f_format_gl_status(data_dict);
                     filter_value = gl_status_filter_val;
                     el_div.className = gl_status_className;
-                    el_div.title = gl_status_title_text
+                    title_text = gl_status_title_text;
 
                 } else if (["diplomanumber", "gradelistnumber"].includes(field_name)){
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
@@ -969,6 +971,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         filter_value = fld_value;
                     };
                 };
+
+    // ---  add attribute title
+                add_or_remove_attr (el_div, "title", !!title_text, title_text);
     // ---  add attribute filter_value
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
             }  // if(field_name)
@@ -1075,7 +1080,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 gl_status: data_dict.gl_status,
                 el_input: el_input,
                 data_dict: data_dict,
-                show_btn_reject: true
+                show_btn_approve: true,
+                show_btn_reject: true,
+                show_btn_remove: true
             };
 
             UploadToggle_get_selected_rows();
@@ -1157,11 +1164,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const sel_mapid =  mod_dict.data_dict.mapid;
 
-
         mod_dict.student_pk_list = [];
-        //mod_dict.gl_status_approved_count = 0;
-        //mod_dict.gl_status_rejected_count = 0;
-        //mod_dict.gl_status_novalue_count = 0;
+
+        mod_dict.gl_approved_count = 0;
+        mod_dict.gl_rejected_count = 0;
 
 // ---  loop through tblBody.rows and fill mod_dict.student_pk_list
         for (let i = 0, tblRow; tblRow = tblBody_datatable.rows[i]; i++) {
@@ -1170,18 +1176,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data_dict){
                     if (data_dict.result === 1 || data_dict.result === 2) {
                         mod_dict.student_pk_list.push(data_dict.id);
-                        //if(data_dict.gl_result === 1) {
-                        //    mod_dict.gl_status_approved_count += 1;
-                        //} else if (data_dict.gl_result === 2) {
-                        //    mod_dict.gl_status_rejected_count += 1;
-                        //} else {
-                        //    mod_dict.gl_status_novalue_count += 1;
-                        //};
+                        if (data_dict.gl_status === 1){
+                            mod_dict.gl_approved_count += 1;
+                        } else if (data_dict.gl_status === 2){
+                            mod_dict.gl_rejected_count += 1;
+                        };
+
         }}}};
         mod_dict.student_pk_count = (mod_dict.student_pk_list) ? mod_dict.student_pk_list.length : 0;
 
         console.log("    mod_dict.student_pk_list ", mod_dict.student_pk_list);
-        console.log("    mod_dict.student_pk_count ", mod_dict.student_pk_count);
+        console.log("    mod_dict.gl_approved_count ", mod_dict.gl_approved_count);
+        console.log("    mod_dict.gl_rejected_count ", mod_dict.gl_rejected_count);
     };  // UploadToggle_get_selected_rows
 
 
@@ -1697,6 +1703,7 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23 PR2022-05-10
     function ModConfirmOpen(mode, response) {
         console.log(" -----  ModConfirmOpen   ----")
+        console.log("   mode", mode)
         // values of mode are : "check_birthcountry", "prelim_ex5", "pok", "overview", "withdrawn"
         // respons contains response from server, only used in "check_birthcountry"
         const tblName = "student";
@@ -1717,7 +1724,7 @@ function RefreshDataRowsAfterUpload(response) {
         let msg_html = "";
 
         let msg01_txt = null, msg02_txt = null, msg03_txt = null;
-        let hide_save_btn = false;
+        let hide_save_btn = false, hide_reject_btn = true, hide_remove_btn = true;
         let caption_save = loc.OK, caption_cancel = loc.Cancel;
 
         if (mode === "check_birthcountry"){
@@ -1739,6 +1746,7 @@ function RefreshDataRowsAfterUpload(response) {
                 caption_save = loc.Yes_change;
                 add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
             };
+
         } else if(mode === "overview"){
             show_modal = true;
 
@@ -1791,21 +1799,45 @@ function RefreshDataRowsAfterUpload(response) {
                     show_modal = true;
                     header_text = loc.Approve_or_reject_result;
 
+                    const all_are_approved = (mod_dict.gl_status_approved_count === mod_dict.student_pk_count);
+                    const all_are_rejected = (mod_dict.gl_status_rejected_count === mod_dict.student_pk_count);
+
+        console.log(" mod_dict.student_pk_count", mod_dict.student_pk_count);
+        console.log(" all_are_approved", all_are_approved);
+        console.log(" all_are_rejected", all_are_rejected);
+
+                    const msg_list = ["<p>"];
                     if (mod_dict.student_pk_count === 1){
-                        msg_html = ["<p>",
-                            loc.About_to_approve_reject_result_of, ":<br>&emsp;", mod_dict.full_name,
-                            "</p><p class='pt-2'>", loc.Do_you_want_to_continue, "</p>"
-                        ].join("");
+                        if (all_are_approved){
+
+                        } else if (all_are_rejected){
+                        } else {
+                            msg_list.push(...[
+                                loc.About_to_approve_reject_result_of, ":<br>&emsp;", mod_dict.full_name
+                            ]);
+                        };
                     } else {
-                        msg_html = ["<p>",
-                            loc.About_to_approve_reject_result_of, " ",
-                            mod_dict.student_pk_count, " ", loc.candidates, ". ",
-                            "</p><p class='pt-2'>", loc.Do_you_want_to_continue, "</p>"
-                        ].join("");
+                        if (all_are_approved){
+
+                        } else if (all_are_rejected){
+                        } else {
+                            msg_list.push(...[
+                                loc.About_to_approve_reject_result_of, " ",
+                                mod_dict.student_pk_count, " ", loc.candidates, "."
+                            ]);
+                        };
                     };
+
+                    msg_list.push(...["</p><p class='pt-2'>", loc.Do_you_want_to_continue, "</p>"]);
+                    msg_html = msg_list.join("");
 
                     caption_save = loc.Approve_result;
                     el_confirm_btn_reject.innerText = loc.Reject_result;
+
+                    //hide buttons
+                    hide_save_btn = (mod_dict.gl_approved_count === mod_dict.student_pk_count);
+                    hide_reject_btn = (mod_dict.gl_rejected_count === mod_dict.student_pk_count);
+                    hide_remove_btn = (!mod_dict.gl_rejected_count && !mod_dict.gl_approved_count);
                 };
             };
         } else if (mode === "pok"){
@@ -1838,12 +1870,12 @@ function RefreshDataRowsAfterUpload(response) {
 
         el_confirm_btn_save.innerText = caption_save;
         el_confirm_btn_cancel.innerText = caption_cancel;
+
         add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
+        add_or_remove_class (el_confirm_btn_reject, cls_hide, hide_reject_btn);
+        add_or_remove_class (el_confirm_btn_remove, cls_hide, hide_remove_btn);
 
 // show / hide btn_reject PR2023-06-09
-        if (el_confirm_btn_reject){
-            add_or_remove_class (el_confirm_btn_reject, cls_hide, !mod_dict.show_btn_reject);
-        };
 
 // set focus to cancel button
         set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
@@ -1860,10 +1892,10 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  ModConfirmSave  ================ PR2019-06-23 PR2023-06-09
     function ModConfirmSave(mode) {
         console.log(" --- ModConfirmSave --- ");
+        console.log("mode: ", mode);
         console.log("mod_dict: ", mod_dict);
 
-        const is_reject = mode === "reject";
-        // mode : "save" "reject"'"
+        // mode : "save" "reject", "remove"
 // ---  Upload Changes
         if (mod_dict.mode === "check_birthcountry"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
@@ -1905,7 +1937,7 @@ function RefreshDataRowsAfterUpload(response) {
             const may_edit = (permit_dict.permit_approve_result && permit_dict.requsr_role_insp);
             if (permit_dict.permit_approve_result && permit_dict.requsr_role_insp){
 
-                const gl_status = (mode === "reject") ? 2 : 1;
+                const gl_status = (mode === "remove") ? 0 : (mode === "reject") ? 2 : 1;
                 const upload_dict = {
                         mode: mod_dict.mode,
                         table: "student",
