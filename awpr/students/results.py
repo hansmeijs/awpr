@@ -784,7 +784,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
     # PR2023-06-20 when not prelim: filter on gl_status = 1, i.e. approved by Inspectorate
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_gradelist_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))

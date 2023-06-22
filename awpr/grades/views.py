@@ -1680,7 +1680,6 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
                                 msg_html = create_submit_ex5_test_msg_html(sel_department, sel_level, log_list, test_is_ok)
 
                                 if test_is_ok:
-
 # +++ create new published_instance.
                                     # only save it when it is not a test
                                     # file_name will be added after creating Ex-form

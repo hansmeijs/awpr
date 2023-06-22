@@ -172,7 +172,7 @@ def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_co
     #    '78910:     schooljaar
     #    '11,12,13:   volgnr leerling
     #    '14:        1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = pbl
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     """
     was:
     Het registratienummer bestaat uit 13 tekens en is als volgt opgebouwd:

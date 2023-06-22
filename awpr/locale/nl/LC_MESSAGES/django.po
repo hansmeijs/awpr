@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-21 06:50+0200\n"
+"POT-Creation-Date: 2023-06-22 09:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -215,13 +215,13 @@ msgid "Ex4"
 msgstr ""
 
 #: .\accounts\correctors.py:2424 .\awpr\excel.py:489 .\awpr\excel.py:927
-#: .\awpr\excel.py:2064 .\awpr\excel.py:3451
+#: .\awpr\excel.py:2064 .\awpr\excel.py:3448
 msgid "Digitally signed by"
 msgstr "Digitaal ondertekend door"
 
 #: .\accounts\correctors.py:2427 .\awpr\constants.py:551
 #: .\awpr\constants.py:565 .\awpr\constants.py:572 .\awpr\excel.py:492
-#: .\awpr\excel.py:930 .\awpr\excel.py:2068 .\awpr\excel.py:3455
+#: .\awpr\excel.py:930 .\awpr\excel.py:2068 .\awpr\excel.py:3452
 #: .\awpr\locale.py:2139 .\grades\validators.py:45
 #: .\templates\students\modgradelist.html:46
 msgid "Chairperson"
@@ -229,7 +229,7 @@ msgstr "Voorzitter"
 
 #: .\accounts\correctors.py:2439 .\awpr\constants.py:552
 #: .\awpr\constants.py:566 .\awpr\constants.py:573 .\awpr\excel.py:504
-#: .\awpr\excel.py:942 .\awpr\excel.py:2085 .\awpr\excel.py:3467
+#: .\awpr\excel.py:942 .\awpr\excel.py:2085 .\awpr\excel.py:3464
 #: .\awpr\locale.py:2140 .\grades\validators.py:44
 #: .\templates\students\modgradelist.html:53
 msgid "Secretary"
@@ -310,7 +310,7 @@ msgstr ""
 #: .\accounts\templates\account_activation_sent.html:7
 #: .\accounts\templates\password_change_done.html:9
 #: .\accounts\templates\user_add.html:9 .\accounts\templates\user_edit.html:9
-#: .\awpr\excel.py:5176 .\awpr\excel.py:5178 .\awpr\locale.py:591
+#: .\awpr\excel.py:5181 .\awpr\excel.py:5183 .\awpr\locale.py:591
 #: .\awpr\locale.py:2103 .\templates\accounts\users.html:5
 #: .\templates\accounts\users.html:16 .\templates\accounts\users.html:79
 #: .\templates\includes\headerbar.html:58
@@ -480,7 +480,7 @@ msgid "Schoolcode"
 msgstr ""
 
 #: .\accounts\templates\signup_activation_email.html:9 .\awpr\constants.py:386
-#: .\awpr\excel.py:5235 .\awpr\locale.py:334 .\awpr\validators.py:38
+#: .\awpr\excel.py:5240 .\awpr\locale.py:334 .\awpr\validators.py:38
 #: .\templates\accounts\moduser.html:49
 msgid "Username"
 msgstr "Gebruikersnaam"
@@ -764,8 +764,8 @@ msgstr ""
 msgid "Exam year is not found."
 msgstr "Het examenjaar is niet gevonden."
 
-#: .\accounts\views.py:5499 .\awpr\constants.py:504 .\awpr\excel.py:5236
-#: .\awpr\excel.py:5278 .\awpr\excel.py:5585 .\awpr\excel.py:6137
+#: .\accounts\views.py:5499 .\awpr\constants.py:504 .\awpr\excel.py:5241
+#: .\awpr\excel.py:5283 .\awpr\excel.py:5590 .\awpr\excel.py:6142
 #: .\awpr\locale.py:120 .\awpr\menus.py:47 .\awpr\validators.py:35
 #: .\awpr\validators.py:90 .\awpr\validators.py:202 .\grades\calc_reex.py:2194
 #: .\schools\functions.py:266 .\schools\views.py:4315
@@ -827,7 +827,7 @@ msgstr "Examenjaar %(ey_code)s of this school is vergrendeld."
 msgid "M"
 msgstr ""
 
-#: .\awpr\constants.py:50 .\awpr\excel.py:6146
+#: .\awpr\constants.py:50 .\awpr\excel.py:6151
 msgid "V"
 msgstr ""
 
@@ -874,7 +874,7 @@ msgstr "Vergrendeld"
 msgid "None"
 msgstr "Geen"
 
-#: .\awpr\constants.py:94 .\awpr\excel.py:5976 .\awpr\locale.py:189
+#: .\awpr\constants.py:94 .\awpr\excel.py:5981 .\awpr\locale.py:189
 msgid "Number"
 msgstr "Nummer"
 
@@ -894,11 +894,11 @@ msgstr ""
 msgid "g/s/i"
 msgstr "g/v/o"
 
-#: .\awpr\constants.py:111 .\awpr\excel.py:5932 .\awpr\locale.py:641
+#: .\awpr\constants.py:111 .\awpr\excel.py:5937 .\awpr\locale.py:641
 msgid "Mandatory"
 msgstr "Verplicht"
 
-#: .\awpr\constants.py:112 .\awpr\excel.py:5933 .\awpr\locale.py:645
+#: .\awpr\constants.py:112 .\awpr\excel.py:5938 .\awpr\locale.py:645
 #: .\grades\calc_reex.py:2029 .\grades\calc_results.py:472
 #: .\templates\students\modstudentsubject.html:70
 msgid "Combination subject"
@@ -1064,7 +1064,7 @@ msgid "Central exam"
 msgstr "Centraal examen"
 
 #: .\awpr\constants.py:201 .\awpr\constants.py:213 .\awpr\constants.py:222
-#: .\awpr\constants.py:244 .\awpr\excel.py:6140 .\awpr\locale.py:164
+#: .\awpr\constants.py:244 .\awpr\excel.py:6145 .\awpr\locale.py:164
 #: .\grades\calc_reex.py:1625 .\grades\calc_reex.py:2081
 #: .\grades\calc_reex.py:2282 .\grades\calc_results.py:2253
 #: .\grades\calc_results.py:2679 .\grades\calc_results.py:3700
@@ -1087,22 +1087,22 @@ msgstr "Herexamen 3e tijdvak"
 msgid "All exams"
 msgstr "Alle examens"
 
-#: .\awpr\constants.py:241 .\awpr\excel.py:6143 .\awpr\locale.py:1773
+#: .\awpr\constants.py:241 .\awpr\excel.py:6148 .\awpr\locale.py:1773
 #: .\grades\calc_results.py:2691 .\grades\draw.py:384 .\students\views.py:7665
 msgid "No result"
 msgstr "Geen uitslag"
 
-#: .\awpr\constants.py:242 .\awpr\excel.py:6139 .\awpr\locale.py:1764
+#: .\awpr\constants.py:242 .\awpr\excel.py:6144 .\awpr\locale.py:1764
 #: .\grades\calc_results.py:2736 .\grades\draw.py:385
 msgid "Passed"
 msgstr "Geslaagd"
 
-#: .\awpr\constants.py:243 .\awpr\excel.py:6141 .\awpr\locale.py:1765
+#: .\awpr\constants.py:243 .\awpr\excel.py:6146 .\awpr\locale.py:1765
 #: .\grades\calc_results.py:2704 .\grades\draw.py:386
 msgid "Failed"
 msgstr "Afgewezen"
 
-#: .\awpr\constants.py:245 .\awpr\excel.py:6142 .\awpr\locale.py:1766
+#: .\awpr\constants.py:245 .\awpr\excel.py:6147 .\awpr\locale.py:1766
 #: .\grades\calc_results.py:2687 .\grades\draw.py:388 .\students\views.py:7665
 msgid "Withdrawn"
 msgstr "Teruggetrokken"
@@ -1126,7 +1126,7 @@ msgid "Departments, in which this subject occurs"
 msgstr "Afdelingen, waar dit vak voorkomt"
 
 #: .\awpr\constants.py:337 .\awpr\constants.py:349 .\awpr\constants.py:353
-#: .\awpr\constants.py:401 .\awpr\excel.py:5537 .\grades\exfiles.py:1141
+#: .\awpr\constants.py:401 .\awpr\excel.py:5542 .\grades\exfiles.py:1141
 #: .\schools\imports.py:1010 .\schools\imports.py:2951
 #: .\schools\imports.py:3330 .\students\validators.py:336
 #: .\students\views.py:7292 .\templates\students\modstudent.html:64
@@ -1141,31 +1141,31 @@ msgstr "Titel van het werkstuk"
 msgid "Subjects assignment"
 msgstr "Vakken van het werkstuk"
 
-#: .\awpr\constants.py:354 .\awpr\constants.py:396 .\awpr\excel.py:5537
+#: .\awpr\constants.py:354 .\awpr\constants.py:396 .\awpr\excel.py:5542
 #: .\awpr\locale.py:837 .\awpr\locale.py:1434 .\schools\imports.py:981
 #: .\students\views.py:1564 .\templates\students\modstudent.html:22
 msgid "Last name"
 msgstr "Achternaam"
 
-#: .\awpr\constants.py:355 .\awpr\constants.py:397 .\awpr\excel.py:5537
+#: .\awpr\constants.py:355 .\awpr\constants.py:397 .\awpr\excel.py:5542
 #: .\awpr\locale.py:838 .\awpr\locale.py:1435 .\schools\imports.py:986
 #: .\students\views.py:1568
 msgid "First name"
 msgstr "Voornamen"
 
-#: .\awpr\constants.py:356 .\awpr\constants.py:398 .\awpr\excel.py:5537
+#: .\awpr\constants.py:356 .\awpr\constants.py:398 .\awpr\excel.py:5542
 #: .\awpr\locale.py:834 .\schools\imports.py:991 .\students\views.py:1572
 #: .\templates\students\modstudent.html:39
 msgid "Prefix"
 msgstr "Voorvoegsel"
 
-#: .\awpr\constants.py:357 .\awpr\constants.py:399 .\awpr\excel.py:5537
+#: .\awpr\constants.py:357 .\awpr\constants.py:399 .\awpr\excel.py:5542
 #: .\awpr\locale.py:839 .\awpr\locale.py:1436 .\students\views.py:7275
 #: .\templates\students\modstudent.html:49
 msgid "Gender"
 msgstr "Geslacht"
 
-#: .\awpr\constants.py:358 .\awpr\constants.py:400 .\awpr\excel.py:5537
+#: .\awpr\constants.py:358 .\awpr\constants.py:400 .\awpr\excel.py:5542
 #: .\awpr\locale.py:2111 .\students\views.py:7368
 #: .\templates\students\modstudent.html:125
 msgid "Exam number"
@@ -1176,12 +1176,12 @@ msgstr "Examennummer"
 msgid "Birthdate"
 msgstr "Geboortedatum"
 
-#: .\awpr\constants.py:360 .\awpr\constants.py:403 .\awpr\excel.py:5538
+#: .\awpr\constants.py:360 .\awpr\constants.py:403 .\awpr\excel.py:5543
 #: .\awpr\locale.py:843 .\students\views.py:468
 msgid "Country of birth"
 msgstr "Geboorteland"
 
-#: .\awpr\constants.py:361 .\awpr\constants.py:404 .\awpr\excel.py:5538
+#: .\awpr\constants.py:361 .\awpr\constants.py:404 .\awpr\excel.py:5543
 #: .\awpr\locale.py:844 .\students\views.py:469
 #: .\templates\students\modstudent.html:88
 msgid "Place of birth"
@@ -1191,18 +1191,18 @@ msgstr "Geboorteplaats"
 msgid "Class name"
 msgstr "Klas"
 
-#: .\awpr\constants.py:364 .\awpr\constants.py:408 .\awpr\excel.py:5539
+#: .\awpr\constants.py:364 .\awpr\constants.py:408 .\awpr\excel.py:5544
 #: .\awpr\locale.py:849
 msgid "Bis exam"
 msgstr "Bis-examen"
 
-#: .\awpr\constants.py:366 .\awpr\constants.py:406 .\awpr\excel.py:5540
+#: .\awpr\constants.py:366 .\awpr\constants.py:406 .\awpr\excel.py:5545
 #: .\awpr\locale.py:831 .\templates\students\modstudent.html:161
 msgid "Extra facilities"
 msgstr "Extra faciliteiten"
 
-#: .\awpr\constants.py:367 .\awpr\constants.py:409 .\awpr\excel.py:5536
-#: .\awpr\excel.py:5800 .\awpr\locale.py:150 .\awpr\validators.py:204
+#: .\awpr\constants.py:367 .\awpr\constants.py:409 .\awpr\excel.py:5541
+#: .\awpr\excel.py:5805 .\awpr\locale.py:150 .\awpr\validators.py:204
 #: .\grades\calc_reex.py:2195 .\schools\functions.py:114
 #: .\templates\emails\send_verifcode_exform_email.html:9
 #: .\templates\schools\orderlists.html:25
@@ -1213,8 +1213,8 @@ msgstr "Extra faciliteiten"
 msgid "Department"
 msgstr "Afdeling"
 
-#: .\awpr\constants.py:369 .\awpr\constants.py:410 .\awpr\excel.py:5536
-#: .\awpr\excel.py:5800 .\awpr\locale.py:127
+#: .\awpr\constants.py:369 .\awpr\constants.py:410 .\awpr\excel.py:5541
+#: .\awpr\excel.py:5805 .\awpr\locale.py:127
 #: .\templates\students\modapprovesubject.html:25
 #: .\templates\subjects\modapproveexam.html:40
 msgid "Level"
@@ -1253,7 +1253,7 @@ msgstr "Land"
 msgid "Page"
 msgstr "Pagina"
 
-#: .\awpr\constants.py:379 .\awpr\excel.py:5232 .\awpr\locale.py:2108
+#: .\awpr\constants.py:379 .\awpr\excel.py:5237 .\awpr\locale.py:2108
 #: .\schools\imports.py:3877 .\templates\accounts\modpermit.html:19
 msgid "Organization"
 msgstr "Organisatie"
@@ -1263,18 +1263,18 @@ msgstr "Organisatie"
 msgid "Action"
 msgstr "Actie"
 
-#: .\awpr\constants.py:381 .\awpr\excel.py:5237
+#: .\awpr\constants.py:381 .\awpr\excel.py:5242
 #: .\templates\accounts\modpermit.html:55 .\templates\accounts\users.html:80
 msgid "User groups"
 msgstr "Gebruikersgroepen"
 
-#: .\awpr\constants.py:385 .\awpr\excel.py:5231 .\awpr\excel.py:5275
-#: .\awpr\excel.py:5536 .\awpr\excel.py:5582 .\awpr\locale.py:2107
+#: .\awpr\constants.py:385 .\awpr\excel.py:5236 .\awpr\excel.py:5280
+#: .\awpr\excel.py:5541 .\awpr\excel.py:5587 .\awpr\locale.py:2107
 #: .\awpr\validators.py:405 .\templates\emails\publish_orderlist_email.html:8
 msgid "School code"
 msgstr "Schoolcode"
 
-#: .\awpr\constants.py:387 .\awpr\excel.py:5235 .\awpr\locale.py:149
+#: .\awpr\constants.py:387 .\awpr\excel.py:5240 .\awpr\locale.py:149
 #: .\awpr\locale.py:335 .\awpr\validators.py:544 .\subjects\views.py:1022
 #: .\templates\accounts\moduser.html:57 .\templates\schools\modschool.html:65
 #: .\templates\subjects\modsubject.html:50
@@ -1288,7 +1288,7 @@ msgstr "Naam"
 msgid "Function"
 msgstr "Functie"
 
-#: .\awpr\constants.py:407 .\awpr\excel.py:5540 .\grades\draw.py:278
+#: .\awpr\constants.py:407 .\awpr\excel.py:5545 .\grades\draw.py:278
 msgid "Evening student"
 msgstr "Avondstudent"
 
@@ -1457,90 +1457,90 @@ msgstr ""
 msgid "Candidates, whose learning path is not entered"
 msgstr "Kandidaten, bij wie de leerweg niet is ingevuld"
 
-#: .\awpr\excel.py:3330
+#: .\awpr\excel.py:3327
 msgid "Ex5"
 msgstr ""
 
-#: .\awpr\excel.py:4325
+#: .\awpr\excel.py:4330
 msgid "extra exams plus"
 msgstr "extra examens plus"
 
-#: .\awpr\excel.py:4326
+#: .\awpr\excel.py:4331
 msgid "rounded up to"
 msgstr "naar boven afgerond op"
 
-#: .\awpr\excel.py:4328
+#: .\awpr\excel.py:4333
 msgid "Calulation of extra exams:"
 msgstr "Berekening van de extra examens:"
 
-#: .\awpr\excel.py:4332
+#: .\awpr\excel.py:4337
 msgid "exams per"
 msgstr "examens per"
 
-#: .\awpr\excel.py:4333
+#: .\awpr\excel.py:4338
 msgid "exams first exam period,"
 msgstr "examens eerste tijdvak,"
 
-#: .\awpr\excel.py:4334
+#: .\awpr\excel.py:4339
 msgid "with a maximum of"
 msgstr "met een maximum van"
 
-#: .\awpr\excel.py:4335
+#: .\awpr\excel.py:4340
 msgid "Calulation exams second exam period:"
 msgstr "Berekening van de examens tweede tijdvak:"
 
-#: .\awpr\excel.py:5015 .\awpr\locale.py:144
+#: .\awpr\excel.py:5020 .\awpr\locale.py:144
 msgid "Total"
 msgstr "Totaal"
 
-#: .\awpr\excel.py:5231 .\awpr\validators.py:541 .\subjects\views.py:1022
+#: .\awpr\excel.py:5236 .\awpr\validators.py:541 .\subjects\views.py:1022
 #: .\templates\schools\modschool.html:35
 #: .\templates\subjects\modsubjecttypebase.html:23
 msgid "Code"
 msgstr ""
 
-#: .\awpr\excel.py:5232 .\awpr\excel.py:5536 .\awpr\locale.py:1979
+#: .\awpr\excel.py:5237 .\awpr\excel.py:5541 .\awpr\locale.py:1979
 #: .\schools\views.py:4695
 msgid "School name"
 msgstr "Schoolnaam"
 
-#: .\awpr\excel.py:5235 .\awpr\locale.py:2127
+#: .\awpr\excel.py:5240 .\awpr\locale.py:2127
 #: .\templates\accounts\moduser.html:65
 msgid "Email address"
 msgstr "E-mail adres"
 
-#: .\awpr\excel.py:5235
+#: .\awpr\excel.py:5240
 msgid "Telephone"
 msgstr ""
 
-#: .\awpr\excel.py:5236 .\awpr\locale.py:407
+#: .\awpr\excel.py:5241 .\awpr\locale.py:407
 msgid "Activated"
 msgstr "Geactiveerd"
 
-#: .\awpr\excel.py:5237 .\awpr\locale.py:282 .\templates\accounts\users.html:81
+#: .\awpr\excel.py:5242 .\awpr\locale.py:282 .\templates\accounts\users.html:81
 #: .\templates\includes\headerbar.html:62
 msgid "Allowed sections"
 msgstr "Toegestane secties"
 
-#: .\awpr\excel.py:5237 .\awpr\locale.py:287
+#: .\awpr\excel.py:5242 .\awpr\locale.py:287
 msgid "Allowed clusters"
 msgstr "Toegestane clusters"
 
-#: .\awpr\excel.py:5238 .\awpr\excel.py:5541 .\awpr\excel.py:5810
-#: .\awpr\excel.py:5873 .\awpr\locale.py:153
+#: .\awpr\excel.py:5243 .\awpr\excel.py:5546 .\awpr\excel.py:5815
+#: .\awpr\excel.py:5878 .\awpr\locale.py:153
 msgid "Last modified on "
 msgstr "Laatst gewijzigd op "
 
-#: .\awpr\excel.py:5238 .\awpr\excel.py:5541 .\awpr\excel.py:5810
-#: .\awpr\excel.py:5873 .\awpr\excel.py:5937 .\awpr\functions.py:793
+#: .\awpr\excel.py:5243 .\awpr\excel.py:5546 .\awpr\excel.py:5815
+#: .\awpr\excel.py:5878 .\awpr\excel.py:5942 .\awpr\functions.py:793
 msgid "Last modified by"
 msgstr "Laatst gewijzigd door"
 
-#: .\awpr\excel.py:5269
+#: .\awpr\excel.py:5274
 msgid "List of users"
 msgstr "Gebruikerslijst"
 
-#: .\awpr\excel.py:5272 .\awpr\excel.py:5579 .\awpr\locale.py:115
+#: .\awpr\excel.py:5277 .\awpr\excel.py:5584 .\awpr\locale.py:115
 #: .\awpr\menus.py:46 .\awpr\menus.py:200 .\awpr\validators.py:241
 #: .\schools\views.py:2321 .\schools\views.py:3748 .\schools\views.py:3809
 #: .\templates\emails\email_send_verifcode_orderlist.html:8
@@ -1550,258 +1550,258 @@ msgstr "Gebruikerslijst"
 msgid "Exam year"
 msgstr "Examenjaar"
 
-#: .\awpr\excel.py:5481 .\awpr\excel.py:5483 .\awpr\locale.py:146
+#: .\awpr\excel.py:5486 .\awpr\excel.py:5488 .\awpr\locale.py:146
 #: .\awpr\menus.py:49 .\subjects\views.py:9215
 #: .\templates\students\students.html:5 .\templates\students\students.html:16
 #: .\templates\students\students.html:80
 msgid "Candidates"
 msgstr "Kandidaten"
 
-#: .\awpr\excel.py:5536
+#: .\awpr\excel.py:5541
 msgid "Sector / Profiel"
 msgstr ""
 
-#: .\awpr\excel.py:5538
+#: .\awpr\excel.py:5543
 msgid "Date of birth"
 msgstr "Geboortedatum"
 
-#: .\awpr\excel.py:5539 .\awpr\locale.py:848 .\grades\draw.py:258
+#: .\awpr\excel.py:5544 .\awpr\locale.py:848 .\grades\draw.py:258
 #: .\templates\students\modstudent.html:153
 #: .\templates\students\results.html:33
 msgid "Class"
 msgstr "Klas"
 
-#: .\awpr\excel.py:5539 .\awpr\locale.py:828 .\awpr\locale.py:1940
+#: .\awpr\excel.py:5544 .\awpr\locale.py:828 .\awpr\locale.py:1940
 #: .\templates\students\modstudent.html:105
 msgid "Registration number"
 msgstr "Registratienummer"
 
-#: .\awpr\excel.py:5540 .\awpr\locale.py:767 .\grades\draw.py:280
+#: .\awpr\excel.py:5545 .\awpr\locale.py:767 .\grades\draw.py:280
 #: .\templates\schools\modschool.html:99
 msgid "Landsexamen"
 msgstr "Landsexamen"
 
-#: .\awpr\excel.py:5540 .\awpr\locale.py:850 .\grades\draw.py:282
+#: .\awpr\excel.py:5545 .\awpr\locale.py:850 .\grades\draw.py:282
 msgid "Partial exam"
 msgstr "Deelexamen"
 
-#: .\awpr\excel.py:5576
+#: .\awpr\excel.py:5581
 msgid "List of exam candidates"
 msgstr "Lijst van examenkandidaten"
 
-#: .\awpr\excel.py:5692 .\awpr\excel.py:5694 .\awpr\excel.py:5754
+#: .\awpr\excel.py:5697 .\awpr\excel.py:5699 .\awpr\excel.py:5759
 #: .\awpr\locale.py:126 .\awpr\menus.py:48 .\templates\subjects\subjects.html:5
 #: .\templates\subjects\subjects.html:89
 msgid "Subject schemes"
 msgstr "Vakschema's"
 
-#: .\awpr\excel.py:5800 .\awpr\locale.py:619 .\schools\functions.py:444
+#: .\awpr\excel.py:5805 .\awpr\locale.py:619 .\schools\functions.py:444
 msgid "Subject scheme"
 msgstr "Vakschema"
 
-#: .\awpr\excel.py:5800 .\awpr\locale.py:132
+#: .\awpr\excel.py:5805 .\awpr\locale.py:132
 msgid "Sector / Profile"
 msgstr "Sector / Profiel"
 
-#: .\awpr\excel.py:5801 .\awpr\locale.py:670
+#: .\awpr\excel.py:5806 .\awpr\locale.py:670
 msgid "Minimum studyload hours"
 msgstr "Minimaal aantal studielasturen"
 
-#: .\awpr\excel.py:5801 .\awpr\excel.py:5865 .\awpr\locale.py:696
+#: .\awpr\excel.py:5806 .\awpr\excel.py:5870 .\awpr\locale.py:696
 msgid "Minimum number of subjects"
 msgstr "Minimaal aantal vakken"
 
-#: .\awpr\excel.py:5801 .\awpr\excel.py:5866 .\awpr\locale.py:697
+#: .\awpr\excel.py:5806 .\awpr\excel.py:5871 .\awpr\locale.py:697
 msgid "Maximum number of subjects"
 msgstr "Maximaal aantal vakken"
 
-#: .\awpr\excel.py:5802 .\awpr\locale.py:699
+#: .\awpr\excel.py:5807 .\awpr\locale.py:699
 msgid "Minimum number of MVT subjects"
 msgstr "Minimaal aantal MVT-vakken"
 
-#: .\awpr\excel.py:5802 .\awpr\locale.py:700
+#: .\awpr\excel.py:5807 .\awpr\locale.py:700
 msgid "Maximum number of MVT subjects"
 msgstr "Maximaal aantal MVT-vakken"
 
-#: .\awpr\excel.py:5803 .\awpr\locale.py:701
+#: .\awpr\excel.py:5808 .\awpr\locale.py:701
 msgid "Minimum number of math subjects"
 msgstr "Minimaal aantal wiskundevakken"
 
-#: .\awpr\excel.py:5803 .\awpr\locale.py:702
+#: .\awpr\excel.py:5808 .\awpr\locale.py:702
 msgid "Maximum number of math subjects"
 msgstr "Maximaal aantal wiskundevakken"
 
-#: .\awpr\excel.py:5804 .\awpr\locale.py:703
+#: .\awpr\excel.py:5809 .\awpr\locale.py:703
 msgid "Minimum number of combination subjects"
 msgstr "Minimaal aantal combinatievakken"
 
-#: .\awpr\excel.py:5804 .\awpr\locale.py:704
+#: .\awpr\excel.py:5809 .\awpr\locale.py:704
 msgid "Maximum number of combination subjects"
 msgstr "Maximaal aantal combinatievakken"
 
-#: .\awpr\excel.py:5805 .\awpr\locale.py:666 .\subjects\views.py:6482
+#: .\awpr\excel.py:5810 .\awpr\locale.py:666 .\subjects\views.py:6482
 msgid "Maximum number of re-examinations"
 msgstr "Maximaal aantal herexamens"
 
-#: .\awpr\excel.py:5807 .\awpr\locale.py:656
+#: .\awpr\excel.py:5812 .\awpr\locale.py:656
 msgid "Average CE grade rule"
 msgstr "Gemiddeld CE-cijfer eis"
 
-#: .\awpr\excel.py:5807 .\awpr\locale.py:657
+#: .\awpr\excel.py:5812 .\awpr\locale.py:657
 msgid "Average CE grade rule not at eveningschool"
 msgstr "Gemiddeld CE-cijfer eis niet bij avondschool"
 
-#: .\awpr\excel.py:5808 .\awpr\excel.py:5935 .\awpr\locale.py:658
+#: .\awpr\excel.py:5813 .\awpr\excel.py:5940 .\awpr\locale.py:658
 msgid "Final grade must be sufficient"
 msgstr "Eindcijfer moet voldoende zijn"
 
-#: .\awpr\excel.py:5808 .\awpr\excel.py:5935 .\awpr\locale.py:659
+#: .\awpr\excel.py:5813 .\awpr\excel.py:5940 .\awpr\locale.py:659
 msgid "Final grade rule not at eveningschool"
 msgstr "Eindcijfer eis niet bij avondschool"
 
-#: .\awpr\excel.py:5864 .\awpr\locale.py:684 .\awpr\locale.py:883
+#: .\awpr\excel.py:5869 .\awpr\locale.py:684 .\awpr\locale.py:883
 #: .\awpr\validators.py:686 .\awpr\validators.py:726 .\schools\functions.py:327
 #: .\subjects\views.py:6657
 msgid "Character"
 msgstr "Karakter"
 
-#: .\awpr\excel.py:5864 .\awpr\excel.py:5931 .\awpr\locale.py:139
+#: .\awpr\excel.py:5869 .\awpr\excel.py:5936 .\awpr\locale.py:139
 #: .\awpr\locale.py:1998 .\subjects\views.py:1022
 #: .\templates\subjects\modsubject.html:25
 #: .\templates\subjects\modsubjecttypebase.html:45
 msgid "Abbreviation"
 msgstr "Afkorting"
 
-#: .\awpr\excel.py:5867 .\awpr\locale.py:706
+#: .\awpr\excel.py:5872 .\awpr\locale.py:706
 msgid "Minimum extra subject, doesn't count"
 msgstr "Minimum extra vak, telt niet mee"
 
-#: .\awpr\excel.py:5868 .\awpr\locale.py:707
+#: .\awpr\excel.py:5873 .\awpr\locale.py:707
 msgid "Maximum extra subject, doesn't count"
 msgstr "Maximum extra vak, telt niet mee"
 
-#: .\awpr\excel.py:5869 .\awpr\locale.py:708
+#: .\awpr\excel.py:5874 .\awpr\locale.py:708
 msgid "Minimum extra subject, counts"
 msgstr "Minimum extra vak, telt mee"
 
-#: .\awpr\excel.py:5870 .\awpr\locale.py:709
+#: .\awpr\excel.py:5875 .\awpr\locale.py:709
 msgid "Maximum extra subject, counts"
 msgstr "Maximum extra vak, telt mee"
 
-#: .\awpr\excel.py:5871 .\awpr\excel.py:5934 .\awpr\locale.py:648
+#: .\awpr\excel.py:5876 .\awpr\excel.py:5939 .\awpr\locale.py:648
 msgid "Has practical exam"
 msgstr "Heeft praktijk-examen"
 
-#: .\awpr\excel.py:5872 .\awpr\locale.py:649
+#: .\awpr\excel.py:5877 .\awpr\locale.py:649
 msgid "Has assignment"
 msgstr "Heeft werkstuk"
 
-#: .\awpr\excel.py:5931
+#: .\awpr\excel.py:5936
 msgid "Subjects of this subject scheme"
 msgstr "Vakken van dit vakschema"
 
-#: .\awpr\excel.py:5931
+#: .\awpr\excel.py:5936
 msgid "Subject type"
 msgstr "Vaktype"
 
-#: .\awpr\excel.py:5931 .\awpr\locale.py:635
+#: .\awpr\excel.py:5936 .\awpr\locale.py:635
 msgid "Grade type"
 msgstr "Cijfertype"
 
-#: .\awpr\excel.py:5932 .\awpr\locale.py:672 .\awpr\locale.py:957
+#: .\awpr\excel.py:5937 .\awpr\locale.py:672 .\awpr\locale.py:957
 msgid "Studyload hours"
 msgstr "Studielasturen"
 
-#: .\awpr\excel.py:5932
+#: .\awpr\excel.py:5937
 msgid "Subject not at dayschool"
 msgstr "Vak niet bij dagschool"
 
-#: .\awpr\excel.py:5932
+#: .\awpr\excel.py:5937
 msgid "SE weight"
 msgstr "SE-weging"
 
-#: .\awpr\excel.py:5932
+#: .\awpr\excel.py:5937
 msgid "CE weight"
 msgstr "CE-weging"
 
-#: .\awpr\excel.py:5932
+#: .\awpr\excel.py:5937
 msgid "Multiplier"
 msgstr ""
 
-#: .\awpr\excel.py:5932
+#: .\awpr\excel.py:5937
 msgid "Mandatory if candidate has this subject"
 msgstr "Verplicht als de kandidaat dit vak heeft"
 
-#: .\awpr\excel.py:5933 .\awpr\locale.py:650 .\grades\calc_reex.py:2033
+#: .\awpr\excel.py:5938 .\awpr\locale.py:650 .\grades\calc_reex.py:2033
 #: .\grades\calc_results.py:476
 msgid "Core subject"
 msgstr "Kernvak"
 
-#: .\awpr\excel.py:5933 .\awpr\locale.py:651 .\students\validators.py:1132
+#: .\awpr\excel.py:5938 .\awpr\locale.py:651 .\students\validators.py:1132
 msgid "MVT subject"
 msgstr "MVT-vak"
 
-#: .\awpr\excel.py:5933
+#: .\awpr\excel.py:5938
 msgid "Math subject"
 msgstr "Wiskundevak"
 
-#: .\awpr\excel.py:5934 .\awpr\locale.py:646
+#: .\awpr\excel.py:5939 .\awpr\locale.py:646
 msgid "Extra subject counts allowed"
 msgstr "Extra vak, telt mee, toegestaan"
 
-#: .\awpr\excel.py:5934 .\awpr\locale.py:647
+#: .\awpr\excel.py:5939 .\awpr\locale.py:647
 msgid "Extra subject does not count allowed"
 msgstr "Extra vak, telt niet mee, toegestaan"
 
-#: .\awpr\excel.py:5934
+#: .\awpr\excel.py:5939
 msgid "Re-examination school exam allowed"
 msgstr "Herkansing schoolexamen toegestaan"
 
-#: .\awpr\excel.py:5936
+#: .\awpr\excel.py:5941
 msgid "Thumb rule applies"
 msgstr "Duimregeling is van toepassing"
 
-#: .\awpr\excel.py:5936 .\awpr\locale.py:735
+#: .\awpr\excel.py:5941 .\awpr\locale.py:735
 msgid "Exam years without CE"
 msgstr "Examenjaren zonder CE"
 
-#: .\awpr\excel.py:5936 .\awpr\locale.py:717
+#: .\awpr\excel.py:5941 .\awpr\locale.py:717
 #: .\templates\subjects\modotherlang.html:15
 msgid "Other languages"
 msgstr "Andere talen"
 
-#: .\awpr\excel.py:5936 .\awpr\locale.py:694 .\awpr\locale.py:1169
+#: .\awpr\excel.py:5941 .\awpr\locale.py:694 .\awpr\locale.py:1169
 #: .\subjects\views.py:4774
 msgid "ETE exam"
 msgstr "ETE-examen"
 
-#: .\awpr\excel.py:5937
+#: .\awpr\excel.py:5942
 msgid "Last modified on"
 msgstr "Laatst gewijzigd op"
 
-#: .\awpr\excel.py:6057 .\awpr\excel.py:6059 .\awpr\locale.py:1761
+#: .\awpr\excel.py:6062 .\awpr\excel.py:6064 .\awpr\locale.py:1761
 #: .\awpr\menus.py:56 .\templates\students\results.html:5
 #: .\templates\students\results.html:15 .\templates\students\results.html:86
 msgid "Results"
 msgstr "Uitslagen"
 
-#: .\awpr\excel.py:6138
+#: .\awpr\excel.py:6143
 msgid "Total candidates"
 msgstr "Totaal aantal kandidaten"
 
-#: .\awpr\excel.py:6303
+#: .\awpr\excel.py:6308
 msgid "TOTAL"
 msgstr ""
 
-#: .\awpr\excel.py:6414
+#: .\awpr\excel.py:6419
 msgid "Exam results"
 msgstr "Examen uitslagen"
 
-#: .\awpr\excel.py:6420 .\awpr\locale.py:2011
+#: .\awpr\excel.py:6425 .\awpr\locale.py:2011
 msgid "Date"
 msgstr "Datum"
 
-#: .\awpr\excel.py:6478
+#: .\awpr\excel.py:6483
 msgid "Learning path is not entered"
 msgstr "Leerweg is niet ingevuld"
 
@@ -8453,7 +8453,7 @@ msgstr "Als %(auth)s hoef je %(gradetype)s niet goed te keuren."
 msgid "Approve score"
 msgstr "Score goedkeuren"
 
-#: .\grades\views.py:626 .\grades\views.py:713 .\grades\views.py:1439
+#: .\grades\views.py:626 .\grades\views.py:713 .\grades\views.py:1440
 #: .\grades\views.py:1802 .\subjects\views.py:3465
 #, python-format
 msgid "The selection contains %(val)s."
@@ -8532,7 +8532,7 @@ msgstr "De goedkeuring van de cijfers is niet verwijderd."
 msgid "The grades have not been approved."
 msgstr "De cijfers zijn niet goedgekeurd."
 
-#: .\grades\views.py:1439 .\students\views.py:4536
+#: .\grades\views.py:1440 .\students\views.py:4536
 msgid "no subjects"
 msgstr "geen vakken"
 

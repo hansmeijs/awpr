@@ -347,6 +347,10 @@ def update_library(examyear):
         ('diploma', 'chairperson', 'De voorzitter van de examencommissie:'),
         ('diploma', 'secretary', 'De secretaris van de examencommissie:'),
 
+        # PR2023-06-21 changes requested by Esther
+        ('diploma', 'chairperson_cur', 'Voorzitter Examencommissie'),
+        ('diploma', 'secretary_cur', 'Secretaris Examencommissie'),
+
         ('diploma', 'ete', 'Het Expertisecentrum voor Toetsen & Examens:'),
 
         ('diploma', 'signature', 'Handtekening van de geslaagde:'),
