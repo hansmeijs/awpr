@@ -497,146 +497,219 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 # temp_file = tempfile.TemporaryFile()
                 # canvas = Canvas(temp_file)
 
+################################ PRELIMINARY GRADELIST
+                if is_prelim:
+                    buffer = io.BytesIO()
+                    canvas = Canvas(buffer)
 
-    # - Create an in-memory output file for the new pdf to be downloaded (may have multiple students)
-                buffer = io.BytesIO()
-                canvas = Canvas(buffer)
-
-                for student_dict in student_list:
-
-                    if logging_on:
-                        logger.debug('     student_dict: ' + str(student_dict))
-
-        # print file to be downloaded, will not saved
-                    if is_diploma:
-                        if is_sxm:
-                            grd_draw.draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate)
-                        else:
-                            grd_draw.draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate)
-
-                    else:
-                        if is_sxm:
-                            grd_draw.draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
-                        else:
-                            grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
-
-                    canvas.showPage()
-
-        # +++  print and save pdf for each sudent separately
-                    if save_to_disk:
-                # - create new published_instance.
-                        now_arr = upload_dict.get('now_arr')
-                        published_instance = grade_view.create_published_instance_gradelist_diploma(
-                            sel_examyear=sel_examyear,
-                            sel_school=sel_school,
-                            sel_department=sel_department,
-                            lvlbase_code=student_dict.get('lvlbase_code'),
-                            student_pk=student_dict.get('stud_id'),
-                            lastname_initials=student_dict.get('lastname_initials'),
-                            regnumber=student_dict.get('regnumber') or '',
-                            save_to_disk=save_to_disk,
-                            is_diploma=is_diploma,
-                            now_arr=now_arr,
-                            request=request
-                        )
-                        published_pk = published_instance.pk if published_instance else None
+                    for student_dict in student_list:
 
                         if logging_on:
-                            logger.debug('published_pk: ' + str(published_pk))
-                            logger.debug('published_instance.filename: ' + str(published_instance.filename))
+                            logger.debug('     student_dict: ' + str(student_dict))
 
-                        examyear_str = str(sel_examyear.code)
-                        school_code = sel_school.base.code if sel_school.base.code else '---'
-                        country_abbrev = sel_examyear.country.abbrev.lower()
-                        file_dir = '/'.join((country_abbrev, examyear_str, school_code, 'diploma'))
-                        file_path = '/'.join((file_dir, published_instance.filename))
-
-                        if logging_on:
-                            logger.debug('    file_dir: ' + str(file_dir))
-                            logger.debug('    filepath: ' + str(file_path))
-
-                        ########################
-
-           # - create separate file for each student when printing final diploma or gradelist
-                        # from https://docs.python.org/3/library/tempfile.html
-                        #temp_file = tempfile.TemporaryFile()
-                        #canvas_tobesaved = Canvas(temp_file)
-
-                        buffer_tobesaved = io.BytesIO()
-                        canvas_tobesaved = Canvas(buffer_tobesaved)
-
+                        # print file to be downloaded, will not saved
                         if is_diploma:
                             if is_sxm:
-                                grd_draw.draw_diploma_sxm(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
+                                grd_draw.draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name,
                                                           printdate)
                             else:
-                                grd_draw.draw_diploma_cur(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
+                                grd_draw.draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name,
                                                           printdate)
 
                         else:
                             if is_sxm:
-                                grd_draw.draw_gradelist_sxm(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
+                                grd_draw.draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm,
                                                             print_reex, auth1_pk, auth2_pk, printdate, request)
                             else:
-                                grd_draw.draw_gradelist_cur(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
+                                grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm,
                                                             print_reex, auth1_pk, auth2_pk, printdate, request)
 
-                        canvas_tobesaved.showPage()
+                        canvas.showPage()
 
-                        # PR2023-06-19 do't forget to save the canvas first! It took me 2 hours to find out
-                        canvas_tobesaved.save()
 
-                # Rewind the buffer.
-                        # seek(0) sets the pointer position at 0.
-                        buffer_tobesaved.seek(0)
-                        pdf_file = File(buffer_tobesaved, published_instance.filename)
+                    canvas.save()
 
-                        published_instance.file.save(file_path, pdf_file)
+                    file_name = 'Diploma' if mode == 'diploma' else 'Cijferlijst'
+                    if len(student_list) == 1:
+                        file_name += ' van ' + student_list[0].get('fullname')
+                    now_formatted = af.get_now_formatted_from_now_arr(upload_dict.get('now_arr'))
+                    if now_formatted:
+                        file_name += ' ' + now_formatted
+                    file_name += '.pdf'
 
-                        # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
-                        published_instance.save(request=request)
+                    if logging_on:
+                        logger.debug('    buffer: ' + str(buffer))
 
-                canvas.save()
+                    # PR2023-06-22 INTERNAL SERVER ERROR when downloading a document with special characters
+                    # the document saved on server is ok > change code of response like in saved version
+                    # was:
+                    # pdf = buffer.getvalue()
+                    # try it this way, cross yout fingers:
 
-                file_name = 'Diploma' if mode == 'diploma' else 'Cijferlijst'
-                if len(student_list) == 1:
-                    file_name += ' van ' + student_list[0].get('fullname')
-                now_formatted = af.get_now_formatted_from_now_arr(upload_dict.get('now_arr'))
-                if now_formatted:
-                    file_name += ' ' + now_formatted
-                file_name += '.pdf'
+                    # seek(0) sets the pointer position at 0.
+                    #buffer.seek(0)
+                    # this does not work:
+                    #  pdf = File(buffer, file_name)
 
-                if logging_on:
-                    logger.debug('    buffer: ' + str(buffer))
+                    pdf = buffer.getvalue()
 
-                # PR2023-06-22 INTERNAL SERVER ERROR when downloading a document with special characters
-                # the document saved on server is ok > change code of response like in saved version
-                # was:
-                # pdf = buffer.getvalue()
-                # try it this way, cross yout fingers:
+                    if logging_on:
+                        logger.debug('    pdf: ' + str(pdf))
 
-                # seek(0) sets the pointer position at 0.
-                buffer.seek(0)
-                # this does not work:
-                #  pdf = File(buffer, file_name)
+                    response = HttpResponse(content_type='application/pdf')
+                    # PR2023-06-22 try attachment instead of inline > doesnt tsolve the problem
+                    # response['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
 
-                pdf = buffer.getvalue()
+                    response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
 
-                if logging_on:
-                    logger.debug('    pdf: ' + str(pdf))
+                    if logging_on:
+                        logger.debug('    response: ' + str(response))
 
-                response = HttpResponse(content_type='application/pdf')
-                # PR2023-06-22 try attachment instead of inline
-                #response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
-                response['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
+                    response.write(pdf)
+                    if logging_on:
+                        logger.debug('    response.write(pdf')
+                else:
+################################ FINAL GRADELIST AND DIPLOMA
+    # - Create an in-memory output file for the new pdf to be downloaded (may have multiple students)
+                    buffer = io.BytesIO()
+                    canvas = Canvas(buffer)
 
-                if logging_on:
-                    logger.debug('    response: ' + str(response))
+                    for student_dict in student_list:
 
-                response.write(pdf)
-                if logging_on:
-                    logger.debug('    response.write(pdf')
+                        if logging_on:
+                            logger.debug('     student_dict: ' + str(student_dict))
 
+            # print file to be downloaded, will not saved
+                        if is_diploma:
+                            if is_sxm:
+                                grd_draw.draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate)
+                            else:
+                                grd_draw.draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate)
+
+                        else:
+                            if is_sxm:
+                                grd_draw.draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+                            else:
+                                grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+
+                        canvas.showPage()
+
+            # +++  print and save pdf for each sudent separately
+                        if save_to_disk:
+                    # - create new published_instance.
+                            now_arr = upload_dict.get('now_arr')
+                            published_instance = grade_view.create_published_instance_gradelist_diploma(
+                                sel_examyear=sel_examyear,
+                                sel_school=sel_school,
+                                sel_department=sel_department,
+                                lvlbase_code=student_dict.get('lvlbase_code'),
+                                student_pk=student_dict.get('stud_id'),
+                                lastname_initials=student_dict.get('lastname_initials'),
+                                regnumber=student_dict.get('regnumber') or '',
+                                save_to_disk=save_to_disk,
+                                is_diploma=is_diploma,
+                                now_arr=now_arr,
+                                request=request
+                            )
+                            published_pk = published_instance.pk if published_instance else None
+
+                            if logging_on:
+                                logger.debug('published_pk: ' + str(published_pk))
+                                logger.debug('published_instance.filename: ' + str(published_instance.filename))
+
+                            examyear_str = str(sel_examyear.code)
+                            school_code = sel_school.base.code if sel_school.base.code else '---'
+                            country_abbrev = sel_examyear.country.abbrev.lower()
+                            file_dir = '/'.join((country_abbrev, examyear_str, school_code, 'diploma'))
+                            file_path = '/'.join((file_dir, published_instance.filename))
+
+                            if logging_on:
+                                logger.debug('    file_dir: ' + str(file_dir))
+                                logger.debug('    filepath: ' + str(file_path))
+
+                            ########################
+
+               # - create separate file for each student when printing final diploma or gradelist
+                            # from https://docs.python.org/3/library/tempfile.html
+                            #temp_file = tempfile.TemporaryFile()
+                            #canvas_tobesaved = Canvas(temp_file)
+
+                            buffer_tobesaved = io.BytesIO()
+                            canvas_tobesaved = Canvas(buffer_tobesaved)
+
+                            if is_diploma:
+                                if is_sxm:
+                                    grd_draw.draw_diploma_sxm(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
+                                                              printdate)
+                                else:
+                                    grd_draw.draw_diploma_cur(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
+                                                              printdate)
+
+                            else:
+                                if is_sxm:
+                                    grd_draw.draw_gradelist_sxm(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
+                                                                print_reex, auth1_pk, auth2_pk, printdate, request)
+                                else:
+                                    grd_draw.draw_gradelist_cur(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
+                                                                print_reex, auth1_pk, auth2_pk, printdate, request)
+
+                            canvas_tobesaved.showPage()
+
+                            # PR2023-06-19 do't forget to save the canvas first! It took me 2 hours to find out
+                            canvas_tobesaved.save()
+
+                    # Rewind the buffer.
+                            # seek(0) sets the pointer position at 0.
+                            buffer_tobesaved.seek(0)
+                            pdf_file = File(buffer_tobesaved, published_instance.filename)
+
+                            published_instance.file.save(file_path, pdf_file)
+
+                            # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
+                            published_instance.save(request=request)
+
+                    canvas.save()
+
+                    file_name = 'Diploma' if mode == 'diploma' else 'Cijferlijst'
+                    if len(student_list) == 1:
+                        file_name += ' van ' + student_list[0].get('fullname')
+                    now_formatted = af.get_now_formatted_from_now_arr(upload_dict.get('now_arr'))
+                    if now_formatted:
+                        file_name += ' ' + now_formatted
+                    file_name += '.pdf'
+
+                    if logging_on:
+                        logger.debug('    buffer: ' + str(buffer))
+
+                    # PR2023-06-22 INTERNAL SERVER ERROR when downloading a document with special characters
+                    # the document saved on server is ok > change code of response like in saved version
+                    # was:
+                    # pdf = buffer.getvalue()
+                    # try it this way, cross yout fingers:
+
+                    # seek(0) sets the pointer position at 0.
+                    buffer.seek(0)
+                    # this does not work:
+                    #  pdf = File(buffer, file_name)
+
+                    pdf = buffer.getvalue()
+
+                    if logging_on:
+                        logger.debug('    pdf: ' + str(pdf))
+
+                    response = HttpResponse(content_type='application/pdf')
+                    # PR2023-06-22 try attachment instead of inline > doesnt tsolve the problem
+                    # response['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
+
+                    response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
+
+                    if logging_on:
+                        logger.debug('    response: ' + str(response))
+
+                    response.write(pdf)
+                    if logging_on:
+                        logger.debug('    response.write(pdf')
+###################################
         if response:
             return response
         else:
