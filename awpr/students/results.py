@@ -597,7 +597,14 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                         published_instance.save(request=request)
 
                 canvas.save()
+
+                if logging_on:
+                    logger.debug('    buffer: ' + str(buffer))
+
                 pdf = buffer.getvalue()
+
+                if logging_on:
+                    logger.debug('    pdf: ' + str(pdf))
 
                 file_name = 'Diploma' if mode == 'diploma' else 'Cijferlijst'
                 if len(student_list) == 1:
@@ -611,7 +618,12 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
                 # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
+                if logging_on:
+                    logger.debug('    response: ' + str(response))
+
                 response.write(pdf)
+                if logging_on:
+                    logger.debug('    response.write(pdf')
 
         if response:
             return response
