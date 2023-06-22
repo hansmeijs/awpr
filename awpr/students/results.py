@@ -598,14 +598,6 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
                 canvas.save()
 
-                if logging_on:
-                    logger.debug('    buffer: ' + str(buffer))
-
-                pdf = buffer.getvalue()
-
-                if logging_on:
-                    logger.debug('    pdf: ' + str(pdf))
-
                 file_name = 'Diploma' if mode == 'diploma' else 'Cijferlijst'
                 if len(student_list) == 1:
                     file_name += ' van ' + student_list[0].get('fullname')
@@ -614,9 +606,29 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                     file_name += ' ' + now_formatted
                 file_name += '.pdf'
 
+                if logging_on:
+                    logger.debug('    buffer: ' + str(buffer))
+
+                # PR2023-06-22 INTERNAL SERVER ERROR when downloading a document with special characters
+                # the document saved on server is ok > change code of response like in saved version
+                # was:
+                # pdf = buffer.getvalue()
+                # try it this way, cross yout fingers:
+
+                # seek(0) sets the pointer position at 0.
+                buffer.seek(0)
+                # this does not work:
+                #  pdf = File(buffer, file_name)
+
+                pdf = buffer.getvalue()
+
+                if logging_on:
+                    logger.debug('    pdf: ' + str(pdf))
+
                 response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
-                # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+                # PR2023-06-22 try attachment instead of inline
+                #response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
+                response['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
 
                 if logging_on:
                     logger.debug('    response: ' + str(response))
