@@ -1803,6 +1803,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Diplomanumber_2lines'] = pgettext_lazy('2lines', 'Diploma\nnumber')
         dict['Gradelistnumber_2lines'] = pgettext_lazy('2lines', 'Gradelist\nnumber')
 
+        dict['Re_examination'] = _('Re-examination')
+        dict['Re_examinations'] = _('Re-examinations')
+
+        dict['Reexamination_3rd_period'] = _('Re-examination 3rd exam period')
+        dict['Reexaminations_3rd_period'] = _('Re-examinations 3rd exam period')
+
         dict['Preliminary_ex5_form'] = _('Preliminary %(form)s') % {'form': 'Ex5'}
         dict['The_preliminary_ex5_form'] = _('The preliminary %(form)s form') % {'form': 'Ex5'}
 

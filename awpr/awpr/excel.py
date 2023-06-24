@@ -2847,7 +2847,6 @@ def create_ex5_rows_dict(examyear, school, department, level, examperiod, save_t
     # function creates dictlist of all students of this examyear, school and department
     #  key 'subj_id_arr' contains list of all studentsubjects of this student, not tobedeleted
     #  skip studsubjects that are not fully approved
-    level_req = department.level_req
 
     # PR2021-08-10 dont include null in ARRAY_AGG
     # from https://stackoverflow.com/questions/13122912/how-to-exclude-null-values-in-array-agg-like-in-string-agg-using-postgres
@@ -2945,7 +2944,8 @@ def create_ex5_rows_dict(examyear, school, department, level, examperiod, save_t
         sql_keys['published_id'] = published_pk
         #sql_list.append("AND grd." + se_ce + "_published_id = %(published_id)s::INT ")
 
-    if level:
+    level_req = department.level_req
+    if level_req and level:
         sql_list.extend(("AND lvl.base_id = ", str(level.base_id) , "::INT "))
 
     if level_req:

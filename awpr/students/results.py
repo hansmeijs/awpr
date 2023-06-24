@@ -618,8 +618,6 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 if logging_on:
                     logger.debug('    buffer: ' + str(buffer))
 
-
-
                 # seek(0) sets the pointer position at 0.
                 buffer.seek(0)
                 # this does not work:

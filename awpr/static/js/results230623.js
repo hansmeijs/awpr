@@ -11,9 +11,6 @@ const student_dicts = {}; //PR2023-06-10, TODO replace student_rows by student_d
 let results_per_school_rows = [];
 let pres_secr_dict = {};
 //let school_rows = [];
-const cols_overview_left_border = [5, 8, 11, 14, 17, 20, 23];
-const cols_stud_left_border = [1, 2, 3, 4, 5, 6,  8];
-const cols_group_header = [0, 1, 2, 3, 4, 5, 8, 11, 14, 17, 20, 23];
 //const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -97,7 +94,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     mod_MCOL_dict.columns.btn_result = {
         lvl_abbrev: "Learning_path", sct_abbrev: "Sector", classname: "Class",
-        examnumber: "Examnumber", result_status: "Result", withdrawn: "Withdrawn"  // idnumber: "ID_number", regnumber: "Regnumber", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
+        examnumber: "Examnumber",
+        result_status: "Result",
+        withdrawn: "Withdrawn",
+        reex_count: "Re_examinations"
+        // idnumber: "ID_number", regnumber: "Regnumber", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
     };
 
     mod_MCOL_dict.columns.btn_overview = {
@@ -108,13 +109,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // declared as global: let field_settings = {};
     field_settings.student = {
         field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "classname",
-                    "result_status", "gl_status", "withdrawn"],  //  "diplomanumber", "gradelistnumber"],
-        field_caption: ["", "Ex_nr", "Name", "Learningpath_twolines", "Sector", "Class",  "Result", "", "Withdrawn_2lines"],  // "Diplomanumber_2lines", "Gradelistnumber_2lines"],
-        field_tags:["div", "div", "div", "div","div", "div", "div", "div", "div"],  // ,"input", "input"],
+                    "result_status", "gl_status", "withdrawn", "reex_count"],  //  "diplomanumber", "gradelistnumber"],
+        field_caption: ["", "Ex_nr", "Name", "Learningpath_twolines", "Sector", "Class",  "Result", "", "Withdrawn_2lines", "Re_examinations"],  // "Diplomanumber_2lines", "Gradelistnumber_2lines"],
+        field_tags:["div", "div", "div", "div","div", "div", "div", "div", "div", "div"],  // ,"input", "input"],
 
-        filter_tags: ["select", "text", "text", "text" ,"text", "text", "text", "toggle", "toggle"],  // "text", "text"],
-        field_width:  ["020", "060", "390", "060", "060", "090", "120", "032","090"],  // "120", "120"],
-        field_align: ["c", "c", "l", "c", "c", "c", "l", "c", "c"],  // "c", "c"]
+        filter_tags: ["select", "text", "text", "text" ,"text", "text", "text", "toggle", "toggle", "toggle"],  // "text", "text"],
+        field_width:  ["020", "060", "390", "060", "060", "090", "120", "032","090", "120"],  // "120", "120"],
+        field_align: ["c", "c", "l", "c", "c", "c", "l", "c", "c", "c"],  // "c", "c"],
+        cols_left_border: [1, 2, 3, 4, 5, 6, 8, 9]
     };
     field_settings.overview = {
         field_names: ["select", "db_code", "lvl_code", "sb_code", "sch_name",
@@ -133,7 +135,9 @@ document.addEventListener('DOMContentLoaded', function() {
         filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text",
                     "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text"],
         field_width:  ["020", "075", "075", "075", "180", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032", "032"],
-        field_align: ["c", "c", "c", "c", "l", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c","c", "c", "c", "c"]
+        field_align: ["c", "c", "c", "c", "l", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c","c", "c", "c", "c"],
+        cols_left_border: [5, 8, 11, 14, 17, 20, 23],
+        cols_group_header: [0, 1, 2, 3, 4, 5, 8, 11, 14, 17, 20, 23]
     };
     field_settings.group_header = {
         field_names: ["select", "db_code", "lvl_code", "sb_code", "sch_name",
@@ -183,7 +187,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         "c", "c", "c",
                         "c", "c", "c",
                         "c", "c", "c"
-                        ]
+                        ],
+
+        cols_left_border: [5, 8, 11, 14, 17, 20, 23],
+        cols_group_header: [0, 1, 2, 3, 4, 5, 8, 11, 14, 17, 20, 23]
     };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -669,8 +676,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15 PR2021-08-02 PR2021-12-14
     function CreateTblHeader(field_setting, col_hidden) {
-        //console.log("===  CreateTblHeader ===== ");
-        //console.log("field_setting", field_setting);
+        console.log("===  CreateTblHeader ===== ");
+        console.log("field_setting", field_setting);
         //console.log("col_hidden", col_hidden);
 
 //--- get info from selected department_map
@@ -691,7 +698,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const tblRow_header = tblHead_datatable.insertRow (-1);
         const tblRow_filter = tblHead_datatable.insertRow (-1);
 
-        const col_left_border = (selected_btn === "btn_overview") ? cols_overview_left_border : cols_stud_left_border;
+        //const col_left_border = (selected_btn === "btn_overview") ? cols_overview_left_border : cols_stud_left_border;
+        const col_left_border = field_setting.cols_left_border;
+        const cols_group_header = field_setting.cols_group_header;
 
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
@@ -821,7 +830,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
 
-        const col_left_border = (selected_btn === "btn_overview") ? cols_overview_left_border : cols_stud_left_border;
+        //const col_left_border = (selected_btn === "btn_overview") ? cols_overview_left_border : cols_stud_left_border;
+        const col_left_border = field_setting.cols_left_border;
 
 // ---  lookup index where this row must be inserted
         const ob1 = (data_dict.lastname) ? data_dict.lastname.toLowerCase() : "";
@@ -883,9 +893,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     };
-                } else if (["diplomanumber", "gradelistnumber"].includes(field_name)){
-                    td.addEventListener("change", function() {HandleInputChange(el)}, false)
-                    el.classList.add("input_text");
+                //} else if (["diplomanumber", "gradelistnumber"].includes(field_name)){
+                //    td.addEventListener("change", function() {HandleInputChange(el)}, false)
+                //    el.classList.add("input_text");
                 };
     // --- put value in field
                UpdateField(el, data_dict)
@@ -952,10 +962,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.className = gl_status_className;
                     title_text = gl_status_title_text;
 
-                } else if (["diplomanumber", "gradelistnumber"].includes(field_name)){
-                    filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
-                    // "NBSP (non-breaking space)" is necessary to show green box when field is empty
-                    el_div.value = fld_value;
+                } else if (field_name === "reex_count"){
+                    if (data_dict.reex_count || data_dict.reex03_count) {
+                        el_div.className = "tickmark_2_2";
+                        filter_value = "1";
+                        el_div.setAttribute("data-value", filter_value);
+
+                        const reex_list = [];
+                        if (data_dict.reex_count) {
+                            const cpt = (data_dict.reex_count === 1) ? loc.Re_examination.toLowerCase() : loc.Re_examinations.toLowerCase();
+                            reex_list.push(data_dict.reex_count + " " + cpt);
+                        };
+                        if (data_dict.reex03_count) {
+                            const cpt = (data_dict.reex03_count === 1) ? loc.Re_examination_3rd_period.toLowerCase() : loc.Re_examinations_3rd_period.toLowerCase();
+                            reex_list.push(data_dict.reex03_count + " " + cpt);
+                        };
+                        title_text = reex_list.join("\n");
+
+                    } else {
+                        el_div.className = "tickmark_0_0";
+                        filter_value =  "0";
+                    }
+
+                //} else if (["diplomanumber", "gradelistnumber"].includes(field_name)){
+                //    filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
+               //     // "NBSP (non-breaking space)" is necessary to show green box when field is empty
+                //    el_div.value = fld_value;
 
                 } else {
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
