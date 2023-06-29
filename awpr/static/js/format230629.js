@@ -427,8 +427,6 @@
     };  // f_format_status_subject
 
 
-
-
 //=========  f_format_gl_status  ================ PR2023-06-09
     function f_format_gl_status(data_dict) {
         //console.log("=========  f_format_gl_status =========");
@@ -439,8 +437,11 @@
     //console.log("  >>>>>>>  show_status", show_status);
 
         const gl_status = data_dict.gl_status;
-        const className = (![1, 2].includes( data_dict.result)) ? "diamond_" + icon_blank :
-                            (gl_status === 1) ? "diamond_" + icon_blue :
+        // PR2023-06-29 request Pien van Dijk: always show diamond
+        // was: const className = (![1, 2].includes( data_dict.result)) ? "diamond_" + icon_blank :
+        //                    (gl_status === 1) ? "diamond_" + icon_blue :
+        //                    (gl_status === 2) ? "diamond_" + icon_red : "diamond_" + icon_auth_0;
+        const className = (gl_status === 1) ? "diamond_" + icon_blue :
                             (gl_status === 2) ? "diamond_" + icon_red : "diamond_" + icon_auth_0;
         const filter_value = className;
         let title_text = null;

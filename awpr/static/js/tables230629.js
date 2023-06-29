@@ -7,6 +7,41 @@
 
 // ++++++++++++  MODAL SELECT DEPARTMENT from rows  PR2022-11-05
 
+//=========  t_MSED_OpenDepLvlFromDicts  ================ PR2023-06-27
+    function t_MSED_OpenDepLvlFromDicts(tblName, data_dicts, schoolbase_pk, depbase_pk, MSED_Response) {
+        console.log( "===== t_MSED_OpenDepLvlFromDicts ========= ");
+        console.log( "tblName", tblName);
+        console.log( "data_dicts", data_dicts);
+        // only called by  page Home - for now
+
+// set header text
+        const el_MSED_header_text = document.getElementById("id_MSED_header_text");
+        el_MSED_header_text.innerText = (tblName === "department") ? loc.Select_department :
+                                        (tblName === "level") ? loc.Select_level : "---";
+
+// ---  fill select table
+        const tblBody_select = document.getElementById("id_MSED_tblBody_select");
+        tblBody_select.innerText = null;
+// --- loop through data_dicts
+        if(data_dicts){
+            for (const data_dict of Object.values(data_dicts)) {
+
+        //console.log( "data_dict", data_dict);
+                const pk_int = data_dict.base_id;
+    // permit_dict.requsr_country_pk
+                const display_value = (tblName === "department") ? data_dict.base_code :
+                                        (tblName === "level") ? data_dict.name : "---"
+                t_MSED_CreateDepRow(tblName, tblBody_select, pk_int, display_value, schoolbase_pk, depbase_pk, MSED_Response)
+            };
+        };
+
+// ---  show modal
+        $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
+    };  // t_MSED_OpenDepLvlFromDicts
+
+
+// ++++++++++++  MODAL SELECT DEPARTMENT from rows  PR2022-11-05
+
 //=========  t_MSED_OpenDepLvlFromRows  ================ PR2022-11-05
     function t_MSED_OpenDepLvlFromRows(tblName, data_rows, schoolbase_pk, depbase_pk, MSED_DepFromRows_Response) {
         console.log( "===== t_MSED_OpenDepLvlFromRows ========= ");

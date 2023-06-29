@@ -359,7 +359,8 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
         """
 
 @method_decorator([login_required], name='dispatch')
-class DownloadGradelistDiplomaView(View):  # PR2021-11-15
+class DownloadGradelistDiplomaView(View):
+    # PR2021-11-15
 
     def get(self, request, lst):
         logging_on = s.LOGGING_ON

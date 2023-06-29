@@ -1122,7 +1122,7 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_r
     draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexschool)
 
     # - draw page signatures
-    draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name,
+    draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, False, library, student_dict, auth1_name,
                                  auth2_name, printdate, reg_number)
 
 # - end of draw_gradelist_sxm
@@ -1288,7 +1288,7 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
     draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexschool)
 
 # - draw page signatures
-    draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name,
+    draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, False, library, student_dict, auth1_name,
                                  auth2_name, printdate, reg_number)
 # - end of draw_gradelist_cur
 
@@ -1951,7 +1951,7 @@ def draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_di
 # - end of draw_gradelist_footnote_row
 
 
-def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name,
+def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, is_pok, library, student_dict, auth1_name,
                                  auth2_name, printdate, reg_number):
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
@@ -1969,7 +1969,7 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
 
     # when cur: bottom = 15 mm, when sxm: bottom = 18 mm
 
-    # - place, date
+# - place, date
     # printdate is retrieved from upload_dict and saved in school_settings
     printdate_formatted = None
     if printdate:
@@ -1992,7 +1992,7 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
     line_height = 7
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 1.25, False, None, txt_list)
 
-    # - draw name of chairperson and secretary
+# - draw name of chairperson and secretary
     # - place the text of the name of the chairperson / secretary 40 mm under  the line chairperson / secretary
     # but no lower than maximum
 
@@ -2019,9 +2019,10 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
     coord_auth = [coord[0], pos_y_auth]
     draw_text_one_line(canvas, coord_auth, col_tab_list, 0, 1.25, False, None, txt_list)
 
-    # - draw label 'chairperson' and 'secretary' under the name
+# - draw label 'chairperson' and 'secretary' under the name
     pos_y_auth_label = pos_y_auth - 4 * mm
     coord_auth_label = [coord[0], pos_y_auth_label]
+
     txt_list = [
         {'txt': library.get('chairperson', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
          'x': x + col_tab_list[0] * mm},
@@ -2039,24 +2040,31 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
         logger.debug('    coord_auth: ' + str(coord_auth))
         logger.debug('    bottom: ' + str(bottom))
 
-    # - regnumber and idnumber are just above lower line of rectangle
+# - regnumber and idnumber are just above lower line of rectangle
     # PR2023-06-20 label added
     id_number = student_dict.get('idnumber') or '---'
     regnumber_with_lbl = ' '.join((library.get('reg_nr'), reg_number))
     idnumber_with_lbl = ' '.join((library.get('id_nr'), id_number))
-    txt_list = [
-        {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
-         'x': x + col_tab_list[0] * mm},
-        {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
-         'x': x + col_tab_list[1] * mm},
-    ]
+    if is_pok:
+        txt_list = [
+            {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+             'x': x + col_tab_list[0] * mm}
+        ]
+    else:
+        txt_list = [
+            {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+             'x': x + col_tab_list[0] * mm},
+            {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+             'x': x + col_tab_list[1] * mm},
+        ]
+
     coord_regnr = [coord[0], bottom]
 
     draw_text_one_line(canvas, coord_regnr, col_tab_list, 0, 1.25, False, None, txt_list)
 # - end of draw_gradelist_signature_row_sxm
 
 
-def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name,
+def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, is_pok, library, student_dict, auth1_name,
                                  auth2_name, printdate, reg_number):
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
@@ -2105,6 +2113,8 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
          'x': x + col_tab_list[1] * mm},
         {'txt': printdate_formatted, 'font': 'Times-Bold', 'size': 10, 'padding': 18, 'x': x + col_tab_list[1] * mm},
     ]
+
+
     line_height = 7
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 1.25, False, None, txt_list)
 
@@ -2112,7 +2122,7 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
     # - place the text of the name of the chairperson / secretary 40 mm under  the line chairperson / secretary
     # but no lower than maximum
 
-    # PR2023-06-22 whatsapp Estehr: outline place and auth1 as in header > set padding - 4
+    # PR2023-06-22 whatsapp Esther: outline place and auth1 as in header > set padding - 4
     #txt_list = [
     #    {'txt': auth1_name, 'font': 'Times-Bold', 'size': 10, 'padding': 4,
     #     'x': x + col_tab_list[0] * mm}
@@ -2139,7 +2149,7 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
     coord_auth = [coord[0], pos_y_auth]
     draw_text_one_line(canvas, coord_auth, col_tab_list, 0, 1.25, False, None, txt_list)
 
-    # - draw label 'chairperson' and 'secretary' under the name
+# - draw label 'chairperson' and 'secretary' under the name
     pos_y_auth_label = pos_y_auth - 4 * mm
     coord_auth_label = [coord[0], pos_y_auth_label]
 
@@ -2174,21 +2184,31 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
 
     # PR2023-06-21 Esther: rightoutline idnumber
     # was: 'x': x + col_tab_list[1] * mm},
+    if is_pok:
+        x_idnumber = x + col_tab_list[0] * mm
+        # PR2023-06-22 whatsapp Esther: outline place and auth1 as in header > set regnumber_with_lbl padding = 0
+        txt_list = [
+            {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 0,
+             'x': x_idnumber},
+        ]
 
-    x_idnumber = x + (col_tab_list[1] + 48) * mm
-    # PR2023-06-22 whatsapp Estehr: outline place and auth1 as in header > set padding - 4
-    #txt_list = [
-    #    {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
-    #     'x': x + col_tab_list[0] * mm},
-    #    {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
-    #     'x': x_idnumber},
-    #]
-    txt_list = [
-        {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 0,
-         'x': x + col_tab_list[0] * mm},
-        {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
-         'x': x_idnumber},
-    ]
+    else:
+
+        x_idnumber = x + (col_tab_list[1] + 48) * mm
+        # PR2023-06-22 whatsapp Esther: outline place and auth1 as in header > set regnumber_with_lbl padding = 0
+        #txt_list = [
+        #    {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+        #     'x': x + col_tab_list[0] * mm},
+        #    {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+        #     'x': x_idnumber},
+        #]
+
+        txt_list = [
+            {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 0,
+             'x': x + col_tab_list[0] * mm},
+            {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
+             'x': x_idnumber},
+        ]
     coord_regnr = [coord[0], bottom]
 
     draw_text_one_line(canvas, coord_regnr, col_tab_list, 0, 1.25, False, None, txt_list)
@@ -2264,8 +2284,6 @@ def draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
                 canvas.line(line_x, y_top, line_x, y_bottom)
 
     coord[1] = y_pos_line
-
-
 # - end of draw_text_one_line
 
 
@@ -2359,9 +2377,9 @@ def draw_pok(canvas, library, student_dict, auth1_pk, printdate, request):
 
 # - draw page signatures
     if is_sxm:
-        draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name, None, printdate, reg_number)
+        draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, True, library, student_dict, auth1_name, None, printdate, reg_number)
     else:
-        draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name, None, printdate, reg_number)
+        draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, True, library, student_dict, auth1_name, None, printdate, reg_number)
 # - end of draw_pok
 
 

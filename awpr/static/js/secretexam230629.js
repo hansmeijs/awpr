@@ -548,7 +548,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     school_rows = response.school_rows;
                 };
                 if ("school_rows" in response) {
-                    b_fill_datadicts("school", "id", null, response.school_rows, school_dictsNEW);
+                    b_fill_datadicts("school", "id", null, response.school_rows, school_dicts);
                 };
                 if ("level_rows" in response) {
                     level_rows = response.level_rows;

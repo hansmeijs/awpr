@@ -95,9 +95,10 @@ document.addEventListener('DOMContentLoaded', function() {
     mod_MCOL_dict.columns.btn_result = {
         lvl_abbrev: "Learning_path", sct_abbrev: "Sector", classname: "Class",
         examnumber: "Examnumber",
-        result_status: "Result",
-        withdrawn: "Withdrawn",
-        reex_count: "Re_examinations"
+        result_status: "Final_result",
+        ep01_result: "Result_ep01",
+        ep02_result: "Result_ep02",
+        withdrawn: "Withdrawn"
         // idnumber: "ID_number", regnumber: "Regnumber", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
     };
 
@@ -109,14 +110,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // declared as global: let field_settings = {};
     field_settings.student = {
         field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "classname",
-                    "result_status", "gl_status", "withdrawn", "reex_count"],  //  "diplomanumber", "gradelistnumber"],
-        field_caption: ["", "Ex_nr", "Name", "Learningpath_twolines", "Sector", "Class",  "Result", "", "Withdrawn_2lines", "Re_examinations"],  // "Diplomanumber_2lines", "Gradelistnumber_2lines"],
-        field_tags:["div", "div", "div", "div","div", "div", "div", "div", "div", "div"],  // ,"input", "input"],
+                    "ep01_result", "ep02_result", "result_status", "gl_status", "withdrawn"],  //  "diplomanumber", "gradelistnumber"],
+        field_caption: ["", "Ex_nr", "Name", "Learningpath_twolines", "Sector", "Class",
+                    "Result_ep01_2lines", "Result_ep02_2lines", "Final_result_2lines", "", "Withdrawn_2lines"],  // "Diplomanumber_2lines", "Gradelistnumber_2lines"],
+        field_tags:["div", "div", "div", "div", "div", "div",  "div", "div", "div", "div", "div"],  // ,"input", "input"],
 
-        filter_tags: ["select", "text", "text", "text" ,"text", "text", "text", "toggle", "toggle", "toggle"],  // "text", "text"],
-        field_width:  ["020", "060", "390", "060", "060", "090", "120", "032","090", "120"],  // "120", "120"],
-        field_align: ["c", "c", "l", "c", "c", "c", "l", "c", "c", "c"],  // "c", "c"],
-        cols_left_border: [1, 2, 3, 4, 5, 6, 8, 9]
+        filter_tags: ["select", "text", "text", "text" ,"text", "text" ,"text", "text", "text", "toggle", "toggle"],  // "text", "text"],
+        field_width:  ["020", "060", "390", "060", "060", "090", "120", "120", "120", "032", "090"],  // "120", "120"],
+        field_align: ["c", "c", "l", "c", "c", "c", "c", "c", "c", "c", "c"],  // "c", "c"],
+        cols_left_border: [1, 2, 3, 4, 5, 6, 7, 8, 10]
     };
     field_settings.overview = {
         field_names: ["select", "db_code", "lvl_code", "sb_code", "sch_name",
@@ -946,6 +948,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerText = (abbrev) ? abbrev : "\n";
                     filter_value = (abbrev) ? abbrev.toLowerCase() : null;
 
+                } else if (["ep01_result", "ep02_result"].includes(field_name)){
+                    const result_txt = (fld_value === 1) ? loc.Passed : (fld_value === 2) ? loc.Failed : (fld_value === 4) ? loc.Withdrawn :  (fld_value === 0) ? loc.No_result : "---";
+                    const show_result = (field_name === "ep02_result") ? data_dict.reex_count : true;
+                    if (show_result){
+                        el_div.innerText = result_txt;
+                        filter_value = (result_txt) ? result_txt.toLowerCase() : null;
+                    };
                 } else if (field_name === "result_status") {
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     el_div.innerText = (fld_value) ? fld_value : "\n";
@@ -1206,14 +1215,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tblRow.classList.contains(cls_selected) || tblRow.id === sel_mapid) {
                 const data_dict = student_dicts[tblRow.id];
                 if (data_dict){
-                    if (data_dict.result === 1 || data_dict.result === 2) {
-                        mod_dict.student_pk_list.push(data_dict.id);
-                        if (data_dict.gl_status === 1){
-                            mod_dict.gl_approved_count += 1;
-                        } else if (data_dict.gl_status === 2){
-                            mod_dict.gl_rejected_count += 1;
-                        };
-
+                        // PR2023-06-29 request Pien van Dijk: always approve result
+                    // was: if (data_dict.result === 1 || data_dict.result === 2) {
+                    mod_dict.student_pk_list.push(data_dict.id);
+                    if (data_dict.gl_status === 1){
+                        mod_dict.gl_approved_count += 1;
+                    } else if (data_dict.gl_status === 2){
+                        mod_dict.gl_rejected_count += 1;
         }}}};
         mod_dict.student_pk_count = (mod_dict.student_pk_list) ? mod_dict.student_pk_list.length : 0;
 
@@ -1221,8 +1229,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("    mod_dict.gl_approved_count ", mod_dict.gl_approved_count);
         console.log("    mod_dict.gl_rejected_count ", mod_dict.gl_rejected_count);
     };  // UploadToggle_get_selected_rows
-
-
 
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 //=========   OpenLogfile   ====================== PR2021-11-20 PR2022-06-20

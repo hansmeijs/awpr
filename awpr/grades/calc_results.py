@@ -299,7 +299,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         log_list_student_header(student_dict, full_name, log_list)
 
 # - A.3c. skip when scheme not found, put err_msg in loglist
-    # PR2022-06-18 debug: msut give result 'no result, therefore don't skip student
+    # PR2022-06-18 debug: must give result 'no result, therefore don't skip student
     if not skip_student and scheme_error:
         skip_student = True
         if log_list is not None:

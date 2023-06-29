@@ -1761,6 +1761,13 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Results'] = _('Results')
         dict['Result'] = _('Result')
 
+        dict['Result_ep01'] = _('Result 1st period')
+        dict['Result_ep02'] = _('Result 2nd period')
+        dict['Result_ep01_2lines'] = _('Result\n1st period')
+        dict['Result_ep02_2lines'] = _('Result\n2nd period')
+        dict['Final_result_2lines'] = _('Final\nresult')
+        dict['Final_result'] = _('Final result')
+
         dict['Passed'] = _('Passed')
         dict['Failed'] = _('Failed')
         dict['Withdrawn'] = _('Withdrawn')

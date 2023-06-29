@@ -4,7 +4,7 @@
 
 
 {% block script %}
-    <script src="{% static 'js/home230524.js' %}"></script>
+    <script src="{% static 'js/home230629.js' %}"></script>
 
 {% endblock %}
 
@@ -21,7 +21,7 @@
 <div class="awp_content_container_home tsa_margin_top128_left224">
 
     {% if user.is_authenticated %}
-
+        {% include 'includes/modselectexamyearordepbase.html' %}
         <div>
         </div>
 

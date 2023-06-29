@@ -23,18 +23,22 @@
     let subject_rows = [];
     //let cluster_rows = [];
 
-    // TODO 2023-03-13 change examyear_rows to examyear_dicts
-    const examyear_dicts = {};
     const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
     const cluster_dictsNEW = {}; //PR2023-01-26 new approach, dict instead of sorted list
     const grade_dictsNEW = {}; //PR2023-05-29 only used in secretaxam.js, for now
-    const school_dictsNEW = {}; //PR2023-05-29 only used in secretaxam.js, for now
 
     const manual_dict = {'test': true}
 
     // examyear_rows and department_rows are used in t_MSED_ PR2022-08-01
+    // to be replaced by _dicts PR2023-06-27
     let examyear_rows = [];
     let department_rows = [];
+
+    // TODO 2023-03-13 change examyear_rows to examyear_dicts
+    // new structure: _dicts PR2023-06-27
+    const examyear_dicts = {};
+    const department_dicts = {};
+    const school_dicts = {}; // PR2023-05-29 only used in secretaxam.js, home.js for now
 
     const cls_hide = "display_hide";
     const cls_hover = "tr_hover";
