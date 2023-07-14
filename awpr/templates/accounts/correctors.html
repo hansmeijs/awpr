@@ -5,16 +5,36 @@
 {% block title %}{% trans 'Second correctors' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/correctors230529.js' %}"></script>
+    <script src="{% static 'js/correctors230714.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
-        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
+        <div class="content_subheader_left mx-2 my-4">
             <h5>{% trans 'Second correctors' %}</h5>
         </div>
         {% if not no_access %}
+            <div id="id_SBR_container_department" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Department' %}:</h6>
+                <select id="id_SBR_select_department" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
+
+            <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Learning path' %}:</h6>
+                <select id="id_SBR_select_level" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
+            <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
+                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all items' %}</h6>
+            </div>
+
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
+            </div>
         {% endif %}
     </nav>
 {% endblock %}
@@ -28,6 +48,7 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'accounts/moduserallowedsection.html' %}
+            {% include 'accounts/modapprovecompensation.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectmultiple.html' %}
             {% include 'accounts/modcompensationhours.html' %}
@@ -66,9 +87,9 @@
 
 <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button id="id_btn_correctors" data-btn="btn_correctors" class="btn btn-secondary display_hidexx">{% trans 'Second correctors' %}</button>
-                <button data-btn="btn_usercompensation" class="btn btn-secondary ">{% trans 'Approvals' %}</button>
-                <button data-btn="btn_usercomp_agg" class="btn btn-secondary ">{% trans 'Compensation' %}</button>
+                <button id="id_btn_correctors" data-btn="btn_correctors" class="btn btn-secondary display_hide">{% trans 'Second correctors' %}</button>
+                <button data-btn="btn_usercompensation" class="btn btn-secondary">{% trans 'Approvals' %}</button>
+                <button id="id_btn_usercomp_agg" data-btn="btn_usercomp_agg" class="btn btn-secondary display_hide">{% trans 'Compensation' %}</button>
 
             </div>
 <!-- end BUTTON GROUP -->
@@ -92,6 +113,7 @@
                 data-url_usercompensation_upload="{% url 'url_usercompensation_upload' %}"
                 data-url_usercomp_approve_single="{% url 'url_usercomp_approve_single' %}"
                 data-url_usercomp_approve_submit="{% url 'url_usercomp_approve_submit' %}"
+                data-url_download_excomp="{% url 'url_download_excomp' %}"
             >
             </div>
         {% endif %}

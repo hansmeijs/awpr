@@ -7,8 +7,9 @@ from django.core.mail import send_mail
 from django.db import connection
 from django.db.models import Q
 from django.template.loader import render_to_string
+
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy, gettext, gettext_lazy as _
 from django.utils import timezone
 
 from timeit import default_timer as timer
@@ -224,7 +225,7 @@ def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8
 
 def check_verifcode_local(upload_dict, request ):
     # called by StudentsubjectApproveOrSubmitEx1Ex4View, GradeSubmitEx2Ex2aView, GradeSubmitEx5View, ExamApproveOrPublishExamView
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- check_verifcode_local -----')
 
@@ -291,13 +292,47 @@ def check_verifcode_local(upload_dict, request ):
 # - end of check_verifcode_local
 ##########################################################
 
-
+# functions for msg_html PR2023-07-09
 def add_one_to_count_dict(msg_dict, key):  # PR2022-02-27
     if key in msg_dict:
         msg_dict[key] += 1
     else:
         msg_dict[key] = 1
 # - end of def add_one_to_count_dict(msg_dict, key):
+
+def get_is_are_txt(count):
+    return str(pgettext_lazy('singular', 'is') if  count == 1 else pgettext_lazy('plural', 'are'))
+
+
+def get_will_be_text(count):
+    return str(pgettext_lazy('singular', 'will be') if  count == 1 else pgettext_lazy('plural', 'will be'))
+
+
+def get_have_has_been_txt(count):
+    return str(pgettext_lazy('singular', 'has been') if count == 1 else pgettext_lazy('plural', 'have been'))
+
+
+def get_item_count_text(count, cpt_sing, cpt_plural):
+    # PR2023-07-09
+    count_txt = str(pgettext_lazy('geen', 'no') if not count else count)
+    cpt = gettext(cpt_sing) if count == 1 else gettext(cpt_plural)
+    return ' '.join((count_txt, cpt.lower()))
+
+
+def get_items_are_text(count, cpt_sing, cpt_plural, is_will_be):
+    # PR2023-07-09
+    count_txt = pgettext_lazy('geen', 'no') if not count else str(count)
+    cpt = gettext(cpt_sing) if count == 1 else gettext(cpt_plural)
+    if is_will_be:
+        is_are_willbe_txt = pgettext_lazy('singular', 'will be') if count == 1 else pgettext_lazy('plural', 'will be')
+    else:
+        is_are_willbe_txt = gettext('is') if count == 1 else gettext('are')
+
+    return ' '.join((
+        str(count_txt),
+        cpt,
+        str(is_are_willbe_txt)
+    ))
 
 
 def get_status_list_from_status_sum(status_sum):  # PR2021-01-15
@@ -671,7 +706,7 @@ def format_WDMY_from_dte(dte, user_lang, month_abbrev=True):  # PR2020-10-20
     return date_WDMY
 
 
-def format_DMY_from_dte(dte, lang, month_abbrev=True):  # PR2019-06-09  # PR2020-10-20 PR2021-08-10 PR2022-05-22
+def format_DMY_from_dte(dte, lang, month_abbrev=True, skip_year=False):  # PR2019-06-09  # PR2020-10-20 PR2021-08-10 PR2022-05-22
     #logger.debug('... format_DMY_from_dte: ' + str(dte) + ' type:: ' + str(type(dte)) + ' lang: ' + str(lang))
     # returns '16 juni 2019'
     date_DMY = ''
@@ -689,9 +724,15 @@ def format_DMY_from_dte(dte, lang, month_abbrev=True):  # PR2019-06-09  # PR2020
             month_str = month_locale[dte.month]
 
             if lang == 'en':
-                date_DMY = ''.join([month_str, ' ',day_str, ', ', year_str])
+                if skip_year:
+                    date_DMY = ''.join([month_str, ' ', day_str])
+                else:
+                    date_DMY = ''.join([month_str, ' ', day_str, ', ', year_str])
             else:
-                date_DMY = ' '.join([day_str, month_str, year_str])
+                if skip_year:
+                    date_DMY = ' '.join([day_str, month_str])
+                else:
+                    date_DMY = ' '.join([day_str, month_str, year_str])
         except:
             pass
     #logger.debug('... date_DMY: ' + str(date_DMY) + ' type:: ' + str(type(dte)) + ' lang: ' + str(lang))

@@ -43,6 +43,24 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="flex_container">
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m3">{% trans 'Thumb rule' %}:</label>
+                                <select data-field="thumbrule_allowed" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'Thumb rule is not allowed' %}</option>
+                                    <option value="1">{% trans 'Thumb rule is allowed' %}</option>
+                                </select>
+                            </div>
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m3">{% trans 'Third exam period' %}:</label>
+                                <select id="id_MODEY_no_thirdperiod"  data-field="no_thirdperiod" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has a third period' %}</option>
+                                    <option value="1">{% trans 'This exam year has no third period' %}</option>
+                                </select>
+                            </div>
+
+                        </div>
                         <div class="flex_container">
                             <div class="flex_1 mx-1">
                                 <label class="label_margin_top_m3">{% trans 'Central exam' %}:</label>
@@ -57,13 +75,12 @@
                                 </div>
                             </div>
                             <div class="flex_1 mx-1">
-                                <label class="label_margin_top_m3">{% trans 'Third exam period' %}:</label>
-                                <select id="id_MODEY_no_thirdperiod"  data-field="no_thirdperiod" class="form-control awp_input_select">
-                                    <option value="0">{% trans 'This exam year has a third period' %}</option>
-                                    <option value="1">{% trans 'This exam year has no third period' %}</option>
-                                </select>
+
                             </div>
                         </div>
+
+
+
                     </div>
                 </div>
 

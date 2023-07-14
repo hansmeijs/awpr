@@ -90,6 +90,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
     # mod confirm
     dict['will_be_deleted'] = pgettext_lazy('singular', ' will be deleted.')
+    dict['will_be_created'] = pgettext_lazy('singular', ' will be created.')
     dict['will_be_made_inactive'] = pgettext_lazy('singular', ' will be made inactive.')
     dict['will_be_made_active'] = pgettext_lazy('singular', ' will be made active.')
     dict['will_be_printed'] = pgettext_lazy('singular', ' will be printed.')
@@ -98,7 +99,11 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['will_be_copied'] = pgettext_lazy('singular', ' will be copied.')
     dict['Copy_to_examyear'] = _('Copy to examyear')
 
+    dict['will_be_classed_as'] = pgettext_lazy('singular', ' will be classed as')
+    dict['Characteristic'] = _('Characteristic')
+
     dict['Do_you_want_to_continue'] = _('Do you want to continue?')
+    dict['Yes_create'] = _('Yes, create')
     dict['Yes_delete'] = _('Yes, delete')
     dict['Yes_undo'] = _('Yes, undo')
     dict['Yes_make_inactive'] = _('Yes, make inactive')
@@ -446,6 +451,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['is_an_invalid_number'] = _(' is an invalid number.')
         dict['is_not_valid'] = _(' is not valid.')
         dict['Correction'] = _('Correction')
+        dict['Item'] = _('Item')
+        dict['Items'] = _('Items')
 
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_by'] = TXT_Submitted_by
@@ -456,9 +463,28 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['cannot_deduct_more_than_original_number'] = _("You cannot deduct more than the original number.")
         dict['Total_number_meetings_cannot_be_greater_than'] = _("The total number of meetings cannot be greater than ")
 
-
         dict['cannot_enter_meetings_in_tab_compensation'] = _("You cannot enter the number of meetings in this tab 'Compensation'.")
         dict['select_tab_approvals_to_enter_meetings'] = _("Select the tab 'Approvals' and try again.")
+
+        dict['Meeting_canonlybe_entered_by_corrector_himself'] = _("A meeting can only be entered by the second corrector himself.")
+
+        dict['Approve_compensations'] = _('Approve compensations')
+        dict['Request_verifcode'] = TXT_Request_verifcode
+
+        dict['Submit_compensation_form'] = _('Submit compensation form')
+
+        dict['Preliminary_compensation_form'] = _('Preliminary %(form)s') % {'form': _('compensation form')}
+        dict['The_preliminary_compensation_form'] = _("The preliminary %(form)s form") % {'form': gettext('Compensation').lower()}
+
+        dict['MAC_info'] ={
+            'checking_compensations': _('AWP is checking the compensations'),
+            'approving_compensations': _('AWP is approving the compensations'),
+
+            'Creating_comp_form': _("AWP is creating the compensation form"),
+
+            'sending_verifcode': TXT_Sending_verifcode,
+        }
+
 
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
     if 'page_examyear' in page_list:
@@ -985,6 +1011,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve_reex_3rd_period'] = _('Approve re-examinations 3rd period')
         dict['Request_verifcode'] = TXT_Request_verifcode
 
+        dict['Submit_Ex_form'] = _('Submit %(form)s form') % {'form': 'Ex'}
         dict['Submit_Ex1_form'] = _('Submit %(form)s form') % {'form': 'Ex1'}
         dict['Submit_Ex4_form'] = _('Submit %(form)s form') % {'form': 'Ex4'}
         dict['Submit_Ex4_form_3rd_period'] = _('Submit Ex4 form 3rd period')
@@ -997,6 +1024,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Preliminary_Ex4_form_3rd_period'] = _('Preliminary Ex4 form 3rd period')
         dict['The_preliminary_Ex4_form_3rd_period'] = _('The preliminary Ex4 form 3rd period')
+        dict['Download_Ex4_form_3rd_period'] = _('Download Ex4 form 3rd period')
 
         dict['Download_Ex_form'] = _('Download Ex form')
 
@@ -1017,7 +1045,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_exemption'] = _('Delete exemption')
         dict['Delete_reex_schoolexam'] = _('Delete re-examination school exam')
         dict['Delete_reexamination'] = _('Delete re-examination ')
-        dict['Delete_reexamination_3rd_period'] = _('Delete re-examination 3rd exam period')
+        dict['Delete_reex_3rd_period'] = _('Delete re-examination 3rd exam period')
+
+        dict['Create_exemption'] = _('Create exemption')
+        dict['Create_reex_schoolexam'] = _('Create re-examination school exam')
+        dict['Create_reexamination'] = _('Create re-examination ')
+        dict['Create_reex_3rd_period'] = _('Create re-examination 3rd exam period')
 
         dict['This_subject'] = _('This subject')
         dict['This_exemption'] = _('This exemption')
@@ -1071,6 +1104,9 @@ def get_locale_dict(table_dict, user_lang, request):
             #'creating_Ex1_form': _("AWP is creating the %(ex)s form") % {'ex': 'Ex1'},
             #'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
+        dict['Creating_Ex1_form'] = _("AWP is creating the %(ex)s form") % {'ex': 'Ex1'}
+        dict['Creating_Ex4_form'] = _("AWP is creating the %(ex)s form") % {'ex': 'Ex4'}
+
         dict['MExemptionYear_info'] = {
             'line_01': _('In 2020 and 2021 not all subjects had a central exam because of the Covid-pandemic.'),
             'line_02': _('In that case the exemption has no CE-grade.'),

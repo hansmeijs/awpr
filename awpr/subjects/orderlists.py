@@ -1356,7 +1356,7 @@ def check_envelopsubject_rows(sel_examyear, request):
         logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
     def get_si_sql_subj():
-        # - loop through schemitems, grouped by subj / dep / lvl, filter by this exanmyear (ete only??)
+        # - loop through schemitems, grouped by subj / dep / lvl, filter by this examyear (ete only??)
         # COALESCE  level_id=NULL to level_id=0 is necessary, otherwise link will not work and subjects without level_id will be omitted
         return ' '.join(
             ["SELECT si.subject_id  AS subj_id, scheme.department_id AS dep_id, scheme.level_id AS lvl_id, ",

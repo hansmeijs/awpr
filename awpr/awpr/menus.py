@@ -36,7 +36,7 @@ MENUS_BUTTONS = {
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', # 'page_student',
                        'page_exams', 'page_studsubj', 'page_grade', 'page_secretexam',
                      'page_result', 'page_archive', 'page_exampaper'],  #, 'page_corrector', 'page_report', 'page_analysis'],
-    c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
+    c.ROLE_032_INSP: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
                       'page_exams', 'page_grade', 'page_result', 'page_archive', 'page_exampaper'],  #,'page_report', 'page_analysis'],
     c.ROLE_016_CORR: ['page_student', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive', 'page_exampaper'],
     c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive', 'page_exampaper'] # 'page_report',
@@ -98,8 +98,9 @@ class ManualListView(View):
         return render(request, 'manual.html', param)
 
 
-def get_headerbar_param(request, sel_page, param=None, display_requsrschool=False):  # PR2021-03-25 PR2023-01-08 PR2023-04-12
-    # PR2018-05-28 set values for headerbar
+def get_headerbar_param(request, sel_page, param=None, display_requsrschool=False):
+    # PR2018-05-28 PR2021-03-25 PR2023-01-08 PR2023-04-12
+    # set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
     logging_on = False  # s.LOGGING_ON
@@ -272,9 +273,6 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
                 base=sel_schoolbase_instance,
                 examyear=sel_examyear_instance)
 
-            if logging_on:
-                logger.debug('  ###  sel_school_instance: ' + str(sel_school_instance))
-
             if sel_school_instance:
                 school_name += ' ' + sel_school_instance.name
                 is_requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and
@@ -437,7 +435,6 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
 
 # - make background red when testsite PR2022-01-11
         class_bg_testsite = "tsa_tr_error" if s.IS_TESTSITE else ""
-        logger.debug(' @@@@@@@@@@@@@ class_bg_testsite: ' +  str(class_bg_testsite))
 
         headerbar_param = {
             'no_access': no_access,

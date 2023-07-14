@@ -161,28 +161,28 @@ document.addEventListener("DOMContentLoaded", function() {
     };
     field_settings.btn_reex = {
         field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name_nl",
-                      "cescore", "ce_status", "cegrade", "note_status", "exam_name", "download_conv_table"],
+                      "cescore", "ce_status", "cegrade", "note_status", "exam_name", "download_conv_table", "secret_exam"],
         field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                      "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Exam", ""],
+                      "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Exam", "", "Designated_exam_2lines"],
         field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
-                    "input", "div",  "div", "div", "div", "a"],
+                    "input", "div",  "div", "div", "div", "a", "div"],
         filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text",
-                    "text", "grade_status", "text", "toggle", "text", "text"],
-        field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032"],
-        field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]
+                    "text", "grade_status", "text", "toggle", "text", "text", "toggle"],
+        field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032", "090"],
+        field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c", "c", "c", "c"]
     };
 
     field_settings.btn_reex03 = {
         field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name_nl",
-                      "cescore", "ce_status", "cegrade", "note_status", "exam_name", "download_conv_table"],
+                      "cescore", "ce_status", "cegrade", "note_status", "exam_name", "download_conv_table", "secret_exam"],
         field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                      "Third_period_score_2lines", "", "Third_period_grade_2lines", "", "Exam", ""],
+                      "Third_period_score_2lines", "", "Third_period_grade_2lines", "", "Exam", "", "Designated_exam_2lines"],
         field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
-                    "input", "div",  "div", "div", "div", "a"],
+                    "input", "div",  "div", "div", "div", "a", "div"],
         filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text",
-                    "text", "grade_status", "text", "toggle", "text", "text"],
-        field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032"],
-        field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]
+                    "text", "grade_status", "text", "toggle", "text", "text", "toggle"],
+        field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032", "090"],
+        field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c", "c", "c", "c"]
         };
 
         const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -1379,7 +1379,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     };  // UpdateTblRow
 
-//=========  UpdateField  ================ PR2020-12-18 PR2021-05-30
+//=========  UpdateField  ================ PR2020-12-18 PR2021-05-30 PR2023-07-03
     function UpdateField(el_div, data_dict) {
         //console.log("=========  UpdateField =========");
         if(el_div){
@@ -1396,11 +1396,13 @@ document.addEventListener("DOMContentLoaded", function() {
                     filter_value = fld_value;
 
                 } else if (el_div.nodeName === "INPUT"){
+                    // PR2023-07-03 this code is only reached when field_name is "segrade", "cegrade",
 
                     //PR2022-04-17 Sentry error: Object doesn't support property or method 'replaceAll'
                     // tried to solve by adding 'typeof, but
-                    // replaceAll is not supported by Internet Explorere,
+                    // replaceAll is not supported by Internet Explorer,
                     // changed to replace()
+
                     if (fld_value == null || fld_value === "" ){
                         el_div.value = null;
                         filter_value = null;
@@ -1412,6 +1414,11 @@ document.addEventListener("DOMContentLoaded", function() {
                         el_div.value = fld_value;
                         filter_value = fld_value;
                     };
+
+                } else if (field_name === "secret_exam"){
+                    filter_value = (fld_value) ? "1" : "0";
+                    el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
+                    el_div.setAttribute("data-value", filter_value);
 
                 } else if (field_name.includes("_status")){
 
@@ -2795,12 +2802,9 @@ const is_allowed_cluster = true;
                                 examtype_list.push({value: 'ce', caption: loc.examtype_caption.ce});
                             };
                         };
-        console.log(" @@@@@@@@@@@@@@    examtype_list", examtype_list);
                         t_FillOptionsFromList(el_MAG_examtype, examtype_list, "value", "caption",
                             loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype);
                         el_MAG_examtype.disabled = (examtype_list.length <= 1);
-
-        console.log(" @@@@@@@@@@@@@@    !examtype_list.length", !examtype_list.length) ;
                     };
 
     // --- hide filter subject, level and cluster when submitting Ex2 Ex2a form. Leave level visible if sel_dep_level_req, MPC must be able to submit per level
@@ -3245,19 +3249,19 @@ const is_allowed_cluster = true;
             };
             t_FillOptionsFromList(el_MAG_auth_index, auth_list, "value", "caption",
                 loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
-console.log(" >>>>>>>>>>>>>>>> auth_list", auth_list)
-const is_disabled =  (!auth_list || auth_list.length <= 1);
-console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
+//console.log(" >>>>>>>>>>>>>>>> auth_list", auth_list)
+//const is_disabled =  (!auth_list || auth_list.length <= 1);
+//console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
             el_MAG_auth_index.readOnly = (!auth_list || auth_list.length <= 1);
         };
     };  // MAG_fill_select_authindex
 
 //=========  MAG_get_sel_examtype  ================
     function MAG_get_sel_examtype (open_mode, examperiod, auth_index) {  // PR2023-02-03 PR2023-06-13
-        console.log("===  MAG_get_sel_examtype  =====") ;
-        console.log("    mod_MAG_dict.examperiod", mod_MAG_dict.examperiod);
-        console.log("    mod_MAG_dict.auth_index", mod_MAG_dict.auth_index);
-        console.log("    setting_dict.sel_examtype", setting_dict.sel_examtype);
+        //console.log("===  MAG_get_sel_examtype  =====") ;
+        //console.log("    mod_MAG_dict.examperiod", mod_MAG_dict.examperiod);
+        //console.log("    mod_MAG_dict.auth_index", mod_MAG_dict.auth_index);
+        //console.log("    setting_dict.sel_examtype", setting_dict.sel_examtype);
 
         // parameters of this function are:
         //      open_mode
@@ -3312,7 +3316,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
         mod_MAG_dict.examtype = sel_examtype;
         setting_dict.sel_examtype = sel_examtype
 
-    console.log("    mod_MAG_dict.examtype", mod_MAG_dict.examtype);
+    //console.log("    mod_MAG_dict.examtype", mod_MAG_dict.examtype);
     };  // MAG_get_sel_examtype
 
 //=========  MAG_ExamtypeChange  ================ PR2022-05-29 PR2023-02-03
@@ -3370,8 +3374,8 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
     }; // MAG_UploadAuthIndex
 
     function MAG_set_subject_cluster_txt() { // PR2023-02-11
-        console.log("----- MAG_set_subject_cluster_txt -----") ;
-        console.log("    setting_dict.sel_subject_pk", setting_dict.sel_subject_pk) ;
+        //console.log("----- MAG_set_subject_cluster_txt -----") ;
+        //console.log("    setting_dict.sel_subject_pk", setting_dict.sel_subject_pk) ;
 
         const allowed_subjectname_nl_arr = [];
         const allowed_clustername_arr = [];
@@ -3393,13 +3397,8 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
     // - check if sel_subjbase_pk is in allowed_subjbases
                 const is_allowed_subjbase_pk = (permit_dict.allowed_subjbases && permit_dict.allowed_subjbases.length) ?
                     (permit_dict.allowed_subjbases.includes(sel_subjbase_pk)) ? true : false : true;
-
-        console.log("    permit_dict.allowed_subjbases", permit_dict.allowed_subjbases) ;
-        console.log("    is_allowed_subjbase_pk", is_allowed_subjbase_pk) ;
-
                 if (is_allowed_subjbase_pk ){
-
-        console.log("    setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk) ;
+        //console.log("    setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk) ;
 
     // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
                     if(setting_dict.sel_cluster_pk){
@@ -3420,7 +3419,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
 
                         for (let i = 0, cluster_pk; cluster_pk = permit_dict.allowed_clusters[i]; i++) {
                             const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
-        console.log("   > cluster", cluster) ;
+        //console.log("   > cluster", cluster) ;
 
                             if (cluster && cluster.subjbase_id === sel_subjbase_pk) {
 
@@ -3431,20 +3430,20 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
                         };
     // +++++++++ if there is no selected cluster and no allowed_clusters +++++++++++++++++++++++++++
                     } else {
-                console.log(" +++   sel_subject_name_nl", sel_subject_name_nl);
+        //console.log(" +++   sel_subject_name_nl", sel_subject_name_nl);
                         allowed_subjectname_nl_arr.push(sel_subject_name_nl);
                     };
                 };
             };
 // +++ end of if there is a sel_subject_pk
 
-        console.log("    allowed_subjectname_nl_arr", allowed_subjectname_nl_arr) ;
-        console.log("    allowed_clustername_arr", allowed_clustername_arr) ;
+    //console.log("    allowed_subjectname_nl_arr", allowed_subjectname_nl_arr) ;
+    //console.log("    allowed_clustername_arr", allowed_clustername_arr) ;
 
 // +++++++++ if there are allowed_subjbases +++++++++++++++++++++
         } else if (permit_dict.allowed_subjbases && permit_dict.allowed_subjbases.length){
 
-    console.log("  >>>>>>>>>>>>>>> +++  permit_dict.allowed_subjbases", permit_dict.allowed_subjbases);
+    //console.log("  >>>>>>>>>>>>>>> +++  permit_dict.allowed_subjbases", permit_dict.allowed_subjbases);
             for (let i = 0, subjbase_pk; subjbase_pk = permit_dict.allowed_subjbases[i]; i++) {
                 let sel_subjbase_pk = null, sel_subject_name_nl = null;
                 for (let j = 0, subject_dict; subject_dict = subject_rows[j]; j++) {
@@ -3476,12 +3475,12 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
 
     // +++++++++ if there are allowed_clusters +++++++++++++++++++++++++++
                     } else if (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) {
-                console.log("  +++  permit_dict.allowed_clusters", permit_dict.allowed_clusters);
+    //console.log("  +++  permit_dict.allowed_clusters", permit_dict.allowed_clusters);
                         for (let i = 0, cluster_pk; cluster_pk = permit_dict.allowed_clusters[i]; i++) {
                             const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
-                console.log("    cluster", cluster);
+    //console.log("    cluster", cluster);
                             if (cluster && cluster.subjbase_id === sel_subjbase_pk) {
-                console.log("    sel_subject_name_nl", sel_subject_name_nl);
+    //console.log("    sel_subject_name_nl", sel_subject_name_nl);
                                 allowed_subjectname_nl_arr.push(sel_subject_name_nl);
                                 allowed_clustername_arr.push(cluster.name);
                                 break;
@@ -3490,7 +3489,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
 
     // +++++++++ if there is no selected cluster and no allowed_clusters +++++++++++++++++++++++++++
                     } else {
-                console.log(" +++   sel_subject_name_nl", sel_subject_name_nl);
+    //console.log(" +++   sel_subject_name_nl", sel_subject_name_nl);
                         if (!allowed_subjectname_nl_arr.includes(sel_subject_name_nl)){
                             allowed_subjectname_nl_arr.push(sel_subject_name_nl);
                         };
@@ -3525,13 +3524,13 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
 
 //========= MOD NOTE Open====================================
     function ModNote_Open (el_input) {
-        console.log("===  ModNote_Open  =====") ;
-        console.log("el_input", el_input) ;
+        //console.log("===  ModNote_Open  =====") ;
+        //console.log("el_input", el_input) ;
 
     // get has_note from grade_map
         const tblRow = t_get_tablerow_selected(el_input);
         const grade_dict = grade_dicts[tblRow.id];
-    console.log("grade_dict", grade_dict) ;
+    //console.log("grade_dict", grade_dict) ;
 
         const has_note = !!get_dict_value(grade_dict, ["note_status"])
 
@@ -3545,7 +3544,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
         const has_permit_intern_extern = (permit_dict.permit_write_note_intern || permit_dict.permit_write_note_extern)
         let may_open_modnote = has_permit_intern_extern || (permit_dict.permit_read_note && has_note);
 
-    console.log("has_permit_intern_extern", has_permit_intern_extern) ;
+    //console.log("has_permit_intern_extern", has_permit_intern_extern) ;
 
         if(may_open_modnote){
             // only show input block when  has_permit_intern_extern
@@ -3574,7 +3573,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
                 if(grade_dict.subj_code) { headertext += grade_dict.subj_name_nl};
                 el_ModNote_header.innerText = headertext;
 
-        //console.log("grade_dict", grade_dict) ;
+    //console.log("grade_dict", grade_dict) ;
                 mod_note_dict.studsubj_pk = grade_dict.studsubj_id
                 mod_note_dict.examperiod = grade_dict.examperiod
 
@@ -3599,7 +3598,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
 
 //========= ModNote_Save============== PR2020-10-15
     function ModNote_Save () {
-        console.log("===  ModNote_Save  =====");
+        //console.log("===  ModNote_Save  =====");
         const filename = document.getElementById("id_ModNote_filedialog").value;
 
         if(permit_dict.permit_write_note_intern || permit_dict.permit_permit_write_note_extern){
@@ -3612,7 +3611,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
             const file_name = (file) ? file.name : null;
             const file_size = (file) ? file.size : 0;
 
-        console.log("file_name", file_name);
+        //console.log("file_name", file_name);
            // may check size or type here with
             // ---  upload changes
             const upload_dict = { table: mod_note_dict.table,
@@ -3628,7 +3627,7 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
                                    };
             const upload_json = JSON.stringify (upload_dict)
 
-        console.log("    upload_json", upload_json);
+        //console.log("    upload_json", upload_json);
             if(note || file_size){
                 const upload = new Upload(upload_json, file, urls.url_studentsubjectnote_upload);
                 upload.doUpload();
@@ -3637,8 +3636,6 @@ console.log(" >>>>>>>>>>>>>>>> is_disabled", is_disabled)
 // hide modal
         $("#id_mod_note").modal("hide");
     }  // ModNote_Save
-
-//?????????????????????????????????????????????????????????????????
 
 // PR2021-03-16 from https://stackoverflow.com/questions/2320069/jquery-ajax-file-upload
     const Upload = function (upload_json, file, url_str) {
@@ -4154,8 +4151,10 @@ console.log( "new_value", new_value);
         };
     };  // HandleFilterSelect
 
-//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23 PR2022-03-09
+//========= HandleFilterToggle  ===============
     function HandleFilterToggle(el_input) {
+        //PR2020-07-21 PR2020-09-14 PR2021-03-23 PR2022-03-09 PR2023-07-03
+        // only called by field note_status and secret_exam
         console.log( "===== HandleFilterToggle  ========= ");
         //console.log( "el_input", el_input);
 
@@ -4173,6 +4172,7 @@ console.log( "new_value", new_value);
     console.log( "col_index", col_index);
     console.log( "filter_tag", filter_tag);
     console.log( "field_name", field_name);
+    console.log( "    filter_dict", filter_dict);
     console.log( "is_status_field", is_status_field);
 
     // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
@@ -4182,26 +4182,14 @@ console.log( "new_value", new_value);
     console.log( "filter_array", filter_array);
     console.log( "filter_value", field_name);
 
-        let new_value = "0", icon_class = "tickmark_0_0", title = "";
-
-        if (filter_tag === "toggle") {
-            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
 // - toggle filter value
-            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
-    console.log( "new_value", new_value);
+        const new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
 
-// - get new icon_class
-            if (field_name === "note_status"){
-                icon_class = (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "note_0_1" : "tickmark_0_0";
-
-            } else if (is_status_field){
-                icon_class = (new_value === "2") ? "diamond_3_3" : (new_value === "1") ? "diamond_0_0" : "tickmark_0_0";
-                title = (new_value === "2") ? loc.Show_fully_approved : (new_value === "1") ?loc.Show_not_fully_approved : "";
-            };
-        };
-        el_input.className = icon_class;
-        el_input.title = title
-    console.log( "icon_class", icon_class);
+// - get new icon_class 'note_icon when note, tickmark when secret_exam
+        el_input.className = (new_value === "2") ? "tickmark_2_1" :
+                        (new_value === "1") ?  (field_name === "note_status") ? "note_0_1" : "tickmark_2_2" :
+                        "tickmark_0_0";
 
 // - put new filter value in filter_dict
         filter_dict[col_index] = [filter_tag, new_value]

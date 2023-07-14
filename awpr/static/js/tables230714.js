@@ -115,18 +115,17 @@
 
 // ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
-//=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08 PR2023-01-08
-    function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
+//=========  t_MSED_Open  ================
+    function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_departments) {
+        //PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08 PR2023-01-08 PR2023-07-03
         console.log( "===== t_MSED_Open ========= ", tblName);
         console.log( "    setting_dict", setting_dict);
         console.log( "    permit_dict", permit_dict);
-        //console.log( "data_map", data_map);
-        //console.log( "all_countries", all_countries);
-        // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
-
+        console.log( "data_map", data_map);
+        console.log( "all_departments", all_departments);
         //console.log( "    tblName", tblName);
 
-        const skip_allowed_filter = (setting_dict && ["page_subject", "page_orderlist", , "page_exams"].includes(setting_dict.sel_page));
+        const skip_allowed_filter = (setting_dict && ["page_subject", "page_orderlist", "page_exams", "page_secretexam"].includes(setting_dict.sel_page));
 
         let may_open_modal = false, selected_pk = null;
         if (tblName === "examyear") {
@@ -135,15 +134,16 @@
             selected_pk = setting_dict.sel_examyear_pk;
 
         } else if (tblName === "department") {
-            // argument 'all_countries' also used to show all deps in page exam, only when used by ETE (requsr_role_admin)
-            const allowed_depbases_count = (all_countries && permit_dict.requsr_role_admin) ? data_map.size : (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
+            // argument 'all_departments' is used to show all deps in page exam and secret_exam only when used by ETE (requsr_role_admin)
+            const allowed_depbases_count = (all_departments && permit_dict.requsr_role_admin) ? data_map.size : (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
 
-//console.log( "allowed_depbases_count", allowed_depbases_count);
-            may_open_modal = (allowed_depbases_count > 1);
+    console.log( "allowed_depbases_count", allowed_depbases_count);
+            //PR2023-07-03 may_select_department gets value in get_settings_departmentbase, (allowed_depbases_count > 1) is part of that function
+            // was: may_open_modal = (allowed_depbases_count > 1);
             may_open_modal = permit_dict.may_select_department;
             selected_pk = setting_dict.sel_depbase_pk;
          };
-        //console.log( "    may_open_modal", may_open_modal);
+    console.log( "    may_open_modal", may_open_modal);
 
         //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
         if (may_open_modal) {
@@ -156,9 +156,8 @@
         //console.log( "header_text", header_text);
                 el_MSED_header_text.innerText = header_text;
             };
-// ---  fill select table
 
-            //t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries);
+// ---  fill select table
             t_MSED_FillSelectRows(skip_allowed_filter, tblName, MSED_Response, selected_pk)
 // ---  show modal
             $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
@@ -203,20 +202,28 @@
             // PR2022-01-08 debug: set level, sector, subject and student null when changing depbase
             new_setting.sel_lvlbase_pk = null;
             new_setting.sel_sctbase_pk = null;
+
             // also reset setting_dict - setting_dict must be a global variable;
             setting_dict.sel_lvlbase_pk = null;
             setting_dict.sel_lvlbase_code = null;
             setting_dict.sel_sctbase_pk = null;
             setting_dict.sel_sctbase_code = null;
+
+            //PR2023-07-04 debug: must also reset subject
+            setting_dict.sel_subjbase_code = null;
+            setting_dict.sel_subjbase_pk = null;
+            setting_dict.sel_subject_name = null;
+            setting_dict.sel_subject_pk = null;
+
         };
         // always reset student and subject when changing dep or ey
         new_setting.sel_student_pk = null;
-        new_setting.sel_subject_pk = null;
 
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;
         setting_dict.sel_student_name_init = null;
 
+        new_setting.sel_subject_pk = null;
         setting_dict.sel_subject_pk = null;
         setting_dict.sel_subjbase_code = null;
         setting_dict.sel_subject_name = null;
@@ -233,8 +240,8 @@
 //  PR2022-08-02 PR2023-01-08 PR2023-06-14
     function t_MSED_FillSelectRows(skip_allowed_filter, tblName, MSED_Response, selected_pk) {
         console.log( "===== t_MSED_FillSelectRows ========= ");
-        //console.log( "tblName", tblName);
-        //console.log( "all_countries", all_countries);
+        console.log( "tblName", tblName);
+        console.log( "skip_allowed_filter", skip_allowed_filter);
         //console.log( "permit_dict", permit_dict);
 
         const tblBody_select = document.getElementById("id_MSED_tblBody_select");
@@ -243,7 +250,7 @@
             tblBody_select.innerText = null;
             const data_rows = (tblName === "examyear") ? examyear_rows :
                               (tblName === "department") ? department_rows : null;
-    //console.log( "    data_rows", data_rows);
+    console.log( "    data_rows", data_rows);
 
     // --- loop through data_rows
             if(data_rows && data_rows.length){
@@ -1587,9 +1594,9 @@
 
 //>>>>>>>>>>> FILL OPTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //=========  t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase  ================
-// PR2021-03-06  PR2021-05-21 PR2021-08-27 PR2022-12-13
-    function t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase(tblName, rows, setting_dict) {
-        // used in studsubj.js
+// PR2021-03-06  PR2021-05-21 PR2021-08-27 PR2022-12-13 PR2023-07-10
+    function t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase(tblName, rows, setting_dict, skip_show_hide) {
+        // used in studsubj.js and correctors.js
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
         const has_one_item = (has_items && rows.length === 1);
@@ -1637,14 +1644,18 @@
             for (let i = 0, row; row = rows[i]; i++) {
                 display_rows.push({
                     value: row.base_id,
-                    caption: (tblName === "department") ?  row.base_code :
+                    caption: (tblName === "depbase") ?  row.base_code :
                              (tblName === "sctbase") ? row.name : row.abbrev
                 });
             };
-    //console.log("display_rows", display_rows);
+//    console.log("display_rows", display_rows);
 
-            const selected_pk = (tblName === "department") ? setting_dict.sel_depbase_pk : (tblName === "lvlbase") ? setting_dict.sel_lvlbase_pk : (tblName === "sctbase") ? setting_dict.sel_sctbase_pk : null;
-            const id_SBR_select = (tblName === "department") ? "id_SBR_select_department" : (tblName === "lvlbase") ? "id_SBR_select_level" : (tblName === "sctbase") ? "id_SBR_select_sector" : null;
+            const selected_pk = (tblName === "depbase") ? setting_dict.sel_depbase_pk : (tblName === "lvlbase") ? setting_dict.sel_lvlbase_pk : (tblName === "sctbase") ? setting_dict.sel_sctbase_pk : null;
+
+//    console.log("    tblName", tblName);
+//    console.log("    selected_pk", selected_pk);
+
+            const id_SBR_select = (tblName === "depbase") ? "id_SBR_select_department" : (tblName === "lvlbase") ? "id_SBR_select_level" : (tblName === "sctbase") ? "id_SBR_select_sector" : null;
             const el_SBR_select = (id_SBR_select) ? document.getElementById(id_SBR_select) : null;
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
@@ -1663,13 +1674,15 @@
 
         };
         // show select level and sector
-        if (tblName === "lvlbase"){
-            add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
-        // set label of profiel
-         } else if (tblName === "sctbase"){
-            add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
-            // when label has no id the text is Sector / Profiel, set in .html file
-            if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profile : loc.Sector ) + ":"};
+        if(!skip_show_hide){
+            if (tblName === "lvlbase"){
+                add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
+            // set label of profiel
+             } else if (tblName === "sctbase"){
+                add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
+                // when label has no id the text is Sector / Profiel, set in .html file
+                if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profile : loc.Sector ) + ":"};
+            };
         };
 
     };  // t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase
@@ -1815,11 +1828,11 @@
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
 /*
         console.log( "=== t_FillOptionsFromList ");
-        console.log( "data_list", data_list);
-        console.log( "value_field", value_field);
-        console.log( "selected_value", selected_value);
-        console.log( "filter_field", filter_field);
-        console.log( "filter_value", filter_value, typeof filter_value);
+        console.log( "    data_list", data_list);
+        console.log( "    value_field", value_field);
+        console.log( "    selected_value", selected_value);
+        console.log( "    filter_field", filter_field);
+        console.log( "    filter_value", filter_value, typeof filter_value);
 */
 // ---  fill options of select box
         let option_text = "";
@@ -1829,9 +1842,13 @@
         if(data_list){
             for (let i = 0, len = data_list.length; i < len; i++) {
                 const item_dict = data_list[i];
-
                 const item_value = (item_dict[value_field]) ? item_dict[value_field] : null;
                 const item_caption = (item_dict[caption_field]) ? item_dict[caption_field] : "---";
+/*
+        console.log( "    item_value", item_value);
+        console.log( "    item_caption", item_caption);
+        console.log( "    filter_field", filter_field);
+*/
                 // if filter_field has no value: all items are shown,
                 // otherwise only items with matching filter_value are shown PR2021-04-21
                 let show_row = false;
@@ -1843,7 +1860,6 @@
                         show_row = true;
                     };
                 };
-
                 if(show_row){
                     option_text += t_FillOptionTextNew(item_value, item_caption, selected_value);
                     row_count += 1;
@@ -1865,24 +1881,25 @@
         el_select.innerHTML = option_text;
 
 // if there is only 1 option: select first option
-        if (select_first_option){
-            el_select.selectedIndex = 0;
-        };
+       // if (select_first_option){
+       //     el_select.selectedIndex = 0;
+       // };
 // disable element if it has none or one rows
         el_select.disabled = (row_count <= 1);
+
+//        console.log( "    option_text", option_text);
+ //       console.log( "    el_select", el_select);
     };  // t_FillOptionsFromList
 
 //========= t_FillOptionTextNew  ============= PR2020-12-11 from tsa
     function t_FillOptionTextNew(value, caption, selected_value) {
         //console.log( "===== t_FillOptionTextNew  ========= ");
         let item_text = "<option value=\"" + value + "\"";
-        if (selected_value && value === selected_value) {item_text += " selected=true" };
+        //if (selected_value && value === selected_value) {item_text += " selected=true" };
+        if (selected_value && value === selected_value) {item_text += " selected" };
         item_text +=  ">" + caption + "</option>";
         return item_text;
     };  // t_FillOptionTextNew
-
-
-
 
 //###########################################################################
 // +++++++++++++++++ REFRESH DATADICTS ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2625,10 +2642,11 @@
                             const el = cell.children[0];
                             if (el){
                                 const cell_value = get_attr_from_el(el, "data-filter")
-
-    //console.log("     filter_tag", filter_tag)
-    //console.log("     filter_value", filter_value, typeof filter_value)
-    //console.log("     cell_value", cell_value, typeof cell_value)
+/*
+    console.log("     filter_tag", filter_tag)
+    console.log("     filter_value", filter_value, typeof filter_value)
+    console.log("     cell_value", cell_value, typeof cell_value)
+*/
                                 if (filter_tag === "grade_status"){
 
                                     // PR2023-02-21 in page grades
@@ -2962,7 +2980,61 @@ const mod_MCOL_dict = {
 
 // +++++++++++++++++ END OF MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++
 
+// +++++++++++++++++ SBR SELECT DEPARTMENT ++++++++++++++++++++++++++++++++++++++++++
+
+
 // +++++++++++++++++ SBR SELECT LEVEL SECTOR ++++++++++++++++++++++++++++++++++++++++++
+
+//=========  t_SBR_select_department  ================  PR2023-07-09
+    function t_SBR_select_department(el_select, SBR_department_response, skip_upload) {
+        console.log("===== t_SBR_select_department =====");
+        console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
+
+        // only used in correctors.js, for now,  to be implemented in subjects.js, exam.js, orderlist.js
+        // selecting department in hdrbar uses t_MSED_Open, that saves depbase in selected_pk
+
+// - clear datatable, don't delete table header
+        const tblBody_datatable = document.getElementById("id_tblBody_datatable");
+        if (tblBody_datatable) {tblBody_datatable.innerText = null};
+
+        if (el_select){
+// - get new value from el_select
+            // value "-9" is 'All departments'
+            const sel_pk_int = (el_select.value && Number(el_select.value)) ? Number(el_select.value) : null;
+
+// - put new value in setting_dict
+            const tblName = "depbase";
+            const sel_pk_key_str = "sel_depbase_pk";
+            const code_key_str = "base_code";
+            const data_rows = department_rows;
+
+            let selected_dict = null;
+            if (data_rows && data_rows.length){
+                for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                    if(data_dict.base_id && data_dict.base_id === sel_pk_int ){
+                        selected_dict = data_dict;
+                        break;
+            }}};
+            console.log( "    selected_dict: ", selected_dict);
+
+            const selected_pk_int = (selected_dict) ? selected_dict.base_id : null;
+            const new_sel_code = (selected_dict && selected_dict[code_key_str]) ? selected_dict[code_key_str] : "---";
+            setting_dict[sel_pk_key_str] = selected_pk_int;
+            setting_dict["sel_depbase_code"] = new_sel_code;
+
+            if (!skip_upload) {
+                const selected_pk_dict = {};
+                selected_pk_dict[sel_pk_key_str] = selected_pk_int
+                const upload_dict = {selected_pk: selected_pk_dict};
+
+        // ---  upload new setting
+                b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+            };
+    console.log("    selected_pk_int", selected_pk_int);
+    console.log("    selected_dict", selected_dict);
+            SBR_department_response(tblName, selected_dict, selected_pk_int);
+        };
+    };  // t_SBR_select_department
 
 //=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-03-26
     function t_SBR_select_level_sector(tblName, el_select, SBR_lvl_sct_response, skip_upload) {

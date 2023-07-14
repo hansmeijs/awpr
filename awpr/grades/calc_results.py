@@ -205,7 +205,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
@@ -267,7 +267,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict,
                         log_list, sql_studsubj_list, sql_student_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 

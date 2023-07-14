@@ -165,12 +165,17 @@ urlpatterns = [
 
         path('download_userdata_xlsx', account_views.UserdataDownloadXlsxView.as_view(), name='url_download_userdata_xlsx'),
     ])),
+
+
     path('correctors/', include([
         path('corrector', account_views.CorrectorListView.as_view(), name='url_corrector'),
         path('usercomp_upload', acc_corr.UserCompensationUploadView.as_view(), name='url_usercompensation_upload'),
         path('usercomp_approve_submit', acc_corr.UserCompensationApproveSubmitView.as_view(), name='url_usercomp_approve_submit'),
 
         path('usercomp_approve_single', acc_corr.UserCompensationApproveSingleView.as_view(), name='url_usercomp_approve_single'),
+
+        path('download_excomp', acc_corr.UserCompensationDownloadExcompView.as_view(), name='url_download_excomp'),
+
     ])),
 
     url(r'session_security/', include('session_security.urls')),
@@ -219,8 +224,8 @@ urlpatterns = [
     path('schools/', include([
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
         path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='url_examyear_upload'),
-        path('examyear_copytosxm', school_views.ExamyearCopyToSxmView.as_view(), name='url_examyear_copytosxm'),
-        path('subjectscheme_copyfrom', school_views.CopySchemesFromExamyearView.as_view(), name='url_subjectscheme_copyfrom'),
+        # PR2023-07-06 removed: path('examyear_copytosxm', school_views.ExamyearCopyToSxmView.as_view(), name='url_examyear_copytosxm'),
+        # PR2023-07-06 removed: path('subjectscheme_copyfrom', school_views.CopySchemesFromExamyearView.as_view(), name='url_subjectscheme_copyfrom'),
 
         path('school', school_views.SchoolListView.as_view(), name='schools_url'),
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),

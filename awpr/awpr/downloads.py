@@ -161,8 +161,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- get UserCompensation
                 if datalist_request.get('usercompensation_rows'):
                     acc_corr.update_usercompensation(sel_examyear, request)
-                    datalists['usercompensation_rows'] = acc_corr.create_usercompensation_rows(sel_examyear, request)
-                    datalists['usercomp_agg_rows'] = acc_corr.create_usercomp_agg_rows(sel_examyear, request)
+                    datalists['usercompensation_rows'] = acc_corr.create_usercompensation_rows(sel_examyear, sel_department,  sel_lvlbase, request)
+                    datalists['usercomp_agg_rows'] = acc_corr.create_usercomp_agg_rows(sel_examyear, sel_department, sel_lvlbase, request)
 
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
@@ -375,6 +375,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         append_dict={},
                         request=request
                     )
+
+                    # PR2023-07-01 temporary, to get list ofstudents with thumbrule in 2023, should not have happened
+                    # was: datalists['student_with_thumbrule_rows'] = stud_view.create_student_with_thumbrule2023_TEMP_rows()
+
 # ----- studentsubjectnote
                 #request_item = datalist_request.get('studentsubjectnote_rows')
                 #if request_item:
@@ -470,7 +474,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                                 sel_school=sel_school,
                                 sel_department=sel_department,
                             )
-
 
 # ----- mailbox
                 if datalist_request.get('mailmessage_rows'):

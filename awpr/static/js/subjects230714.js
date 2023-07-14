@@ -605,7 +605,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Delete_characterbase, function() {ModConfirmOpen("subjecttypebase", "delete")}, ["tab_show", "tab_btn_subjecttypebase"]);
 
         }
-        AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", urls.url_download_scheme_xlsx, false);  // true = download
+        //AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem", "tab_btn_subjecttype" ], "id_submenu_download_schemexlsx", urls.url_download_scheme_xlsx, false);  // true = download
+        AddSubmenuButton(el_submenu, loc.Download_subject_scheme, null, [], "id_submenu_download_schemexlsx", urls.url_download_scheme_xlsx, false);  // true = download
 
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_subject")}, [], "id_submenu_columns")
@@ -923,6 +924,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.setAttribute("ondragstart", "return false;");
                     el.setAttribute("ondrop", "return false;");
                     el.classList.add("input_text");
+                    // PR2023-07-05
+                    el.readOnly = (!permit_dict.permit_crud || !permit_dict.requsr_role_admin);
 
                     el.addEventListener("change", function() {UploadInputChange(tblName, el)}, false);
                     el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
@@ -930,38 +933,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (filter_tag ==="toggle"){
                     // attach eventlisterener and hover to td, not to el. No need to add icon_class here
                     // skip max_reex  when weight_ce = 0
-                    if(field_name !== "max_reex" || map_dict.weight_ce) {
-                        td.addEventListener("click", function() {HandleToggle(tblName, el)}, false)
-                        td.classList.add("pointer_show");
-                        add_hover(td);
+                    if (permit_dict.permit_crud && permit_dict.requsr_role_admin){
+                        if(field_name !== "max_reex" || map_dict.weight_ce) {
+                            td.addEventListener("click", function() {HandleToggle(tblName, el)}, false)
+                            td.classList.add("pointer_show");
+                            add_hover(td);
+                        };
                     };
                 } else {
-                    if (tblName === "subject"){
-                        if (["code", "name_nl", "depbases", "sequence"].includes(field_name)){
-                            td.addEventListener("click", function() {MSUBJ_Open(el)}, false)
-                            td.classList.add("pointer_show");
-                            add_hover(td);
-                        };
-                    } else if (tblName === "schemeitem"){
-                        if ( filter_tag ==="text"){
-                            if(field_name === "otherlang"){
-                                td.addEventListener("click", function() {MOL_Open(el)}, false);
-                            } else if(field_name === "no_ce_years"){
-                                td.addEventListener("click", function() {MExemptionYear_Open(el)}, false);
-                            } else {
-                                td.addEventListener("click", function() {MSI_Open(el)}, false);
+                    if (permit_dict.permit_crud && permit_dict.requsr_role_admin){
+                        if (tblName === "subject"){
+                            if (["code", "name_nl", "depbases", "sequence"].includes(field_name)){
+                                td.addEventListener("click", function() {MSUBJ_Open(el)}, false)
+                                td.classList.add("pointer_show");
+                                add_hover(td);
                             };
-                            td.classList.add("pointer_show");
-                            add_hover(td);
-                        };
-                    } else if (tblName === "subjecttype"){
-                        if (field_name !== "select"){
-                            td.addEventListener("click", function() {MSJTP_Open(el)}, false)
-                            td.classList.add("pointer_show");
-                            add_hover(td);
+                        } else if (tblName === "schemeitem"){
+                            if ( filter_tag ==="text"){
+                                if(field_name === "otherlang"){
+                                    td.addEventListener("click", function() {MOL_Open(el)}, false);
+                                } else if(field_name === "no_ce_years"){
+                                    td.addEventListener("click", function() {MExemptionYear_Open(el)}, false);
+                                } else {
+                                    td.addEventListener("click", function() {MSI_Open(el)}, false);
+                                };
+                                td.classList.add("pointer_show");
+                                add_hover(td);
+                            };
+                        } else if (tblName === "subjecttype"){
+                            if (field_name !== "select"){
+                                td.addEventListener("click", function() {MSJTP_Open(el)}, false)
+                                td.classList.add("pointer_show");
+                                add_hover(td);
+                            };
                         };
                     };
                 };
+
 // --- put value in field
                UpdateField(el, map_dict)
            };  // if (!columns_hidden[field_name]){
@@ -1079,112 +1087,116 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++++++++++++++++++++++++++
 
-//========= UploadInputChange  ============= PR2021-06-27 PR2021-09-08 PR2022-08-01
+//========= UploadInputChange  ============= PR2021-06-27 PR2021-09-08 PR2022-08-01 PR2023-07-05
     function UploadInputChange(tblName, el_input) {
         console.log( " ==== UploadInputChange ====");
         console.log("el_input: ", el_input);
 
-        const tblRow = t_get_tablerow_selected(el_input);
-        if(tblRow){
-            const data_dict = get_recursive_integer_lookup(tblRow);
-        console.log("data_dict: ", data_dict);
-
-            if(!isEmpty(data_dict)){
-                const fldName = get_attr_from_el(el_input, "data-field");
-                // note: el_input.value is a string, tharefore "0" is not falsy
-                const new_value = el_input.value
-        console.log("fldName: ", fldName);
-        console.log("new_value: ", new_value, typeof new_value);
-
-// ---  upload changes
-
-                const upload_dict = {
-                    mapid: data_dict.mapid,
-                    scheme_pk: data_dict.scheme_id
-                }
-                if (tblName === "scheme"){
-                    upload_dict.scheme_pk = data_dict.id;
-                } else if (tblName === "schemeitem"){
-                    upload_dict.si_pk = data_dict.id;
-                    upload_dict.scheme_pk = data_dict.scheme_id;
-                } else if (tblName === "subjecttype"){
-                    upload_dict.subjecttype_pk = data_dict.id;
-                    upload_dict.scheme_pk = data_dict.scheme_id;
-                } else if (tblName === "subjecttypebase"){
-                    upload_dict.sjtpbase_pk = data_dict.id;
-                };
-                upload_dict[fldName] = new_value
-
-                const url_str = get_url_str();
-                UploadChanges(upload_dict, url_str);
-            }  //  if(!isEmpty(data_dict)){
-        }  //   if(!!tblRow)
-    }  // UploadInputChange
-
-//========= HandleToggle  ============= PR2021-05-12  PR2021-06-21
-    function HandleToggle(tblName, el_input) {
-        console.log( " ==== HandleToggle ====");
-        console.log("tblName: ", tblName);
-        console.log("el_input: ", el_input);
-
-        const tblRow = t_get_tablerow_selected(el_input);
-
-        if(tblRow){
-            if (permit_dict.examyear_locked){
-                const msg_html = loc.This_examyear + loc.is_locked + "<br>" + loc.You_cannot_make_changes
-                b_show_mod_message_dictlist([{class: "border_bg_warning", msg_html: msg_html}]);
-            } else {
+        if (permit_dict.permit_crud && permit_dict.requsr_role_admin){
+            const tblRow = t_get_tablerow_selected(el_input);
+            if(tblRow){
                 const data_dict = get_recursive_integer_lookup(tblRow);
-                console.log("data_dict: ", data_dict);
+            console.log("data_dict: ", data_dict);
 
                 if(!isEmpty(data_dict)){
                     const fldName = get_attr_from_el(el_input, "data-field");
-                    let new_value = null, update_dict = {};
-                    if (fldName === "gradetype"){
-                        new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
-                    } else if (fldName === "weight_se"){
-                        new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
-                    } else if (fldName === "weight_ce"){
-                        new_value = (data_dict[fldName] === 1 ) ? 0 : 1;
-                    } else if (fldName === "multiplier"){
-                        new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
-                    } else if (fldName === "max_reex"){
-                        const old_value = (data_dict[fldName]) ? (data_dict[fldName]) : 0;
-                        new_value = old_value + 1;
-                        if (new_value > 3) {new_value = 0}
-                    } else {
-                        new_value = (data_dict[fldName] == true ) ? false : true;
-    // ---  change icon, before uploading
-                    //add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
-                    }
-                    update_dict[fldName] = new_value;
-                    UpdateField(el_input, update_dict)
+                    // note: el_input.value is a string, tharefore "0" is not falsy
+                    const new_value = el_input.value
+            console.log("fldName: ", fldName);
+            console.log("new_value: ", new_value, typeof new_value);
 
     // ---  upload changes
+
                     const upload_dict = {
-                        mode: "update",
                         mapid: data_dict.mapid,
-                        table: tblName,
+                        scheme_pk: data_dict.scheme_id
                     }
-                    if (tblName === "subject"){
-                        upload_dict.subject_pk = data_dict.id;
-                    } else if (tblName === "scheme"){
+                    if (tblName === "scheme"){
                         upload_dict.scheme_pk = data_dict.id;
-                    } else if (tblName === "subjecttype"){
-                        upload_dict.subjecttype_pk = data_dict.id;
-                        upload_dict.scheme_pk = data_dict.scheme_id;
                     } else if (tblName === "schemeitem"){
                         upload_dict.si_pk = data_dict.id;
                         upload_dict.scheme_pk = data_dict.scheme_id;
+                    } else if (tblName === "subjecttype"){
+                        upload_dict.subjecttype_pk = data_dict.id;
+                        upload_dict.scheme_pk = data_dict.scheme_id;
+                    } else if (tblName === "subjecttypebase"){
+                        upload_dict.sjtpbase_pk = data_dict.id;
                     };
                     upload_dict[fldName] = new_value
 
                     const url_str = get_url_str();
                     UploadChanges(upload_dict, url_str);
-
-                };  //  if(!isEmpty(data_dict)){
+                }  //  if(!isEmpty(data_dict)){
             };
-        }  //   if(!!tblRow)
+        };
+    }  // UploadInputChange
+
+//========= HandleToggle  ============= PR2021-05-12 PR2021-06-21  PR2023-07-05
+    function HandleToggle(tblName, el_input) {
+        console.log( " ==== HandleToggle ====");
+        console.log("tblName: ", tblName);
+        console.log("el_input: ", el_input);
+
+        if (permit_dict.permit_crud && permit_dict.requsr_role_admin){
+            const tblRow = t_get_tablerow_selected(el_input);
+
+            if(tblRow){
+                if (permit_dict.examyear_locked){
+                    const msg_html = loc.This_examyear + loc.is_locked + "<br>" + loc.You_cannot_make_changes
+                    b_show_mod_message_dictlist([{class: "border_bg_warning", msg_html: msg_html}]);
+                } else {
+                    const data_dict = get_recursive_integer_lookup(tblRow);
+                    console.log("data_dict: ", data_dict);
+
+                    if(!isEmpty(data_dict)){
+                        const fldName = get_attr_from_el(el_input, "data-field");
+                        let new_value = null, update_dict = {};
+                        if (fldName === "gradetype"){
+                            new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
+                        } else if (fldName === "weight_se"){
+                            new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
+                        } else if (fldName === "weight_ce"){
+                            new_value = (data_dict[fldName] === 1 ) ? 0 : 1;
+                        } else if (fldName === "multiplier"){
+                            new_value = (data_dict[fldName] === 1 ) ? 2 : 1;
+                        } else if (fldName === "max_reex"){
+                            const old_value = (data_dict[fldName]) ? (data_dict[fldName]) : 0;
+                            new_value = old_value + 1;
+                            if (new_value > 3) {new_value = 0}
+                        } else {
+                            new_value = (data_dict[fldName] == true ) ? false : true;
+        // ---  change icon, before uploading
+                        //add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+                        }
+                        update_dict[fldName] = new_value;
+                        UpdateField(el_input, update_dict)
+
+        // ---  upload changes
+                        const upload_dict = {
+                            mode: "update",
+                            mapid: data_dict.mapid,
+                            table: tblName,
+                        }
+                        if (tblName === "subject"){
+                            upload_dict.subject_pk = data_dict.id;
+                        } else if (tblName === "scheme"){
+                            upload_dict.scheme_pk = data_dict.id;
+                        } else if (tblName === "subjecttype"){
+                            upload_dict.subjecttype_pk = data_dict.id;
+                            upload_dict.scheme_pk = data_dict.scheme_id;
+                        } else if (tblName === "schemeitem"){
+                            upload_dict.si_pk = data_dict.id;
+                            upload_dict.scheme_pk = data_dict.scheme_id;
+                        };
+                        upload_dict[fldName] = new_value
+
+                        const url_str = get_url_str();
+                        UploadChanges(upload_dict, url_str);
+
+                    };  //  if(!isEmpty(data_dict)){
+                };
+            }  //   if(!!tblRow)
+        };
     }  // HandleToggle
 
 
@@ -1710,8 +1722,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const td = el.parentNode
             let tblRow = td.parentNode
             const tblBody = tblRow.parentNode
+
 // --- get the first and last index of imput columns
-            let max_colindex = null,  min_colindex = null;
+            let max_colindex = null, min_colindex = null;
             for (let i = 0, fldName, cell, td; td = tblRow.cells[i]; i++) {
                 cell = td.children[0];
                 fldName = get_attr_from_el(cell, "data-field")
@@ -1719,7 +1732,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if(min_colindex == null) {min_colindex = td.cellIndex}
                     max_colindex = td.cellIndex;
                 //}
-            }
+            };
 // --- set move up / down 1 row when min / max index is reached
             let new_col_index = td.cellIndex + move_horizontal;
             if(new_col_index > max_colindex) {
@@ -1728,7 +1741,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else  if(new_col_index < min_colindex) {
                 new_col_index = max_colindex
                 move_vertical -= 1
-            }
+            };
 // --- set focus to next / previous cell
             // apparently you must deduct number of header rows from row_index
             let new_row_index = tblRow.rowIndex + move_vertical - 2;
@@ -1736,9 +1749,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if(new_tblRow){
                 const next_el = new_tblRow.cells[new_col_index].children[0];
                 if(next_el){next_el.focus()}
-            }
-        }
-    }  // HandleArrowEvent
+            };
+        };
+    };  // HandleArrowEvent
 //###########################################################################
 // +++++++++++++++++ SIDE BAR +++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1778,13 +1791,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
     // fill select table sector / profiel
             SBR_FillSelectOptions("sector")
-        }
+        };
 
 // ---  FillTblRows
         //UpdateHeaderLeft();
         FillTblRows();
 
-    }  // HandleSBRselect
+    };  // HandleSBRselect
 
 //=========  get_level_req  ================ PR2021-08-28
     function get_level_req(depbase_pk) {
@@ -1799,7 +1812,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }};
         selected.level_req = level_req;
         selected.has_profiel = has_profiel;
-    }  // get_level_req
+    };  // get_level_req
 
 //=========  SBR_FillSelectOptions  ================ PR2021-03-06  PR2021-05-21 PR2021-08-27
     function SBR_FillSelectOptions(tblName) {

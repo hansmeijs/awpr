@@ -609,7 +609,7 @@ def draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offse
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # draw diploma
 
-def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate):
+def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate, examyear_code):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -650,7 +650,10 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
 
     # PR2023-06-20 mail Esther: right outline id-number. increase tab 6 and 7
     # was: tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 115 * mm, 127 * mm]
-    tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 130 * mm, 142 * mm]
+    if examyear_code < 2023:
+        tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 115 * mm, 127 * mm]
+    else:
+        tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 130 * mm, 142 * mm]
 
     lineheight_5mm = 5 * mm
     lineheight_8mm = 8 * mm
@@ -666,24 +669,26 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
     size_large = 36 if is_lex_cur else 16
 
 # - leerweg
-    level_req = student_dict.get('level_req', False)
-    if level_req:
-        lvl_name = student_dict.get('lvl_name') or '---'
+    # PR2023-06-20 print leerweg on diploma from 2023
+    if examyear_code >= 2023:
+        level_req = student_dict.get('level_req', False)
+        if level_req:
+            lvl_name = student_dict.get('lvl_name') or '---'
 
-        # PR2023-06-20 email Esther: no uppercase
-        # lvl_name_upper = lvl_name.upper()
-        # PR2023-06-16 was:
-        # canvas.setFont(font_normal, 14)
+            # PR2023-06-20 email Esther: no uppercase
+            # lvl_name_upper = lvl_name.upper()
+            # PR2023-06-16 was:
+            # canvas.setFont(font_normal, 14)
 
-        # mail Esther 21 juni 2023 font size 12 ipv 11,5
-        # was: canvas.setFont('Times-Roman', 11.5)
-        canvas.setFont('Times-Roman', 12)
+            # mail Esther 21 juni 2023 font size 12 ipv 11,5
+            # was: canvas.setFont('Times-Roman', 11.5)
+            canvas.setFont('Times-Roman', 12)
 
-        # y_level = origin[1] + 8 * mm
-        y_level = origin[1] + 18 * mm
+            # y_level = origin[1] + 8 * mm
+            y_level = origin[1] + 18 * mm
 
-        x_center = (right + left) / 2
-        canvas.drawCentredString(x_center, y_level, lvl_name)
+            x_center = (right + left) / 2
+            canvas.drawCentredString(x_center, y_level, lvl_name)
 
 # - full name
     canvas.setFont(font_bold_fancy, size_large)
@@ -784,46 +789,81 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
         canvas.drawString(origin[0], y_pos, library.get('ete'))
         y_pos -= lineheight_10mm
 
-# - De voorzitter - De secretaris
-    #canvas.setFont(font_normal, size_normal)
-    #canvas.drawString(origin[0], y_pos, library.get('chairperson'))
-    #canvas.drawString(origin[0] + tabstop[4], y_pos, library.get('secretary'))
-    # y_pos -= (2 * lineheight_10mm) + lineheight_5mm
-    y_pos -= (2 * lineheight_10mm)
+    if examyear_code < 2023:
 
-# - Voorzitter - Secretaris
-    canvas.setFont(font_bold, size_normal)
-    canvas.drawString(origin[0], y_pos, auth1_name or '---')
-    canvas.drawString(origin[0] + tabstop[4], y_pos, auth2_name or '---')
-    y_pos -= lineheight_5mm
-
-# PR2023-06-21 Esther: Voorzitter - Secretaris below names
     # - De voorzitter - De secretaris
-    canvas.setFont(font_normal, size_normal)
-    canvas.drawString(origin[0], y_pos, library.get('chairperson_cur'))
-    canvas.drawString(origin[0] + tabstop[4], y_pos, library.get('secretary_cur'))
-    y_pos -= lineheight_10mm
+        canvas.setFont(font_normal, size_normal)
+        canvas.drawString(origin[0], y_pos, library.get('chairperson'))
+        canvas.drawString(origin[0] + tabstop[4], y_pos, library.get('secretary'))
+        y_pos -= (2 * lineheight_10mm) + lineheight_5mm
 
-# - Handtekening van de geslaagde:
-    canvas.setFont(font_normal, size_normal)
-    canvas.drawString(origin[0] + tabstop[3], y_pos, library.get('signature'))
+    # - Voorzitter - Secretaris
+        canvas.setFont(font_bold, size_normal)
+        canvas.drawString(origin[0], y_pos, auth1_name or '---')
+        canvas.drawString(origin[0] + tabstop[4], y_pos, auth2_name or '---')
+        y_pos -= lineheight_10mm
 
-# - Registratienr - Id.nr.:
-    # PR2023-06-22 whatsapp Esther 22 jun: bold, size like in gl
-    # was: canvas.setFont(font_normal, size_small)
-    canvas.setFont(font_normal, 8)
-    # PR2023-06-22 whatsapp Esther 22 jun: lower this line a bit
-    # was: y_pos = 22 * mm
-    y_pos = 18 * mm
-    canvas.drawString(origin[0], y_pos, library.get('reg_nr'))
-    canvas.drawString(origin[0] + tabstop[6], y_pos, library.get('id_nr'))
+    # - Handtekening van de geslaagde:
+        canvas.setFont(font_normal, size_normal)
+        canvas.drawString(origin[0] + tabstop[3], y_pos, library.get('signature'))
 
-    # PR2023-06-22 was: canvas.setFont(font_bold, size_small)
-    canvas.setFont(font_normal, 8)
-    canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('regnumber') or '-')
+    # - Registratienr - Id.nr.:
+        canvas.setFont(font_normal, size_small)
+        y_pos = 22 * mm
+        canvas.drawString(origin[0], y_pos, library.get('reg_nr'))
+        canvas.drawString(origin[0] + tabstop[6], y_pos, library.get('id_nr'))
 
-    # PR2023-06-20 mail Esther: right outline id-number. increase tab 6 and 7
-    canvas.drawString(origin[0] + tabstop[7], y_pos, student_dict.get('idnumber') or '-')
+        canvas.setFont(font_bold, size_small)
+        canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('regnumber') or '-')
+        canvas.drawString(origin[0] + tabstop[7], y_pos, student_dict.get('idnumber') or '-')
+
+    else:
+# from examyear 2023:
+    # - De voorzitter - De secretaris
+        #canvas.setFont(font_normal, size_normal)
+        #canvas.drawString(origin[0], y_pos, library.get('chairperson'))
+        #canvas.drawString(origin[0] + tabstop[4], y_pos, library.get('secretary'))
+        # y_pos -= (2 * lineheight_10mm) + lineheight_5mm
+        y_pos -= (2 * lineheight_10mm)
+
+    # - Voorzitter - Secretaris
+        canvas.setFont(font_bold, size_normal)
+        canvas.drawString(origin[0], y_pos, auth1_name or '---')
+        canvas.drawString(origin[0] + tabstop[4], y_pos, auth2_name or '---')
+        y_pos -= lineheight_5mm
+
+    # PR2023-06-21 Esther: Voorzitter - Secretaris below names
+        # - De voorzitter - De secretaris
+        canvas.setFont(font_normal, size_normal)
+        # PR2023-07-04 debug: FRiedeman Hasselbaink Jacques Ferrandi: cannot print gradelist 2022.
+        # 'chairperson_cur' and 'secretary_cur' don't exists in 2022
+        chairperson_txt = library.get('chairperson_cur') if 'chairperson_cur' in library else ''
+        secretary_txt = library.get('secretary_cur') if 'secretary_cur' in library else ''
+
+        canvas.drawString(origin[0], y_pos, chairperson_txt)
+        canvas.drawString(origin[0] + tabstop[4], y_pos, secretary_txt)
+        y_pos -= lineheight_10mm
+
+    # - Handtekening van de geslaagde:
+        canvas.setFont(font_normal, size_normal)
+        canvas.drawString(origin[0] + tabstop[3], y_pos, library.get('signature'))
+
+    # - Registratienr - Id.nr.:
+        # PR2023-06-22 whatsapp Esther 22 jun: bold, size like in gl
+        # was: canvas.setFont(font_normal, size_small)
+        canvas.setFont(font_normal, 8)
+        # PR2023-06-22 whatsapp Esther 22 jun: lower this line a bit
+        # was: y_pos = 22 * mm
+        y_pos = 18 * mm
+        canvas.drawString(origin[0], y_pos, library.get('reg_nr'))
+        canvas.drawString(origin[0] + tabstop[6], y_pos, library.get('id_nr'))
+
+        # PR2023-06-22 was: canvas.setFont(font_bold, size_small)
+        canvas.setFont(font_normal, 8)
+        canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('regnumber') or '-')
+
+        # PR2023-06-20 mail Esther: right outline id-number. increase tab 6 and 7
+        canvas.drawString(origin[0] + tabstop[7], y_pos, student_dict.get('idnumber') or '-')
 
     #draw_red_cross(canvas, origin[0], y_pos)
     #draw_red_cross(canvas, right, y_pos)
@@ -831,7 +871,7 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
 # - end of draw_diploma_cur
 
 
-def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate):
+def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate, examyear_int):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -947,8 +987,9 @@ def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, prin
 # #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # # draw gradelist
 
-def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate,
+def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, examyear_int,
                        request):
+    # PR2023-07-05
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -956,7 +997,7 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_r
         logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
         logger.debug('     student_dict: ' + str(student_dict))
         logger.debug('     is_prelim: ' + str(is_prelim))
-        logger.debug('     is_sxm: ' + str(is_sxm))
+        logger.debug('     examyear_int: ' + str(examyear_int))
 
     auth1_name = '---'
     if auth1_pk:
@@ -968,7 +1009,8 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_r
             usergroups__contains='auth1'
         )
         if auth1:
-            auth1_name = auth1.last_name
+            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
+            auth1_name = auth1.last_name.strip() if auth1.last_name else ''
 
         if logging_on:
             logger.debug('     auth1: ' + str(auth1))
@@ -985,7 +1027,8 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_r
             usergroups__contains='auth2'
         )
         if auth2:
-            auth2_name = auth2.last_name
+            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
+            auth2_name = auth2.last_name.strip() if auth2.last_name else ''
 
     is_lexschool = student_dict.get('islexschool', False)
 
@@ -1040,8 +1083,8 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_r
         library=library,
         student_dict=student_dict,
         is_prelim=is_prelim,
-        is_sxm=is_sxm,
-        is_lexschool=is_lexschool
+        is_lexschool=is_lexschool,
+        examyear_int=examyear_int
     )
 
     # - draw column header
@@ -1122,13 +1165,13 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_r
     draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexschool)
 
     # - draw page signatures
-    draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, False, library, student_dict, auth1_name,
-                                 auth2_name, printdate, reg_number)
+    draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, False, library, student_dict, auth1_name,
+                                 auth2_name, printdate, examyear_int, reg_number)
 
 # - end of draw_gradelist_sxm
 
 
-def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate,
+def draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, examyear_int,
                        request):
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -1149,7 +1192,8 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
             usergroups__contains='auth1'
         )
         if auth1:
-            auth1_name = auth1.last_name
+            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
+            auth1_name = auth1.last_name.strip() if auth1.last_name else ''
 
         if logging_on:
             logger.debug('     auth1: ' + str(auth1))
@@ -1166,18 +1210,24 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
             usergroups__contains='auth2'
         )
         if auth2:
-            auth2_name = auth2.last_name
+            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
+            auth2_name = auth2.last_name.strip() if auth2.last_name else ''
 
     is_lexschool = student_dict.get('islexschool', False)
 
     has_profiel = student_dict.get('has_profiel', False)
-    # regnumber is generated by AWP, not stored in table Student
+
+    # from examyear 2023: regnumber is generated by AWP, in 2022 it uses stored regnumber in table Student
+    # get stored or generated regnumber happens in get_gradelist_dictlist
     reg_number = student_dict.get('regnumber')
 
     # - set the corners of the rectangle
     # - 72 points = 1 inch   -  1 point = 20 pixels  - 1 mm = 2,8346 points
     # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 15 mm from bottom, 15 mm from left
-    top = (261 if is_sxm else 282) * mm
+
+# cur:
+    # was: top = (261 if is_sxm else 282) * mm
+    top = 282 * mm
     bottom = 15 * mm
     left = 15 * mm
     right = 195 * mm
@@ -1196,10 +1246,11 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
 
     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
 
-    # - draw border around page
+# - cur: draw border around page
     if is_prelim:
         draw_page_border(canvas, border)
-    # - draw page header
+
+# - cur: draw page header
     draw_gradelist_page_header_cur(
         canvas=canvas,
         coord=coord,
@@ -1207,14 +1258,14 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
         library=library,
         student_dict=student_dict,
         is_prelim=is_prelim,
-        is_sxm=is_sxm,
-        is_lexschool=is_lexschool
+        is_lexschool=is_lexschool,
+        examyear_int=examyear_int
     )
 
-    # - draw column header
+# - cur: draw column header
     draw_gradelist_colum_header(canvas, coord, col_tab_list, library, is_lexschool)
 
-    # - loop through subjecttypes
+# - cur: loop through subjecttypes
     # combi, stage and werkstuk have text keys, rest has integer key
     for sequence in range(0, 10):  # range(start_value, end_value, step), end_value is not included!
         # sjtp_dict = {'sjtp_code': 'combi', 'sjtp_name': '', 2168: {'subj_name': 'Culturele en Artistieke Vorming',
@@ -1236,7 +1287,7 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
         114: {'sjtp_code': 'gmd', 'subj_name': 'Engelse taal', 'segrade': '8.0', 'pecegrade': None, 'finalgrade': None}}
     """
 
-    # - get combi subjects
+# - cur: get combi subjects
     # also check if combi contains werkstuk
     combi_dict = student_dict.get('combi')
     wst_subj_dict = {}
@@ -1252,7 +1303,7 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
 
                 draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict, True)
 
-# - get werkstuk rows
+# - cur: get werkstuk rows
     # if wst not found in combi (in Havo Vwo), lookup with key 'wst' ( in Vsbo)
     if not wst_subj_dict:
         wst_dict = student_dict.get('wst')
@@ -1266,7 +1317,7 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
     if wst_subj_dict:
         draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, wst_subj_dict, has_profiel)
 
-# - get stage rows
+# - cur: get stage rows
     stg_dict = student_dict.get('stg')
     if stg_dict:
         stg_subj_dict = {}
@@ -1278,18 +1329,30 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_r
         if stg_subj_dict:
             draw_gradelist_stage_row(canvas, coord, col_tab_list, stg_subj_dict)
 
-# - draw 'Gemiddelde der cijfers' row
+# - cur: draw 'Gemiddelde der cijfers' row
     draw_gradelist_avg_final_row(canvas, coord, col_tab_list, library, student_dict)
 
-# - draw 'Uitslag op grond van de resultaten:' row
+# - cur: draw 'Uitslag op grond van de resultaten:' row
     draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict, print_reex)
 
-# - draw page footer
+# - cur: draw footnote
     draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexschool)
 
-# - draw page signatures
-    draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, False, library, student_dict, auth1_name,
-                                 auth2_name, printdate, reg_number)
+# - cur: draw page signatures and footer
+    draw_gradelist_signature_row_cur(
+        canvas=canvas,
+        border=border,
+        coord=coord,
+        col_tab_list=col_tab_list,
+        is_pok=False,
+        library=library,
+        student_dict=student_dict,
+        auth1_name=auth1_name,
+        auth2_name=auth2_name,
+        printdate=printdate,
+        examyear_int=examyear_int,
+        reg_number=reg_number
+    )
 # - end of draw_gradelist_cur
 
 
@@ -1308,13 +1371,13 @@ def draw_page_border(canvas, border):
 # - end of draw_page_border
 
 
-def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_sxm, is_lexschool):
+def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_lexschool, examyear_int):
     # loop through rows of page_header
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- draw_gradelist_page_header_sxm -----')
-        logger.debug('     is_sxm: ' + str(is_sxm))
+        logger.debug('     examyear_int: ' + str(examyear_int))
 
     examyear_code = student_dict.get('examyear_txt', '---')
     school_name = student_dict.get('school_name', '---')
@@ -1343,11 +1406,12 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
     lvl_name = student_dict.get('lvl_name') or '---'
 
     aan_article_txt = ' '.join((library.get('at_school', '-'), school_article))
-
+# sxm:
     # get different 'Landsbesluit' text for sxm and cur
     eex_article_list = []
     for x in range(1, 5):
-        key_str = 'eex_article0' + str(x) + ('_sxm' if is_sxm else '_cur')
+        # was: key_str = 'eex_article0' + str(x) + ('_sxm' if is_sxm else '_cur')
+        key_str = ''.join(('eex_article0', str(x), '_sxm'))
         eex_article_txt = library.get(key_str)
         if logging_on:
             logger.debug('     key_str: ' + str(key_str))
@@ -1358,7 +1422,7 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
     if logging_on:
         logger.debug('     eex_article_list: ' + str(eex_article_list))
 
-    # VOORLOPIGE CIJFERLIJST - print only when is_prelim, but do add line when not printing
+# VOORLOPIGE CIJFERLIJST - print only when is_prelim, but do add line when not printing
     line_height = 10
     txt_list = [{'txt': library.get('preliminary', '---'), 'font': 'Times-Roman', 'size': 16, 'align': 'c',
                  'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
@@ -1372,19 +1436,13 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
         logger.debug('     dep_name: ' + str(dep_name))
         logger.debug('          coord[1]: ' + str(coord[1] / mm))
 
-# PR202-06-16 print level on final gradelist, only when cur
-    # was: dont_print_leerweg = not level_req or not is_prelim
-    dont_print_leerweg = not level_req or is_sxm
+#  don't print level on final gradelist
+    dont_print_leerweg = not level_req or not is_prelim
 
-    # PR2023-06-16 was:  font_name = 'Times-Bold'
-    font_name = 'Garamond_Regular'
-    #font_name = 'Garamond_Bold'
-    font_name = 'Times-Roman'
-    # mail Esther 21 juni 2023 font size 12 ipv 11,5
-    # was: font_size = 11.5
+    font_name = 'Times-Bold'
+    # was: font_size = 14
     font_size = 12
-    # PR2023-06-20 email Esther: no uppercase
-    # lvl_name_upper = lvl_name.upper()
+
     txt_list = [{'txt': lvl_name, 'font': font_name, 'size': font_size, 'align': 'c',
                  'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, dont_print_leerweg)
@@ -1393,6 +1451,7 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
         logger.debug('     lvl_name: ' + str(lvl_name))
         logger.debug('          coord[1]: ' + str(coord[1] / mm))
 
+# - undersigned sxm:
     txt_list = [{'txt': library.get('undersigned', '---'), 'size': 11, 'x': 25 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
@@ -1400,12 +1459,13 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
         logger.debug('     undersigned: ')
         logger.debug('          coord[1]: ' + str(coord[1] / mm))
 
-    # full_name
-    line_height = 7 if is_sxm else 10
+# - full_name sxm:
+    #line_height = 7 if is_sxm else 10
+    line_height = 7
     txt_list = [{'txt': full_name, 'font': 'Times-Bold', 'size': 14, 'x': 25 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # born_on born_at
+# - born_on born_at
     txt_list = [
         {'txt': library.get('born_on', '---'), 'size': 11, 'x': 25 * mm},
         {'txt': birth_date, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm},
@@ -1413,12 +1473,13 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
         {'txt': birth_place, 'font': 'Times-Bold', 'size': 11, 'x': 87 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # in_the_examyear
-    line_height = 5 if is_sxm else 6
+# - in_the_examyear sxm:
+    # was: line_height = 5 if is_sxm else 6
+    line_height = 5
     txt_list = [{'txt': in_the_examyear_txt, 'size': 11, 'x': 25 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # sector_profiel
+# - sector_profiel sxm:
     txt_list = [
         {'txt': sector_profiel_label, 'size': 11, 'x': 25 * mm},
         {'txt': sector_profiel_txt, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm}]
@@ -1428,7 +1489,7 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
             {'txt': lvl_name, 'font': 'Times-Bold', 'size': 11, 'padding': 0, 'x': 115 * mm}])
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # aan_article
+# aan_article
     txt_list = [
         {'txt': aan_article_txt, 'size': 11, 'x': 25 * mm},
         {'txt': school_name, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm},
@@ -1436,24 +1497,27 @@ def draw_gradelist_page_header_sxm(canvas, coord, col_tab_list, library, student
         {'txt': country, 'font': 'Times-Bold', 'size': 11, 'x': 145 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en
+#  sxm:
+# De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en
     # first line has height 6, rest is 5
-    eex_article_lineheight = 5 if is_sxm else 6
+    # was: eex_article_lineheight = 5 if is_sxm else 6
+    eex_article_lineheight = 5
     for eex_article_txt in eex_article_list:
         txt_list = [{'txt': eex_article_txt, 'x': 25 * mm}]
         draw_text_one_line(canvas, coord, col_tab_list, eex_article_lineheight, 0, False, None, txt_list)
-        eex_article_lineheight = 4 if is_sxm else 5
+        # was: eex_article_lineheight = 4 if is_sxm else 5
+        eex_article_lineheight = 4
 # - end of draw_gradelist_page_header_sxm
 
 
-def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_sxm, is_lexschool):
+def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_lexschool, examyear_int):
     # loop through rows of page_header
-    # PR2023-06-21 ETE wants changes - make separate function for cur to be on the save side
+    # PR2023-06-21 ETE wants changes - make separate function for cur to be on the safe side
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- draw_gradelist_page_header_cur -----')
-        logger.debug('     is_sxm: ' + str(is_sxm))
+        logger.debug('     examyear_int: ' + str(examyear_int))
 
     examyear_code = student_dict.get('examyear_txt', '---')
     school_name = student_dict.get('school_name', '---')
@@ -1483,10 +1547,11 @@ def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student
 
     aan_article_txt = ' '.join((library.get('at_school', '-'), school_article))
 
-    # get different 'Landsbesluit' text for sxm and cur
+# cur: get 'Landsbesluit' text for cur
     eex_article_list = []
     for x in range(1, 5):
-        key_str = 'eex_article0' + str(x) + ('_sxm' if is_sxm else '_cur')
+        # was: key_str = 'eex_article0' + str(x) + ('_sxm' if is_sxm else '_cur')
+        key_str = ''.join(('eex_article0', str(x), '_cur'))
         eex_article_txt = library.get(key_str)
         if logging_on:
             logger.debug('     key_str: ' + str(key_str))
@@ -1505,11 +1570,11 @@ def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student
                  'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, not is_prelim)
 
-# department name
+# cur: department name
     line_height = 10 - 3
     # PR2023-06-30 depname is printed in upper case
-    dep_name_upper = dep_name.upper()
-    txt_list = [{'txt': dep_name_upper, 'font': 'Times-Bold', 'size': 16, 'align': 'c',
+    dep_name_txt = dep_name.upper() if examyear_int >= 2023 else dep_name
+    txt_list = [{'txt': dep_name_txt, 'font': 'Times-Bold', 'size': 16, 'align': 'c',
                  'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, not is_prelim)
 
@@ -1518,9 +1583,12 @@ def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student
         logger.debug('          coord[1]: ' + str(coord[1] / mm))
         # coord[1]: 262.0
 
-# PR202-06-16 print level on final gradelist, only when cur
+# PR202-06-16 from 2023: print level on final gradelist, only when cur
     # was: dont_print_leerweg = not level_req or not is_prelim
-    dont_print_leerweg = not level_req or is_sxm
+    if examyear_int < 2023:
+        dont_print_leerweg = not level_req or not is_prelim
+    else:
+        dont_print_leerweg = not level_req
 
     # PR2023-06-16 was:  font_name = 'Times-Bold'
     font_name = 'Garamond_Regular'
@@ -1551,12 +1619,13 @@ def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student
         logger.debug('          coord[1]: ' + str(coord[1] / mm))
         # coord[1]: 242.0
 
-    # full_name
-    line_height = 7 if is_sxm else 10
+# cur: full_name
+    # was: line_height = 7 if is_sxm else 10
+    line_height = 10
     txt_list = [{'txt': full_name, 'font': 'Times-Bold', 'size': 14, 'x': 25 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # born_on born_at
+# cur: born_on born_at
     txt_list = [
         {'txt': library.get('born_on', '---'), 'size': 11, 'x': 25 * mm},
         {'txt': birth_date, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm},
@@ -1564,12 +1633,13 @@ def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student
         {'txt': birth_place, 'font': 'Times-Bold', 'size': 11, 'x': 87 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # in_the_examyear
-    line_height = 5 if is_sxm else 6
+# cur: in_the_examyear
+    # was: line_height = 5 if is_sxm else 6
+    line_height = 6
     txt_list = [{'txt': in_the_examyear_txt, 'size': 11, 'x': 25 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # sector_profiel
+# cur: sector_profiel
     txt_list = [
         {'txt': sector_profiel_label, 'size': 11, 'x': 25 * mm},
         {'txt': sector_profiel_txt, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm}]
@@ -1579,7 +1649,7 @@ def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student
             {'txt': lvl_name, 'font': 'Times-Bold', 'size': 11, 'padding': 0, 'x': 115 * mm}])
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # aan_article
+# cur: aan_article
     txt_list = [
         {'txt': aan_article_txt, 'size': 11, 'x': 25 * mm},
         {'txt': school_name, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm},
@@ -1587,13 +1657,16 @@ def draw_gradelist_page_header_cur(canvas, coord, col_tab_list, library, student
         {'txt': country, 'font': 'Times-Bold', 'size': 11, 'x': 145 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
-    # De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en
+# cur: De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en
     # first line has height 6, rest is 5
-    eex_article_lineheight = 5 if is_sxm else 6
+    # was: eex_article_lineheight = 5 if is_sxm else 6
+    eex_article_lineheight = 6
     for eex_article_txt in eex_article_list:
         txt_list = [{'txt': eex_article_txt, 'x': 25 * mm}]
         draw_text_one_line(canvas, coord, col_tab_list, eex_article_lineheight, 0, False, None, txt_list)
-        eex_article_lineheight = 4 if is_sxm else 5
+
+        # was: eex_article_lineheight = 4 if is_sxm else 5
+        eex_article_lineheight = 5
 # - end of draw_gradelist_page_header_cur
 
 
@@ -1951,8 +2024,8 @@ def draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_di
 # - end of draw_gradelist_footnote_row
 
 
-def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, is_pok, library, student_dict, auth1_name,
-                                 auth2_name, printdate, reg_number):
+def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_pok, library, student_dict, auth1_name,
+                                 auth2_name, printdate, examyear_int, reg_number):
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
     """
@@ -1969,7 +2042,7 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
 
     # when cur: bottom = 15 mm, when sxm: bottom = 18 mm
 
-# - place, date
+# - place, date sxm:
     # printdate is retrieved from upload_dict and saved in school_settings
     printdate_formatted = None
     if printdate:
@@ -1992,6 +2065,7 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
     line_height = 7
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 1.25, False, None, txt_list)
 
+# sxm:
 # - draw name of chairperson and secretary
     # - place the text of the name of the chairperson / secretary 40 mm under  the line chairperson / secretary
     # but no lower than maximum
@@ -2012,13 +2086,16 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
     pos_y_auth = coord[1] - line_height * mm
     # let signature never go lower than just above regnr line
 
+# sxm:
     # when cur: bottom = 15 mm, when sxm: bottom = 18 mm
-    min_pos_y_auth = 28 * mm if is_sxm else 25 * mm
+    # was: min_pos_y_auth = 28 * mm if is_sxm else 25 * mm
+    min_pos_y_auth = 28 * mm
     if pos_y_auth < min_pos_y_auth:
         pos_y_auth = min_pos_y_auth
     coord_auth = [coord[0], pos_y_auth]
     draw_text_one_line(canvas, coord_auth, col_tab_list, 0, 1.25, False, None, txt_list)
 
+# sxm:
 # - draw label 'chairperson' and 'secretary' under the name
     pos_y_auth_label = pos_y_auth - 4 * mm
     coord_auth_label = [coord[0], pos_y_auth_label]
@@ -2039,7 +2116,7 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
         logger.debug('    coord: ' + str(coord))
         logger.debug('    coord_auth: ' + str(coord_auth))
         logger.debug('    bottom: ' + str(bottom))
-
+# sxm:
 # - regnumber and idnumber are just above lower line of rectangle
     # PR2023-06-20 label added
     id_number = student_dict.get('idnumber') or '---'
@@ -2064,8 +2141,8 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm
 # - end of draw_gradelist_signature_row_sxm
 
 
-def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, is_pok, library, student_dict, auth1_name,
-                                 auth2_name, printdate, reg_number):
+def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_pok, library, student_dict, auth1_name,
+                                 auth2_name, printdate, examyear_int, reg_number):
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
     """
@@ -2082,7 +2159,7 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
 
     # when cur: bottom = 15 mm, when sxm: bottom = 18 mm
 
-    # - place, date
+# - cur: place, date
     # printdate is retrieved from upload_dict and saved in school_settings
     printdate_formatted = None
     if printdate:
@@ -2094,44 +2171,37 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
     # coord[0] = 15 * mm
     # col_tab_list = (10, 90, 110, 130, 150, 170, 180)
     x = coord[0]
-    # PR2023-06-22 whatsapp Estehr: outline place and auth1 as in header > set padding - 4
-    #txt_list = [
-    #    {'txt': library.get('place', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
-    #     'x': x + col_tab_list[0] * mm},
-    #    {'txt': student_dict.get('country', '---'), 'font': 'Times-Bold', 'size': 10, 'padding': 18,
-    #     'x': x + col_tab_list[0] * mm},
-    #    {'txt': library.get('date', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
-    #     'x': x + col_tab_list[1] * mm},
-    #    {'txt': printdate_formatted, 'font': 'Times-Bold', 'size': 10, 'padding': 18, 'x': x + col_tab_list[1] * mm},
-    #]
+
+    # PR2023-06-22 whatsapp Esther: outline place and auth1 as in header > set padding 0 instead of 4
+    padding_place = 4 if examyear_int < 2023 else 0
+    padding_country = 18 if examyear_int < 2023 else 14
+
     txt_list = [
-        {'txt': library.get('place', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 0,
+        {'txt': library.get('place', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': padding_place,
          'x': x + col_tab_list[0] * mm},
-        {'txt': student_dict.get('country', '---'), 'font': 'Times-Bold', 'size': 10, 'padding': 14,
+        {'txt': student_dict.get('country', '---'), 'font': 'Times-Bold', 'size': 10, 'padding': padding_country,
          'x': x + col_tab_list[0] * mm},
         {'txt': library.get('date', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
          'x': x + col_tab_list[1] * mm},
-        {'txt': printdate_formatted, 'font': 'Times-Bold', 'size': 10, 'padding': 18, 'x': x + col_tab_list[1] * mm},
+        {'txt': printdate_formatted, 'font': 'Times-Bold', 'size': 10, 'padding': 18,
+         'x': x + col_tab_list[1] * mm},
     ]
-
 
     line_height = 7
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 1.25, False, None, txt_list)
 
-    # - draw name of chairperson and secretary
+# - cur: draw name of chairperson and secretary
     # - place the text of the name of the chairperson / secretary 40 mm under  the line chairperson / secretary
     # but no lower than maximum
 
     # PR2023-06-22 whatsapp Esther: outline place and auth1 as in header > set padding - 4
-    #txt_list = [
-    #    {'txt': auth1_name, 'font': 'Times-Bold', 'size': 10, 'padding': 4,
-    #     'x': x + col_tab_list[0] * mm}
-    #]
+    padding_auth1_name = 4 if examyear_int < 2023 else 0
     txt_list = [
-        {'txt': auth1_name, 'font': 'Times-Bold', 'size': 10, 'padding': 0,
+        {'txt': auth1_name, 'font': 'Times-Bold', 'size': 10, 'padding': padding_auth1_name,
          'x': x + col_tab_list[0] * mm}
     ]
-    # pok has no auth2_name, skip when auth2_name has no value
+
+# - cur: pok has no auth2_name, skip when auth2_name has no value
     if auth2_name:
         txt_list.append(
             {'txt': auth2_name, 'font': 'Times-Bold', 'size': 10, 'padding': 4,
@@ -2143,26 +2213,25 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
     # let signature never go lower than just above regnr line
 
     # when cur: bottom = 15 mm, when sxm: bottom = 18 mm
-    min_pos_y_auth = 28 * mm if is_sxm else 25 * mm
+    # was: min_pos_y_auth = 28 * mm if is_sxm else 25 * mm
+    min_pos_y_auth = 25 * mm
     if pos_y_auth < min_pos_y_auth:
         pos_y_auth = min_pos_y_auth
     coord_auth = [coord[0], pos_y_auth]
     draw_text_one_line(canvas, coord_auth, col_tab_list, 0, 1.25, False, None, txt_list)
 
-# - draw label 'chairperson' and 'secretary' under the name
+# - cur: draw label 'chairperson' and 'secretary' under the name
     pos_y_auth_label = pos_y_auth - 4 * mm
     coord_auth_label = [coord[0], pos_y_auth_label]
 
-    # PR2023-06-22 whatsapp Estehr: outline place and auth1 as in header > set padding - 4
-    #txt_list = [
-    #    {'txt': library.get('chairperson', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
-    #     'x': x + col_tab_list[0] * mm},
-    #]
+    # PR2023-06-22 whatsapp Esther: outline place and auth1 as in header > set padding 0 instead of 4
+    padding_chairperson = 4 if examyear_int < 2023 else 0
     txt_list = [
-        {'txt': library.get('chairperson', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 0,
+        {'txt': library.get('chairperson', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': padding_chairperson,
          'x': x + col_tab_list[0] * mm},
     ]
-    # pok has no auth2_name, skip when auth2_name has no value
+
+# - cur: pok has no auth2_name, skip when auth2_name has no value
     if auth2_name:
         txt_list.append(
             {'txt': library.get('secretary', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
@@ -2179,8 +2248,16 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
     # PR2023-06-20 label added
     # col_tab_list = (10, 90, 110, 130, 150, 170, 180)
     id_number = student_dict.get('idnumber') or '---'
-    regnumber_with_lbl = ' '.join((library.get('reg_nr'), reg_number))
-    idnumber_with_lbl = ' '.join((library.get('id_nr'), id_number))
+
+    # PR2023-07-04 debug: Friedeman Hasselbaink Jacques Ferrandi: cannot print gradelist 2022.
+    # Error: sequence item 0: expected str instance, NoneType found
+    # because library 2022 has no key 'reg_nr'
+    # solved by adding if regnumber_lbl and if idnumber_lbl
+    regnumber_lbl = library.get('reg_nr')
+    idnumber_lbl = library.get('id_nr')
+
+    regnumber_with_lbl = ' '.join((regnumber_lbl, reg_number)) if regnumber_lbl else reg_number
+    idnumber_with_lbl = ' '.join((idnumber_lbl, id_number)) if idnumber_lbl else id_number
 
     # PR2023-06-21 Esther: rightoutline idnumber
     # was: 'x': x + col_tab_list[1] * mm},
@@ -2194,17 +2271,12 @@ def draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm
 
     else:
 
-        x_idnumber = x + (col_tab_list[1] + 48) * mm
+        x_idnumber = x + col_tab_list[1] * mm if examyear_int < 2023 else x + (col_tab_list[1] + 48) * mm
+        padding_regnumber = 4 if examyear_int < 2023 else 0
         # PR2023-06-22 whatsapp Esther: outline place and auth1 as in header > set regnumber_with_lbl padding = 0
-        #txt_list = [
-        #    {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
-        #     'x': x + col_tab_list[0] * mm},
-        #    {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
-        #     'x': x_idnumber},
-        #]
 
         txt_list = [
-            {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 0,
+            {'txt': regnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': padding_regnumber,
              'x': x + col_tab_list[0] * mm},
             {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,
              'x': x_idnumber},
@@ -2299,7 +2371,7 @@ def draw_red_cross(canvas, x, y):
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # draw pok
 
-def draw_pok(canvas, library, student_dict, auth1_pk, printdate, request):
+def draw_pok(canvas, library, student_dict, auth1_pk, printdate, examyear_int, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -2317,7 +2389,8 @@ def draw_pok(canvas, library, student_dict, auth1_pk, printdate, request):
             usergroups__contains='auth1'
         )
         if auth1:
-            auth1_name = auth1.last_name
+            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
+            auth1_name = auth1.last_name.strip() if auth1.last_name else ''
 
         if logging_on:
             logger.debug('     auth1: ' + str(auth1))
@@ -2351,7 +2424,7 @@ def draw_pok(canvas, library, student_dict, auth1_pk, printdate, request):
 
     col_tab_list = (4, 84, 104, 124, 144, 164, 174)
 
-# - draw page header
+# - pok: draw page header
     draw_pok_page_header(
         canvas=canvas,
         border=border,
@@ -2363,23 +2436,51 @@ def draw_pok(canvas, library, student_dict, auth1_pk, printdate, request):
         is_lexstudent=is_lexstudent
     )
 
-# - draw column header
+# - pok: draw column header
     draw_gradelist_colum_header(canvas, coord, col_tab_list, library, is_lexstudent)
 
-# - loop through subjects
+# - pok: loop through subjects
     # subjects_dict = [{'subj_name': 'Algemene sociale wetenschappen', 'sesr_grade': '6.3', 'pece_grade': None, 'final_grade': '6'}
     subject_list = student_dict.get('subjects')
     for subj_dict in subject_list:
         draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict)
 
-# - draw page footer
+# - pok: draw footnote
     draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexstudent)
 
-# - draw page signatures
+# - pok: draw signatures and footer
     if is_sxm:
-        draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_sxm, True, library, student_dict, auth1_name, None, printdate, reg_number)
+        draw_gradelist_signature_row_sxm(
+            canvas=canvas,
+            border=border,
+            coord=coord,
+            col_tab_list=col_tab_list,
+            is_pok=True,
+            library=library,
+            student_dict=student_dict,
+            auth1_name=auth1_name,
+            auth2_name=None,
+            printdate=printdate,
+            examyear_int=examyear_int,
+            reg_number=reg_number
+        )
+
     else:
-        draw_gradelist_signature_row_cur(canvas, border, coord, col_tab_list, is_sxm, True, library, student_dict, auth1_name, None, printdate, reg_number)
+        draw_gradelist_signature_row_cur(
+            canvas=canvas,
+            border=border,
+            coord=coord,
+            col_tab_list=col_tab_list,
+            is_pok=True,
+            library=library,
+            student_dict=student_dict,
+            auth1_name=auth1_name,
+            auth2_name=None,
+            printdate=printdate,
+            examyear_int=examyear_int,
+            reg_number=reg_number
+        )
+
 # - end of draw_pok
 
 

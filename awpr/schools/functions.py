@@ -4,8 +4,11 @@ from django.db import connection
 from django.utils.translation import gettext_lazy as _
 # PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
 
+from django.utils import timezone
+
 from awpr import constants as c
 from awpr import settings as s
+from awpr import functions as af
 
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -254,12 +257,65 @@ def copy_sectors_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
     return mapped_sectors
 # - end of copy_sectors_from_prev_examyear
 
-
-def copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
-    # copy schools from previous examyear PR2021-04-25 PR2021-08-06 PR2022-08-01
-    logging_on = False  # s.LOGGING_ON
+def map_schools_from_prev_examyearNIU(prev_examyear_pk, new_examyear_pk):
+    # map school_id from previous examyear to school_id from this examyear PR2023-07-06
+    # used in copy_cluster
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- copy_schools_from_prev_examyear -------')
+        logger.debug(' ------- map_schools_from_prev_examyear -------')
+        logger.debug('    prev_examyear_pk row: ' + str(prev_examyear_pk))
+        logger.debug('    new_examyear_pk row: ' + str(new_examyear_pk))
+
+    mapped_schools = {}
+    sql_prev_school = ''.join((
+            "SELECT id, base_id FROM schools_school WHERE examyear_id=", str(prev_examyear_pk)
+        ))
+    if logging_on:
+        with connection.cursor() as prev_cursor:
+            prev_cursor.execute(sql_prev_school)
+            for row in af.dictfetchall(prev_cursor):
+                logger.debug('    sql_prev_school row: ' + str(row))
+
+    sql_this_school = ''.join((
+        "SELECT id, base_id FROM schools_school WHERE examyear_id=", str(new_examyear_pk)
+        ))
+    if logging_on:
+        with connection.cursor() as this_cursor:
+            this_cursor.execute(sql_this_school)
+            for row in af.dictfetchall(this_cursor):
+                logger.debug('    sql_this_school row: ' + str(row))
+
+    sql = ''.join(("WITH prev_school AS (", sql_prev_school, "), this_school AS (", sql_this_school, ") ",
+                "SELECT prev_school.id, this_school.id, sb.id ",
+                "FROM schools_schoolbase as sb ",
+                "LEFT JOIN prev_school ON (prev_school.base_id = sb.id) ",
+                "LEFT JOIN this_school ON (this_school.base_id = sb.id)"
+                   ))
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                mapped_schools[row[0]] = row[1]
+
+                if logging_on:
+                    logger.debug('    row: ' + str(row))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('    mapped_schools: ' + str(mapped_schools))
+
+    return mapped_schools
+# - end of map_schools_from_prev_examyear
+
+
+def copy_schools_from_prev_examyearOLD(prev_examyear_pk, new_examyear_pk, log_list):
+    # copy schools from previous examyear PR2021-04-25 PR2021-08-06 PR2022-08-01 PR2023-07-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_schools_from_prev_examyearOLD -------')
 
     mapped_schools = {}
 
@@ -313,7 +369,85 @@ def copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
     if logging_on:
         logger.debug('mapped_schools: ' + str(mapped_schools))
     return mapped_schools
+# - end of copy_schools_from_prev_examyearOLD
+
+
+##############
+def copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk):
+    # copy school records from previous examyear PR2023-07-06
+    # cannot map schools from RETURNING fields only,
+    # therefore: first create mapped_schoolbases with key: base_id and value: new_school_id
+    # then create mapped_schools with with key: prev_school_id and value: mapped_schoolbases.value
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_schools_from_prev_examyear -------')
+
+    mapped_schools = {}
+    mapped_schoolbases = {}
+
+    tobecopied_field_list = ''.join((
+        "base_id, name, abbrev, article, telephone, "
+        "depbases, otherlang, ",
+        "isdayschool, iseveningschool, islexschool, ",
+        "modifiedat, modifiedby_id, "
+    ))
+
+    default_field_list = "locked, lockedat, no_order, activated, activatedat"
+    # NIU, tobe deprecated: " no_order, activated, activatedat"
+    default_values_list = "FALSE, NULL, FALSE, FALSE, NULL "
+    try:
+        sql_list = [
+        "INSERT INTO schools_school(",
+            "examyear_id, ",
+            tobecopied_field_list,
+            default_field_list,
+
+        ") SELECT ",
+            str(new_examyear_pk), ", ",
+            tobecopied_field_list,
+            default_values_list,
+
+        "FROM schools_school AS prev_school ",
+        "WHERE prev_school.examyear_id=", str(prev_examyear_pk), "::INT ",
+        "RETURNING base_id, id;"
+        ]
+
+        sql = ''.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            for row in cursor.fetchall():
+                if logging_on:
+                    logger.debug('row: ' + str(row))
+                mapped_schoolbases[row[0]] = row[1]
+
+        if mapped_schoolbases:
+            prev_sql = ''.join((
+                "SELECT base_id, id ",
+                "FROM schools_school ",
+                "WHERE examyear_id=", str(prev_examyear_pk), "::INT;"
+            ))
+
+            with connection.cursor() as prev_cursor:
+                prev_cursor.execute(prev_sql)
+                for row in prev_cursor.fetchall():
+                    if logging_on:
+                        logger.debug('prev_row: ' + str(row))
+                    if row[0] in mapped_schoolbases:
+                        mapped_schools[row[1]] = mapped_schoolbases[row[0]]
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('    mapped_schools: ' + str(mapped_schools))
+    return mapped_schools
 # - end of copy_schools_from_prev_examyear
+
+
+###################
+
 
 
 def copy_subjecttypes_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list):
@@ -507,7 +641,7 @@ def copy_schemes_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels
 # - end of copy_schemes_from_prev_examyear
 
 
-def copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list):
+def copy_schemeitems_from_prev_examyearOLD(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list):
     # copy schemeitems from previous examyear PR2021-04-25 PR2021-08-06 PR2022-03-11 PR2022-08-01
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -607,6 +741,147 @@ def copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped
         logger.debug('    log_list: ' + str(log_list))
     return mapped_schemeitems
 # - end of copy_schemeitems_from_prev_examyear
+
+def copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list):
+    # copy schemeitems records from previous examyear PR2023-07-07
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_schemeitems_from_prev_examyear -------')
+        logger.debug('    mapped_schemes: ' + str(mapped_schemes))
+        logger.debug('    mapped_subjects: ' + str(mapped_subjects))
+        logger.debug('    mapped_subjecttypes: ' + str(mapped_subjecttypes))
+
+
+
+    # PR2023-07-07 notatdayschool is moved from schemeitem to subject
+    # update notatdayschool subject when schemeitem.notatdayschool = True
+
+    # total 28 fields
+    tobecopied_fields = ''.join((
+        "scheme_id, subject_id, subjecttype_id, "                # 3
+        "ete_exam, otherlang, no_order, ",                       # 3
+        "gradetype, weight_se, weight_ce, multiplier, ",         # 4
+        "is_mandatory, is_mand_subj_id, is_combi, ",             # 3
+        "extra_count_allowed, extra_nocount_allowed, ",          # 2
+        "has_practexam, is_core_subject, is_mvt, is_wisk, ",     # 4
+        "rule_grade_sufficient, rule_gradesuff_notatevlex, ",    # 2
+        "sr_allowed, no_ce_years, thumb_rule, studyloadhours, ", # 4
+        "notatdayschool, "                                       # 1    # PR2022-08-22 tobe deprecated, moved to subject
+
+    ))
+    prev_fields = "si.modifiedby_id, si.modifiedat "                              # 2
+    insert_fields = "modifiedby_id, modifiedat"                              # 2
+    try:
+        sql_prev_schemeitems = ' '.join(
+            ["SELECT ", tobecopied_fields, prev_fields,
+             "FROM subjects_schemeitem AS si",
+             "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+             "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+             "WHERE dep.examyear_id=", str(prev_examyear_pk)
+             ])
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql_prev_schemeitems)
+            rows = cursor.fetchall()
+
+            #  from https://www.postgresqltutorial.com/postgresql-insert-multiple-rows/
+            value_list = []
+            value_str = None
+
+            tobeupdated_notatdayschool_subjects = []
+
+            for row in rows:
+                if logging_on and False:
+                    logger.debug('    sql_prev_clusters row: ' + str(row))
+                if row[0] in mapped_schemes and \
+                        row[1] in mapped_subjects and \
+                        row[2] in mapped_subjecttypes:
+
+                    # update notatdayschool subject when schemeitem.notatdayschool = True
+                    if row[25]:
+                        tobeupdated_notatdayschool_subjects.append(mapped_subjects[row[1]])
+
+                    value_list.append(''.join((
+                                            '(',
+                                            ', '.join((
+                                               str(mapped_schemes[row[0]]),
+                                               str(mapped_subjects[row[1]]),
+                                               str(mapped_subjecttypes[row[2]]),
+                                               str(row[3]),        # ete_exam BooleanField
+                                               ''.join(("'", row[4], "'")) if row[4] else "NULL",        # otherlang CharField(null=True)
+                                               str(row[5]),        # no_order BooleanField
+                                               str(row[6]),        # gradetype PositiveSmallIntegerField
+                                               str(row[7]),        # weight_se PositiveSmallIntegerField
+                                               str(row[8]),        # weight_ce PositiveSmallIntegerField
+                                               str(row[9]),        # multiplier PositiveSmallIntegerField
+                                               str(row[10]),       # is_mandatory BooleanField
+                                               str(mapped_subjects[row[11]]) if row[11] and row[11] in mapped_subjects else "NULL",        # is_mand_subj_id ForeignKey(Subject
+                                               str(row[12]),        # is_combi BooleanField
+                                               str(row[13]),        # extra_count_allowed BooleanField
+                                               str(row[14]),        # extra_nocount_allowed BooleanField
+                                               str(row[15]),        # has_practexam BooleanField
+                                               str(row[16]),        # is_core_subject BooleanField
+                                               str(row[17]),        # is_mvt BooleanField
+                                               str(row[18]),        # is_wisk BooleanField
+                                               str(row[19]),        # rule_grade_sufficient BooleanField
+                                               str(row[20]),        # rule_gradesuff_notatevlex BooleanField
+                                               str(row[21]),        # sr_allowed BooleanField
+                                               ''.join(("'", row[22], "'")) if row[22] else "NULL",        # no_ce_years CharField(null=True)
+                                               "FALSE",             # thumb_rule BooleanField dont copy but set default FALSE
+                                               str(row[24]) if row[24] else "NULL",         # studyloadhours PositiveSmallIntegerField(null=True)
+                                               "FALSE",             # notatdayschool tobe deprecated, moved to subject
+                                               str(row[26]) if row[26] else "NULL",       # modifiedby_id
+                                               ''.join(("'", str(row[27] if row[27] else timezone.now()), "'"))       # modifiedat
+                                            )),
+                                            ')'
+                                        )))
+
+            if logging_on:
+                for row in value_list:
+                    logger.debug('    value_list row: ' + str(row))
+
+            if value_list:
+                value_str = ', '.join(value_list)
+
+            if value_str:
+                sql_list = [
+                    "INSERT INTO subjects_schemeitem (", tobecopied_fields, insert_fields, ") ",
+                    "VALUES",
+                    value_str,
+                    "RETURNING id;"
+                ]
+                sql = ' '.join(sql_list)
+
+                if logging_on:
+                    logger.debug('    sql row: ' + str(sql))
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+
+                    if logging_on:
+                        rows = cursor.fetchall()
+                        for row in rows:
+                            logger.debug('   cluster row: ' + str(row))
+
+            if tobeupdated_notatdayschool_subjects:
+                sql = ''.join((
+                    "UPDATE subjects_subject SET notatdayschool = TRUE ",
+                    "WHERE id IN (SELECT UNNEST(ARRAY", str(tobeupdated_notatdayschool_subjects), "::INT[]))"
+                    "RETURNING id;"
+                ))
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    if logging_on:
+                        rows = cursor.fetchall()
+                        for row in rows:
+                            logger.debug('   tobeupdated_notatdayschool_subjects row: ' + str(row))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+# - end of copy_schemeitems_from_prev_examyear
+
+
 
 ##############################
 
@@ -933,6 +1208,94 @@ def copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, 
 
 # - end of copy_exams_from_prev_examyear
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+def copy_clusters_from_prev_examyear(prev_examyear_pk, mapped_schools, mapped_deps, mapped_subjects):
+    # PR2023-07-06
+    # function creates list of clusters of previous year,
+    # replaces school_id, department_id, subject_id of prev year to id's of this year
+    # and copies fields to cluster of new examyear
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== copy_clusters_from_prev_examyear ============= ')
+        logger.debug('    prev_examyear_pk: ' + str(prev_examyear_pk) + ' ' + str(type(prev_examyear_pk)))
+        logger.debug('    mapped_schools: ' + str(mapped_schools) + ' ' + str(type(mapped_schools)))
+        logger.debug('    mapped_deps: ' + str(mapped_deps) + ' ' + str(type(mapped_deps)))
+        logger.debug('    mapped_subjects: ' + str(mapped_subjects) + ' ' + str(type(mapped_subjects)))
+
+    try:
+        sql_prev_clusters = ' '.join(
+            ["SELECT cls.school_id, cls.department_id, cls.subject_id, cls.name, cls.modifiedby_id, cls.modifiedat ",
+             "FROM subjects_cluster AS cls",
+             "INNER JOIN schools_department AS dep ON (dep.id = cls.department_id)",
+             "WHERE dep.examyear_id=", str(prev_examyear_pk)
+             ])
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql_prev_clusters)
+            rows = cursor.fetchall()
+
+
+            #  from https://www.postgresqltutorial.com/postgresql-insert-multiple-rows/
+            value_list = []
+            value_str = None
+
+            for row in rows:
+                if logging_on:
+                    logger.debug('    sql_prev_clusters row: ' + str(row))
+                if row[0] in mapped_schools and \
+                        row[1] in mapped_deps and \
+                        row[2] in mapped_subjects:
+                    new_school_id = mapped_schools[row[0]]
+                    new_dep_id = mapped_deps[row[1]]
+                    new_subject_id = mapped_subjects[row[2]]
+
+                    name_str = "'" + str(row[3]) + "'" if row[3] else "'---'"
+                    modifiedby_pk_str = str(row[4]) + "::INT" if row[4] else "NULL"
+                    modifiedat_str = "'" + str(row[5]) + "'" if row[5] else "'" + str(timezone.now()) + "'"
+
+                    value_list.append(''.join(('(',
+                                               str(new_school_id) , ', ',
+                                               str(new_dep_id), ', ',
+                                               str(new_subject_id), ', ',
+                                               name_str, ', ',
+                                               modifiedby_pk_str, ', ',
+                                               modifiedat_str,
+                                               ')')))
+
+            if logging_on:
+                for row in value_list:
+                    logger.debug('    value_list row: ' + str(row))
+
+            if value_list:
+                value_str = ', '.join(value_list)
+
+            if value_str:
+                sql_list = [
+                    "INSERT INTO subjects_cluster (school_id, department_id, subject_id, name, modifiedby_id, modifiedat) ",
+
+                    "VALUES",
+                    value_str,
+                    "RETURNING subjects_cluster.id;"
+                ]
+                sql = ' '.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+
+                    if logging_on:
+                        rows = cursor.fetchall()
+                        for row in rows:
+                            logger.debug('   cluster row: ' + str(row))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+# --- end of copy_clusters_from_prev_examyear
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%
 
 def copy_packages_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list):
     # copy packages from previous examyear PR2021-04-25 PR2021-08-06 PR2022-08-01

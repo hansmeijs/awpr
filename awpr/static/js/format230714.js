@@ -240,13 +240,14 @@
 
 
 
-//=========  f_format_status_grade  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24 PR2023-06-07
+//=========  f_format_status_grade  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24 PR2023-07-08
     function f_format_status_grade(field_name, fld_value, data_dict) {
-    //only uses in secretexam, must also replace UpdateFieldStatus in grades.js
-        //console.log("=========  f_format_status_grade =========");
-        //console.log("    field_name", field_name);
-        //console.log("    fld_value", fld_value);
-        //console.log("    data_dict", data_dict);
+    //only used in secretexam, must also replace UpdateFieldStatus in grades.js
+        console.log("=========  f_format_status_grade =========");
+        console.log("    field_name", field_name);
+        console.log("    fld_value", fld_value);
+        console.log("    data_dict", data_dict);
+        console.log("    permit_dict", permit_dict);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
@@ -284,6 +285,12 @@
                 const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
                 const is_blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
 
+        console.log("    auth1by_id", auth1by_id);
+        console.log("    auth2by_id", auth2by_id);
+        console.log("    auth3by_id", auth3by_id);
+        console.log("    auth4by_id", auth4by_id);
+        console.log("    is_blocked", is_blocked);
+
                 // auth3_must_sign
                 // - auth3 does not have to sign when secret exam (aangewezen examen)
                 // - auth3 also does not have to sign when exemption (vrijstelling) PR2023-02-02
@@ -294,6 +301,7 @@
                 // - PR2023-06-20 secret exams olny have to be approved by auth1 and auth2
                 const auth3_must_sign = (data_dict.examperiod !== 4 && !data_dict.secret_exam);
 
+        console.log("    auth3_must_sign", auth3_must_sign);
                 // - auth4 does not have to sign when secret exam (aangewezen examen) or when se-grade
                 // - auth4 does not have to sign when se-grade
                 // - auth4 also does not have to sign when exemption (vrijstelling) PR2023-02-02
@@ -305,6 +313,7 @@
                 const auth4_must_sign = (!["pe_status", "ce_status"].includes(field_name) &&
                                         data_dict.examperiod !== 4 && !data_dict.secret_exam);
 
+        console.log("    auth4_must_sign", auth4_must_sign);
                 className = f_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
                 filter_value = className;
 
@@ -316,22 +325,18 @@
                     formatted_publ_modat = format_datetime_from_datetimeJS(loc, modified_dateJS);
                 };
 
+                if (data_dict.secret_exam){
+                    title_list.push(loc.Designated_exam);
+                };
+
                 if (is_blocked) {
                     if (published_id){
                         title_list.push(...[loc.unlocked_11, loc.unlocked_12 + formatted_publ_modat, loc.unlocked_13]);
                     } else {
                         title_list.push(...[loc.unlocked_01, loc.unlocked_02, loc.unlocked_03]);
                     };
-
-                } else {
-
-
                 };
-                if (data_dict.secret_exam){
-
-                    title_list.push(loc.Designated_exam);
-                } else {
-
+                if (!data_dict.secret_exam){
 
                     if (is_blocked) {
                         if (published_id){
@@ -339,28 +344,12 @@
                         } else {
                             title_list.push(...[loc.unlocked_01, loc.unlocked_02, loc.unlocked_03]);
                         };
-
-                    } else if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
-                        title_list.push(loc.Approved_by + ": ");
-
-                        for (let i = 1; i < 5; i++) {
-                            const auth_id = (i === 1) ? auth1by_id :
-                                            (i === 2) ? auth2by_id :
-                                            (i === 3) ? auth3by_id :
-                                            (i === 4) ?  auth4by_id : null;
-                            const prefix_auth = prefix_str + "_auth" + i;
-                            if(auth_id){
-                                const function_str = (i === 1) ?  loc.Chairperson :
-                                                    (i === 2) ? loc.Secretary :
-                                                    (i === 3) ?  loc.Examiner :
-                                                    (i === 4) ? loc.Corrector : "";
-                                const field_usr = prefix_auth + "by_usr";
-                                const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
-
-                                title_list.push(function_str.toLowerCase() + ": " + auth_usr);
-                            };
-                        };
                     };
+                };
+                // show approved by, not when secret_exam and role is school or corrector
+                const titletext_approvedby = f_titletext_approvedby(data_dict, prefix_str, auth1by_id, auth2by_id, auth3by_id, auth4by_id);
+                if (titletext_approvedby){
+                    title_list.push(titletext_approvedby);
                 };
             };
         };
@@ -369,6 +358,35 @@
         return [className, title_text, filter_value];
     };  // f_format_status_grade
 
+//=========  f_titletext_approvedby  ================ PR2023-07-08
+    function f_titletext_approvedby(data_dict, prefix_str, auth1by_id, auth2by_id, auth3by_id, auth4by_id ) {
+        // show approved by, not when secret_exam and role is school or corrector
+        const title_list = [];
+        if (!data_dict.secret_exam || permit_dict.requsr_role >= 32){
+            if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
+                title_list.push(loc.Approved_by + ": ");
+
+                for (let i = 1; i < 5; i++) {
+                    const auth_id = (i === 1) ? auth1by_id :
+                                    (i === 2) ? auth2by_id :
+                                    (i === 3) ? auth3by_id :
+                                    (i === 4) ?  auth4by_id : null;
+                    const prefix_auth = prefix_str + "_auth" + i;
+                    if(auth_id){
+                        const function_str = (i === 1) ?  loc.Chairperson :
+                                            (i === 2) ? loc.Secretary :
+                                            (i === 3) ?  loc.Examiner :
+                                            (i === 4) ? loc.Corrector : "";
+                        const field_usr = prefix_auth + "by_usr";
+                        const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
+
+                        title_list.push("    " + function_str.toLowerCase() + ": " + auth_usr);
+                    };
+                };
+            };
+        };
+        return (title_list.length) ? title_list.join("\n") : null;
+    };  // f_title_text_aapprovedby
 
 //=========  f_format_status_subject  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24
     function f_format_status_subject(prefix_str, data_dict) {
@@ -492,7 +510,7 @@
     };  // f_get_status_auth_iconclass
 
     function f_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
-    // PR2021-05-07 PR2021-12-18 PR2022-04-17 PR2022-06-13
+    // PR2021-05-07 PR2021-12-18 PR2022-04-17 PR2022-06-13  PR2023-07-08
         //console.log( " ==== f_get_status_auth1234_iconclass ====");
         //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2)
         //console.log("auth3_must_sign", auth3_must_sign, "auth3", auth3)
@@ -507,7 +525,7 @@
         // - make the diamond full black when auth1, auth2 and auth 3 have approved
 
         const prefix = (blocked) ? "blocked_" : "diamond_";
-        let img_class = prefix + icon_auth_0; // empty diamond
+        let img_class = prefix;
 
         if (auth3_must_sign) {
             if (auth4_must_sign) {
@@ -519,45 +537,43 @@
             };
         } else {
             // if auth3 must not sign, also auth4 must not sign
-            if (auth1 && auth2){
-                auth3 = true;
-                auth4 = true;
-            };
+            auth3 = auth1;
+            auth4 = auth2;
         };
     //console.log( "img_class", img_class);
         if(publ){
             if (blocked){
-                img_class = prefix + icon_orange;  // orange diamond: published after blocked by Inspectorate
+                img_class += icon_orange;  // orange diamond: published after blocked by Inspectorate
             } else {
-                img_class = prefix + icon_blue;  // blue diamond: published
+                img_class += icon_blue;  // blue diamond: published
             };
         } else {
             if (auth1){
                 if (auth2){
                     if (auth3){
-                        img_class = (auth4) ? prefix + icon_auth_1234 : prefix + icon_auth_123; // auth 1+2+3+4 // auth 1+2+3
+                        img_class += (auth4) ? icon_auth_1234 : icon_auth_123; // auth 1+2+3+4 // auth 1+2+3
                     } else {
-                        img_class = (auth4) ? prefix + icon_auth_124 : prefix + icon_auth_12; // auth 1+2+4 // auth 1+2
+                        img_class += (auth4) ? icon_auth_124 : icon_auth_12; // auth 1+2+4 // auth 1+2
                     };
                 } else {
                     if (auth3){
-                        img_class = (auth4) ? prefix + icon_auth_134 : prefix + icon_auth_13; // auth 1+3+4 // auth 1+3
+                        img_class += (auth4) ? icon_auth_134 : icon_auth_13; // auth 1+3+4 // auth 1+3
                     } else {
-                        img_class = (auth4) ? prefix + icon_auth_14 : prefix + icon_auth_1; // auth 1+4  // auth 1
+                        img_class += (auth4) ? icon_auth_14 : icon_auth_1; // auth 1+4  // auth 1
                     }
                 }
             } else {
                 if (auth2){
                     if (auth3){
-                        img_class = (auth4) ? prefix + icon_auth_234 : prefix + icon_auth_23; // auth 2+3+4 // auth 2+3
+                        img_class += (auth4) ? icon_auth_234 : icon_auth_23; // auth 2+3+4 // auth 2+3
                     } else {
-                        img_class = (auth4) ? prefix + icon_auth_24 : prefix + icon_auth_2; // auth 2+4 // auth 2
+                        img_class += (auth4) ? icon_auth_24 : icon_auth_2; // auth 2+4 // auth 2
                     }
                 } else {
                     if (auth3){
-                        img_class = (auth4) ? prefix + icon_auth_34 :  prefix + icon_auth_3; // auth 3+4 // auth 3
+                        img_class += (auth4) ? icon_auth_34 :  icon_auth_3; // auth 3+4 // auth 3
                     } else {
-                        img_class = (auth4) ? prefix + icon_auth_4 : prefix + icon_auth_0;  // auth 4 // auth -
+                        img_class += (auth4) ? icon_auth_4 : icon_auth_0;  // auth 4 // auth -
                     };
                 };
             };
@@ -567,34 +583,34 @@
     };
 
     function f_get_status_auth123_iconclass(publ, blocked, auth1, auth2, auth3) {
-    // PR2022-08-28
+    // PR2022-08-28  PR2023-07-08
         //console.log( " ==== f_get_status_auth123_iconclass ====");
         //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2, "auth3", auth3);
 
         // auth1, auth2, auth3 must approve school grades and wolf exam
 
         const prefix = (blocked) ? "blocked_" : "diamond_";
-        let img_class = prefix + icon_auth_0; // empty diamond
+        let img_class = prefix;
 
     //console.log( "img_class", img_class);
         if(publ){
             if (blocked){
-                img_class = prefix + icon_orange;  // orange diamond: published after blocked by Inspectorate
+                img_class += icon_orange;  // orange diamond: published after blocked by Inspectorate
             } else {
-                img_class = prefix + icon_blue;  // blue diamond: published
+                img_class += icon_blue;  // blue diamond: published
             };
         } else {
             if (auth1){
                 if (auth2){
-                    img_class = (auth3) ? prefix + icon_auth_1234 : prefix + icon_auth_12; //  auth 1+2+3+4 / auth 1+2
+                    img_class += (auth3) ? icon_auth_1234 : icon_auth_12; //  auth 1+2+3+4 / auth 1+2
                 } else {
-                    img_class = (auth3) ? prefix + icon_auth_13 : prefix + icon_auth_1; //  auth 1+3 / auth 1
+                    img_class += (auth3) ? icon_auth_13 : icon_auth_1; //  auth 1+3 / auth 1
                 };
             } else {
                 if (auth2){
-                    img_class = (auth3) ? prefix + icon_auth_23 : prefix + icon_auth_2; //  auth 2+3 / auth 2
+                    img_class += (auth3) ? icon_auth_23 : icon_auth_2; //  auth 2+3 / auth 2
                 } else {
-                    img_class = (auth3) ? prefix + icon_auth_3 : prefix + icon_auth_0; //  auth 3 /  auth -
+                    img_class += (auth3) ? icon_auth_3 : icon_auth_0; //  auth 3 /  auth -
                 };
             };
         };
@@ -603,28 +619,34 @@
     };  // f_get_status_auth123_iconclass
 
     function f_get_status_auth12_iconclass(publ, blocked, auth1, auth2) {
-    // PR2022-04-17
+    // PR2022-04-17 PR2023-07-08
         const prefix = (blocked) ? "blocked_" : "diamond_";
-        let img_class = prefix + icon_auth_0; // empty diamond
+        let img_class = prefix;
+
         if(publ){
             if (blocked){
-                img_class = prefix + icon_orange;  // orange diamond: published after blocked by Inspectorate
+                img_class += icon_orange;  // orange diamond: published after blocked by Inspectorate
             } else {
-                img_class = prefix + icon_blue;  // blue diamond: published
+                img_class += icon_blue;  // blue diamond: published
             };
         } else {
-            if (blocked){
-                img_class = prefix + icon_red;  // red diamond: blocked by Inspectorate, published is removed to enable correction
-            } else {
-                if (auth1){
-                    img_class = (auth2) ? prefix + icon_auth_1234 : prefix + icon_auth_14; // auth 1+2+3+4 / auth 1+4
-
+            // red diamond: blocked by Inspectorate, published is removed to enable correction
+            if (auth1){
+                if (auth2){
+                    img_class += icon_auth_1234; // auth 1+2+3+4
                 } else {
-                    img_class = (auth2) ? prefix + icon_auth_23 : prefix + icon_auth_0; //  auth 2+3 / auth -
-
-        }}};
+                    img_class += icon_auth_14; // auth 1+4
+                };
+            } else {
+                if (auth2){
+                    img_class += icon_auth_23; //  auth 2+3
+                } else {
+                    img_class += icon_auth_0; //  auth -
+                };
+            };
+        };
         return img_class;
-    };
+    }; // f_get_status_auth12_iconclass
 
 
 

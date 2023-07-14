@@ -1654,19 +1654,10 @@ def get_permit_of_this_page(page, permit_txt_or_arr, request):
 
 
 def get_permit_crud_of_this_page(page, request):
-    # --- get crud permit for this page # PR2021-07-18 PR2021-09-05 PR2023-01-13
-
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug('----- get_permit_crud_of_this_page  -------')
-
-    has_permit = get_permit_of_this_page(page, 'crud', request)
-
-    if logging_on:
-        logger.debug('    has_permit: ' + str(has_permit))
-
-    return has_permit
+    # --- get crud permit for this page # PR2021-07-18 PR2021-09-05 PR2023-01-13 PR2023-07-06
+    return get_permit_of_this_page(page, 'crud', request)
 # - end of get_permit_crud_of_this_page
+
 
 def get_return_false_when_no_allowedsubjects(req_usr):
     # PR2023-06-02
@@ -1726,9 +1717,9 @@ def err_txt_cannot_make_changes():  # PR2023-04-16
 def msghtml_error_occurred_no_border(err_txt, msg_txt=None):  # PR2023-04-17
     msg_list = [gettext('An error occurred')]
     if err_txt:
-        msg_list.extend(['<br>&emsp;<i>', str(err_txt), '</i>'])
+        msg_list.extend([':<br>&emsp;<i>', str(err_txt), '</i>'])
     if msg_txt:
-        msg_list.extend(['<br>', str(msg_txt)])
+        msg_list.extend(['.<br>', str(msg_txt)])
     return ''.join((msg_list))
 
 
@@ -1736,9 +1727,9 @@ def msghtml_error_occurred_with_border(err_txt, msg_txt=None):  # PR2023-03-20
     msg_list = ["<p class='border_bg_invalid p-2'>",
                 str(_('An error occurred'))]
     if err_txt:
-        msg_list.extend(['<br>&emsp;<i>', str(err_txt), '</i>'])
+        msg_list.extend([':<br>&emsp;<i>', str(err_txt), '</i>'])
     if msg_txt:
-        msg_list.extend(['<br>', str(msg_txt)])
+        msg_list.extend(['.<br>', str(msg_txt)])
     msg_list.append("</p>")
 
     return ''.join((msg_list))

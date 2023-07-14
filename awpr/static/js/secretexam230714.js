@@ -188,8 +188,12 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_department){
+            // true = 'all_departments = true', used to let ETE select all deps, schools must only be able to select their deps
+            // PR2023-07-03 debug: dont use permit_dict here, it has no value yet. Use it in t_MSED_Open
+            // was: const all_departments = permit_dict.requsr_role_admin;
+
             el_hdrbar_department.addEventListener("click", function() {
-                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
+                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response, true)}, false );
         };
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
@@ -533,7 +537,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     // skip showing warning messages when clicking selectbtn,
                     // msg 'Not current examyear' kept showing) PR2021-12-01
                     // skip_warning_messages will be reset in  b_show_mod_message_dictlist
-
                     b_show_mod_message_dictlist(response.messages, skip_warning_messages);
                 };
                 if ("examyear_rows" in response) {
@@ -1795,7 +1798,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // ---  toggle value of is_approved_by_requsr_auth
                                     const new_is_approved_by_requsr_auth = !is_approved_by_requsr_auth;
-        //console.log( "    new_is_approved_by_requsr_auth", new_is_approved_by_requsr_auth);
+        console.log( "    is_approved_by_requsr_auth", is_approved_by_requsr_auth);
+        console.log( "    new_is_approved_by_requsr_auth", new_is_approved_by_requsr_auth);
 
         // also update requsr_pk in auth_dict;
                                     auth_dict[requsr_auth_index] = (new_is_approved_by_requsr_auth) ? permit_dict.requsr_pk : null;
@@ -1808,7 +1812,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                     const already_approved_by_auth_index = get_already_approved_by_auth_index(auth_dict, new_is_approved_by_requsr_auth, requsr_auth_index);
 
-        //console.log( "    already_approved_by_auth_index", already_approved_by_auth_index);
+        console.log( "    already_approved_by_auth_index", already_approved_by_auth_index);
                                     if (already_approved_by_auth_index) {
                                         const auth_function = b_get_function_of_auth_index(loc, already_approved_by_auth_index);
                                         const msg_html = [loc.approve_err_list.Approved_in_function_of, auth_function.toLowerCase(), ".<br>",
@@ -5863,12 +5867,13 @@ console.log( "......filter_value", filter_value);
 
 //=========  MSED_Response  ================ PR2020-12-18  PR2021-05-10
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
 
 // ---  upload new selected_pk
         new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
 
+        console.log( "    new_setting", new_setting);
         DatalistDownload(new_setting);
     }  // MSED_Response
 

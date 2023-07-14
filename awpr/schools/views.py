@@ -2088,10 +2088,10 @@ class ExamyearListView(View):
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
+class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023-07-06
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= ExamyearUploadView ============= ')
@@ -2111,7 +2111,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
         activate(user_lang)
 
 # - get permit
-        has_permit = acc_prm.has_permit(request, 'page_examyear', ['permit_crud'])
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_examyear', request)
         if not has_permit:
             border_class = c.HTMLCLASS_border_bg_invalid
             msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
@@ -2154,8 +2154,8 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
 
                         if logging_on:
                             logger.debug('    examyear_instance: ' + str(examyear_instance))
-                            logger.debug('    err_html: ' + str(err_html))
-                            logger.debug('    log_lst: ' + str(log_lst))
+                            #logger.debug('    err_html: ' + str(err_html))
+                            #logger.debug('    log_lst: ' + str(log_lst))
 
                         if log_lst:
                             log_list.extend(log_lst)
@@ -2344,7 +2344,7 @@ def create_examyear_instance(upload_dict, request):
             log_lst, msg_err = copy_tables_from_last_year(
                 prev_examyear_pk=last_examyear_pk,
                 new_examyear_pk=new_examyear_pk,
-                also_copy_schools=True
+                skip_copy_schools=False
             )
             if log_lst:
                 log_list.extend(log_lst)
@@ -3557,9 +3557,9 @@ def create_final_orderlist_perschool_xlsx(output, sel_examyear_instance,
 # - end of create_final_orderlist_perschool_xlsx
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# PR2023-07-06 removed:
 @method_decorator([login_required], name='dispatch')
-class ExamyearCopyToSxmView(View):  # PR2021-08-06
+class ExamyearCopyToSxmViewNIU(View):  # PR2021-08-06
 
     def post(self, request):
         logging_on = False  # s.LOGGING_ON
@@ -3642,7 +3642,7 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                     log_list = copy_tables_from_last_year(
                         prev_examyear_pk=curacao_examyear_instance,
                         new_examyear_pk=sxm_examyear_instance,
-                        also_copy_schools=False
+                        skip_copy_schools=True
                     )
 
         update_wrap['error_list'] = error_list
@@ -3653,11 +3653,10 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ExamyearCopyToSxmView
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# PR2023-07-06 removed:
 @method_decorator([login_required], name='dispatch')
-class CopySchemesFromExamyearView(View):  # PR2021-09-24
+class CopySchemesFromExamyearViewNIU(View):  # PR2021-09-24
 
     def post(self, request):
         logging_on = False  # s.LOGGING_ON
@@ -3724,7 +3723,7 @@ class CopySchemesFromExamyearView(View):  # PR2021-09-24
                     log_list = copy_tables_from_last_year(
                         prev_examyear_pk=copyfrom_examyear_instance,
                         new_examyear_pk=copyto_examyear_instance,
-                        also_copy_schools=False
+                        skip_copy_schools=True
                     )
         if logging_on:
             logger.debug('log_list: ' + str(log_list) )
@@ -3740,6 +3739,7 @@ class CopySchemesFromExamyearView(View):  # PR2021-09-24
 def create_examyear(prev_examyear_pk, new_examyear_code_int):
     # --- create examyear
     # PR2019-07-30 PR2020-10-05 PR2021-07-14 PR2021-08-21  PR2022-08-01 PR2023-03-02
+    # PR2023-07-06 also field list checked: is ok
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_examyear ----- ')
@@ -3755,19 +3755,22 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
     if prev_examyear_pk and new_examyear_code_int:
         try:
             # the following fields got value in create_examyear:
-            #    code=examyear_code_int,
-            #    createdat=timezone.now()
-            # the following fields got default value:
-            #    published = False
-            #    locked = False
-            #    thumbrule_allowed = False
+            #    code = examyear_code_int,
+            #    createdat = timezone.now()
+            # the following fields got default value False:
+            #    "published, locked, no_practexam, ",
+            #    "sr_allowed, no_centralexam, no_thirdperiod, ",
+            #    "thumbrule_allowed, reex_requests_blocked, reex03_requests_blocked, ",
+
+            # the following fields got default value None:
             #    publishedat = None
             #    lockedat = None
-            # the following fields get value from previous examyear::
+
+            # the following fields get value from previous examyear:
+            #    country_id
+            #    fields in field_list
+
             field_list = ', '.join((
-                      # these fields get calculated value: 'code', 'createdat',
-                      # these fields get default value: 'published', 'locked', thumbrule_allowed, 'publishedat', 'lockedat',
-                      'no_practexam', 'sr_allowed', 'no_centralexam', 'no_thirdperiod',
                       'order_extra_fixed', 'order_extra_perc', 'order_round_to',
                       'order_tv2_divisor', 'order_tv2_multiplier', 'order_tv2_max',
                       'order_admin_divisor', 'order_admin_multiplier', 'order_admin_max',
@@ -3777,10 +3780,16 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
 
             sql_list = [
                 "INSERT INTO schools_examyear(",
-                    "country_id, published, locked, thumbrule_allowed, code, createdat, ",
+                    "country_id, code, createdat, ",
+                    "published, locked, no_practexam, ",
+                    "sr_allowed, no_centralexam, no_thirdperiod, ",
+                    "thumbrule_allowed, reex_requests_blocked, reex03_requests_blocked, ",
                     field_list,
                 ") SELECT ",
-                    "country_id, FALSE, FALSE, FALSE, ", str(new_examyear_code_int) + "::INT, '" + createdat_str + "', ",
+                    "country_id, ", str(new_examyear_code_int) + "::INT, '" + createdat_str + "', ",
+                    "FALSE, FALSE, FALSE, ",
+                    "FALSE, FALSE, FALSE, ",
+                    "FALSE, FALSE, FALSE, ",
                     field_list,
                 " FROM schools_examyear ",
                 "WHERE id=", str(prev_examyear_pk), "::INT ",
@@ -3843,7 +3852,7 @@ def update_examyear(instance, upload_dict, msg_list, request):
                     pass
 
 # --- update field 'published', 'locked'
-                elif field in ('published', 'locked', 'no_practexam', 'sr_allowed', 'no_centralexam', 'no_thirdperiod'):
+                elif field in ('published', 'locked', 'no_practexam', 'sr_allowed', 'no_centralexam', 'no_thirdperiod', 'thumbrule_allowed'):
                     new_value = upload_dict.get(field)
                     saved_value = getattr(instance, field)
 
@@ -3903,7 +3912,7 @@ def update_examyear(instance, upload_dict, msg_list, request):
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_schools):
+def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, skip_copy_schools):
     # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06 PR2022-08-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -3914,7 +3923,7 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
     msg_err = None
     if new_examyear_pk and prev_examyear_pk:
 
-        # all fields are copied while creating new examyear, no need to use
+        # all fields of table Examyear are copied while creating new examyear, no need to use
         #   sf.copy_examyear_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
         # schoolsetting and mailinglist don't have to be copied, because they are  not examyear dependent
@@ -3927,8 +3936,10 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
 
             mapped_deps = sf.copy_deps_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-            if also_copy_schools:
-                sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            # PR2023-07-06: dont copy schools, but map them
+            #if not skip_copy_schools:
+            mapped_schools = sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk)
+            # mapped_schools = sf.map_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk)
 
             mapped_levels = sf.copy_levels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
             mapped_sectors = sf.copy_sectors_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
@@ -3938,9 +3949,14 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
             mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
             mapped_subjects = sf.copy_subjects_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-            mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
-            # TODO add copy_envelopsubject_from_prev_examyear
+            sf.copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
+
             mapped_envelopbundles = sf.copy_envelopbundles_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+
+            # PR2023-07-06 copy_envelopsubjects_from_prev_examyear is not necessary,
+            # envelopsubjects will be created in orderlists.py function check_envelopsubject_rows
+            # when downloading envelopsubject_rows
+
             mapped_enveloplabels = sf.copy_enveloplabels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
             mapped_envelopitems = sf.copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
@@ -3950,6 +3966,7 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
             sf.copy_exams_from_prev_examyear(prev_examyear_pk,
                                              mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
 
+            sf.copy_clusters_from_prev_examyear(prev_examyear_pk, mapped_schools, mapped_deps, mapped_subjects)
         # Not in use
         #mapped_packages = sf.copy_packages_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
         #sf.copy_packageitems_from_prev_examyear(prev_examyear_pk, mapped_packages, mapped_schemeitems, log_list)
@@ -3978,6 +3995,7 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
 
         # Ntermentable
         # Exam
+        # Envelopsubject
         # Cluster
     return log_list, msg_err
 # end of copy_tables_from_last_year

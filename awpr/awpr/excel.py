@@ -76,7 +76,7 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09 PR2023-02-21
                 save_to_disk = False
                 # just to prevent PyCharm warning on published_instance=published_instance
                 # published_instance = None  # sch_mod.School.objects.get_or_none(pk=None)
-                response = create_ex1_xlsx(
+                response, is_saved_to_disk = create_ex1_xlsx(
                     published_instance=None,
                     examyear=sel_examyear,
                     sel_school=sel_school,
@@ -120,22 +120,28 @@ class StudsubjDownloadEx4View(View):  # PR2022-05-27
             sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
+            c.KEY_SEL_EXAMPERIOD
+    # - get saved_examperiod from Usersetting, default EXAMPERIOD_FIRST if not found
+            selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+            sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+            if sel_examperiod not in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+                sel_examperiod = c.EXAMPERIOD_SECOND
+
             if sel_examyear and sel_school and sel_department:
-                # TODO add third period
-                examperiod = c.EXAMPERIOD_SECOND
-                prefix = 'reex3_' if examperiod == 3 else 'reex_' if examperiod == 2 else 'subj_'
+
+                prefix = 'reex3_' if sel_examperiod == 3 else 'reex_' if sel_examperiod == 2 else 'subj_'
 
 # +++ create ex4_xlsx
                 save_to_disk = False
                 # just to prevent PyCharm warning on published_instance=published_instance
                 published_instance = sch_mod.School.objects.get_or_none(pk=None)
-                response = create_ex4_xlsx(
+                response, is_saved_to_disk = create_ex4_xlsx(
                     published_instance=published_instance,
                     examyear=sel_examyear,
                     sel_school=sel_school,
                     sel_department=sel_department,
                     sel_level=sel_level,
-                    examperiod=examperiod,
+                    examperiod=sel_examperiod,
                     prefix=prefix,
                     save_to_disk=save_to_disk,
                     request=request,
@@ -165,7 +171,7 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
     # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
     # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
     subject_row_count, subject_pk_list, subject_code_list = \
-        create_ex1_Ex4_mapped_subject_rows(examyear, sel_school, sel_department)
+        create_ex1_Ex4_mapped_subject_rows(examyear, examperiod, sel_school, sel_department)
 
     if logging_on:
         logger.debug('    subject_row_count: ' + str(subject_row_count))
@@ -202,7 +208,7 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
     """
 
     response = None
-
+    is_saved_to_disk = False
     if settings and ex1_rows_dict:
 
         examyear_str = str(examyear.code)
@@ -531,11 +537,11 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
 
             # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
             published_instance.save(request=request)
+            is_saved_to_disk = True
 
-            logger.debug('file_path: ' + str(file_path))
             # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
             # stored in dir:
-            logger.debug('published_instance.file: ' + str(published_instance.file))
+
         else:
             # Rewind the buffer.
             output.seek(0)
@@ -549,7 +555,7 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
             response['Content-Disposition'] = 'attachment; filename=%s' % file_name
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
-    return response
+    return response, is_saved_to_disk
 
 
 # --- end of create_ex1_xlsx
@@ -571,7 +577,7 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
     # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
     # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
     subject_row_count, subject_pk_list, subject_code_list = \
-        create_ex1_Ex4_mapped_subject_rows(examyear, sel_school, sel_department, True)  # is_reex=True
+        create_ex1_Ex4_mapped_subject_rows(examyear, examperiod, sel_school, sel_department)
 
     if logging_on:
         logger.debug('    subject_row_count: ' + str(subject_row_count))
@@ -595,6 +601,7 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
         logger.debug('ex4_rows_dict: ' + str(ex4_rows_dict))
 
     """
+    
      ex1_rows_dict: {'total': {1050: 171, ..., 1069: 30},
       'auth1': [48], 'auth2': [57], 
       86: {'lvl_name': 'Praktisch Basisgerichte Leerweg', 
@@ -613,10 +620,21 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                             'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}, 
                         {'idnr': '2002090102', 'exnr': '21025', 'name': 'Baromeo, Norshel', 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 
                             'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}, ...}, 
+   
+         ex4_dict: ep 3 
+        {'total': {224: 1}, 
+        'auth1': [70], 
+        'auth2': [703], 
+        'extrafacilities': False, 
+        12: {'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+            'total': {224: 1}, 
+            'stud_list': [{'idnr': '2006.11.21.02', 'exnr': '06', 'name': 'Rosa, Marlies Alexandra', 'tobedel': False, 'lvl': 'TKL', 'sct': 'ec', 'cls': '1y4 AC', 
+                    'subj': [224], 'reex_publ': []}]}}
+   
     """
 
     response = None
-
+    is_saved_to_disk = False
     # - get text from examyearsetting
     settings = awpr_lib.get_library(examyear, ['exform', 'ex4'])
 
@@ -772,6 +790,7 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                 for i, field_caption in enumerate(ex4_formats['field_captions']):
                      sheet.write(row_index, i, field_caption, ex4_formats['header_formats'][i])
 
+
 # +----  iterate through stud_list
                 if len(stud_list):
 
@@ -779,46 +798,48 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
 
                         subj_id_list = row.get('subj')
                         reex_publ_list = row.get('reex_publ')
+                        if logging_on:
+                            logger.debug('    subj_id_list: ' + str(subj_id_list))
+                            logger.debug('    reex_publ_list: ' + str(reex_publ_list))
 
                         if logging_on:
                             logger.debug('    row: ' + str(row))
+                        """
+                        row: {'idnr': '2006.11.21.02', 'exnr': '06', 'name': 'Rosa, Marlies Alexandra', 
+                        'tobedel': False, 'lvl': 'TKL', 'sct': 'ec', 'cls': '1y4 AC', 'subj': [224], 'reex_publ': []}
 
+                        """
 # ---  iterate through fields of student row
                         # row: {'idnr': '2004101103', 'exnr': '21024', 'name': 'Balentien, Rayviendall',
                         #          'lvl': 'PBL', 'sct': 'tech', 'class': '4BH',
                         #          'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
                         row_index += 1
                         for i, field_name in enumerate(ex4_formats['field_names']):
+                            if logging_on:
+                                logger.debug('    field_name: ' + str(field_name))
+
                             exc_format = ex4_formats['row_formats'][i]
                             value = ''
                             if isinstance(field_name, int):
                                 # in subject column 'field_name' is subject_id
                                 if subj_id_list and field_name in subj_id_list:
-                                    value = 'x'
+                                    #value = 'x'
                                     value = u"\u2B24"  # large solid circle
 
                                     # PR2023-05-06  reex_publ_list contains list of subject_id's of newly submitted reex
-                                    # PR2023-05-06 put newly published reex / ereex03 subjects in array, to show them blue in Ex4 form
+                                    # PR2023-05-06 put newly published reex / reex03 subjects in array, to show them blue in Ex4 form
                                     # published_id is NULL in prelim Ex4, has value published_pk_str in submitted Ex4
 
+                                    if logging_on:
+                                        logger.debug('    field_name in reex_publ_list: ' + str(field_name in reex_publ_list))
+
                                     if reex_publ_list and field_name in reex_publ_list:
-                                        exc_format = row_align_center_blue
-                                    else:
                                         exc_format = row_align_center_black
-                                subj_nondel_list = row.get('subj_nondel', [])
-                                if subj_nondel_list and field_name in subj_nondel_list:
-                                    value = 'x'
-                                    # PR2022-03-05 tobedeleted is deprecated. Was:
-                                    #value = 'o'
-                                #subj_del_list = row.get('subj_del', [])
-                                #if subj_del_list and field_name in subj_del_list:
-                                #    value = 'x'
-                                #    exc_format = ex4_formats['row_align_center_red']
+                                    else:
+                                        exc_format = row_align_center_blue
+
                             else:
                                 value = row.get(field_name, '')
-
-                            #if logging_on:
-                            #    logger.debug('    field_name: ' + str(field_name) + ' value: ' + str(value))
 
                             sheet.write(row_index, i, value, exc_format)
 
@@ -969,11 +990,10 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
 
             # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
             published_instance.save(request=request)
+            is_saved_to_disk = True
 
-            logger.debug('file_path: ' + str(file_path))
             # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
-            # stored in dir:
-            logger.debug('published_instance.file: ' + str(published_instance.file))
+
         else:
     # Rewind the buffer.
             output.seek(0)
@@ -987,14 +1007,15 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
             response['Content-Disposition'] = 'attachment; filename=%s' % file_name
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
-    return response
+    return response, is_saved_to_disk
 # --- end of create_ex4_xlsx
 
 
 def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_pk_list, subject_code_list): # PR2021-08-10
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_ex4_format_dict -----')
+        logger.debug('    subject_pk_list: ' + str(subject_pk_list))
 
     sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
 
@@ -1126,6 +1147,12 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
         ex1_formats['row_formats'].append(row_align_center_blue)
         ex1_formats['totalrow_formats'].append(totalrow_number)
 
+        if logging_on:
+            logger.debug(' ----- create_ex1_ex4_format_dict -----')
+            logger.debug(' >> subject_pk: ' + str(subject_pk))
+            logger.debug(' >> ex1_formats[field_names]: ' + str(ex1_formats['field_names']))
+
+
     # - add empty subject columns if col_count is less than 15
     if colcount_subjects < 15:
         for x in range(colcount_subjects, 15):  # range(start_value, end_value, step), end_value is not included!
@@ -1207,10 +1234,13 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
     # PR2023-05-06 put newly published reex / ereex03 subjects in array, to show them blue in Ex4 form
     # published_id is NULL in prelim Ex4, has value published_pk_str in submitted Ex4
     elif examperiod in (2, 3):
-        #prefix = 'reex03_' if examperiod == 3 else 'reex_' if examperiod == 2 else 'subj_'
-        sql_studsubj_agg_list.append(
-           ''.join(("ARRAY_AGG(si.subject_id) FILTER (WHERE studsubj.", prefix , "published_id ", published_pk_str, ") AS reex_publ_arr,"))
-        )
+        # prefix = 'reex3_' if examperiod == 3 else 'reex_' if examperiod == 2 else 'subj_'
+
+        # PR2023-07-12 debug: this code is not correct, I think. It filters on published_instance.pk
+        # use instead filter like in ep1
+        # was: sql_studsubj_agg_list.append( ''.join(("ARRAY_AGG(si.subject_id) FILTER (WHERE studsubj.", prefix , "published_id ", published_pk_str, ") AS reex_publ_arr,")))
+
+        sql_studsubj_agg_list.append(''.join(("ARRAY_AGG(si.subject_id) FILTER (WHERE studsubj.", prefix, "published_id IS NOT NULL) AS reex_publ_arr,")))
 
     sql_studsubj_agg_list.extend((
         "ARRAY_AGG(DISTINCT studsubj." + prefix + "auth1by_id) FILTER (WHERE studsubj." + prefix + "auth1by_id IS NOT NULL) AS auth1_arr,",
@@ -1255,6 +1285,7 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
             "studsubj.subj_id_arr, studsubj.subj_id_arr_publ, studsubj.subj_id_arr_del, studsubj.subj_id_arr_chang,"
         )
     elif examperiod in (2, 3):
+        # reex_publ_arr contains reex3_published_id when ep = 3
         sql_list.append("studsubj.subj_id_arr, studsubj.reex_publ_arr,")
 
     sql_list.extend((
@@ -1276,7 +1307,7 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
         sql_list.append("ORDER BY LOWER(st.lastname), LOWER(st.firstname)")
     sql = ' '.join(sql_list)
 
-    if logging_on:
+    if logging_on and False:
         for sql_txt in sql_list:
             logger.debug(' > ' + str(sql_txt))
 
@@ -1430,12 +1461,26 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
                 {'idnr': '1998041505', 'exnr': 'V021', 'name': 'Albertus, Dinaida Lilian Jearette', 'lvl': 'PBL', 'sct': 'z&w', 'cls': '4V2', 
                  'subj': [1048, 1055, 1052, 1051, 1050, 1057, 1047, 1049, 1065]}, 
  
+    ex1_ex4_rows_dict: {
+        'total': {224: 1}, 
+        'auth1': [70], 
+        'auth2': [703], 
+        'extrafacilities': False, 
+        12: {
+            'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+            'total': {224: 1}, 
+            'stud_list': [
+                {'idnr': '2006.11.21.02', 'exnr': '06', 'name': 'Rosa, Marlies Alexandra', 'tobedel': False, 
+                'lvl': 'TKL', 'sct': 'ec', 'cls': '1y4 AC', 'subj': [224], 'reex_publ': []}]}}
+
+ 
     """
     return ex1_ex4_rows_dict
 # --- end of create_ex1_ex4_rows_dict
 
 
-def create_ex1_Ex4_mapped_subject_rows(examyear, sel_school, sel_department, is_reex=False):  # PR2021-08-08 PR2023-02-21
+def create_ex1_Ex4_mapped_subject_rows(examyear, examperiod, sel_school, sel_department):
+    # PR2021-08-08 PR2023-02-21 PR2023-07-11
     # function gets all subjects of studsubj of this dep, not deleted
     # - creates list of subject_codes and list of subject_pk's
     # - both sorted by subjbase.code
@@ -1444,7 +1489,10 @@ def create_ex1_Ex4_mapped_subject_rows(examyear, sel_school, sel_department, is_
 
     subject_code_list = []
     subject_pk_list = []
-    is_reex_clause = "AND studsubj.has_reex" if is_reex else ""
+
+    is_reex_clause = "AND studsubj.has_reex03" if examperiod == 3 else \
+        "AND studsubj.has_reex" if examperiod == 2 else \
+            ""
 
     sql_list = [
         "SELECT subj.id, subjbase.code",
@@ -5904,6 +5952,9 @@ def create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme
                         value = af.format_modified_at(modified_dte, user_lang)
                     else:
                         value = row.get(field_name, '')
+                        if isinstance(value, bool):
+                            value = 'x' if value else ''
+
                     sheet.write(row_index, i, value, row_formats[i])
 
     return row_index
@@ -6562,8 +6613,123 @@ def write_resultlist_details(sheet, sel_examyear, department_dictlist, level_dic
 
 
 
+# from https://github.com/jmcnamara/XlsxWriter/blob/main/xlsxwriter/utility.py PR2021-08-30
+
+def xl_rowcol_to_cell(row, col, row_abs=False, col_abs=False):
+    """
+    Convert a zero indexed row and column cell reference to a A1 style string.
+    Args:
+       row:     The cell row.    Int.
+       col:     The cell column. Int.
+       row_abs: Optional flag to make the row absolute.    Bool.
+       col_abs: Optional flag to make the column absolute. Bool.
+    Returns:
+        A1 style string.
+    """
+    if row < 0:
+        return None
+
+    if col < 0:
+        return None
+
+    row += 1  # Change to 1-index.
+    row_abs = '$' if row_abs else ''
+
+    col_str = xl_col_to_name(col, col_abs)
+
+    return col_str + row_abs + str(row)
+
+
+def xl_col_to_name(col, col_abs=False):
+    """
+    Convert a zero indexed column cell reference to a string.
+    Args:
+       col:     The cell column. Int.
+       col_abs: Optional flag to make the column absolute. Bool.
+    Returns:
+        Column style string.
+    """
+    col_num = col
+    if col_num < 0:
+        return None
+
+    col_num += 1  # Change to 1-index.
+    col_str = ''
+    col_abs = '$' if col_abs else ''
+
+    while col_num:
+        # Set remainder from 1 .. 26
+        remainder = col_num % 26
+
+        if remainder == 0:
+            remainder = 26
+
+        # Convert the remainder to a character.
+        col_letter = chr(ord('A') + remainder - 1)
+
+        # Accumulate the column letters, right to left.
+        col_str = col_letter + col_str
+
+        # Get the next order of magnitude.
+        col_num = int((col_num - 1) / 26)
+
+    return col_abs + col_str
+#---------------------------------------
+
+
+
+
+
 ###################################################
 # PR2021-09-2 from https://thispointer.com/python-how-to-create-a-zip-archive-from-multiple-files-or-directory/
+
+def xl_book_add_format(book, font_size=11, font_color='black', font_bold=False, bg_color=None, h_align='left', v_align='vcenter',
+        border=False, border_top=None, border_bottom=None, border_left=None, border_right=None,
+        text_wrap=False, num_format=None):
+    # PR2023-07-11
+
+    xl_format = {
+        'font_size': font_size,
+        'font_color': font_color,
+        'align':  h_align,
+        'valign': v_align
+    }
+
+    if font_bold:
+        xl_format['bold'] = True
+    if bg_color:
+        xl_format['bg_color'] = bg_color
+
+    if text_wrap:
+        xl_format['text_wrap'] = True
+
+    if border:
+        xl_format['border'] = True
+    if border_top:
+        xl_format['top'] = border_top
+    if border_bottom:
+        xl_format['bottom'] = border_bottom
+    if border_left:
+        xl_format['left'] = border_left
+    if border_right:
+        xl_format['right'] = border_right
+
+    if num_format:
+        if num_format == 'num_dig_0':
+            xl_format['num_format'] = '#,##0'
+        elif num_format == 'num_dig_2':
+            xl_format['num_format'] = '#,##0.00'
+        elif num_format == 'perc_dig_0':
+            xl_format['num_format'] = '0%',
+        elif num_format == 'perc_dig_2':
+            xl_format['num_format'] = '0.00%',
+        else:
+            xl_format['num_format'] = num_format
+
+    return book.add_format(xl_format)
+# - end of xl_book_add_format
+
+
 def create_zipfileNIU(dirName):
     # create a ZipFile object
     zipObj = ZipFile('sample.zip', 'w')

@@ -21,19 +21,20 @@ logger = logging.getLogger(__name__)
 def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requsr_auth, grade_row, req_usr):
     # PR2023-04-10
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_approval_remove_allowed -------')
 
     err_html = None
 
-    # PR2023-03-25 remove approval can only be done by the same auth or by the chairperson and secretary
     if is_reset:
-        # PR2023-04-10: approvals can only be reset by same user
+        # PR2023-04-10: approvals can only be reset by same user, otherwise Inspectorate must unblock
         # was:
+            # PR2023-03-25 remove approval can only be done by the same auth or by the chairperson and secretary
             # skip when chairperson or secretary, they may remove approval
             #   if auth_index > 2:
-        # check if approved by same user
+
+    # - check if approved by same user
         auth_id = grade_row.get(requsr_auth + 'by_id')
 
         if auth_id != req_usr.pk:

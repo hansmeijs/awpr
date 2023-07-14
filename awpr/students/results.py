@@ -510,15 +510,15 @@ class DownloadGradelistDiplomaView(View):
         # print file to be downloaded, will not saved
                     if is_diploma:
                         if is_sxm:
-                            grd_draw.draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate)
+                            grd_draw.draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate, sel_examyear.code)
                         else:
-                            grd_draw.draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate)
+                            grd_draw.draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate, sel_examyear.code)
 
                     else:
                         if is_sxm:
-                            grd_draw.draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+                            grd_draw.draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
                         else:
-                            grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+                            grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
 
                     canvas.showPage()
 
@@ -568,18 +568,18 @@ class DownloadGradelistDiplomaView(View):
                         if is_diploma:
                             if is_sxm:
                                 grd_draw.draw_diploma_sxm(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
-                                                          printdate)
+                                                          printdate, sel_examyear.code)
                             else:
                                 grd_draw.draw_diploma_cur(canvas_tobesaved, library, student_dict, auth1_name, auth2_name,
-                                                          printdate)
+                                                          printdate, sel_examyear.code)
 
                         else:
                             if is_sxm:
-                                grd_draw.draw_gradelist_sxm(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
-                                                            print_reex, auth1_pk, auth2_pk, printdate, request)
+                                grd_draw.draw_gradelist_sxm(canvas_tobesaved, library, student_dict, is_prelim,
+                                                            print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
                             else:
-                                grd_draw.draw_gradelist_cur(canvas_tobesaved, library, student_dict, is_prelim, is_sxm,
-                                                            print_reex, auth1_pk, auth2_pk, printdate, request)
+                                grd_draw.draw_gradelist_cur(canvas_tobesaved, library, student_dict, is_prelim,
+                                                            print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
 
                         canvas_tobesaved.showPage()
 
@@ -751,7 +751,7 @@ class DownloadPokView(View):  # PR2022-07-02
                     canvas = Canvas(buffer)
 
                     for student_dict in proof_of_knowledge_dict.values():
-                        grd_draw.draw_pok(canvas, library, student_dict, auth1_pk, printdate, request)
+                        grd_draw.draw_pok(canvas, library, student_dict, auth1_pk, printdate, sel_examyear.code, request)
 
                         canvas.showPage()
 
@@ -826,6 +826,10 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
     #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
     #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
 
+    # PR2023-07-04 debug: Friedeman Hasselbaink Jacques Ferrandi: wants to print gradelist 2022.
+    # has saved regnumber instead of calculated regnumber
+    use_saved_regnumber = examyear.code < 2023
+
     sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk,
                 'student_pk_arr': student_pk_list}
     if logging_on:
@@ -835,7 +839,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
     grade_dict = {}
 
     sql_list = ["SELECT studsubj.id AS studsubj_id, stud.id AS stud_id,",
-                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
+                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber, stud.regnumber,",
                 "stud.birthdate, stud.birthcountry, stud.birthcity, stud.bis_exam,"
                 "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
                 "stud.gl_status, stud.ep01_result,",
@@ -944,16 +948,20 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
         # - calc regnumber - don't get it from database table
-                reg_number = stud_fnc.calc_regnumber(
-                    school_code=row.get('school_code'),
-                    gender=row.get('gender'),
-                    examyear_str=row.get('examyear_txt'),
-                    examnumber_str=row.get('examnumber'),
-                    depbase_code=row.get('depbase_code'),
-                    levelbase_code=row.get('lvlbase_code'),
-                    bis_exam=row.get('bis_exam'),
-                    used_regnumber_list=used_regnumber_list
-                )
+                # - calc regnumber - get it from database table Student when examyear = 2022, calculate otherwise
+                if use_saved_regnumber:
+                    reg_number = row.get('regnumber') or '---'
+                else:
+                    reg_number = stud_fnc.calc_regnumber(
+                        school_code=row.get('school_code'),
+                        gender=row.get('gender'),
+                        examyear_str=row.get('examyear_txt'),
+                        examnumber_str=row.get('examnumber'),
+                        depbase_code=row.get('depbase_code'),
+                        levelbase_code=row.get('lvlbase_code'),
+                        bis_exam=row.get('bis_exam'),
+                        used_regnumber_list=used_regnumber_list
+                    )
 
                 grade_dict[stud_id] = {
                     'country': row.get('country'),
@@ -1096,7 +1104,13 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
         # PR2022-06-16 Hans Vlinkervleugel gradelist sort by first name, instead of by last name. sortname added
         # was: grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['fullname'])
         # was: grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['sortname'])
-        grade_dictlist_sorted = sorted(grade_list, key=lambda k: (k['lastname'], k['firstname']))
+
+        # PR2023-07-11 email Jean Provence-Laurence MPC VSBO-TKL: order of gradelist not same as diploma
+        # cause: diploma sorts with: sql_list.append("ORDER BY LOWER(stud.lastname), LOWER(stud.firstname)")
+        # gradelist sorts with:    grade_dictlist_sorted = sorted(grade_list, key=lambda k: (k['lastname'], k['firstname']))
+        # solved by adding 'lower()'
+        # was: grade_dictlist_sorted = sorted(grade_list, key=lambda k: (k['lastname'], k['firstname']))
+        grade_dictlist_sorted = sorted(grade_list, key=lambda k: (k['lastname'].lower(), k['firstname'].lower()))
 
         if logging_on:
             if grade_dictlist_sorted:
@@ -1120,13 +1134,17 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
         logger.debug(' ----- get_diploma_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
 
+    # PR2023-07-04 debug: Friedeman Hasselbaink Jacques Ferrandi: wants to print gradelist 2022.
+    # has saved regnumber instead of calculated regnumber
+    use_saved_regnumber = examyear.code < 2023
+
     sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'passed': c.RESULT_PASSED,
                 'student_pk_arr': student_pk_list}
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
 
     sql_list = ["SELECT stud.id AS stud_id,",
-                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
+                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber, stud.regnumber,",
                 "stud.birthdate, stud.birthcountry, stud.birthcity, stud.bis_exam,",
                 "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
                 "stud.ep01_result, stud.ep02_result, stud.result,"
@@ -1196,17 +1214,27 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
     # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
             idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
-    # - calc regnumber - don't get it from database table
-            reg_number = stud_fnc.calc_regnumber(
-                school_code=row.get('school_code'),
-                gender=row.get('gender'),
-                examyear_str=row.get('examyear_txt'),
-                examnumber_str=row.get('examnumber'),
-                depbase_code=row.get('depbase_code'),
-                levelbase_code=row.get('lvlbase_code'),
-                bis_exam=row.get('bis_exam'),
-                used_regnumber_list=used_regnumber_list
-            )
+    # - calc regnumber - get it from database table Student when examyear = 2022, calculate otherwise
+            if use_saved_regnumber:
+                reg_number = row.get('regnumber') or '---'
+            else:
+                reg_number = stud_fnc.calc_regnumber(
+                    school_code=row.get('school_code'),
+                    gender=row.get('gender'),
+                    examyear_str=row.get('examyear_txt'),
+                    examnumber_str=row.get('examnumber'),
+                    depbase_code=row.get('depbase_code'),
+                    levelbase_code=row.get('lvlbase_code'),
+                    bis_exam=row.get('bis_exam'),
+                    used_regnumber_list=used_regnumber_list
+                )
+
+            if logging_on:
+                logger.debug(' ----- get_diploma_dictlist -----')
+                logger.debug('    examyear.code: ' + str(examyear.code))
+                logger.debug('    use_saved_regnumber: ' + str(use_saved_regnumber))
+                logger.debug('    reg_number: ' + str(reg_number))
+                logger.debug('    row.get(regnumber): ' + str(row.get('regnumber')))
 
             birth_date = row.get('birthdate', '')
             birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False

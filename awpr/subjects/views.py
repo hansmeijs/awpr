@@ -5077,20 +5077,37 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
             elif field == 'auth_index':
                 auth_index = upload_dict.get(field)
                 auth_bool_at_index = upload_dict.get('auth_bool_at_index', False)
-                fldName = 'auth1by' if auth_index == 1 else 'auth2by' if auth_index == 2 else None
-
+                authby = 'auth1by' if auth_index == 1 else 'auth2by' if auth_index == 2 else None
                 if logging_on:
                     logger.debug('auth_index: ' + str(auth_index))
                     logger.debug('auth_bool_at_index: ' + str(auth_bool_at_index))
-                    logger.debug('fldName: ' + str(fldName))
+                    logger.debug('authby: ' + str(authby))
 
-                if fldName:
-                    new_value = request.user if auth_bool_at_index else None
+                if authby:
+
+         # - check other authorization, to check if it is the same user. Only when auth is set to True
+                    authby_other_field = 'auth2by' if authby == 'auth1by' else 'auth1by'
+                    other_authby_value = getattr(exam_instance, authby_other_field)
                     if logging_on:
-                        logger.debug('new_value: ' + str(auth_index))
+                        logger.debug('  authby_other_field:    ' + str(authby_other_field))
+                        logger.debug('  other_authby_value: ' + str(other_authby_value))
+                        logger.debug('  request.user: ' + str(request.user) )
 
-                    setattr(exam_instance, fldName, new_value)
-                    save_changes = True
+                    if auth_bool_at_index and other_authby_value and other_authby_value == request.user:
+                        error_list.extend((
+                            gettext('You already have approved %(cpt)s in a different function.') % {'cpt': gettext('This exam').lower()},
+                            gettext('You cannot approve %(cpt)s in multiple functions.') % {'cpt': gettext('an exam')}
+                        ))
+                        if logging_on:
+                            logger.debug('  err_same_user')
+
+                    else:
+                        new_value = request.user if auth_bool_at_index else None
+                        if logging_on:
+                            logger.debug('new_value: ' + str(auth_index))
+
+                        setattr(exam_instance, authby, new_value)
+                        save_changes = True
 
             elif field == 'published':
                 # can only remove published. ALso remove auth1, auth2. PR2022-05-21
@@ -7212,7 +7229,8 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
                 "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
                 "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
 
-                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex, si.sr_allowed AS si_sr_allowed, si.no_ce_years, si.thumb_rule",
+                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex, si.sr_allowed AS si_sr_allowed, si.no_ce_years,",
+                "si.thumb_rule AS thumb_rule_allowed",
 
                 "FROM subjects_schemeitem AS si",
                 "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",

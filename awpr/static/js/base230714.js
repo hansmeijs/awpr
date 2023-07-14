@@ -16,6 +16,12 @@
 
     const field_settings = {};  // PR2023-04-20 made global
 
+
+    // examyear_rows and department_rows are used in t_MSED_ PR2022-08-01
+    // to be replaced by _dicts PR2023-06-27
+    let examyear_rows = [];
+    let department_rows = [];  //PR2023-07-11 also used in correctors.js
+
     // PR2023-01-13  these variables are declared in base.js to make them global variables for t_MUPS_Open
     let school_rows = [];
     let level_rows = [];
@@ -29,10 +35,6 @@
 
     const manual_dict = {'test': true}
 
-    // examyear_rows and department_rows are used in t_MSED_ PR2022-08-01
-    // to be replaced by _dicts PR2023-06-27
-    let examyear_rows = [];
-    let department_rows = [];
 
     // TODO 2023-03-13 change examyear_rows to examyear_dicts
     // new structure: _dicts PR2023-06-27

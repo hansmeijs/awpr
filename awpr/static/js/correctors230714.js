@@ -25,10 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // all other permits get their value in function get_permits, after downloading permit_list
     const may_view_page = (!!el_loader)
 
-
     let mod_dict = {};
     const mod_MCH_dict = {};
     const mod_MSM_dict = {};
+    const mod_MAC_dict = {};
 
     let time_stamp = null; // used in mod add user
 
@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_usercompensation_upload = get_attr_from_el(el_data, "data-url_usercompensation_upload");
     urls.url_usercomp_approve_single = get_attr_from_el(el_data, "data-url_usercomp_approve_single");
     urls.url_usercomp_approve_submit = get_attr_from_el(el_data, "data-url_usercomp_approve_submit");
+
+    urls.url_download_excomp = get_attr_from_el(el_data, "data-url_download_excomp");
 
     mod_MCOL_dict.columns.all = {
         user_sb_code: "Organization", last_name: "Name",
@@ -165,11 +167,33 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         };
-
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
             el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
         };
+
+        const el_submenu = document.getElementById("id_submenu");
+
+// ---  SIDEBAR ------------------------------------
+        const el_SBR_select_department = document.getElementById("id_SBR_select_department");
+        if(el_SBR_select_department){
+            el_SBR_select_department.addEventListener("change", function() {
+                Handle_SBR_select_dep_lvl("depbase", el_SBR_select_department)
+            }, false)
+        };
+        const el_SBR_select_level = document.getElementById("id_SBR_select_level");
+        if(el_SBR_select_level){
+            el_SBR_select_level.addEventListener("change", function() {
+                Handle_SBR_select_dep_lvl("lvlbase", el_SBR_select_level)
+            }, false)
+        };
+
+        const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
+        if(el_SBR_select_showall){
+            el_SBR_select_showall.addEventListener("click", function() {Handle_SBR_show_all()}, false);
+            add_hover(el_SBR_select_showall);
+        };
+        const el_SBR_item_count = document.getElementById("id_SBR_item_count");
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -229,6 +253,31 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSM_btn_save.addEventListener("click", function() {MSM_Save()}, false )
         };
 
+// ---  MOD APPROVE COMPENSATION ------------------------------------
+        const el_MAC_header = document.getElementById("id_MAC_header");
+
+        const el_MAC_select_container = document.getElementById("id_MAC_select_container");
+        const el_MAC_department = document.getElementById("id_MAC_department");
+        const el_MAC_level = document.getElementById("id_MAC_level");
+
+        const el_MAC_info_container = document.getElementById("id_MAC_info_container");
+        const el_MAC_loader = document.getElementById("id_MAC_loader");
+
+        const el_MAC_input_verifcode = document.getElementById("id_MAC_input_verifcode");
+        if (el_MAC_input_verifcode){
+            el_MAC_input_verifcode.addEventListener("keyup", function() {MAC_InputVerifcode(el_MAC_input_verifcode, event.key)}, false);
+            el_MAC_input_verifcode.addEventListener("change", function() {MAC_InputVerifcode(el_MAC_input_verifcode)}, false);
+        };
+        const el_MAC_btn_delete = document.getElementById("id_MAC_btn_delete");
+        if (el_MAC_btn_delete){
+            el_MAC_btn_delete.addEventListener("click", function() {MAC_Save("delete")}, false )  // true = reset
+        };
+        const el_MAC_btn_save = document.getElementById("id_MAC_btn_save");
+        if (el_MAC_btn_save){
+            el_MAC_btn_save.addEventListener("click", function() {MAC_Save("save")}, false )
+        };
+        const el_MAC_btn_cancel = document.getElementById("id_MAC_btn_cancel");
+
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
@@ -241,9 +290,24 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  set selected menu button active
         SetMenubuttonActive(document.getElementById("id_hdr_users"));
 
+        DatalistDownload({page: "page_corrector"});
+    };
+//  #############################################################################################################
+
+//========= DatalistDownload  ===================== PR2020-07-31 PR2023-07-08
+    function DatalistDownload(request_item_setting, keep_loader_hidden) {
+        //console.log( "=== DatalistDownload ", called_by)
+        //console.log("request: ", datalist_request)
+
+// ---  Get today's date and time - for elapsed time
+        let startime = new Date().getTime();
+
+// ---  show loader
+        if(!keep_loader_hidden){el_loader.classList.remove(cls_visible_hide)}
+
         const datalist_request = {
-                setting: {page: "page_corrector"},
-                schoolsetting: {setting_key: "import_username"},
+                setting: request_item_setting,
+                //schoolsetting: {setting_key: "import_username"},
                 locale: {page: ["page_user", "page_corrector", "upload"]},
                 examyear_rows: {get: true},
                 corrector_rows: {get: true},
@@ -256,22 +320,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 subject_rows_page_users: {get: true},
                 cluster_rows: {page: "page_corrector"}
             };
-
-        console.log("    datalist_request: ", datalist_request)
-        DatalistDownload(datalist_request, "DOMContentLoaded");
-    };
-//  #############################################################################################################
-
-//========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, called_by) {
-        //console.log( "=== DatalistDownload ", called_by)
-        //console.log("request: ", datalist_request)
-
-// ---  Get today's date and time - for elapsed time
-        let startime = new Date().getTime();
-
-// ---  show loader
-        el_loader.classList.remove(cls_visible_hide)
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -298,6 +346,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     setting_dict = response.setting_dict;
                     selected_btn = setting_dict.sel_btn;
                     isloaded_settings = true;
+                    // PR2023-07-14 debug. filter on sbr not working properly. try this
+                    b_clear_dict(selected);
+                    if (setting_dict){
+                        selected.sel_dep_level_req = setting_dict.sel_dep_level_req;
+                        selected.sel_depbase_pk = (setting_dict.sel_depbase_pk) ? setting_dict.sel_depbase_pk : null;
+                        selected.sel_depbase_code = (setting_dict.sel_depbase_code) ? setting_dict.sel_depbase_code : null;
+                        selected.sel_lvlbase_pk = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_pk : null;
+                        selected.sel_lvlbase_code = (setting_dict.sel_lvlbase_code) ? setting_dict.sel_lvlbase_code : null;
+                    };
 
         // ---  fill cols_hidden
                     if("cols_hidden" in setting_dict){
@@ -319,7 +376,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_get_permits_from_permitlist(permit_dict);
                 };
 
-                if(isloaded_loc && isloaded_permits){CreateSubmenu()};
+                if(isloaded_loc && isloaded_permits){
+                    CreateSubmenu();
+                };
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
 
                 if ("examyear_rows" in response) {
@@ -334,7 +393,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("usercompensation_rows" in response) {
                     // mapid : "usercomp_124_222"
                     b_fill_datadicts_by_mapid(response.usercompensation_rows, usercompensation_dicts)
-                    console.log("usercompensation_dicts", usercompensation_dicts);
                 };
                 if ("usercomp_agg_rows" in response) {
                     b_fill_datadicts("usercomp_agg", "u_id", "exam_id", response.usercomp_agg_rows, usercomp_agg_dicts);
@@ -343,14 +401,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows) ;
                 };
-                if ("department_rows" in response){
-                    department_rows = response.department_rows
-                };
                 if ("school_rows" in response)  {school_rows = response.school_rows};
+                if ("department_rows" in response){
+                    department_rows = response.department_rows;
+
+                    t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase("depbase", department_rows, setting_dict);
+                    add_or_remove_class(document.getElementById("id_SBR_container_department"), cls_hide, false);
+                    add_or_remove_class(document.getElementById("id_SBR_container_showall"), cls_hide, false);
+                    const show_SBR_select_level = (setting_dict && setting_dict.sel_dep_level_req) ;
+                    add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !show_SBR_select_level);
+                };
 
                 if ("level_rows" in response)  {
-                    level_rows = response.level_rows
+                    level_rows = response.level_rows;
+                    // PR2023-02-21 was: b_fill_datamap(level_map, response.level_rows)
+                    const skip_show_hide = true;
+                    t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase("lvlbase", response.level_rows, setting_dict, skip_show_hide);
                 };
+
                 if ("subject_rows_page_users" in response)  {subject_rows = response.subject_rows_page_users};
                 if ("cluster_rows" in response) {
                     b_fill_datadicts("cluster", "id", null, response.cluster_rows, cluster_dictsNEW);
@@ -377,34 +445,39 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 
-//=========  CreateSubmenu  ===  PR2020-07-31
+//=========  CreateSubmenu  ===  PR2020-07-31 PR2023-07-08
     function CreateSubmenu() {
+        //console.log( "===== CreateSubmenu ========= ");
 
-        // PR2023-03-26 show tab 'Correctors' only when requsr_same_school
-        add_or_remove_class(document.getElementById("id_btn_correctors"), cls_hide, !permit_dict.requsr_same_school)
+        //PR2023-06-08 debug: to prevent creating submenu multiple times: skip if btn columns exists
+        if (!document.getElementById("id_submenu_columns")){
 
-        //console.log("===  CreateSubmenu == ");
-        let el_submenu = document.getElementById("id_submenu");
-        // hardcode access of system admin, to get access before action 'crud' is added to permits
-        const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
-        const permit_role_admin = (permit_dict.requsr_role_admin && permit_dict.usergroup_list.includes("admin"));
+            // PR2023-03-26 show tab 'Correctors' only when requsr_same_school, to add allowed clusters
+            add_or_remove_class(document.getElementById("id_btn_correctors"), cls_hide, !permit_dict.requsr_same_school)
 
-        if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool) {
-            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, []);
+            // PR2023-03-26 show tab 'Compensation' only when role = corrector and ug=auth1 or auth2
+            // tab 'Compensation' is only confusing for schools or correctors
+            const show_btn_usercomp_agg = (permit_dict.requsr_role_corr && permit_dict.permit_pay_comp);
+            add_or_remove_class(document.getElementById("id_btn_usercomp_agg"), cls_hide, !show_btn_usercomp_agg);
+            if (permit_dict.permit_approve_comp){
+                //AddSubmenuButton(el_submenu, loc.Approve_compensations, function() {MAC_Open("approve")}, []);
+                AddSubmenuButton(el_submenu, loc.Preliminary_compensation_form, function() {ModConfirmOpen("prelim_excomp")}, []);
+                //AddSubmenuButton(el_submenu, loc.Submit_compensation_form, function() {MAC_Open("submit")}, []);
+            };
+
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_corrector")}, [])
+
+            el_submenu.classList.remove(cls_hide);
         };
-
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_corrector")}, [])
-
-        el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
 
 //###########################################################################
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ");
-        console.log( "    data_btn", data_btn);
-        console.log( "    skip_upload", skip_upload);
+        //console.log( "===== HandleBtnSelect ========= ");
+        //console.log( "    data_btn", data_btn);
+        //console.log( "    skip_upload", skip_upload);
 
 // ---  get  selected_btn
         // set to default "btn_usercompensation" when there is no selected_btn
@@ -416,7 +489,6 @@ document.addEventListener('DOMContentLoaded', function() {
             selected_btn = (permit_dict.requsr_same_school) ? "btn_correctors" : "btn_usercompensation";
         };
 
-        console.log( "    selected_btn", selected_btn);
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_corrector: {sel_btn: selected_btn}};
@@ -449,21 +521,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // HandleTblRowClicked
 
-//========= FillTblRows  =================== PR2021-08-01 PR2022-02-28
-    function FillTblRows(skip_upload) {
+//========= FillTblRows  =================== PR2021-08-01 PR2022-02-28 PR2023-07-10
+    function FillTblRows() {
         console.log( "===== FillTblRows  === ");
-        console.log( "    selected_btn: ", selected_btn);
+        //console.log( "    selected_btn: ", selected_btn);
+        //console.log( "    selected: ", selected);
 
         const tblName = get_tblName_from_selectedBtn() // tblName = userapproval or usercompensation
         const field_setting = field_settings[selected_btn];
         const data_dicts = get_datadicts_from_selectedBtn();
 
+// PR2023-07-11  show/hide sbr_select
+        //add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, (!selected.sel_depbase_pk || !selected.sel_lvl_req) )
+        //if (el_SBR_select_department){
+        //    el_SBR_select_department.value = (selected.sel_depbase_pk) ?selected.sel_depbase_pk : "-9";
+        //};
+        //if (el_SBR_select_level){
+        //    el_SBR_select_level.value = (selected.sel_lvlbase_pk) ?selected.sel_lvlbase_pk : "-9";
+        //};
+
 // ---  get list of hidden columns
         const col_hidden = get_column_is_hidden();
-
-        //console.log( "    tblName", tblName);
-        console.log( "    data_dicts", data_dicts);
-        //console.log( "    field_setting", field_setting);
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -472,16 +550,56 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- create table header and filter row
         CreateTblHeader(field_setting, col_hidden);
 
+// --- create table rows
+        if(data_dicts){
 // --- loop through data_rows
-        for (const data_dict of Object.values(data_dicts)) {
-            const tblRow = CreateTblRow(tblName, field_setting, data_dict, col_hidden);
-        };
+            for (const data_dict of Object.values(data_dicts)) {
+                //console.log("    data_dict", data_dict);
 
+                // PR2023-07-11 filter on depbase and lvlbase, don't use sel_depbase_pk and sel_lvlbase_pk
+                let show_row = false;
+                if (selected_btn === "btn_correctors"){
+                    if (!selected.sel_depbase_pk){
+                        show_row = true;
+                    } else {
+                        if (!selected.sel_dep_level_req){
+                            show_row = (!data_dict.allowed_depbase_pk_arr ||
+                                        data_dict.allowed_depbase_pk_arr.includes(-9) ||
+                                        data_dict.allowed_depbase_pk_arr.includes(selected.sel_depbase_pk));
+                        } else {
+                            if (data_dict.allowed_depbase_pk_arr.includes(selected.sel_depbase_pk)){
+                                show_row = (!data_dict.allowed_lvlbase_pk_arr ||
+                                    data_dict.allowed_lvlbase_pk_arr.includes(-9) ||
+                                    data_dict.allowed_lvlbase_pk_arr.includes(selected.sel_lvlbase_pk));
+                            };
+                        };
+                    };
+
+                } else {
+                    if (!selected.sel_depbase_pk){
+                        show_row = true;
+                    } else {
+                        if (!selected.sel_dep_level_req){
+                            show_row = (data_dict.uc_depbase_id === selected.sel_depbase_pk);
+                        } else {
+                            if (selected.sel_lvlbase_pk){
+                                show_row = (data_dict.uc_lvlbase_id === selected.sel_lvlbase_pk);
+                            } else {
+                                show_row = (data_dict.uc_depbase_id === selected.sel_depbase_pk);
+                            };
+                        };
+                    };
+                };
+                if(show_row){
+                    CreateTblRow(tblName, field_setting, data_dict, col_hidden);
+               };
+            };
+        };
 // --- filter tblRow
-        // set filterdict isactive after loading page (then skip_upload = true)
-        // const set_filter_isactive = skip_upload;
-        Filter_TableRows(skip_upload)
-    }  // FillTblRows
+        if (tblBody_datatable.rows.length){
+            t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Item, loc.Items);
+        };
+    };  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01 PR2023-04-15
     function CreateTblHeader(field_setting, col_hidden) {
@@ -577,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-02-26
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-02-26 PR2023-07-09
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("    data_dict", data_dict);
@@ -605,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("    tblRow", tblRow);
 
 // --- add data attributes to tblRow
-        tblRow.setAttribute("data-pk", data_dict.id);
+        tblRow.setAttribute("data-pk", data_dict.uc_id);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
@@ -986,7 +1104,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         auth_dict[requsr_auth_index] = new_requsr_auth_bool
 
     // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
-                        el_input.className = f_get_status_auth12_iconclass(is_published, false, auth_dict[1], auth_dict[2]);
+                        // PR2023-07-11 not yet, first must undo change when error
+                        // el_input.className = f_get_status_auth12_iconclass(is_published, false, auth_dict[1], auth_dict[2]);
 
         // ---  upload changes
                         const usercompensation_dict = {
@@ -1035,7 +1154,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // TODO remove requsr_pk from client
                     const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id);
                     if(fldName === "group_admin" && is_request_user && permit_bool ){
-                        ModConfirmOpen("usergroup", "permission_admin", el_input)
+                        //ModConfirmOpen("usergroup", "permission_admin", el_input)
                     } else {
 
             // ---  toggle permission el_input
@@ -1088,6 +1207,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log("response");
                     console.log( response);
 
+                    if ( "approve_msg_html" in response){
+                        MAC_UpdateFromResponse(response)
+                    };
+                    // this one is in MAC_UpdateFromResponse:
+                    //if ( "updated_studsubj_approve_rows" in response){
+
                     if("msg_dictlist" in response){
                         b_show_mod_message_dictlist(response.msg_dictlist);
                     }
@@ -1106,9 +1231,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("updated_usercompensation_rows" in response) {
                         RefreshDataRows("usercompensation", response.updated_usercompensation_rows, usercompensation_dicts, true)  // true = update
                     };
-                    if ("msg_html" in response) {
-                        b_show_mod_message_html(response.msg_html)
-                    };
+
+
                     if ("messages" in response) {
                         b_show_mod_message_dictlist(response.messages)
                     };
@@ -1197,26 +1321,30 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("    map_id", map_id)
         console.log("    data_dict", data_dict)
         if (data_dict){
-            el_MCH_header_text.innerHTML = [loc.Meetings, data_dict.subj_name_nl + " - " + loc.examperiod_caption[data_dict.examperiod]].join("<br>");
-    // --- get data_dict from tblName and selected_pk
-            //const data_dict = get_datadict_from_pk(tblName, selected_pk)
-            //console.log("    data_dict", data_dict);
+            if(data_dict.u_id !== permit_dict.requsr_pk){
+                b_show_mod_message_html(["<p class='p-2 border_bg_invalid'>", loc.Meeting_canonlybe_entered_by_corrector_himself, "</p"].join(""));
+            } else {
+                el_MCH_header_text.innerHTML = [loc.Meetings, data_dict.subj_name_nl + " - " + loc.examperiod_caption[data_dict.examperiod]].join("<br>");
+        // --- get data_dict from tblName and selected_pk
+                //const data_dict = get_datadict_from_pk(tblName, selected_pk)
+                //console.log("    data_dict", data_dict);
 
-            el_MCH_meetingdate1.value = data_dict.uc_meetingdate1;
-            el_MCH_meetingdate2.value = data_dict.uc_meetingdate2;
+                el_MCH_meetingdate1.value = data_dict.uc_meetingdate1;
+                el_MCH_meetingdate2.value = data_dict.uc_meetingdate2;
 
-    // ---  create mod_MCH_dict
-            b_clear_dict(mod_MCH_dict);
-            mod_MCH_dict.data_dict = data_dict;
-            mod_MCH_dict.meeting_count = data_dict.uc_meetings;
-            mod_MCH_dict.usercomp_pk = data_dict.id;
-            mod_MCH_dict.show_err_msg = false;
-            mod_MCH_dict.has_changes = false;
+        // ---  create mod_MCH_dict
+                b_clear_dict(mod_MCH_dict);
+                mod_MCH_dict.data_dict = data_dict;
+                mod_MCH_dict.meeting_count = data_dict.uc_meetings;
+                mod_MCH_dict.usercomp_pk = data_dict.id;
+                mod_MCH_dict.show_err_msg = false;
+                mod_MCH_dict.has_changes = false;
 
-            MCH_Hide_Inputboxes();
+                MCH_Hide_Inputboxes();
 
-    // show modal
-            $("#id_mod_comphours").modal({backdrop: true});
+        // show modal
+                $("#id_mod_comphours").modal({backdrop: true});
+            };
         };
     };  // MCH_Open
 
@@ -1342,157 +1470,47 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MCH_Hide_Inputboxes
 
 
+
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 
-//=========  ModConfirmOpen_DownloadUserdata  ================ PR2023-01-31
-    function ModConfirmOpen_DownloadUserdata(mode ) {
-        console.log(" -----  ModConfirmOpen_DownloadUserdata   ----")
+//=========  ModConfirmOpen  ================ PR2023-07-09
+    function ModConfirmOpen(mode, el_input) {
+        console.log(" -----  ModConfirmOpen   ----")
+        // values of mode are : "prelim_excomp"
 
-// variables for future use in other functions
-        console.log("    mode", mode);
-        const may_edit = true;
-        const show_modal = true;
-        const show_large_modal = true;
+        // ModConfirmOpen(null, "user_without_userallowed", null, response.user_without_userallowed);
+        console.log("    mode", mode )
 
 // ---  create mod_dict
         mod_dict = {mode: mode};
 
- // ---  put text in modal for
-        let header_txt = "";
-        const msg_list = [];
-        let caption_save = loc.OK;
-        let hide_save_btn = false;
-
-        header_txt = loc.Download_user_data;
-        caption_save = loc.Yes_download;
-        msg_list.push("<p>" + loc.The_user_data + loc.will_be_downloaded_plur + "</p><p>");
-        msg_list.push("<p>" +  loc.Do_you_want_to_continue + "</p>");
-
-        el_confirm_header.innerText = header_txt;
-        el_confirm_loader.classList.add(cls_visible_hide);
-        el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-
-        el_confirm_msg_container.innerHTML = msg_list.join("");
-
-        el_confirm_btn_save.innerText = caption_save;
-        add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
-
-        //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
-        add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete_candidate"), "btn-primary");
-
-        el_confirm_btn_cancel.innerText = (hide_save_btn) ? loc.Close : loc.No_cancel;
-
-// set focus to cancel button
-        set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
-
-// show modal
-        if (show_modal) {
-            $("#id_mod_confirm").modal({backdrop: true});
-
-            // this code must come after $("#id_mod_confirm"), otherwise it will not work
-            add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-md", show_large_modal, "modal-md");
-        };
-    };  // ModConfirmOpen_DownloadUserdata
-
-//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-30 PR2022-12-31
-    function ModConfirmOpen(tblName, mode, el_input, user_without_userallowed) {
-        console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete", "is_active" or "send_activation_email", "permission_admin", "user_without_userallowed"
-
-        // ModConfirmOpen(null, "user_without_userallowed", null, response.user_without_userallowed);
-        console.log("    mode", mode )
-        console.log("    tblName", tblName )
-
-// ---  get selected_pk
-        let selected_pk = null;
-        // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
-        const tblRow = t_get_tablerow_selected(el_input);
-        if(tblRow){
-            selected_pk = get_attr_from_el_int(tblRow, "data-pk")
-        } else {
-            selected_pk = selected_user_pk;
-        }
-        console.log("    tblRow", tblRow )
-        console.log("    selected_pk", selected_pk )
-
-// --- get data_dict from tblName and selected_pk
-        const data_dict = get_datadict_from_pk(tblName, selected_pk)
-        console.log("data_dict", data_dict);
-
-// ---  get info from data_dict
-        // TODO remove requsr_pk from client
-        const is_request_user = (data_dict && permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id)
-        console.log("    is_request_user", is_request_user)
-
-// ---  create mod_dict
-        mod_dict = {mode: mode, table: tblName};
-        const has_selected_item = (!isEmpty(data_dict));
-        if(has_selected_item){
-            mod_dict.mapid = data_dict.mapid;
-
-            mod_dict.user_pk = data_dict.id;
-            mod_dict.user_ppk = data_dict.schoolbase_id;
-
-        };
-       console.log("    mod_dict", mod_dict);
-
 // ---  put text in modal form
         let dont_show_modal = false;
-        const is_mode_permission_admin = (mode === "permission_admin");
-        const is_mode_send_activation_email = (mode === "send_activation_email");
-
-        const header_text = (mode === "delete") ? loc.Delete_user :
-                            (mode === "user_without_userallowed") ? loc.Add_user :
-                            (is_mode_send_activation_email) ? loc.Send_activation_email :
-                            (is_mode_permission_admin) ? loc.Set_permissions : "";
+        const header_text = (mode === "prelim_excomp") ? loc.Preliminary_compensation_form : "";
 
         let msg_list = [];
         let hide_save_btn = false;
-        if (!has_selected_item){
-            msg_list.push("<p>" + loc.No_user_selected + "</p>");
-            hide_save_btn = true;
-        } else {
 
-            const username = (data_dict.username) ? data_dict.username  : "-";
-            if(mode === "delete"){
-                if(is_request_user){
-                    msg_list.push("<p>" + loc.Sysadm_cannot_delete_own_account + "</p>");
-                    hide_save_btn = true;
-                } else {
-                    msg_list.push(["<p>", loc.User + " '" + username + "'", loc.will_be_deleted, "</p>"].join(""));
-                    msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
-                }
-            } else if(is_mode_permission_admin){
-                hide_save_btn = true;
-                const fldName = get_attr_from_el(el_input, "data-field")
-                if (fldName === "group_admin") {
-                    msg_list.push("<p>" + loc.Sysadm_cannot_remove_sysadm_perm + "</p>");
-                }
-            }
-
-        }
         if(!dont_show_modal){
             el_confirm_header.innerText = header_text;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
 
+            const msg_list = ["<p>", loc.The_preliminary_compensation_form,
+                                loc.will_be_downloaded_sing, "</p><p>",
+                                loc.Do_you_want_to_continue, "</p>"];
             const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
 
-            //el_confirm_msg_container.classList.add("border_bg_transparent");
-
-            const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
+            const caption_save = loc.OK;
             el_confirm_btn_save.innerText = caption_save;
             add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
 
             add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"));
 
-            const caption_cancel = (mode === "delete") ? loc.No_cancel :
-                            (mode === "is_active") ? loc.No_cancel :
-                            (is_mode_send_activation_email) ? loc.No_cancel : loc.Cancel;
-
-            el_confirm_btn_cancel.innerText = (has_selected_item && !is_mode_permission_admin) ? caption_cancel : loc.Close;
+            const caption_cancel = loc.Cancel;
+            el_confirm_btn_cancel.innerText = caption_cancel;
 
     // set focus to cancel button
             set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
@@ -1506,27 +1524,26 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("    mod_dict: ", mod_dict);
-        let tblRow = document.getElementById(mod_dict.mapid);
-
-// ---  when delete: make tblRow red, before uploading
-        if (tblRow && mod_dict.mode === "delete"){
-            ShowClassWithTimeout(tblRow, "tsa_tr_error");
-        }
 
         let close_modal = false, skip_uploadchanges = false, url_str = null;
         const upload_dict = {mode: mod_dict.mode, mapid: mod_dict.mapid};
 
-        if (mod_dict.mode === "user_without_userallowed"){
-            url_str = urls.url_user_upload;
+       if (mod_dict.mode === "prelim_excomp"){
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                skip_uploadchanges = true;
+                const href_str = urls.url_download_excomp;
+                el_modconfirm_link.setAttribute("href", href_str);
+                el_modconfirm_link.click();
 
-            upload_dict.user_pk = mod_dict.user_pk;
-            upload_dict.schoolbase_pk = mod_dict.schoolbase_pk;
-            upload_dict.username = mod_dict.username;
-            upload_dict.schoolbase_pk
-
-            close_modal = true;
-
+            // show loader
+                el_confirm_loader.classList.remove(cls_visible_hide)
+            // close modal after 5 seconds
+                //setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
+                close_modal = true;
+            };
         };
+
 // ---  Upload changes
         if (!skip_uploadchanges){
             UploadChanges(upload_dict, url_str);
@@ -1534,7 +1551,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  hide modal
         if(close_modal) {
-
             $("#id_mod_confirm").modal("hide");
         };
     };  // ModConfirmSave
@@ -1747,7 +1763,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "filter_dict", filter_dict);
 
         if (!skip_filter) {
-            Filter_TableRows();
+            t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Item, loc.Items);
         };
     }; // function HandleFilterKeyup
 
@@ -1793,7 +1809,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     //console.log( "filter_dict", filter_dict);
         el_input.className = icon_class;
-        Filter_TableRows();
+
+        t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Item, loc.Items);
     };  // HandleFilterToggle
 
 
@@ -1911,6 +1928,54 @@ document.addEventListener('DOMContentLoaded', function() {
         FillTblRows();
     }  // function ResetFilterRows
 
+
+//=========  SBR_show_all  ================ PR2020-12-17 like in grades.js
+    function SBR_show_all() {
+        console.log("=====  SBR_show_all  ========");
+
+        // don't reset setting_dict.sel_depbase_pk
+
+        setting_dict.sel_lvlbase_pk = null;
+        setting_dict.sel_lvlbase_code = null;
+
+        setting_dict.sel_sctbase_pk = null;
+        setting_dict.sel_sctbase_code = null;
+
+        setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
+
+        el_SBR_select_level.value = null;
+        el_SBR_select_sector.value = null;
+
+        t_MSSSS_display_in_sbr("student", "0");
+
+// --- reset table
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
+// --- reset SBR_item_count
+        el_SBR_item_count.innerText = null;
+
+// ---  upload new setting and refresh page
+        const datalist_request = {
+                setting: {
+                    page: "page_student",
+                    sel_lvlbase_pk: null,
+                    sel_sctbase_pk: null,
+                    sel_student_pk: null
+                },
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
+
+                // show deleted students only when SBR 'Show all' is clicked
+                student_rows: {"show_deleted": true},
+            };
+            DatalistDownload(datalist_request);
+    };  // SBR_show_all
+
+
+
+
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT  ++++++++++++++++++++
 // functions are in table.js, except for MSED_Response
@@ -1920,25 +1985,78 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "===== MSED_Response ========= ");
         console.log( "new_setting", new_setting);
 
-// ---  upload new selected_pk
         new_setting.page = setting_dict.sel_page;
-// also retrieve the tables that have been changed because of the change in examyear / dep
-        const datalist_request = {
-                setting: new_setting,
 
-                department_rows: {get: true},
-
-                // PR2023-05-08 was: school_rows: {skip_allowed_filter: true}, level_rows: {skip_allowed_filter: true}
-                school_rows: {get: true},
-                level_rows: {get: true},
-
-                subject_rows_page_users: {get: true},
-                cluster_rows: {page: "page_corrector"}
-            };
-
-        DatalistDownload(datalist_request);
-
+        DatalistDownload(new_setting);
     }  // MSED_Response
+
+
+//=========  Handle_SBR_select_dep_lvl  ================ PR2023-07-10
+    function Handle_SBR_select_dep_lvl(tblName, el_select) {
+        console.log("===== Handle_SBR_select_dep_lvl =====");
+        console.log( "   tblName: ", tblName)
+        console.log( "   el_select: ", el_select)
+        // values of tblName are: "depbase", "lvlbase"
+         // value "-9" is 'All departments' / 'All levels'
+
+        // PR2023-07-11 filter on depbase and lvlbase, don't use sel_depbase_pk and sel_lvlbase_pk
+        // also show/hide sbr_select
+
+        const sel_pk_int = (el_select.value && Number(el_select.value)) ? Number(el_select.value) : -9;
+        const selected_pk = (sel_pk_int !== -9) ? sel_pk_int : null;
+
+        console.log( "   sel_pk_int: ", sel_pk_int, typeof sel_pk_int)
+        console.log( "   selected_pk: ", selected_pk, typeof selected_pk)
+
+        let lvl_req = false;
+        const data_rows = (tblName === "lvlbase") ? level_rows : department_rows;
+
+        if (tblName === "depbase"){
+            let lvl_req = false;
+            if ( sel_pk_int){
+                if (data_rows && data_rows.length){
+                    for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                console.log( "    data_dict: ", data_dict);
+                        if(sel_pk_int && data_dict.base_id === sel_pk_int){
+                            lvl_req = data_dict.lvl_req;
+                            break;
+                }}};
+            };
+            console.log( "    lvl_req: ", lvl_req);
+            console.log( "    el_SBR_select_level.parentNode: ", el_SBR_select_level.parentNode);
+            add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !lvl_req);
+
+            selected.sel_depbase_pk = selected_pk;
+            selected.sel_dep_level_req = lvl_req;
+            if (!lvl_req){
+                selected.sel_lvlbase_pk = null;
+            };
+        } else {
+            selected.sel_lvlbase_pk = selected_pk;
+        };
+
+        console.log( "   selected: ", selected)
+        FillTblRows();
+    };  // Handle_SBR_select_dep_lvl
+
+//=========  SBR_dep_lvl_response  ================ PR2023-03-26 PR2023-07-09
+    function SBR_dep_lvl_response(tblName, selected_dict, selected_pk_int) {
+        console.log("===== SBR_dep_lvl_response =====");
+        console.log( "   tblName: ", tblName)
+        console.log( "   selected_pk_int: ", selected_pk_int, typeof selected_pk_int)
+        console.log( "   selected_dict: ", selected_dict)
+        // tblName = "depbase" or "lvlbase"
+
+// ---  upload new setting and download datarows
+        const sel_pk_key_str = (tblName === "depbase") ? "sel_depbase_pk" : (tblName === "lvlbase") ? "sel_lvlbase_pk" : null;
+        if(sel_pk_key_str){
+            const new_setting_dict = {page: "page_corrector"}
+            new_setting_dict[sel_pk_key_str] = (selected_pk_int) ? selected_pk_int : "-9";
+
+            DatalistDownload(new_setting_dict);
+        };
+    };  // SBR_dep_lvl_response
+
 
 //###########################################################################
 
@@ -2229,6 +2347,345 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // MSSSS_Response
 
+///////////////////////////////
+
+//////////////////////////////////////////////
+//========= MOD APPROVE STUDENT SUBJECTS ====================================
+    function MAC_Open (open_mode) {
+        console.log("===  MAC_Open  =====") ;
+        console.log("open_mode", open_mode) ;
+
+        b_clear_dict(mod_MAC_dict);
+
+        const form_name = 'comp';
+
+        // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
+        // gives err messages when multiple found.
+        // auth_index 1 = auth1, 2 = auth2
+        const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
+
+        if (permit_dict.permit_approve_comp) {
+            if(auth_index){
+                // modes are 'approve' 'submit_test' 'submit_save'
+                mod_MAC_dict.is_approve_mode = (open_mode === "approve");
+                mod_MAC_dict.is_submit_mode = (open_mode === "submit");
+                //mod_MAC_dict.status_index = auth_index;
+                mod_MAC_dict.test_is_ok = false;
+                mod_MAC_dict.submit_is_ok = false;
+                mod_MAC_dict.step = -1;  // gets value 1 in MAC_Save
+                mod_MAC_dict.is_reset = false;
+
+                const function_str = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1")) ? loc.Chairperson :
+                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary : "-";
+
+                let header_txt = (mod_MAC_dict.is_approve_mode)
+                                    ?  loc.Approve_compensations
+                                    : loc.Submit_compensation_form;
+                header_txt += "\n" + loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")";
+                el_MAC_header.innerText = header_txt;
+
+                // PR2023-07-14 use selected instead of setting_dict, to prevent problems when using 'all departments'
+                el_MAC_department.innerText = (selected.sel_depbase_code) ? selected.sel_depbase_code :  "<" + loc.All_departments + ">";
+
+    // ---  hide level when not level_req
+                add_or_remove_class(el_MAC_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
+                el_MAC_level.innerText = (setting_dict.sel_lvlbase_code) ? setting_dict.sel_lvlbase_code :  "<" + loc.All_levels+ ">";
+
+    // ---  show info container and delete button only in approve mode
+                //console.log("...........mod_MAC_dict.is_submit_mode", mod_MAC_dict.is_submit_mode) ;
+                add_or_remove_class(el_MAC_select_container, cls_hide, !mod_MAC_dict.is_approve_mode);
+                add_or_remove_class(el_MAC_btn_delete, cls_hide, mod_MAC_dict.is_submit_mode);
+
+    // ---  reset el_MAC_input_verifcode
+                el_MAC_input_verifcode.value = null;
+
+    // ---  show info and hide loader
+                // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
+                add_or_remove_class(el_MAC_loader, cls_hide, true);
+
+                MAC_Save ("save");
+                // this function is in MAC_Save:
+                // MAC_SetInfoboxesAndBtns();
+
+                $("#id_mod_approve_compensation").modal({backdrop: true});
+
+            };
+        };
+    };  // MAC_Open
+
+//=========  MAC_Save  ================
+    function MAC_Save (save_mode) {
+        console.log("===  MAC_Save  =====") ;
+        console.log("save_mode", save_mode) ;
+
+        // save_mode = 'save' or 'delete'
+        // mod_MAC_dict.mode = 'approve' or 'submit'
+        if (permit_dict.permit_approve_comp) {
+
+            mod_MAC_dict.is_reset = (save_mode === "delete");
+
+            mod_MAC_dict.step += 1;
+    console.log("    new step", mod_MAC_dict.step) ;
+
+            MAC_SetInfoboxesAndBtns() ;
+
+            //  upload_dict.modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
+            let url_str = null;
+            const upload_dict = { table: "usercompensation",
+                                  form: mod_MAC_dict.form_name,
+                                  sel_depbase_pk: selected.sel_depbase_pk,
+                                  sel_dep_level_req: selected.sel_dep_level_req,
+                                  sel_lvlbase_pk: selected.sel_lvlbase_pk,
+                                  now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
+                                };
+
+            if (mod_MAC_dict.is_approve_mode){
+                if (mod_MAC_dict.step === 0){
+                    url_str = urls.url_usercomp_approve_submit;
+                    upload_dict.mode = "approve_test";
+                } else if (mod_MAC_dict.step === 1){
+                    url_str = urls.url_usercomp_approve_submit;
+                    upload_dict.mode = (mod_MAC_dict.is_reset) ? "approve_reset" : "approve_save";
+                };
+            } else if (mod_MAC_dict.is_submit_mode){
+                if (mod_MAC_dict.step === 0){
+                    url_str = urls.url_usercomp_approve_submit;
+                    upload_dict.mode = "submit_test";
+                } else if (mod_MAC_dict.step === 1){
+                    url_str = urls.url_send_email_verifcode;
+                    upload_dict.mode = "request_verif";
+                } else if (mod_MAC_dict.step === 2){
+                    url_str = urls.url_usercomp_approve_submit;
+                    upload_dict.mode = "submit_save";
+                    upload_dict.verificationcode = el_MAC_input_verifcode.value
+                    upload_dict.verificationkey = mod_MAC_dict.verificationkey;
+                };
+            };
+    // ---  upload changes
+            UploadChanges(upload_dict, url_str);
+        };
+    };  // MAC_Save
+
+//========= MAC_UpdateFromResponse ============= PR2021-07-25 PR2023-07-13
+    function MAC_UpdateFromResponse(response) {
+        console.log("==== MAC_UpdateFromResponse ====");
+        console.log("    response", response);
+        console.log("    mod_MAC_dict", mod_MAC_dict);
+        console.log("    mod_MAC_dict.step", mod_MAC_dict.step);
+
+        mod_MAC_dict.test_is_ok = !!response.test_is_ok;
+        mod_MAC_dict.verificationkey = response.verificationkey;
+        mod_MAC_dict.verification_is_ok = !!response.verification_is_ok;
+
+    // - if false verfcode entered: try again, dont update mod_MAC_dict.verificationkey
+        if (mod_MAC_dict.step === 2 && !mod_MAC_dict.verification_is_ok ){
+            mod_MAC_dict.step -= 1;
+            el_MAC_input_verifcode.value = null;
+        } else {
+            mod_MAC_dict.verificationkey = response.verificationkey;
+        };
+
+        const count_dict = (response.approve_count_dict) ? response.approve_count_dict : {};
+
+        mod_MAC_dict.has_already_approved = (!!count_dict.already_approved)
+        mod_MAC_dict.submit_is_ok = (!!count_dict.saved)
+
+        MAC_SetInfoboxesAndBtns (response);
+
+        //if ("updated_studsubj_approve_rows" in response){
+        //    RefreshDataRows("studsubj", response.updated_studsubj_approve_rows, studsubj_rows, true);
+        //}
+        if ( (mod_MAC_dict.is_approve_mode && mod_MAC_dict.step === 3) || (mod_MAC_dict.is_submit_mode && mod_MAC_dict.step === 5)){
+                const datalist_request = { setting: {page: "page_studsubj"},
+                                studentsubject_rows: {cur_dep_only: true},
+                                published_rows: {get: true}
+                                };
+
+        console.log("......................datalist_request", datalist_request) ;
+                //DatalistDownload(datalist_request);
+        };
+    };  // MAC_UpdateFromResponse
+
+//=========  MAC_SetInfoboxesAndBtns  ================ PR2021-02-08 PR2023-01-10  PR2023-07-14
+     function MAC_SetInfoboxesAndBtns(response) {
+        console.log("===  MAC_SetInfoboxesAndBtns  =====") ;
+        // called by MAC_Save and MAC_UpdateFromResponse
+
+        console.log("......................step", mod_MAC_dict.step) ;
+        console.log("    test_is_ok", mod_MAC_dict.test_is_ok) ;
+        console.log("    verification_is_ok", mod_MAC_dict.verification_is_ok) ;
+
+        // step is increased in MAC_save, response has value when response is back from server
+        const is_response = (typeof response != "undefined");
+        console.log("    is_response", is_response) ;
+
+        // TODO is_reset
+        const is_reset = mod_MAC_dict.is_reset;
+
+// ---  info_container, loader, info_verifcode and input_verifcode
+        let msg_info_html = null;
+        let show_loader = false;
+        let show_input_verifcode = false;
+        let show_btn_save = false, show_delete_btn = false;
+        let disable_save_btn = false, save_btn_txt = null;
+
+//++++++++ approve mode +++++++++++++++++
+        if(mod_MAC_dict.is_approve_mode){
+            if (mod_MAC_dict.step === 0) {
+                if (!is_response){
+                // step 0: when form opens and request to check is sent to server
+                // text: 'AWP is checking the compensations'
+                    msg_info_html = "<div class='p-2 border_bg_transparent'>" + loc.MAC_info.checking_compensations + "...</div>";
+                    show_loader = true;
+
+                } else if (response.approve_msg_html) {
+                    msg_info_html = response.approve_msg_html;
+                    // response with checked subjects
+                    // msg_info_txt is in response
+
+                    show_btn_save = response.test_is_ok;
+                    //PR2023-07-11 was bug in ex4 ep3 temporary let submit again when submitted
+                    if (show_btn_save ){
+                        save_btn_txt = (mod_MAC_dict.examperiod === 1) ? loc.Approve_subjects : loc.Approve_reex;
+                    };
+
+                    if (mod_MAC_dict.has_already_approved) {
+                        show_delete_btn = true;
+                    };
+                };
+
+            } else if (mod_MAC_dict.step === 1) {
+            // step 1: after clicked on btn Approve_subjects
+                    if (!is_response){
+                        // text: 'AWP is approving the compensations'
+                        msg_info_html = "<div class='p-2 border_bg_transparent'>" + loc.MAC_info.approving_compensations + "</div>";
+                        show_loader = true;
+                    } else if (response.approve_msg_html) {
+            // step 1: response after clicking on btn Approve_subjects
+                        // response with "We have sent an email with a 6 digit verification code to the email address:"
+                        // msg_info_html is in response.approve_msg_html
+                        msg_info_html = response.approve_msg_html;
+                    };
+            };
+        } else {
+
+//++++++++ submit mode +++++++++++++++++
+            if (mod_MAC_dict.step === 0) {
+                if (!is_response){
+                // step 0: when form opens and request to check is sent to server
+                // text: 'AWP is checking the compensations'
+                    msg_info_html = "<div class='p-2 border_bg_transparent'>" + loc.MAC_info.checking_compensations + "...</div>";
+                    show_loader = true;
+
+                } else if (response.approve_msg_html) {
+                    msg_info_html = response.approve_msg_html;
+                    // response with checked subjects
+                    // msg_info_txt is in response
+                    // text 'You need a 6 digit verification code to submit the Ex form' is in response
+                    show_btn_save = response.test_is_ok;
+                    //PR2023-07-11 was bug in ex4 ep3 temporary let submit again when submitted
+                    if (show_btn_save ){
+                        save_btn_txt = loc.Request_verifcode;
+                    };
+                };
+            } else if (mod_MAC_dict.step === 1) {
+            // after clicked on btn Request_verificationcode
+                    if (!is_response){
+            // step 1: when clicked on 'Request verif code
+                        // tekst: 'AWP is sending an email with the verification code'
+                        msg_info_html = "<div class='p-2 border_bg_transparent'>" + loc.MAC_info.sending_verifcode + "</div>";
+                        show_loader = true;
+                    } else if (response.approve_msg_html) {
+            // step 1: response after sending request verificationcode
+                        // response with "We have sent an email with a 6 digit verification code to the email address:"
+                        // msg_info_html is in response.approve_msg_html
+                        msg_info_html = response.approve_msg_html;
+                        show_btn_save = true;
+                        show_input_verifcode = true;
+                        disable_save_btn = !el_MAC_input_verifcode.value;
+                        save_btn_txt = loc.Submit_Ex_form;
+                    };
+            } else if (mod_MAC_dict.step === 2) {
+            // step 2: after clicking on btn_save 'Submit Ex form'
+
+                if (!is_response){
+                    const msg_txt = ([2, 3].includes(mod_MAC_dict.examperiod)) ? loc.Creating_Ex4_form : loc.Creating_Ex1_form;
+                    msg_info_html = "<div class='p-2 border_bg_transparent'>" + msg_txt + "...</div>";
+                    show_loader = true;
+                } else if (response.approve_msg_html) {
+                    msg_info_html = response.approve_msg_html;
+                    if (response.verification_is_ok){
+
+                    } else {
+
+                    };
+                };
+            };
+        };
+
+////////////////////////////////////////
+
+        el_MAC_info_container.innerHTML = msg_info_html;
+        add_or_remove_class(el_MAC_info_container, cls_hide, !msg_info_html)
+
+        add_or_remove_class(el_MAC_loader, cls_hide, !show_loader)
+
+        add_or_remove_class(el_MAC_input_verifcode.parentNode, cls_hide, !show_input_verifcode);
+        if (show_input_verifcode){set_focus_on_el_with_timeout(el_MAC_input_verifcode, 150); };
+
+// ---  show / hide delete btn
+        add_or_remove_class(el_MAC_btn_delete, cls_hide, !show_delete_btn);
+// - hide save button when there is no save_btn_txt
+        add_or_remove_class(el_MAC_btn_save, cls_hide, !show_btn_save)
+// ---  disable save button till test is finished or input_verifcode has value
+        el_MAC_btn_save.disabled = disable_save_btn;
+// ---  set innerText of save_btn
+        el_MAC_btn_save.innerText = save_btn_txt;
+
+// ---  set innerText of cancel_btn
+        el_MAC_btn_cancel.innerText = (show_btn_save) ? loc.Cancel : loc.Close;
+     }; //  MAC_SetInfoboxesAndBtns
+
+//=========  MAC_InputVerifcode  ================ PR2021-07-30 PR2023-07-14
+     function MAC_InputVerifcode(el_input, event_key) {
+        //console.log("===  MAC_InputVerifcode  =====") ;
+
+        // enable save btn when el_input has value
+        const disable_save_btn = !el_input.value;
+        //console.log("disable_save_btn", disable_save_btn) ;
+        el_MAC_btn_save.disabled = disable_save_btn;
+
+        if(!disable_save_btn && event_key && event_key === "Enter"){
+            MAC_Save("save");
+        };
+     };  // MAC_InputVerifcode
+/////////////////////////////////////////////
+
+//=========  Handle_SBR_show_all  ================ PR2023-07-10
+    function Handle_SBR_show_all() {
+        console.log("=====  Handle_SBR_show_all  ========");
+
+        b_clear_dict(selected);
+
+        setting_dict.sel_lvlbase_pk = null;
+        setting_dict.sel_lvlbase_code = null;
+
+        el_SBR_select_level.value = null;
+
+// --- reset table
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
+// --- reset SBR_item_count
+        el_SBR_item_count.innerText = null;
+
+// ---  upload new setting and refresh page
+        const request_item_setting = {
+                    page: "page_corrector",
+                    sel_lvlbase_pk: -9
+                };
+        DatalistDownload(request_item_setting);
+    };  // Handle_SBR_show_all
 
     function get_usercompensation_dict(tblRow){  // PR2023-03-23
         return  (tblRow && tblRow.id && tblRow.id in usercompensation_dicts)  ? usercompensation_dicts[tblRow.id]: null;

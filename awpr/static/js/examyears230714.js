@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_examyear_upload = get_attr_from_el(el_data, "data-url_examyear_upload");
-    urls.url_examyear_copytosxm = get_attr_from_el(el_data, "data-url_examyear_copytosxm");
-    urls.url_subjectscheme_copyfrom = get_attr_from_el(el_data, "data-url_subjectscheme_copyfrom");
+    // PR2023-07-06 removed: urls.url_examyear_copytosxm = get_attr_from_el(el_data, "data-url_examyear_copytosxm");
+    // PR2023-07-06 removed:urls.url_subjectscheme_copyfrom = get_attr_from_el(el_data, "data-url_subjectscheme_copyfrom");
 
     urls.url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
 
@@ -866,7 +866,7 @@ updated_examyear_rows: [{…}]
 
 // +++++++++ END MOD EXAMYEAR ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// +++++++++ MOD EDIT EXAM YEAR ++++++++++++++++ PR2021-08-30
+// +++++++++ MOD EDIT EXAM YEAR ++++++++++++++++ PR2021-08-30 PR2023-07-06
     function MODEY_Open(el_input){
         console.log(" -----  MODEY_Open   ----")
         console.log("permit_dict.permit_crud", permit_dict.permit_crud)
@@ -1228,18 +1228,20 @@ updated_examyear_rows: [{…}]
             } else if (mod_dict.mode === "undo_locked"){
                 upload_dict = {mode: 'update', examyear_pk: mod_dict.examyear_pk, locked: false}
                 close_modal = true;
-            } else if (mod_dict.mode === "copy_scheme"){
-                upload_dict = {
-                    mode: mod_dict.mode,
-                    table: mod_dict.table,
-                    mapid: mod_dict.mapid,
-                    copyto_mapid: mod_dict.copyto_mapid,
-                    copyto_examyear_pk: mod_dict.copyto_examyear_pk,
-                    copyto_country_id: mod_dict.copyto_country_id,
-                    copyto_country: mod_dict.copyto_country
-                };
+            //PR2023-07-06 removed:
+            //} else if (mod_dict.mode === "copy_scheme"){
+            //    upload_dict = {
+            //        mode: mod_dict.mode,
+            //        table: mod_dict.table,
+            //        mapid: mod_dict.mapid,
+            //        copyto_mapid: mod_dict.copyto_mapid,
+            //        copyto_examyear_pk: mod_dict.copyto_examyear_pk,
+            //        copyto_country_id: mod_dict.copyto_country_id,
+            //        copyto_country: mod_dict.copyto_country
+            //    };
             };
-            const url_str = (mod_dict.mode === "copy_scheme") ? urls.url_subjectscheme_copyfrom : urls.url_examyear_upload;
+            //PR2023-07-06 was: const url_str = (mod_dict.mode === "copy_scheme") ? urls.url_subjectscheme_copyfrom : urls.url_examyear_upload;
+            const url_str = urls.url_examyear_upload;
 
             UploadChanges(upload_dict, url_str);
         };

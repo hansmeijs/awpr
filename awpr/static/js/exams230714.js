@@ -232,9 +232,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click", function() {
-                // true = 'all_counties = true', used to let ETE select all deps, schools must only be able to select their deps
-                const all_countries = permit_dict.requsr_role_admin;
-                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response, all_countries)}, false );
+                // true = 'all_departments = true', used to let ETE select all deps
+                // PR2023-07-03 debug: dont use permit_dict here, it has no value yet. Use it in t_MSED_Open
+                // was: const all_departments = permit_dict.requsr_role_admin;
+                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response, true)}, false );
         };
 
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
@@ -7418,7 +7419,7 @@ console.log("exam_dict", exam_dict);
         const tblRow = t_get_tablerow_selected(el);
         const map_id = (tblRow) ? tblRow.id : null;
 
-        selected.map_id = tblRow.id;
+        selected.map_id = map_id;
 
         const data_dicts = get_datadicts_from_sel_btn();
         const data_dict = (data_dicts && data_dicts.hasOwnProperty(map_id)) ? data_dicts[map_id] : null;
