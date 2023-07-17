@@ -225,7 +225,7 @@ def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8
 
 def check_verifcode_local(upload_dict, request ):
     # called by StudentsubjectApproveOrSubmitEx1Ex4View, GradeSubmitEx2Ex2aView, GradeSubmitEx5View, ExamApproveOrPublishExamView
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- check_verifcode_local -----')
 
@@ -260,13 +260,17 @@ def check_verifcode_local(upload_dict, request ):
             if now_iso > saved_expirationtime:
                 is_expired = True
                 msg_txt = _("The verificationcode has expired.")
+                if logging_on:
+                    logger.debug('The verificationcode has expired')
 
             else:
     # - check if code is correct:
                 saved_form = saved_dict.get('form')
                 saved_key_code = saved_dict.get('key_code')
                 if logging_on:
+                    logger.debug('form_name: ' + str(form_name))
                     logger.debug('saved_form: ' + str(saved_form))
+                    logger.debug('key_code: ' + str(key_code))
                     logger.debug('saved_key_code: ' + str(saved_key_code))
 
                 if saved_form == form_name and key_code == saved_key_code:
@@ -322,7 +326,7 @@ def get_item_count_text(count, cpt_sing, cpt_plural):
 def get_items_are_text(count, cpt_sing, cpt_plural, is_will_be):
     # PR2023-07-09
     count_txt = pgettext_lazy('geen', 'no') if not count else str(count)
-    cpt = gettext(cpt_sing) if count == 1 else gettext(cpt_plural)
+    cpt = gettext(cpt_sing).lower() if count == 1 else gettext(cpt_plural).lower()
     if is_will_be:
         is_are_willbe_txt = pgettext_lazy('singular', 'will be') if count == 1 else pgettext_lazy('plural', 'will be')
     else:

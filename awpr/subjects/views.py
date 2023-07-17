@@ -3456,7 +3456,7 @@ def create_exam_approve_publish_msg_list(req_usr, count_dict, requsr_auth, is_ap
         elif saved:
             class_str = 'border_bg_valid'
         else:
-            class_str = 'border_bg_transpaprent'
+            class_str = 'border_bg_transparent'
 
 # - create first line with 'The selection contains 4 exams'
     msg_list = ["<div class='p-2 ", class_str, "'>"]
@@ -9205,9 +9205,9 @@ def get_subjects_count_text(count, has_submitted_txt=False):
 
     return ' '.join(filter(None, (
         str(pgettext_lazy('geen', 'no ') if not count else count),
-        str(pgettext_lazy('singular adjective', 'submitted') if count == 1 else
-                pgettext_lazy('plural adjective', 'submitted')) if has_submitted_txt else None,
-        str(_('Subject') if count == 1 else _('Subjects')).lower()
+        gettext('submitted') if count == 1 else
+        str(pgettext_lazy('ingediende', 'submitted')) if has_submitted_txt else None,
+        gettext('Subject').lower() if count == 1 else gettext('Subjects').lower()
     )))
 
 

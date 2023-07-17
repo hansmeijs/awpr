@@ -457,6 +457,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_by'] = TXT_Submitted_by
 
+        dict['Submitted_at'] = TXT_Submitted_at
+
         dict['must_enter_whole_number_between_0_and_'] = _('You must enter a whole number between 0 and ')
         dict['must_enter_whole_number'] = _('You must enter a whole number.')
 

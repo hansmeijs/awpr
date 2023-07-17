@@ -408,17 +408,19 @@
         const auth2by_id = (data_dict[field_auth2by_id]) ? data_dict[field_auth2by_id] : null;
         const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
 
+    //console.log("    field_published_id", field_published_id);
+    //console.log("    published_id", published_id);
+
         className = f_get_status_auth_iconclass(published_id, false, auth1by_id, auth2by_id, false, null, false, null);
         filter_value = className;
 
-        let formatted_publ_modat = "";
         if (published_id){
             const field_publ_modat = prefix_str + "_publ_modat" // subj_publ_modat
             const publ_modat = (data_dict[field_publ_modat]) ? data_dict[field_publ_modat] : null;
+
             const modified_dateJS = parse_dateJS_from_dateISO(publ_modat);
-            formatted_publ_modat = format_datetime_from_datetimeJS(loc, modified_dateJS);
-        };
-        if(auth1by_id || auth2by_id){
+            title_text = loc.Submitted_at + ":\n" + format_datetime_from_datetimeJS(loc, modified_dateJS)
+        } else if(auth1by_id || auth2by_id){
             title_text = loc.Approved_by + ": ";
             for (let i = 1; i < 3; i++) {
                 const auth_id = (i === 1) ? auth1by_id :
@@ -429,17 +431,17 @@
                                         (i === 2) ? loc.Secretary : "";
                     const field_usr = prefix_auth + "by_usr";
                     const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
-        //console.log("    field_usr", field_usr);
-        //console.log("    field_usr", field_usr);
+        console.log("    field_usr", field_usr);
+        console.log("    auth_usr", auth_usr);
 
                     title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
                 };
             };
         };
 
-        //console.log("    className", className);
-        //console.log("    title_text", title_text);
-        //console.log("    filter_value", filter_value);
+        console.log("    className", className);
+        console.log("    title_text", title_text);
+        console.log("    filter_value", filter_value);
 
         return [className, title_text, filter_value]
     };  // f_format_status_subject

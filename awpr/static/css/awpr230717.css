@@ -102,6 +102,10 @@ a:hover {
 .awp_bg_green {
     background-color: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
 }
+.awp_bg_corr_green {
+    background-color: #069d06 !important; /* corrector groen #069d06 RGB 6-157-6  PR2023-07-17 */
+}
+
 .awp_bg_yellow {
     background-color: #ffd01c !important; /* tsa yellow  PR2021-06-20 */
 }
@@ -336,6 +340,11 @@ select.form-control:not([size]):not([multiple]) {
 .menu_polygon_selected_green {
     fill: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
     stroke: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */
+    stroke-width: 1;
+}
+.menu_polygon_selected_corr_green {
+    fill: #069d06 !important; /* corrector groen #069d06 RGB 6-157-6  PR2023-07-17 */
+    stroke: #069d06 !important; /* corrector groen #069d06 RGB 6-157-6  PR2023-07-17 */
     stroke-width: 1;
 }
 .menu_polygon_selected_yellow {

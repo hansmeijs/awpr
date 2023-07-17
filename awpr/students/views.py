@@ -3081,6 +3081,9 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                             ex_form = _('Ex5 form')
                         elif form =='ex4ep3':
                             ex_form = _('Ex4 form 3rd exam period')
+                        elif form == 'comp':
+                            ex_form = _('compensation form')
+
                         message = render_to_string(template_str, {
                             'user': request.user,
                             'examyear': sel_examyear,
@@ -3109,7 +3112,10 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                             if mode == 'publish_exam':
                                 msg_txt = str(_('Enter the verification code and click the ENTER key to publish the exams.'))
                             else:
-                                msg_txt = str(_("Enter the verification code and click 'Submit Ex form' or the ENTER key to submit the Ex form."))
+                                btn_txt = _('Submit compensation form') if form == 'comp' else _('Submit Ex form')
+                                frm_txt = _('compensations') if form == 'comp' else _('Ex')
+                                msg_txt = str(_("Enter the verification code and click '%(btn)s' or the ENTER key to submit the %(frm)s form.")
+                                              % {'btn': btn_txt, 'frm': frm_txt})
 
                             msg_list += ("<p class='pb-0'>",
                                          str(_("We have sent an email with a 6 digit verification code to the email address:")), '</p>',
@@ -4112,7 +4118,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                     if all_published :
                         msg_list.append(''.join((
                             "<div class='pt-2'>",
-                           gettext("All %(subj)s are already submitted.") %{'subj': subjects_plural},
+                           gettext("All %(cpts)s are already submitted.") %{'cpts': subjects_plural},
                            "</div>")))
 
                     elif auth_missing or double_approved or student_composition_error_count:
@@ -4208,7 +4214,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                         "</div></div>"
                                 )))
 
-# - create warning frame with 'only candidates of the learning path' when level_req
+# - create 'You need a 6 digit verification code' line
             # PR2023-07-12 added: only when is test
             if show_msg_request_verifcode:
                 msg_list.extend((

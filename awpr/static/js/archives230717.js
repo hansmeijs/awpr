@@ -367,9 +367,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         // show only latest dpgl? not for now PR2023-06-21
                                         (data_dict.is_latest_dpgl || true) :
                                   (selected_btn === "btn_exform") ?
-                                        (data_dict.filename && data_dict.filename.charAt(0).toLowerCase() === "e") :
+                                        (data_dict.filename && ["e", "v"].includes(data_dict.filename.charAt(0).toLowerCase())) :
                                   (selected_btn === "btn_orderlist") ?
-                                        (!data_dict.regnumber && data_dict.filename.charAt(0).toLowerCase() !== "e") :
+                                        true :
                                         false;
                 if (show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);

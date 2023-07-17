@@ -156,8 +156,10 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
         selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 
 # - set background color in headerbar
-        if req_usr.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
+        if req_usr.role == c.ROLE_032_INSP:
             _class_bg_color = 'awp_bg_green'
+        elif req_usr.role == c.ROLE_016_CORR:
+            _class_bg_color = 'awp_bg_corr_green'
         elif req_usr.role == c.ROLE_064_ADMIN:
             _class_bg_color = 'awp_bg_purple'
         elif req_usr.role == c.ROLE_128_SYSTEM:
@@ -325,8 +327,11 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             logger.debug('    display_department: ' + str(display_department))
 
 # ----- set background color in headerbar
-        if req_usr.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
+
+        if req_usr.role == c.ROLE_032_INSP:
             _class_bg_color = 'awp_bg_green'
+        elif req_usr.role == c.ROLE_016_CORR:
+            _class_bg_color = 'awp_bg_corr_green'
         elif req_usr.role == c.ROLE_064_ADMIN:
             _class_bg_color = 'awp_bg_purple'
         elif req_usr.role == c.ROLE_128_SYSTEM:
@@ -574,6 +579,9 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
                     polygon_class = 'menu_polygon_selected_purple'
                 elif _class_bg_color == 'awp_bg_green':
                     polygon_class = 'menu_polygon_selected_green'
+                elif _class_bg_color == 'awp_bg_corr_green':
+                    polygon_class = 'menu_polygon_selected_corr_green'
+
                 elif _class_bg_color == 'awp_bg_yellow':
                     polygon_class = 'menu_polygon_selected_yellow'
                 else:

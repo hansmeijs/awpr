@@ -442,9 +442,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
             logger.debug(' ')
             logger.debug(' ============= UserCompensationApproveSubmitView ============= ')
 
-################################
-
-        def approve_usercomp(usercomp_row, requsr_auth, is_test, is_reset, count_dict, request):
+        def approve_usercomp(usercomp_row, requsr_auth, is_test, is_reset, count_dict, tobe_updated_usercomp_pk_list, tobe_updated_user_pk_list, request):
             # PR2023-07-09
             # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
             #  prefix = 'reex3_'  'reex_'  'subj_'
@@ -452,49 +450,23 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
             # PR2022-12-30 instead of updating each usercomp instance separately, create list of tobesaved usercomp_pk
             # list is created outside this function, when is_saved = True
 
-            logging_on = s.LOGGING_ON
+            logging_on = False  # s.LOGGING_ON
             if logging_on:
                 logger.debug('----- approve_usercomp -----')
                 logger.debug('    requsr_auth:  ' + str(requsr_auth))
                 logger.debug('    is_reset:     ' + str(is_reset))
                 logger.debug('    usercomp_row:     ' + str(usercomp_row))
 
-            is_committed = False
-            is_saved = False
-
             if usercomp_row:
                 req_user = request.user
 
-                corrector_pk = usercomp_row.get('user_id')
-                if corrector_pk not in corrector_pk_list:
-                    corrector_pk_list.append(corrector_pk)
-
-                if logging_on:
-                    logger.debug('    corrector_pk_list:  ' + str(corrector_pk_list))
-
-                if is_committed:
-                    if corrector_pk not in corrector_committed_list:
-                        corrector_committed_list.append(corrector_pk)
-
     # - skip when this usercomp_row is already published
-                published = True if usercomp_row.get('published_id') else False
-                if logging_on:
-                    logger.debug('    published:    ' + str(published))
-
-                if published:
+                if usercomp_row.get('published_id'):
                     af.add_one_to_count_dict(count_dict, 'already_published')
                 else:
-                    # auth fields in table Usercompensation are: auth1by_id, auth2by_id
-                    # requsr_authby_field = prefix + requsr_auth + 'by'
-                    requsr_authby_field = requsr_auth + 'by_id'
-
-                    # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
-
+        # auth fields in table Usercompensation are: auth1by_id, auth2by_id
                     auth1by_id = usercomp_row.get('auth1by_id')
                     auth2by_id = usercomp_row.get('auth2by_id')
-                    if logging_on:
-                        logger.debug('    auth1by_id:      ' + str(auth1by_id))
-                        logger.debug('    auth2by_id:      ' + str(auth2by_id))
 
                     save_changes = False
 
@@ -506,23 +478,12 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
         # - skip if this usercomp_row is already approved
                         requsr_authby_value = auth1by_id if requsr_auth == 'auth1' else auth2by_id if requsr_auth == 'auth2' else None
-                        requsr_authby_field_already_approved = True if requsr_authby_value else False
-                        if logging_on:
-                            logger.debug('    requsr_authby_field_already_approved: ' + str(
-                                requsr_authby_field_already_approved))
-
-                        if requsr_authby_field_already_approved:
+                        if requsr_authby_value:
                             af.add_one_to_count_dict(count_dict, 'already_approved')
                         else:
 
-                            # - skip if this author (like 'chairperson') has already approved this usercomp_row
+        # - skip if this author (like 'chairperson') has already approved this usercomp_row
                             # under a different permit (like 'secretary' or 'corrector')
-
-                            if logging_on:
-                                logger.debug('    > requsr_auth: ' + str(requsr_auth))
-                                logger.debug('    > req_user:    ' + str(req_user))
-                                logger.debug('    > auth1by_id:     ' + str(auth1by_id))
-                                logger.debug('    > auth2by_id:     ' + str(auth2by_id))
 
                             double_approved = False
                             if requsr_auth == 'auth1':
@@ -530,86 +491,75 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                             elif requsr_auth == 'auth2':
                                 double_approved = True if auth1by_id and auth1by_id == req_user.pk else False
 
-                            if logging_on:
-                                logger.debug('    double_approved: ' + str(double_approved))
-
                             if double_approved:
                                 af.add_one_to_count_dict(count_dict, 'double_approved')
                             else:
                                 save_changes = True
-                                if logging_on:
-                                    logger.debug('    save_changes: ' + str(save_changes))
 
-        # - set value of requsr_authby_field
+        # - add usercomp to tobe_updated_usercomp_pk_list, and user_pk to tobe_updated_user_pk_list
                     if save_changes:
-                        if is_test:
-                            af.add_one_to_count_dict(count_dict, 'committed')
-                            is_committed = True
-                        else:
 
-        # - save changes
-                            af.add_one_to_count_dict(count_dict, 'saved')
-                            is_saved = True
+                        usercomp_pk = usercomp_row.get('id')
+                        if usercomp_pk:
+                            tobe_updated_usercomp_pk_list.append(usercomp_pk)
 
-            return is_committed, is_saved
+                        user_pk = usercomp_row.get('user_id')
+                        if user_pk and user_pk not in tobe_updated_user_pk_list:
+                            tobe_updated_user_pk_list.append(user_pk)
+
+        # - add 1 to count_dict committed
+                        af.add_one_to_count_dict(count_dict, 'committed')
+
         # - end of approve_usercomp
 
-        def submit_usercomp(usercomp_row, is_test, count_dict):
+        def submit_usercomp(usercomp_row, is_test, count_dict, tobe_updated_usercomp_pk_list, tobe_updated_user_pk_list):
             # PR2021-01-21 PR2021-07-27 PR2022-05-30 PR2022-12-30 PR2023-02-12
 
             # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
             # list is created outside this function, when is_saved = True
 
-            logging_on = s.LOGGING_ON
+            logging_on = False  # s.LOGGING_ON
             if logging_on:
                 logger.debug('----- submit_usercomp -----')
-
-            is_committed = False
-            is_saved = False
+                logger.debug('    requsr_auth:  ' + str(requsr_auth))
+                logger.debug('    is_test:     ' + str(is_test))
+                logger.debug('    count_dict:     ' + str(count_dict))
 
             if usercomp_row:
 
-                # - check if this studsubj is already published
-                # published = getattr(studsubj, prefix + 'published')
-                published = True if usercomp_row.get('published_id') else False
-                if logging_on:
-                    logger.debug('     subj_published: ' + str(published))
-                if published:
+    # - skip when this usercomp_row is already published
+                if usercomp_row.get('published_id'):
                     af.add_one_to_count_dict(count_dict, 'already_published')
                 else:
 
-                    # - check if this studsubj / examtype is approved by all auth
-                    # auth1by = getattr(studsubj, prefix + 'auth1by')
-                    # auth2by = getattr(studsubj, prefix + 'auth2by')
-
+        # - check if this studsubj / examtype is approved by all auth
                     auth1by_id = usercomp_row.get('auth1by_id')
                     auth2by_id = usercomp_row.get('auth2by_id')
                     auth_missing = auth1by_id is None or auth2by_id is None
-                    if logging_on:
-                        logger.debug('    auth1by_id:      ' + str(auth1by_id))
-                        logger.debug('    auth2by_id:      ' + str(auth2by_id))
-                        logger.debug('    auth_missing: ' + str(auth_missing))
 
                     if auth_missing:
                         af.add_one_to_count_dict(count_dict, 'auth_missing')
                     else:
-                        # - check if all auth are different
-                        double_approved = auth1by_id == auth2by_id
-                        if logging_on:
-                            logger.debug('    double_approved: ' + str(double_approved))
 
-                        if double_approved and not auth_missing:
+        # - skip if this author (like 'chairperson') has already approved this usercomp_row
+                            # under a different permit (like 'secretary' or 'corrector')
+
+                        double_approved = auth1by_id == auth2by_id
+                        if double_approved:
                             af.add_one_to_count_dict(count_dict, 'double_approved')
                         else:
-                            # - set value of published_instance and exatmtype_status field
-                            if is_test:
-                                af.add_one_to_count_dict(count_dict, 'committed')
-                                is_committed = True
-                            else:
-                                af.add_one_to_count_dict(count_dict, 'saved')
-                                is_saved = True
 
-            return is_committed, is_saved
+        # - add usercomp to tobe_updated_usercomp_pk_list, and user_pk to tobe_updated_user_pk_list
+                            usercomp_pk = usercomp_row.get('id')
+                            if usercomp_pk:
+                                tobe_updated_usercomp_pk_list.append(usercomp_pk)
+
+                            user_pk = usercomp_row.get('user_id')
+                            if user_pk and user_pk not in tobe_updated_user_pk_list:
+                                tobe_updated_user_pk_list.append(user_pk)
+
+                            # - add 1 to count_dict committed
+                            af.add_one_to_count_dict(count_dict, 'committed')
         # - end of submit_usercomp
 
         def create_published_usercomp_instance(sel_school, sel_department, sel_level, now_arr, request):
@@ -690,24 +640,73 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
             return published_instance
         # - end of create_published_usercomp_instance
 
-        def create_approve_msg_list(sel_department, sel_level, count_dict, requsr_auth, is_test):
-            # PR2023-07-09
+        def batch_update_usercomp(usercomp_pk_list, is_submit, is_reset, requsr_auth, req_user, published_pk):
+            # PR2023-07-09 PR2023-07-16
+
+            logging_on = s.LOGGING_ON
+            if logging_on:
+                logger.debug(' ')
+                logger.debug('----- batch_update_usercomp -----')
+
+            updated_usercomp_pk_list = []
+            updated_user_pk_list = []
+            err_list = []
+
+            try:
+                requsr_authby_field = 'published_id' if is_submit else ''.join((requsr_auth, 'by_id'))
+
+        # - remove authby when is_reset
+                requsr_authby_value = "NULL" if is_reset else str(published_pk) if is_submit else str(req_user.pk)
+
+                sql_list = ["UPDATE accounts_usercompensation",
+                            " SET", requsr_authby_field, "=", requsr_authby_value,
+                            " WHERE id IN (SELECT UNNEST(ARRAY", str(usercomp_pk_list), "::INT[]))",
+                            " RETURNING id, user_id;"]
+                sql = ' '.join(sql_list)
+
+                if logging_on:
+                    logger.debug('    sql: ' + str(sql))
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+
+                    rows = cursor.fetchall()
+                    if rows:
+                        for row in rows:
+                            updated_usercomp_pk_list.append(row[0])
+                            if row[1] not in updated_user_pk_list:
+                                updated_user_pk_list.append(row[1])
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+                action_txt = str(_('submitted') if is_submit else _('approved'))
+                cpt = gettext('compensations')
+                err_txt = gettext('The %(cpt)s could not be %(action)s.') % {'cpt': cpt, 'action': action_txt}
+                err_list = acc_prm.msglist_error_occurred(e, err_txt)
+
+            if logging_on:
+                logger.debug('    updated_usercomp_pk_list: ' + str(updated_usercomp_pk_list))
+                logger.debug('    updated_user_pk_list: ' + str(updated_user_pk_list))
+                logger.debug('    err_list: ' + str(err_list))
+            return updated_usercomp_pk_list, updated_user_pk_list, err_list
+        # - end of batch_update_usercomp
+
+        def create_approve_msg_list(sel_department, sel_level, count_dict,
+                                updated_usercomp_count, updated_user_count, err_list, requsr_auth, is_test):
+            # PR2023-07-16
             logging_on = s.LOGGING_ON
             if logging_on:
                 logger.debug('  ----- create_msg_list -----')
                 logger.debug('    count_dict: ' + str(count_dict))
                 logger.debug('    is_test: ' + str(is_test))
+                logger.debug('    count_dict: ' + str(count_dict))
+                logger.debug('    updated_usercomp_count: ' + str(updated_usercomp_count))
+                logger.debug('    err_list: ' + str(err_list))
 
             count = count_dict.get('count', 0)
-            corrector_count = len(corrector_pk_list)
             committed = count_dict.get('committed', 0)
-            corrector_committed_count = len(corrector_committed_list)
-            saved = count_dict.get('saved', 0)
-            saved_error = count_dict.get('saved_error', 0)
-            corrector_saved_count = count_dict.get('corrector_saved_count', 0)
-            corrector_saved_error_count = count_dict.get('corrector_saved_error_count', 0)
             already_published = count_dict.get('already_published', 0)
-
             all_published = count and already_published == count
 
             auth_missing = count_dict.get('auth_missing', 0)
@@ -723,212 +722,155 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                 logger.debug('.....double_approved: ' + str(double_approved))
                 logger.debug('.....all_published: ' + str(all_published))
 
-            show_msg_first_approve_by_pres_secr = False
+            class_str = 'border_bg_transparent'
 
-            if is_test:
-                class_str = 'border_bg_valid' if committed else 'border_bg_invalid'
-
-            else:
-                if corrector_saved_error_count:
-                    class_str = 'border_bg_invalid'
-                elif corrector_saved_count:
-                    class_str = 'border_bg_valid'
-                else:
-                    class_str = 'border_bg_transpaprent'
-            if logging_on:
-                logger.debug('    class_str: ' + str(class_str))
-
-            form_txt = gettext('Compensation correctors')
             exam_txt = gettext('Exam').lower()
             exams_txt = gettext('Exams').lower()
 
-            corrector_count_txt = af.get_item_count_text(corrector_count, 'Second corrector', 'Second correctors')
+            corrector_count_txt = af.get_item_count_text(updated_user_count, 'Second corrector', 'Second correctors')
 
-            level_html = ''
-            if sel_level:
-                if sel_department.level_req and sel_level.abbrev:
-                    level_html = '<br>' + str(
-                        _('The selection contains only %(cpt)s of the learning path: %(lvl_abbrev)s.') % {
-                          'cpt': gettext('Second correctors').lower(), 'lvl_abbrev': sel_level.abbrev})
+            msg_list = []
 
-            # - create first line with 'The selection contains 4 candidates with 39 subjects'
-            msg_list = ["<div class='p-2 ", class_str, "'>"]
-            if is_test:
-                exam_count_txt = af.get_item_count_text(count, 'Exam', 'Exams')
-                msg_list.append(''.join(( "<p class='pb-2'>",
-                       str(_("The selection contains %(stud)s with %(subj)s.") %
-                           {'stud': corrector_count_txt, 'subj': exam_count_txt}), ' ',
-                           level_html,
-                       '</p>')))
-
-            #try:
-            if True:
-                # ++++++++++++++++ is_test +++++++++++++++++++++++++
+            try:
+# ++++++++++++++++ is_test +++++++++++++++++++++++++
                 if is_test:
+                    exam_count_txt = af.get_item_count_text(count, 'Exam', 'Exams')
 
-                    if logging_on:
-                        logger.debug('    if is_test: ' + str(is_test))
-                    # - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
-                    if committed == count:
-                        msg_list.append("<p class='pb-0'>" + str(
-                            _("All %(cpt)s will be approved.") % {'cpt': exams_txt}) + ':</p><ul>')
+            # - create  line with 'The selection contains no exams'
+                    if not count:
+                        msg_list.append(gettext("The selection contains %(val)s.") % {'val': exam_count_txt})
                     else:
-                        willbe_or_are_txt = str(pgettext_lazy('plural', 'will be') if is_test else _('are'))
+            # - create  line with 'The selection contains only the learning path'
+                        level_html = ''
+                        if sel_department.level_req and sel_level and sel_level.abbrev:
+                            level_html = '<br>' + str(
+                                _('The selection contains only %(cpt)s of the learning path: %(lvl_abbrev)s.') % {
+                                    'cpt': gettext('Second correctors').lower(), 'lvl_abbrev': sel_level.abbrev})
 
-                        if logging_on:
-                            logger.debug('    if willbe_or_are_txt: ' + willbe_or_are_txt)
+            # - create  line with 'The selection contains 4 the compensation of 39 exams'
+                        msg_list.extend(("<div class='pb-2'>",
+                                         gettext("The selection contains %(val)s.") %
+                                             {'val': exam_count_txt}, ' ',
+                                         level_html,
+                                         '</div>'))
 
-                        msg_list.append("<p class='pb-0'>" + str(_("The following %(cpt)s %(willbe)s skipped"))
-                                                                 % {'cpt': exams_txt,
-                                                                    'willbe': willbe_or_are_txt} +
-                                                                ":</p><ul class='my-0 pb-2'>")
-                        if already_published:
-                            msg_list.append('<li>' + str(_("%(val)s already submitted") %
-                                                        {'val': af.get_items_are_text(already_published, exam_txt, exams_txt, is_test)}) + ';</li>')
-
-                            if logging_on:
-                                logger.debug('    already_published: ' + str(already_published))
-
-                        if auth_missing:
-                            msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
-                                                        {'subj': af.get_items_are_text(auth_missing, exam_txt, exams_txt, is_test) }) + ';</li>')
-
-                            show_msg_first_approve_by_pres_secr = True
-                            if logging_on:
-                                logger.debug('    auth_missing: ' + str(auth_missing))
-
-                        if logging_on:
-                            logger.debug('    >>>> already_approved: ' + str(already_approved))
-                        if already_approved:
-
-                            if logging_on:
-                                logger.debug('  ?????   already_approved: ' + str(already_approved))
-                            msg_list.append('<li>' + af.get_items_are_text(already_approved, exam_txt, exams_txt, False) + str(_(' already approved')) + ';</li>')
-                            if logging_on:
-                                logger.debug('  >>>>>>>>>  already_approved: ' + str(already_approved))
-
-                        if double_approved:
-                            other_function = str(_('chairperson')) if requsr_auth == 'auth2' else str(
-                                _('secretary'))
-                            caption = _('subject')
-                            msg_list.append(''.join(('<li>', af.get_items_are_text(double_approved, exam_txt, exams_txt, is_test),
-                                                    str(_(' already approved by you as ')), other_function, '.<br>',
-                                           str(_("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {'cpt': caption} ), '</li>')))
-                            if logging_on:
-                                logger.debug('    double_approved: ' + str(double_approved))
-
-                        msg_list.append('</ul>')
-
-                        # - line with text how many subjects will be approved / submitted
-                        msg_list.append("<p class='py-0'>")
-                        if not committed:
-                            msg_str = _("No %(cpts)s will be approved.") % {'cpts': exams_txt}
-                            if logging_on:
-                                logger.debug('    is_approve not committed: ' + str(not committed))
-
+            # -  create lines 'The compensation of all exams will be approved'
+                        if committed == count:
+                            class_str = 'border_bg_valid'
+                            msg_list.extend(("<div>",
+                                             gettext("The compensation of all exams will be approved."),
+                                             '</div>'
+                                             ))
                         else:
-                            item_count_text = af.get_item_count_text(committed, 'Exam', 'Exams')
-                            will_be_text = af.get_will_be_text(1) # singular
-                            msg_str = ''.join((
-                                gettext('The compensation'),  ' ', gettext('of'), ' ',
-                                        str(item_count_text), ' ', # gettext('of'), ' ',
-                                               # str(corrector_count_txt), ' ',
-                                               str(will_be_text), ' ', gettext('approved'), '.'))
-                            if logging_on:
-                               logger.debug('    is_approve msg_str: ' + str(not msg_str))
+            # - if any subjects skipped: create lines 'De volgende examens worden overgeslagen:' plus the reason
+                            willbe_txt = str(pgettext_lazy('plural', 'will be') )
+                            msg_list.extend(("<div>",
+                                                gettext("The following %(cpt)s %(willbe)s skipped")
+                                                    % {'cpt': exams_txt, 'willbe': willbe_txt},
+                                                ":</div><ul class='my-0 pb-2'>"
+                                             ))
+                            if already_published:
+                                msg_list.extend(('<li>',
+                                                 gettext("%(val)s already submitted")
+                                                    % {'val': af.get_items_are_text(already_published, exam_txt, exams_txt, is_test)},
+                                                 '</li>'
+                                                 ))
 
-                        msg_list.append(str(msg_str))
-                        msg_list.append('</p>')
+                            # not used when is_test
+                            #   if auth_missing:
 
-                        # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
-                        if show_msg_first_approve_by_pres_secr:
-                            msg_txt = ''.join(('<div>', str(_(
-                                'The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') % {
-                                                                'cpt': exams_txt, 'frm': form_txt}),
-                                               '</div>'))
-                            msg_list.append(msg_txt)
+                            if already_approved:
+                                msg_list.extend(('<li>',
+                                                 af.get_items_are_text(already_approved, exam_txt, exams_txt, False),
+                                                 gettext(' already approved'),
+                                                 '</li>'))
 
-                # ++++++++++++++++ not is_test +++++++++++++++++++++++++
+                            if double_approved:
+                                class_str = 'border_bg_invalid'
+                                other_function = gettext('chairperson') if requsr_auth == 'auth2' else gettext('secretary')
+                                caption = gettext('exam')
+                                msg_list.extend(('<li>',
+                                                 af.get_items_are_text(double_approved, exam_txt, exams_txt, False),
+                                                        gettext(' already approved by you as '), other_function, '.<br>',
+                                               gettext("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {'cpt': caption},
+                                                 '</li>'
+                                                 ))
+
+                            msg_list.append('</ul>')
+
+                    # - line with text how many subjects will be approved
+                            if not committed:
+                                msg_list.extend(("<div>",
+                                                gettext("No %(cpts)s will be approved.") % {'cpts': gettext('compensations')},
+                                                 '</div>'
+                                                 ))
+                            else:
+                                class_str = 'border_bg_valid'
+                                item_count_text = af.get_item_count_text(committed, 'Exam', 'Exams')
+                                will_be_text = af.get_will_be_text(1) # singular
+                                msg_list.extend(("<div>",
+                                                    gettext('The compensation'), ' ', gettext('of'), ' ',
+                                                    item_count_text, ' ', gettext('of'), ' ',
+                                                    str(corrector_count_txt), ' ',
+                                                    will_be_text, ' ', gettext('approved'), '.',
+                                                    '</div>'
+                                                ))
+
+    # ++++++++++++++++ not is_test +++++++++++++++++++++++++
                 else:
+                    if err_list:
+                        class_str = 'border_bg_invalid'
+                        msg_list.extend(err_list)
 
-                    # - line with text how many subjects have been approved
-                    msg_list.append('<p>')
+                    # - line with text how many exams have been approved
+                    elif not updated_usercomp_count:
+                        class_str = 'border_bg_invalid'
+                        msg_list.append(gettext("No compensations have been approved."))
 
-                    # student_count_txt = get_student_count_text(corrector_saved_count)
-                    # subject_count_txt = get_subject_count_text(examperiod, saved)
-                    # corrector_saved_error_count_txt = get_student_count_text(corrector_saved_error_count)
-                    # subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
-
-                    # if logging_on:
-                    #    logger.debug('    not is_text: ' + str(not student_count_txt))
-
-                    # - line with text how many subjects have been approved / submitted
-                    if not saved and not saved_error:
-                        msg_str = str(_("No subjects have been approved."))
                     else:
-                        if saved:
-                            item_count_text = af.get_item_count_text(committed, 'Exam', 'Exams')
-                            has_been_txt = af.get_have_has_been_txt(1) # singular
-                            msg_str = ''.join((
-                                gettext('The compensation'),  ' ', gettext('of'), ' ',
-                                        str(item_count_text), ' ', gettext('of'), ' ',
-                                               str(corrector_count_txt), ' ',
-                                               str(has_been_txt), ' ', gettext('approved'), '.'))
-                            if logging_on:
-                               logger.debug('    is_approve msg_str: ' + str(not msg_str))
+                        class_str = 'border_bg_valid'
+                        corrector_count_txt = af.get_item_count_text(updated_user_count, 'Second corrector', 'Second correctors')
 
+                        item_count_text = af.get_item_count_text(updated_usercomp_count, 'Exam', 'Exams')
 
-                        else:
-                            msg_str = str(_("No subjects have been approved."))
-                        if saved_error:
-                            if msg_str:
-                                msg_str += '<br>'
-                            # could_txt = pgettext_lazy('singular', 'could') if saved_error == 1 else pgettext_lazy(
-                            #    'plural', 'could')
-                            # msg_str += str(
-                            #    _("%(subj)s of %(stud)s %(could)s not be approved because an error occurred.")
-                            #    % {'subj': subject_error_count_txt, 'stud': corrector_saved_error_count_txt,
-                            #       'could': could_txt})
+                        has_been_txt = af.get_have_has_been_txt(1) # singular
+                        msg_list.extend((
+                            gettext('The compensation'),  ' ', gettext('of'), ' ',
+                                    str(item_count_text), ' ', gettext('of'), ' ',
+                                           str(corrector_count_txt), ' ',
+                                           str(has_been_txt), ' ', gettext('approved'), '.'))
 
-                    msg_list.append(str(msg_str))
-                    msg_list.append('</p>')
-
-                if logging_on:
-                    for msg in msg_list:
-                        logger.debug('   msg: ' + str(msg))
-
-            #except Exception as e:
-            #    logger.error(getattr(e, 'message', str(e)))
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
 
             #######################################
 
-            msg_list.append('</div>')
-
+            msg_html = ''.join((
+                "<div class='p-2 ", class_str, "'>",
+                ''.join(msg_list),
+                '</div>'
+            ))
             if logging_on:
+                logger.debug('   class_str: ' + str(class_str))
                 logger.debug('   msg_list: ' + str(msg_list))
-
-            msg_html = ''.join(msg_list)
+                logger.debug('   msg_html: ' + str(msg_html))
 
             return msg_html
-        # - end of create_msg_list
+        # - end of create_approve_msg_list
 
-        def create_submit_msg_list(sel_department, sel_level, count_dict, requsr_auth, is_test,
-                            published_instance_filename):
-            # PR2023-07-09
+        def create_submit_msg_list(sel_department, sel_level, count_dict, updated_usercomp_count, updated_user_count, err_list, requsr_auth, is_test, test_has_failed,
+                            published_instance_filename, published_instance_file_url):
+            # PR2023-07-16
             logging_on = s.LOGGING_ON
             if logging_on:
-                logger.debug('  ----- create_msg_list -----')
+                logger.debug('  ----- create_submit_msg_list -----')
                 logger.debug('    count_dict: ' + str(count_dict))
                 logger.debug('    is_test: ' + str(is_test))
 
             count = count_dict.get('count', 0)
-            corrector_count = len(corrector_pk_list)
+
             committed = count_dict.get('committed', 0)
-            corrector_committed_count = len(corrector_committed_list)
             saved = count_dict.get('saved', 0)
-            saved_error = count_dict.get('saved_error', 0)
-            corrector_saved_count = count_dict.get('corrector_saved_count', 0)
-            corrector_saved_error_count = count_dict.get('corrector_saved_error_count', 0)
             already_published = count_dict.get('already_published', 0)
 
             all_published = count and already_published == count
@@ -938,304 +880,161 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
             double_approved = count_dict.get('double_approved', 0)
 
             if logging_on:
-                logger.debug('.....count: ' + str(count))
-                logger.debug('.....committed: ' + str(committed))
-                logger.debug('.....already_published: ' + str(already_published))
-                logger.debug('.....auth_missing: ' + str(auth_missing))
-                logger.debug('.....already_approved: ' + str(already_approved))
-                logger.debug('.....double_approved: ' + str(double_approved))
+                logger.debug('    count: ' + str(count))
+                logger.debug('    committed: ' + str(committed))
+                logger.debug('    already_published: ' + str(already_published))
+                logger.debug('    auth_missing: ' + str(auth_missing))
+                logger.debug('    already_approved: ' + str(already_approved))
+                logger.debug('    double_approved: ' + str(double_approved))
+                logger.debug('    all_published: ' + str(all_published))
+                logger.debug('    test_has_failed: ' + str(test_has_failed))
 
             show_msg_first_approve_by_pres_secr = False
+            show_msg_request_verifcode = False
+            class_str = 'border_bg_invalid' if test_has_failed else 'border_bg_valid' if committed else 'border_bg_transparent'
 
-            if is_test:
-                if committed or all_published:
-                    class_str = 'border_bg_valid'
-                else:
-                    class_str = 'border_bg_invalid'
-            else:
-                if corrector_saved_error_count:
-                    class_str = 'border_bg_invalid'
-                elif corrector_saved_count:
-                    class_str = 'border_bg_valid'
-                else:
-                    class_str = 'border_bg_transpaprent'
-            if logging_on:
-                logger.debug('    class_str: ' + str(class_str))
-
-            form_txt = gettext('Compensation correctors')
             exam_txt = gettext('Exam').lower()
             exams_txt = gettext('Exams').lower()
 
-            corrector_count_txt = af.get_item_count_text(corrector_count, 'Second corrector', 'Second correctors')
-
-            subjects_txt = '---'
-            level_html = ''
-            if sel_level:
-                if sel_department.level_req and sel_level.abbrev:
-                    level_html = '<br>' + str(
-                        _('The selection contains only %(cpt)s of the learning path: %(lvl_abbrev)s.') % {
-                          'cpt': gettext('Second correctors').lower(), 'lvl_abbrev': sel_level.abbrev})
-
-            # - create first line with 'The selection contains 4 candidates with 39 subjects'
-            msg_list = ["<div class='p-2 ", class_str, "'>"]
-            if is_test:
-                exam_count_txt = af.get_item_count_text(count, 'Exam', 'Exams')
-                msg_list.append(''.join(( "<p class='pb-2'>",
-                       str(_("The selection contains %(stud)s with %(subj)s.") %
-                           {'stud': corrector_count_txt, 'subj': exam_count_txt}), ' ',
-                           level_html,
-                       '</p>')))
-
+            msg_list = []
             try:
-                if all_published:
-                    msg_str = ''.join((
-                        "<p class='pb-2'>",
-                        str(_("All subjects are already submitted.")),
-                        "</p>"
-                    ))
-                    msg_list.append(msg_str)
 
-                elif auth_missing or double_approved:
-                    if auth_missing + double_approved == 1:
-                        subjects_txt = str(_('There is 1 subject'))
+ # ++++++++++++++++ is_test +++++++++++++++++++++++++
+                if is_test:
+
+        # - create  line with 'The selection contains only the learning path'
+                    level_html = ''
+                    if sel_department.level_req and sel_level and sel_level.abbrev:
+                        level_html = '<br>' + str(
+                            _('The selection contains only %(cpt)s of the learning path: %(lvl_abbrev)s.') % {
+                                'cpt': gettext('Second correctors').lower(), 'lvl_abbrev': sel_level.abbrev})
+
+        # - create  line with 'The selection contains 4 candidates with 39 subjects'
+                    corrector_count_txt = af.get_item_count_text(updated_user_count, 'Second corrector', 'Second correctors')
+                    exam_count_txt = af.get_item_count_text(count, 'Exam', 'Exams')
+                    msg_list.extend(("<div class='pb-2'>",
+                                     gettext("The selection contains %(val)s.") %
+                                     {'val': exam_count_txt}, ' ',
+                                     level_html,
+                                     '</div>'))
+
+        # - create  line with 'All compensations are already submitted'
+                    if all_published:
+                        msg_list.extend(("<div>",
+                            gettext("All %(cpts)s are already submitted.") % {'cpts': gettext('compensations')},
+                            '</div>'
+                        ))
                     else:
-                        subjects_txt = str(
-                            _("There are %(count)s subjects") % {'count': auth_missing + double_approved})
-
-                    approved_txt = ''
-                    if auth_missing:
+        # - create  line with '5  are not fully approved'
+                        if auth_missing or double_approved:
+                            msg_list.append("<ul class='mb-0 pb-2'>")
+                        if auth_missing:
+                            show_msg_first_approve_by_pres_secr = True
+                            msg_list.extend(('<li>',
+                                             af.get_items_are_text(auth_missing, 'Compensation', 'compensations', False),
+                                                    gettext(" not fully approved."),
+                                             '</li>'
+                                             ))
                         if double_approved:
-                            approved_txt = str(_("that are not fully approved")), str(_(" or ")), str(
-                                _("that are double approved by the same person."))
-                        else:
-                            if auth_missing == 1:
-                                approved_txt = str(_("that is not fully approved"))
-                            else:
-                                approved_txt = str(_("that are not fully approved"))
-                    else:
-                        if double_approved:
-                            if double_approved == 1:
-                                approved_txt = str(_("that is double approved by the same person"))
-                            else:
-                                approved_txt = str(_("that are double approved by the same person"))
+                            #class_str = 'border_bg_invalid'
+                            other_function = gettext('chairperson') if requsr_auth == 'auth2' else gettext('secretary')
+                            caption = gettext('exam')
+                            msg_list.extend(('<li>',
+                                 af.get_items_are_text(double_approved, exam_txt, exams_txt, False),
+                                 gettext(' already approved by you as '), other_function, '.<br>',
+                                 gettext("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {
+                                     'cpt': caption},
+                                 '</li>'
+                                 ))
 
-                    msg_txt = ''.join((subjects_txt, ', ', approved_txt, "."))
-                    if logging_on:
-                        logger.debug('   msg_txt: ' + str(msg_txt))
-
-                    msg_str = ''.join((
-                        "<p class='pb-2'>",
-                        str(_("The %(frm)s form can not be submitted.") % {'frm': form_txt}),
-                        "<br>",
-                        msg_txt,
-                        "</p><p class='pb-2'>",
-                        str(_(
-                            'The chairperson and the secretary must approve all subjects before you can submit the Ex1 form.')),
-                        "</p>"
-                    ))
-
-                    if logging_on:
-                        logger.debug('   msg_str: ' + str(msg_str))
-                    msg_list.append(msg_str)
-
-                else:
-
-                    if is_test and committed < count:
-
-                        if already_published or committed:
-                            msg_list.append('<ul>')
-
-                        # if already_published:
-                        #    msg_list.append('<li>' + str(_("%(val)s already submitted") % {'val': get_subjects_are_text(examperiod, already_published)}) + ';</li>')
-
-                        # if committed:
-                        #    msg_list.append('<li>' + str(_("%(val)s submitted") % {'val': get_subjects_willbe_text(examperiod, committed)}) + ';</li>')
-
-                        if already_published or committed:
+                        if auth_missing or double_approved:
                             msg_list.append('</ul>')
 
-                    # - line with text how many subjects will be approved / submitted
-                    msg_list.append('<p>')
-                    if is_test:
-                        if not committed:
-                            msg_str = ''.join((
-                                '<p>',
-                                str(_("The %(frm)s form can not be submitted.") % {'frm': form_txt}),
-                                "</p><p>",
-                                str(_(
-                                    'The chairperson and the secretary must approve all subjects before you can submit the Ex1 form.')),
-                                "</p>"
-                            ))
-                            msg_list.append(msg_str)
-                            if logging_on:
-                                logger.debug('   msg_str: ' + str(msg_str))
-                            if logging_on:
-                                logger.debug('   not is_approve not committed: ' + str(not not committed))
+                        if test_has_failed:
+                            msg_list.extend(("<div>",
+                                 gettext('The %(frm)s form can not be submitted.') % {'frm': gettext('compensations')},
+                                 '</div>'
+                                 ))
                         else:
-                            """
-                            msg_list.append('<p>')
+                            show_msg_request_verifcode = True
+                            class_str = 'border_bg_valid'
+                            item_count_text = af.get_item_count_text(committed, 'Exam', 'Exams')
+                            will_be_text = af.get_will_be_text(1)  # singular
+                            msg_list.extend(("<div>",
+                                             gettext('The compensation'), ' ', gettext('of'), ' ',
+                                             item_count_text, ' ', gettext('of'), ' ',
+                                             str(corrector_count_txt), ' ',
+                                             will_be_text, ' ', gettext('submitted'), '.',
+                                             '</div>'
+                                             ))
 
-                            student_count_txt = get_student_count_text(student_committed_count)
-                            subject_count_txt = get_subject_count_text(examperiod, committed)
-                            will_be_text = get_will_be_text(committed)
-                            approve_txt = _('added to the %(frm)s form.') % {'frm': form_txt}
-                            msg_str = ' '.join((str(subject_count_txt), str(_('of')), str(student_count_txt),
-                                                str(will_be_text), str(approve_txt)))
 
-                            if logging_on:
-                                logger.debug('    not is_approve msg_str: ' + str(not msg_str))
+        # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
+                        if show_msg_first_approve_by_pres_secr:
+                            msg_list.extend(("<div class='pt-2'>",
+                                             gettext(
+                                                 'The chairperson and the secretary must approve all %(cpt)s<br>before you can submit the %(frm)s form.')
+                                             % {'cpt': gettext('compensations'), 'frm': gettext('compensations')},
+                                             '</div>'
+                                             ))
 
-                            msg_list.append('</p>')
-                            """
+    # ++++++++++++++++ not is_test +++++++++++++++++++++++++
+                else:
+                    if err_list:
+                        class_str = 'border_bg_invalid'
+                        msg_list.extend(err_list)
+
+        # - line with text how many exams have been submitted
+                    elif not updated_usercomp_count:
+                        class_str = 'border_bg_invalid'
+                        msg_list.append(gettext("The %(frm)s form has not been submitted.") % {'frm': gettext('compensation')})
+
                     else:
+                        class_str = 'border_bg_valid'
 
-                        msg_list.append("<p class='pb-2'>")
-                        # student_count_txt = get_student_count_text(corrector_saved_count)
-                        # subject_count_txt = get_subject_count_text(examperiod, saved)
-                        # corrector_saved_error_count_txt = get_student_count_text(corrector_saved_error_count)
-                        # subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
-
-                        # - line with text how many subjects have been approved / submitted
-
-                        not_str = '' if saved else str(_('not')) + ' '
-                        msg_str = str(_("The %(frm)s form has %(not)s been submitted.") % {'frm': form_txt,
-                                                                                           'not': not_str})
-                        if saved:
-                            # student_count_txt = get_student_count_text(corrector_saved_count)
-                            # subject_count_txt = get_subject_count_text(examperiod, saved)
-                            file_name = published_instance_filename if published_instance_filename else '---'
-                            msg_str += ''.join(('<br>',
-                                                # PR2023-02-12 dont give number of subjects, because all subjects are added to the Ex form
-                                                # str(_("It contains %(subj)s of %(stud)s.") % {'stud': student_count_txt,
-                                                #                                              'subj': subject_count_txt}),
-                                                # '<br>',
-                                                str(_("The %(frm)s form has been saved as '%(val)s'.") % {
-                                                    'frm': form_txt,
-                                                    'val': file_name}),
-                                                '<br>', str(_("Go to the page 'Archive' to download the file."))
-                                                ))
-
-                        msg_list.append(str(msg_str))
-                        msg_list.append('</p>')
-
-                if logging_on:
-                    for msg in msg_list:
-                        logger.debug('   msg: ' + str(msg))
+                        msg_list.extend((
+                            gettext("The %(frm)s form has been submitted.") % {'frm': gettext('compensations')}, ' ',
+                            gettext("Click <a href='%(href)s' class='awp_href' target='_blank'>here</a> to download it.")
+                            % {'href': published_instance_file_url},
+                            '<br>',
+                            gettext("It has been saved in the page 'Archive' as '%(frm)s'.")
+                            % {'frm': published_instance_filename},
+                        ))
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
 
-            #######################################
+#######################################
 
-            msg_list.append('</div>')
+
+
+
+            msg_html = ''.join((
+                "<div class='p-2 ", class_str, "'>",
+                ''.join(msg_list),
+                '</div>'
+            ))
+            # - create 'You need a 6 digit verification code' line
+            # PR2023-07-12 added: only when is test
+
+            if show_msg_request_verifcode:
+                msg_html += ''.join((
+                    "<div class='p-2 my-1 ", c.HTMLCLASS_border_bg_transparent, "'>",
+                    gettext("You need a 6 digit verification code to submit the %(frm)s form.") % {'frm': gettext('compensations')}, '<br>',
+                    gettext(
+                        "Click 'Request verification code' and we will send you an email with the verification code."),
+                    '<br>',
+                    gettext("The verification code expires in 30 minutes."),
+                    '</div>'
+                ))
 
             if logging_on:
+                logger.debug('   class_str: ' + str(class_str))
                 logger.debug('   msg_list: ' + str(msg_list))
-
-            msg_html = ''.join(msg_list)
-
-            if logging_on:
-                logger.debug('    msg_html: ' + str(msg_html))
+                logger.debug('   msg_html: ' + str(msg_html))
 
             return msg_html
-        # - end of create_msg_list
-
-        def batch_update_usercomp(usercomp_pk_list, is_submit, is_reset, requsr_auth, req_user, published_pk):
-            # PR2023-07=09
-
-            logging_on = s.LOGGING_ON
-            if logging_on:
-                logger.debug(' ')
-                logger.debug('----- save_approved_in_usercomp -----')
-
-            saved_usercomp_pk_list = []
-            err_html = None
-            try:
-                requsr_authby_field = 'published_id' if is_submit else ''.join((requsr_auth, 'by_id'))
-
-                # - remove authby when is_reset
-                requsr_authby_value = "NULL" if is_reset else str(published_pk) if is_submit else str(req_user.pk)
-
-                sql_list = ["UPDATE accounts_usercompensation",
-                            " SET", requsr_authby_field, "=", requsr_authby_value,
-                            " WHERE id IN (SELECT UNNEST(ARRAY", str(usercomp_pk_list), "::INT[]))",
-                            " RETURNING id, ", requsr_authby_field]
-                sql = ' '.join(sql_list)
-
-                if logging_on:
-                    logger.debug('    sql: ' + str(sql))
-
-                with connection.cursor() as cursor:
-                    cursor.execute(sql)
-
-                    rows = cursor.fetchall()
-                    if rows:
-                        for row in rows:
-                            saved_usercomp_pk_list.append(row[0])
-
-                if logging_on:
-                    logger.debug('    saved_usercomp_pk_list: ' + str(saved_usercomp_pk_list))
-
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
-
-                err_html = ''.join((
-                    str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
-                    str(_('The subjects could not be approved.'))
-                ))
-
-            if logging_on:
-                logger.debug('    err_html: ' + str(err_html))
-
-            return saved_usercomp_pk_list, err_html
-        # - end of save_approved_in_usercomp
-
-        def save_published_in_usercomp(usercomp_pk_list, is_reset, published_pk):
-            # PR2023-07=09
-
-            logging_on = s.LOGGING_ON
-            if logging_on:
-                logger.debug(' ')
-                logger.debug('----- save_approved_in_usercomp -----')
-
-            saved_usercomp_pk_list = []
-            err_html = None
-            try:
-                published_id_value = "NULL" if is_reset else str(published_pk)
-
-                sql_list = ["UPDATE accounts_usercompensation",
-                            " SET published_id=", published_id_value,
-                            " WHERE id IN (SELECT UNNEST(ARRAY", str(usercomp_pk_list), "::INT[]))",
-                            " RETURNING id;"]
-                sql = ' '.join(sql_list)
-
-                if logging_on:
-                    logger.debug('    sql: ' + str(sql))
-
-                with connection.cursor() as cursor:
-                    cursor.execute(sql)
-
-                    rows = cursor.fetchall()
-                    if rows:
-                        for row in rows:
-                            saved_usercomp_pk_list.append(row[0])
-
-                if logging_on:
-                    logger.debug('    saved_usercomp_pk_list: ' + str(saved_usercomp_pk_list))
-
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
-
-                err_html = ''.join((
-                    str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
-                    str(_('The subjects could not be approved.'))
-                ))
-
-            if logging_on:
-                logger.debug('    err_html: ' + str(err_html))
-
-            return saved_usercomp_pk_list, err_html
-        # - end of save_approved_in_usercomp
+        # - end of create_submit_msg_list
 
 ################################
 # function sets auth and publish of studentsubject records of current department # PR2021-07-25
@@ -1305,7 +1104,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
                     acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
-                form_name = 'excomp'
+                form_name = upload_dict.get('form') or '---'
 
 # - get selected mode. Modes are 'approve_test', 'approve_save', 'approve_reset', 'submit_test' 'submit_save'
                 mode = upload_dict.get('mode')
@@ -1317,6 +1116,8 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                 if logging_on:
                     logger.debug('    upload_dict ' + str(upload_dict))
                     logger.debug('    mode:       ' + str(mode))
+                    logger.debug('    is_submit:       ' + str(is_submit))
+                    logger.debug('    is_test:       ' + str(is_test))
 
 # - when mode = submit_submit: check verificationcode.
                 verification_is_ok = True
@@ -1356,8 +1157,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                         logger.debug('    row_count:      ' + str(len(usercomp_rows)))
 
                     count_dict = {}
-                    corrector_pk_list = []
-                    corrector_committed_list = []
+
                     if usercomp_rows:
 
 # +++ create new published_instance. Only save it when it is not a test
@@ -1388,9 +1188,8 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
                         # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
                         # and batch update at the end
-                        tobeapproved_usercomp_pk_list = []
-                        tobesaved_usercomp_pk_list = []
                         tobe_updated_usercomp_pk_list = []
+                        tobe_updated_user_pk_list = []
 
 # +++++ loop through usercomp_rows +++++
                         for usercomp_row in usercomp_rows:
@@ -1401,63 +1200,106 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
                             row_count += 1
 
-                            is_committed = False
-                            is_saved = False
-
                             if is_approve:
-                                is_committed, is_saved = approve_usercomp(
+                                approve_usercomp(
                                     usercomp_row=usercomp_row,
                                     requsr_auth=requsr_auth,
                                     is_test=is_test,
                                     is_reset=is_reset,
                                     count_dict=count_dict,
+                                    tobe_updated_usercomp_pk_list=tobe_updated_usercomp_pk_list,
+                                    tobe_updated_user_pk_list=tobe_updated_user_pk_list,
                                     request=request
                                 )
 
                             elif is_submit:
-                                is_committed, is_saved = submit_usercomp(
+                                submit_usercomp(
                                     usercomp_row=usercomp_row,
                                     is_test=is_test,
-                                    count_dict=count_dict
+                                    count_dict=count_dict,
+                                    tobe_updated_usercomp_pk_list=tobe_updated_usercomp_pk_list,
+                                    tobe_updated_user_pk_list=tobe_updated_user_pk_list,
                                 )
 
-                            if is_committed or is_saved:
-                                usercomp_pk = usercomp_row.get('id')
-                                if usercomp_pk:
-                                    tobe_updated_usercomp_pk_list.append(usercomp_pk)
-
 # +++++  end of loop through  studsubjects
-
-                        if logging_on:
-                            logger.debug('    tobe_updated_usercomp_pk_list: ' + str(tobe_updated_usercomp_pk_list))
 
                         auth_missing_count = count_dict.get('auth_missing', 0)
                         double_approved_count = count_dict.get('double_approved', 0)
 
                         test_has_failed = False
-                        if not row_count:
-                            test_has_failed = True
+                        if is_test:
+                            if not row_count:
+                                test_has_failed = True
+                            elif is_submit and auth_missing_count:
+                                test_has_failed = True
+                            elif is_submit and double_approved_count:
+                                test_has_failed = True
+                            elif not tobe_updated_usercomp_pk_list:
+                                test_has_failed = True
 
-                        elif is_submit and auth_missing_count:
-                            test_has_failed = True
-                        elif is_submit and double_approved_count:
-                            test_has_failed = True
 
                         count_dict['count'] = row_count
-                        #count_dict['student_committed_count'] = student_committed_count
-                        #count_dict['corrector_saved_count'] = len(student_saved_list)
 
-                        if logging_on:
-                            logger.debug('    count_dict: ' + str(count_dict))
+                        updated_usercomp_pk_list = []
+                        updated_user_pk_list = []
+
+                        err_list = []
+
+                        published_instance_file_url = None
 
                         update_wrap['approve_count_dict'] = count_dict
 
+                        if not test_has_failed:
+                            update_wrap['test_is_ok'] = True
+
+# +++++ create compensation form
+                        if is_submit and not is_test and row_count:
+                    # form may be printed without new approvals - ( or not ? > in that case add if tobe_updated_usercomp_pk_list )
+                            save_to_disk = True
+                            responseNIU, is_saved_to_disk = create_excomp_xlsx(
+                                published_instance=published_instance,
+                                sel_examyear=sel_examyear,
+                                sel_school=sel_school,
+                                save_to_disk=save_to_disk,
+                                request=request,
+                                user_lang=user_lang
+                            )
+
+                            if is_saved_to_disk and published_instance.file:
+                                published_instance_file_url = published_instance.file.url
+
+
+        # +++++ batch save approval / published PR2023-07-09
+                        if not is_test and tobe_updated_usercomp_pk_list:
+                            updated_usercomp_pk_list, updated_user_pk_list, err_lst = batch_update_usercomp(
+                                usercomp_pk_list=tobe_updated_usercomp_pk_list,
+                                is_submit=is_submit,
+                                is_reset=is_reset,
+                                requsr_auth=requsr_auth,
+                                req_user=req_usr,
+                                published_pk=published_instance_pk
+                            )
+                            if err_lst:
+                                err_list.extend(err_lst)
+
 # - create msg_html with info of rows
+
+                        if is_test:
+                            updated_usercomp_count = len(tobe_updated_usercomp_pk_list)
+                            updated_user_count = len(tobe_updated_user_pk_list)
+                        else:
+                            updated_usercomp_count = len(updated_usercomp_pk_list)
+                            updated_user_count = len(updated_user_pk_list)
+
                         if is_approve:
+
                             msg_html = create_approve_msg_list(
                                 sel_department=sel_department,
                                 sel_level=sel_level,
                                 count_dict=count_dict,
+                                updated_usercomp_count=updated_usercomp_count,
+                                updated_user_count=updated_user_count,
+                                err_list=err_list,
                                 requsr_auth=requsr_auth,
                                 is_test=is_test
                             )
@@ -1466,41 +1308,16 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                                 sel_department=sel_department,
                                 sel_level=sel_level,
                                 count_dict=count_dict,
+                                updated_usercomp_count=updated_usercomp_count,
+                                updated_user_count=updated_user_count,
+                                err_list=err_list,
                                 requsr_auth=requsr_auth,
                                 is_test=is_test,
-                                published_instance_filename=published_instance_filename
+                                test_has_failed=test_has_failed,
+                                published_instance_filename=published_instance_filename,
+                                published_instance_file_url=published_instance_file_url
                             )
 
-# +++++ create Ex1 Ex4 form
-                        if row_count:
-                            updated_usercomp_pk_list = []
-                            if not is_test:
-                                if is_submit:
-                                    self.create_usercomp_form(
-                                        published_instance=published_instance,
-                                        sel_examyear=sel_examyear,
-                                        sel_school=sel_school,
-                                        sel_department=sel_department,
-                                        sel_level=sel_level,
-                                        save_to_disk=True,
-                                        request=request,
-                                        user_lang=user_lang
-                                    )
-
-# +++++ batch save approval / published PR2023-07-09
-                                if tobe_updated_usercomp_pk_list:
-
-                                    updated_usercomp_pk_list, err_html = batch_update_usercomp(
-                                        usercomp_pk_list=tobe_updated_usercomp_pk_list,
-                                        is_submit=is_submit,
-                                        is_reset=is_reset,
-                                        requsr_auth=requsr_auth,
-                                        req_user=req_usr,
-                                        published_pk=published_instance_pk
-                                    )
-
-                                    if err_html:
-                                        msg_html = "<div class='p-2 border_bg_invalid'>" + err_html + "</div>"
 
                                 # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
                                 # list is created outside this function, when is_saved = True
@@ -1509,28 +1326,25 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                                 logger.debug('    updated_usercomp_pk_list: ' + str(updated_usercomp_pk_list))
 
         # - add rows to studsubj_rows, to be sent back to page
-                            # to increase speed, dont create return rows but refresh page after finishing this request
+                        # to increase speed, dont create return rows but refresh page after finishing this request
 
-                            if updated_usercomp_pk_list:
-                                updated_usercompensation_rows = create_usercompensation_rows(
-                                    sel_examyear=sel_examyear,
-                                    sel_department=sel_department,
-                                    sel_lvlbase=None,
-                                    request=request,
-                                    updated_usercomp_pk_list=updated_usercomp_pk_list
-                                )
-                                if updated_usercompensation_rows:
-                                    update_wrap['updated_usercompensation_rows'] = updated_usercompensation_rows
+                        if updated_usercomp_pk_list:
+                            updated_usercompensation_rows = create_usercompensation_rows(
+                                sel_examyear=sel_examyear,
+                                sel_department=sel_department,
+                                sel_lvlbase=None,
+                                request=request,
+                                updated_usercomp_pk_list=updated_usercomp_pk_list
+                            )
+                            if updated_usercompensation_rows:
+                                update_wrap['updated_usercompensation_rows'] = updated_usercompensation_rows
 
-                            if logging_on:
-                                logger.debug('    studsubj_rows: ' + str(studsubj_rows))
+                        if logging_on:
+                            logger.debug('    studsubj_rows: ' + str(studsubj_rows))
 
-                            #if (studsubj_rows):
-                            #    update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
+                        #if (studsubj_rows):
+                        #    update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
 
-                            if is_test:
-                                if not test_has_failed:
-                                    update_wrap['test_is_ok'] = True
 
     # - add  msg_html to update_wrap (this one triggers MASS_UpdateFromResponse in page studsubjcts
         update_wrap['approve_msg_html'] = msg_html
@@ -1666,7 +1480,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
 # +++ create Ex_compensation form
 
-        create_excomp_xlsx(
+        response, is_saved_to_disk = create_excomp_xlsx(
             published_instance=published_instance,
             sel_examyear=sel_examyear,
             sel_school=sel_school,
@@ -1807,14 +1621,11 @@ class UserCompensationDownloadExcompView(View):  # PR2023-07-09
 
             if sel_examyear and sel_school:
 
-    # - get text from examyearsetting
-                settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
-
     # +++ create ex1_xlsx
                 save_to_disk = False
                 # just to prevent PyCharm warning on published_instance=published_instance
                 # published_instance = None  # sch_mod.School.objects.get_or_none(pk=None)
-                response = create_excomp_xlsx(
+                response, is_saved_to_disk = create_excomp_xlsx(
                     published_instance=None,
                     sel_examyear=sel_examyear,
                     sel_school=sel_school,
@@ -1834,7 +1645,7 @@ class UserCompensationDownloadExcompView(View):  # PR2023-07-09
 def get_usercomp_rows(sel_examyear_pk, sel_schoolbase_pk, upload_dict, user_lang):
     # PR2023-07-09
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_usercomp_rows -----')
 
@@ -1891,7 +1702,7 @@ def get_usercomp_rows(sel_examyear_pk, sel_schoolbase_pk, upload_dict, user_lang
         # don't use selected_pk values, but get them from upload_dict
         # dont filter on dep when creating excomp form
         if sel_depbase_pk:
-            sql_list.append(''.join(("AND dep.id=", str(sel_depbase_pk), "::INT ")))
+            sql_list.append(''.join(("AND dep.base_id=", str(sel_depbase_pk), "::INT ")))
 
         # PR2023-02-19 debug: VWO didnt show records, because of filter sel_lvlbase_pk=5
         # solved bij adding: if sel_dep_level_req
@@ -1899,7 +1710,7 @@ def get_usercomp_rows(sel_examyear_pk, sel_schoolbase_pk, upload_dict, user_lang
         if sel_dep_level_req and sel_lvlbase_pk:
             sql_list.append(''.join(("AND lvl.base_id=", str(sel_lvlbase_pk), "::INT ")))
 
-        if logging_on and False:
+        if logging_on :
             for sql_txt in sql_list:
                 logger.debug('  > ' + str(sql_txt))
 
@@ -1966,6 +1777,8 @@ def get_usercomp_rows(sel_examyear_pk, sel_schoolbase_pk, upload_dict, user_lang
 def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, request):
     # --- create list of users with role = corrector and usergroup auth4
     # - filter on allowed school and allowed dep
+
+    # note: admin of role correctors uses table 'users' to add or change correctors
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -2021,7 +1834,6 @@ def create_usercompensation_rows(sel_examyear, sel_department, sel_lvlbase, requ
             #  - when uergroup has auth4: schow only usercompensaations from this user, from all schools
 
             if logging_on:
-                logger.debug('    auth4_in_requsr_usergroups ' + str(auth4_in_requsr_usergroups))
                 logger.debug('    auth1_or_auth2_in_requsr_usergroups: ' + str(auth1_or_auth2_in_requsr_usergroups))
 
             sql_auth = "SELECT u.id, u.last_name FROM accounts_user AS u"
@@ -2045,6 +1857,8 @@ def create_usercompensation_rows(sel_examyear, sel_department, sel_lvlbase, requ
                         "uc.auth2by_id AS uc_auth2by_id, auth2.last_name AS uc_auth2by_usr,",
                         "uc.published_id AS uc_published_id,",
 
+                        "publ.modifiedat AS uc_publ_modat,"
+
                         "uc.notes AS uc_notes",
 
                         "FROM accounts_usercompensation AS uc",
@@ -2066,7 +1880,9 @@ def create_usercompensation_rows(sel_examyear, sel_department, sel_lvlbase, requ
                         "LEFT JOIN auth1 ON (auth1.id = uc.auth1by_id)",
                         "LEFT JOIN auth2 ON (auth2.id = uc.auth2by_id)",
 
-                        ''.join(("WHERE uc_school.examyear_id=", str(sel_examyear.pk), "::INT"))
+                        "LEFT JOIN schools_published AS publ ON (publ.id = uc.published_id)",
+
+                        "WHERE uc_school.examyear_id=", str(sel_examyear.pk), "::INT"
                         ]
             # only show correctors  of this uc_school when role = school
             if request.user.role == c.ROLE_008_SCHOOL:
@@ -2110,7 +1926,7 @@ def create_usercompensation_rows(sel_examyear, sel_department, sel_lvlbase, requ
                         "uc_sub.uc_auth1by_id, uc_sub.uc_auth1by_usr,",
                         "uc_sub.uc_auth2by_id, uc_sub.uc_auth2by_usr,",
 
-                        "uc_sub.uc_published_id, uc_sub.uc_notes",
+                        "uc_sub.uc_published_id, uc_sub.uc_publ_modat, uc_sub.uc_notes",
 
                         "FROM accounts_user AS u",
                         "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
@@ -2631,6 +2447,8 @@ def create_excomp_xlsx(published_instance, sel_examyear, sel_school, save_to_dis
     if logging_on:
         logger.debug(' ----- create_excomp_xlsx -----')
 
+    is_saved_to_disk = False
+
 # +++ get mapped_subject_rows    '
     # function gets all subjects of studsubj of this dep, not deleted
     # - creates list of subject_codes and list of subject_pk's
@@ -2831,10 +2649,8 @@ def create_excomp_xlsx(published_instance, sel_examyear, sel_school, save_to_dis
                 else:
                     value = row.get(field_name, '')
                 sheet.write(row_index, i, value, exc_format)
-
 # end of iterate through levels,
 # ++++++++++++++++++++++++++++
-
 
 # ---  table total row
         row_index += 1
@@ -2917,6 +2733,7 @@ def create_excomp_xlsx(published_instance, sel_examyear, sel_school, save_to_dis
 
             # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
             published_instance.save(request=request)
+            is_saved_to_disk = True
 
             logger.debug('file_path: ' + str(file_path))
             # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
@@ -2935,6 +2752,6 @@ def create_excomp_xlsx(published_instance, sel_examyear, sel_school, save_to_dis
             response['Content-Disposition'] = 'attachment; filename=%s' % file_name
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
-    return response
+    return response, is_saved_to_disk
 # --- end of create_excomp_xlsx
 

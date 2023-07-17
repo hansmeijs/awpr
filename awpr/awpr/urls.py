@@ -166,7 +166,6 @@ urlpatterns = [
         path('download_userdata_xlsx', account_views.UserdataDownloadXlsxView.as_view(), name='url_download_userdata_xlsx'),
     ])),
 
-
     path('correctors/', include([
         path('corrector', account_views.CorrectorListView.as_view(), name='url_corrector'),
         path('usercomp_upload', acc_corr.UserCompensationUploadView.as_view(), name='url_usercompensation_upload'),

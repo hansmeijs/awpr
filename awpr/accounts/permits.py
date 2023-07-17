@@ -1714,13 +1714,17 @@ def err_txt_cannot_make_changes():  # PR2023-04-16
     return gettext("You cannot make changes.")
 
 
-def msghtml_error_occurred_no_border(err_txt, msg_txt=None):  # PR2023-04-17
+def msglist_error_occurred(err_txt, msg_txt=None):  # PR2023-07-16
     msg_list = [gettext('An error occurred')]
     if err_txt:
         msg_list.extend([':<br>&emsp;<i>', str(err_txt), '</i>'])
     if msg_txt:
         msg_list.extend(['.<br>', str(msg_txt)])
-    return ''.join((msg_list))
+    return msg_list
+
+
+def msghtml_error_occurred_no_border(err_txt, msg_txt=None):  # PR2023-04-17
+    return ''.join((msglist_error_occurred(err_txt, msg_txt)))
 
 
 def msghtml_error_occurred_with_border(err_txt, msg_txt=None):  # PR2023-03-20

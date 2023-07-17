@@ -120,7 +120,6 @@ class StudsubjDownloadEx4View(View):  # PR2022-05-27
             sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
-            c.KEY_SEL_EXAMPERIOD
     # - get saved_examperiod from Usersetting, default EXAMPERIOD_FIRST if not found
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
