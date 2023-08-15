@@ -250,7 +250,108 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
         return True
 
 
-# PR2018-06-08
+class Studentlog(sch_mod.AwpBaseModel): # PR203-08-11
+    objects = CustomManager()
+
+    student_id = IntegerField(db_index=True)
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+    # not used in log: base = ForeignKey(Studentbase, related_name='+', on_delete=SET_NULL)
+
+    school = ForeignKey(sch_mod.School, null=True, related_name='+', on_delete=SET_NULL)
+    department = ForeignKey(sch_mod.Department, null=True, related_name='+', on_delete=SET_NULL)
+
+    level = ForeignKey(subj_mod.Level, null=True, related_name='+', on_delete=SET_NULL)
+    sector = ForeignKey(subj_mod.Sector, null=True,related_name='+', on_delete=SET_NULL)
+    scheme = ForeignKey(subj_mod.Scheme, null=True, related_name='+', on_delete=SET_NULL)
+    package = ForeignKey(subj_mod.Package, null=True, related_name='+', on_delete=SET_NULL)
+
+    lastname = CharField(null=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+    firstname= CharField(null=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+    prefix= CharField(null=True, max_length=c.MAX_LENGTH_10)
+    gender= CharField(null=True, max_length=c.MAX_LENGTH_01)
+
+    idnumber = CharField(null=True, max_length=c.MAX_LENGTH_IDNUMBER)
+    birthdate = DateField(null=True)
+    birthcountry= CharField(null=True, max_length=c.USER_LASTNAME_MAX_LENGTH)
+    birthcity= CharField(null=True, max_length=c.USER_LASTNAME_MAX_LENGTH)
+
+    classname = CharField(null=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
+    examnumber = CharField(null=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
+
+    # not in use: regnumber = CharField(null=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
+    # not in use: diplomanumber = CharField(null=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
+    # not in use: gradelistnumber = CharField(null=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
+
+    extrafacilities = BooleanField(null=True)
+    iseveningstudent = BooleanField(null=True)
+    islexstudent = BooleanField(null=True)
+    bis_exam = BooleanField(null=True)
+    partial_exam = BooleanField(null=True)
+
+    # PR2022-08-22 - is ok when subjects composition is correct. Inspection can give dispensation
+    subj_composition_checked = BooleanField(null=True)
+    subj_composition_ok = BooleanField(null=True)
+    subj_dispensation = BooleanField(null=True)
+    subj_disp_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    subj_disp_modifiedat = DateTimeField(null=True)
+
+    # additional_exam is deprecated, field partial_exam is used (additional_exam is partial_exam on a day school
+    # additional_exam =  when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
+
+    # notlinked contains ';'-delimited list of student_id's with the same idnumber, but that are not the same student
+    # islinked = BooleanField(default=False)
+    linked = CharField(null=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+    notlinked = CharField(null=True, max_length=c.MAX_LENGTH_FIRSTLASTNAME)
+
+    # not used in log: exemption_count = PositiveSmallIntegerField(null=True)
+    # not used in log: sr_count = PositiveSmallIntegerField(null=True)
+    # not used in log: reex_count = PositiveSmallIntegerField(null=True)
+    # not used in log: reex03_count = PositiveSmallIntegerField(null=True)
+    # not used in log: thumbrule_count = PositiveSmallIntegerField(null=True)
+
+    # TODO deprecate is_reex_cand etc, replaced by reex_count
+    #is_reex_cand = BooleanField(null=True)
+    #is_reex03_cand = BooleanField(null=True)
+    #is_sr_cand = BooleanField(null=True)  # student who has done 'herkansing' (SE-reexamination)
+    withdrawn = BooleanField(null=True)
+
+    # not used in log: ep01_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True)
+    # not used in log: ep01_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    # not used in log: ep01_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True)
+    # not used in log: ep01_result = PositiveSmallIntegerField(db_index=True,null=True)
+
+    # not used in log: ep02_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True)
+    # not used in log: ep02_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    # not used in log: ep02_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True)
+    # not used in log: ep02_result = PositiveSmallIntegerField(db_index=True,null=True)
+
+    # not used in log: gl_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True)
+    # not used in log: gl_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    # not used in log: gl_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True)
+
+    result = PositiveSmallIntegerField(null=True)
+    result_status = CharField(null=True, max_length=c.MAX_LENGTH_KEY)
+    result_info = CharField(null=True, max_length=2048)
+
+    # PR2023-06-09 TODO replace resap_status etc by gl_status etc
+    # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
+    # status 1 = accepted, 2 = declined
+    #resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    #resap_status = DateTimeField(null=True)
+    #resap_modifiedat = DateTimeField(null=True)
+
+    gl_status = PositiveSmallIntegerField(null=True)
+    gl_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    gl_modifiedat = DateTimeField(null=True)
+
+    tobedeleted = BooleanField(null=True)
+    deleted = BooleanField(null=True)
+
+# - end of Studentlog
+
+
+# PR2018-06-08 Student_log TO BE DELETED
 class Student_log(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
@@ -476,9 +577,63 @@ class Studentsubject(sch_mod.AwpBaseModel):
     gl_ni_pe = BooleanField(default=False)
     gl_ni_ce = BooleanField(default=False)
     gl_examperiod = PositiveSmallIntegerField(null=True)
+# - end of Studentsubject
 
+
+# ======= Student subject =========== PR2023-08-11
+class Studentsubjectlog(sch_mod.AwpBaseModel):
+    objects = CustomManager()
+
+    studentsubject_id = IntegerField(db_index=True)
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+    student = ForeignKey(Student, null=True, related_name='+', on_delete=SET_NULL)
+
+    # subject not in use (yet). Linked with subject.subject
+    subject = ForeignKey(subj_mod.Subject, null=True, related_name='+', on_delete=SET_NULL)
+    schemeitem = ForeignKey(subj_mod.Schemeitem, null=True, related_name='+', on_delete=SET_NULL)
+
+    cluster = ForeignKey(subj_mod.Cluster, null=True, related_name='+', on_delete=SET_NULL)
+
+    # PR2023-05-28 added: ETE may add cluster for secret exam
+    ete_cluster = ForeignKey(subj_mod.Cluster, null=True, related_name='+', on_delete=SET_NULL)
+
+    is_extra_nocount = BooleanField(null=True)
+    is_extra_counts = BooleanField(null=True)
+    is_thumbrule = BooleanField(null=True)
+
+    pws_title = CharField(null=True, max_length=80)
+    pws_subjects = CharField(null=True, max_length=80)
+
+    has_exemption = BooleanField(null=True)
+    has_sr = BooleanField(null=True)  # has se_reex (herkansing)
+    has_reex = BooleanField(null=True)
+    has_reex03 = BooleanField(null=True)
+
+    #  exemption_year to be added in 2023
+    exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020, also for some subjects in 2021)
+
+    # has proof of knowledge = True when pok_validthru has value PR2021-09-07
+    pok_validthru = PositiveSmallIntegerField(null=True)
+
+    # PR2022-07-30 pok_sesr etc added, to store proof of knowledge / proof of exemption
+    pok_sesr = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    pok_pece = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    pok_final = CharField(max_length=c.MAX_LENGTH_04, null=True)
+
+    subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    subj_published = ForeignKey(sch_mod.Published, null=True, related_name='+', on_delete=SET_NULL)
+
+    # 'tobechanged' is set True when schemeitem (=subjecttype) changes, it must be submitted again
+    tobechanged = BooleanField(null=True)
+    tobedeleted = BooleanField(null=True)
+    deleted = BooleanField(null=True)
+
+# - end of Studentsubjectlog
 
 # PR2018-06-06
+#PR2023-08-11 TO BE REMOVED
 class Studentsubject_log(sch_mod.AwpBaseModel):
     objects = CustomManager()
     studentsubject_id = IntegerField(db_index=True)
@@ -717,9 +872,47 @@ class Grade(sch_mod.AwpBaseModel):
     #del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     status = PositiveSmallIntegerField(default=0)
+# - end of Grade
+
+
+class Gradelog(sch_mod.AwpBaseModel): # PR2023-08-11
+    objects = CustomManager()
+
+    grade_id = IntegerField(db_index=True)
+
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+    studentsubject = ForeignKey(Studentsubject, null=True, related_name='+', on_delete=SET_NULL)
+
+    examperiod = PositiveSmallIntegerField(null=True)
+
+    # NOTE: total wolf score was stored in pescore, is moved to ce_exam_score PR2022-05-15
+    pescore = PositiveSmallIntegerField(null=True)
+    cescore = PositiveSmallIntegerField(null=True)
+
+    segrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+    srgrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+    sesrgrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+
+    pegrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+    cegrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+    pecegrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+    finalgrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+
+    # PR2023-01-24 added, to skip approval when imported
+    exemption_imported = BooleanField(null=True)
+
+    # deprecate tobedeleted, only deleted is used PR2023-01-24
+    # tobedeleted = BooleanField(null=True)
+    deleted = BooleanField(null=True)
+
+    status = PositiveSmallIntegerField(null=True)
+# - end of Gradelog
 
 
 # PR2018-06-06
+
+#PR2023-08-11 TO BE REMOVED
 class Grade_log(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
@@ -812,6 +1005,28 @@ class Grade_log(sch_mod.AwpBaseModel):
     status = PositiveSmallIntegerField(default=0)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+
+# PR2023-07-18 TODO make it work
+class Grade_statuslog(sch_mod.AwpBaseModel):
+    objects = CustomManager()
+
+    grade = ForeignKey(Grade, related_name='+', on_delete=CASCADE)
+
+    examperiod = PositiveSmallIntegerField(default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
+    examtype = CharField(max_length=c.MAX_LENGTH_04, null=True)  # "se", "ce"
+
+    exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+
+    # PR2023-07-19 tobe deprecated:  gradevalue contains segrade or str(cescore)
+    gradevalue = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    cescore = PositiveSmallIntegerField(null=True)
+    segrade = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    cegrade = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True)
+
+    status = CharField(max_length=c.MAX_LENGTH_04, null=True)  # "se", "ce"
 
 
 class DiplomaGradelist(sch_mod.AwpBaseModel): # PR2023-02-19 PR2023-03-18

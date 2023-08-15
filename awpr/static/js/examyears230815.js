@@ -518,20 +518,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
                     const mode = get_dict_value(response, ["mode"]);
 
+                    if ("checked_examyear_delete" in response) {
+                        ModConfirmUndoOrDelete_Checked(response.checked_examyear_delete)
+                    };
+
+                    if ("checked_examyear" in response) {
+                        MCREY_update_after_response (response);
+                    };
                     if ("updated_examyear_rows" in response) {
+
                         MCREY_update_after_response (response);
                     };
                     if ("updated_school_rows" in response) {
-                        MCREY_update_after_response (response);
+                        //MCREY_update_after_response (response);
                     };
                     if ("SXM_added_list" in response) {
                         $("#id_mod_confirm").modal("hide");
                     };
                     if ("SXM_deletedlist" in response) {
                         $("#id_mod_confirm").modal("hide");
-                    };
-                    if ("checked_examyear" in response) {
-                        ModConfirmUndoOrDelete_Checked(response.checked_examyear)
                     };
                     if ("messages" in response) {
                         b_show_mod_message_dictlist(response.messages);
@@ -555,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 
 
-// +++++++++ MOD EXAM YEAR ++++++++++++++++ PR2020-10-04  PR2022-08-02
+// +++++++++ MOD EXAM YEAR ++++++++++++++++ PR2020-10-04  PR2022-08-02  PR2023-08-08
     function MCREY_Open(mode, el_input){
         console.log(" -----  MCREY_Open   ----")
         console.log("selected.examyear_pk", selected.examyear_pk)
@@ -684,31 +689,52 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  MCREY_update_after_response  ================  PR2020-10-01 PR2021-06-20 PR2022-08-10
     function MCREY_update_after_response(response) {
         console.log(" -----  MCREY_update_after_response  ----");
-        console.log( "mod_MCREY_dict: ", mod_MCREY_dict);
-        console.log( "response: ", response);
+        console.log( "    mod_MCREY_dict: ", mod_MCREY_dict);
+        console.log( "    response: ", response);
+        // called when "checked_examyear" or "updated_examyear_rows" is in response
+        // when "checked_examyear_delete" in response: ModConfirmUndoOrDelete_Checked is called
 
-/*
-checked_examyear: {created: true, msg_html: 'Exam year 2023 has been created.'}
-updated_examyear_rows: [{…}]
-*/
+        /*
+        checked_examyear: {created: true, msg_html: 'Exam year 2023 has been created.'}
+        updated_examyear_rows: [{…}]
+
+        examyear_tobedeleted: {mapid: "examyear_11" pk: 11 tobedeleted: true}
+        msg_html: "<div class='p-2'>Examenjaar 2024 wordt gewist.<br>Wil je doorgaan?</div>"
+
+        PR2023-08-09 after deleting examyear:
+        updated_examyear_rows: [ {id: 20, mapid: 'examyear_20', deleted: true} ]
+
+        */
+
         let msg_html_created = null;
-        if ("checked_examyear" in response) {
+        if ("checked_examyear" in response){
             const checked_examyear_dict = response.checked_examyear;
             if (!isEmpty(checked_examyear_dict)){
+
+                if ("msg_html" in checked_examyear_dict) {
+                    el_MCREY_msg_container.innerHTML = checked_examyear_dict.msg_html;
+                };
+                const border_class = (checked_examyear_dict.border_class) ? checked_examyear_dict.border_class : "border_bg_message";
+                el_MCREY_msg_container.classList = "m-4 p-2 " + border_class;
+
                 if ("created" in checked_examyear_dict) {
-                    if ("msg_html" in checked_examyear_dict) {
-                        msg_html_created = checked_examyear_dict.msg_html;
-                    }
-                }
+
+                };
+
+                el_MCREY_btn_save.classList.add(cls_hide);
+                el_MCREY_btn_cancel.innerText = loc.Close;
             }
         };
-
         if ("updated_examyear_rows" in response) {
 
             const updated_examyear_rows = response.updated_examyear_rows
         console.log( "updated_examyear_rows: ", updated_examyear_rows);
             // {created: true, msg_html: "<div class='p-2 b
+            //  [{id: 20, mapid: 'examyear_20', deleted: true} ]
             if(updated_examyear_rows.length) {
+
+                $("#id_mod_confirm").modal("hide");
+
                 const tblName = "examyear";
                 //const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                 //RefreshDataMap(tblName, field_names, updated_examyear_rows, examyear_map);
@@ -744,6 +770,7 @@ updated_examyear_rows: [{…}]
                 };
             };
         };
+
     }  // MCREY_update_after_response
 
 //========= MCREY_get_next_examyear  ============= PR2020-10-04 PR2020-08-08
@@ -1082,22 +1109,24 @@ updated_examyear_rows: [{…}]
     };  // ModConfirmUndoOrDelete_Open
 
 //=========  ModConfirmUndoOrDelete_Checked  ================ PR2022-07-31
-    function ModConfirmUndoOrDelete_Checked(checked_examyear) {
+    function ModConfirmUndoOrDelete_Checked(return_dict) {
         console.log(" -----  ModConfirmUndoOrDelete_Checked   ----");
-        console.log("checked_examyear", checked_examyear);
+        console.log("    return_dict", return_dict);
 
-        if ("examyear_tobedeleted" in checked_examyear){
-            const examyear_tobedeleted = checked_examyear.examyear_tobedeleted
+        if ("examyear_tobedeleted" in return_dict){
+            const examyear_tobedeleted = return_dict.examyear_tobedeleted
             mod_dict.mapid = examyear_tobedeleted.mapid
         };
 
-        const btn_cancel_txt = (checked_examyear.error) ? loc.Close : loc.No_cancel;
+        const btn_cancel_txt = (return_dict.error) ? loc.Close : loc.No_cancel;
 
         el_modconfirm_loader.classList.add(cls_hide);
-        el_modconfirm_msg_container.innerHTML = checked_examyear.msg_html;
 
-        add_or_remove_class(el_modconfirm_btn_save, cls_hide, checked_examyear.error)
-        el_modconfirm_btn_save.disabled = checked_examyear.error;
+        const border_class = (return_dict.error) ? "border_bg_invalid" : "";
+        el_modconfirm_msg_container.innerHTML = ["<div class='p-2 ", border_class, "'>", return_dict.msg_html, "</div>"].join("");
+
+        add_or_remove_class(el_modconfirm_btn_save, cls_hide, return_dict.error)
+        el_modconfirm_btn_save.disabled = return_dict.error;
 
         el_modconfirm_btn_cancel.innerText = btn_cancel_txt;
 
@@ -1221,7 +1250,8 @@ updated_examyear_rows: [{…}]
             let upload_dict = {};
             if (mod_dict.mode === "delete"){
                 upload_dict = {mode: mod_dict.mode};
-                close_modal = true;
+                el_modconfirm_msg_container.innerHTML = null;
+                //close_modal = true;
             } else if (mod_dict.mode === "undo_published"){
                 upload_dict = {mode: 'update', examyear_pk: mod_dict.examyear_pk, published: false};
                 close_modal = true;
@@ -1369,8 +1399,6 @@ updated_examyear_rows: [{…}]
                 const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 const datarow_index = index;
-        console.log("    pk_int", pk_int);
-        console.log("    data_dict", data_dict);
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -1381,7 +1409,6 @@ updated_examyear_rows: [{…}]
         //--- delete tblRow
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
-        //console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
                         if (tblRow_tobe_deleted ){
                             tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
                         };

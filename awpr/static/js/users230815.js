@@ -720,6 +720,7 @@ console.log("user_dicts",user_dicts)
                         };
                         el.classList.add("pointer_show");
                         add_hover(el);
+
                     } else if (["sb_code", "school_abbrev", "username", "last_name", "email"].includes(field_name)){
                         el.addEventListener("click", function() {MUA_Open("update", el)}, false)
                         el.classList.add("pointer_show");
@@ -737,6 +738,7 @@ console.log("user_dicts",user_dicts)
                         // attach eventlistener and hover to td, not to el. No need to add icon_class here
                         td.addEventListener("click", function() {UploadToggleMultiple(el)}, false)
                         add_hover(td);
+
                     } else if (field_name.includes("allowed")) {
                         if (field_name === "allowed_clusters") {
                             if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
@@ -750,17 +752,19 @@ console.log("user_dicts",user_dicts)
                         };
 
                     } else if (field_name === "activated") {
-                        el.addEventListener("click", function() {ModConfirmOpen("user", "send_activation_email", el)}, false )
+                        el.addEventListener("click", function() {ModConfirmOpen("user", "send_activation_email", el)}, false)
+
                     } else if (field_name === "is_active") {
-                        el.addEventListener("click", function() {ModConfirmOpen("user", "is_active", el)}, false )
+                        el.addEventListener("click", function() {ModConfirmOpen("user", "is_active", el)}, false)
                         el.classList.add("inactive_0_2")
                         add_hover(el);
+
                     } else if ( field_name === "last_login") {
                         // pass
-                    }
+                    };
 
 // --- put value in field
-                UpdateField(el, data_dict)
+                UpdateField(el, data_dict);
 
             }  // if (!columns_hidden.includes(field_name))
         }  // for (let j = 0; j < 8; j++)

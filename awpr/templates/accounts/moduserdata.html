@@ -1,0 +1,96 @@
+{% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SELECT USER FROM SCHOOL  =================== -->
+    <div class="modal" id="id_mod_userdata" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MUD_header" class="modal-title mx-2" ></h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body m-2 py-0">
+
+<!-- modal_body_right contains input elements -->
+                        <div class="modal_body_rightxx ">
+                            <div class="px-2">
+                                <small>{% trans 'Your personal data are only visible for you and on the report that will be sent to the Financial Department.' %}</small>
+                            </div>
+                            <div id="id_MUD_form_controls" class="flex_container">
+                                <div class="flex_1">
+
+                                    <div class="mx-1">
+                                        <label for="id_MUD_idnumber" class="label_margin_top_m2">{% trans 'ID-number' %}:</label>
+                                        <input id="id_MUD_idnumber" type="text" data-field="idnumber" class="form-control awp_input_text"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        <div class="content_subheader_left mx-2">
+                                            <small id="id_MUD_msg_idnumber" class="text-danger awp_msg_err"></small>
+                                        </div>
+                                    </div>
+                                    <div class="mx-1">
+                                        <label for="id_MUD_cribnumber" class="label_margin_top_m2">{% trans 'CRIB number' %}:</label>
+                                        <input id="id_MUD_cribnumber" type="text" data-field= "cribnumber" class="form-control awp_input_text"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        <div class="content_subheader_left mx-2">
+                                            <small id="id_MUD_msg_cribnumber" class="text-danger awp_msg_err">xxx</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mx-1">
+
+
+
+
+                                        <label for="id_MUD_bankname" class="label_margin_top_m2">{% trans 'Name of your bank' %}:</label>
+                                        <input id="id_MUD_bankname" type="text" data-field="bankname" class="form-control awp_input_text"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                                        >
+                                        <div class="content_subheader_left mx-2">
+                                          <small id="id_MUD_msg_bankname"></small>
+                                        </div>
+                                    </div>
+                                    <div class="mx-1">
+                                        <label for="id_MUD_bankaccount" class="label_margin_top_m2">{% trans 'Bank account number' %}:</label>
+                                        <input id="id_MUD_bankaccount" type="text" data-field="bankaccount" class="form-control awp_input_text"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                        <div class="content_subheader_left mx-2">
+                                            <small id="id_MUD_msg_bankaccount" class="text-danger awp_msg_err"></small>
+                                        </div>
+                                    </div>
+                                    <div class="mx-1">
+                                        <label for="id_MUD_beneficiary" class="label_margin_top_m2">{% trans 'Name of the account holder' %}:</label>
+                                        <input id="id_MUD_beneficiary" type="text" data-field="beneficiary" class="form-control awp_input_text"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                                                                <div class="content_subheader_left mx-2">
+                                            <small id="id_MUD_msg_beneficiary" class="text-danger awp_msg_err"></small>
+                                        </div>
+                                     </div>
+                                </div>
+                                <div class="flex_1 px-2">
+                                    <label class="label_margin_top_m2">{% trans 'Banks' %}:</label>
+                                    <select id="id_MUD_select_bankname" data-field="select_bankname" class="form-control" size="10"
+                                    autocomplete="off" ondragstart="return false;" ondrop="return false;"></select>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                </div>
+                <div class="modal-footer">
+                    <div class="content_subheader_left">
+                            <div class="mx-2 px-2">
+                                <small id="id_MUD_msg_modified"></small>
+                            </div>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MUD_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MUD_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

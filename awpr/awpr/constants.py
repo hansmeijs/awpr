@@ -245,6 +245,40 @@ RESULT_CAPTION = [
     _('Withdrawn')
 ]
 
+# PR2023-07-18
+# Note: grade is set 'deleted' when removing exemption, reex or reex03.
+#       Record these in studsubjstatus, not in gradestatus
+GRADESTATUS_CAPTION = {
+    'scre': _('Score is created'),
+    'simp': _('Score is imported'),
+    'supd': _('Score has changed'),
+    'sdel': _('Score is removed'),
+
+    'gcre': _('Grade is created'),
+    'gimp': _('Grade is imported'),
+    'gupd': _('Grade has changed'),
+    'gdel': _('Grade is removed'),
+    'gcal': _('Grade is calculated'),
+
+    'ecre': _('Linked to exam'),
+    'eupd': _('Exam has changed'),
+    'edel': _('Exam is removed'),
+
+    'acre': _('Approved'),
+    'adel': _('Approval is removed'),
+
+    'pcre': _('Published'),
+    'pdel': _('Published is removed'),
+
+    'bcre': _('Unlocked'),
+    'bdel': _('Unlocked is removed')
+}
+
+def get_gradestatus_caption(status_str):
+    return GRADESTATUS_CAPTION.get(status_str, '')
+
+
+
 STATUS_NONE = 0
 STATUS_00_CREATED = 1
 STATUS_01_AUTH1 = 2
@@ -310,6 +344,7 @@ KEY_VERIFICATIONCODE = 'verificationcode'
 KEY_EX3 = 'ex3'
 KEY_GRADELIST = 'gradelist'
 KEY_OPENARGS = 'open_args'
+KEY_BANKLIST = 'banklist' # used in examyearsetting PR2023-07-18
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 
@@ -369,8 +404,8 @@ KEY_COLDEF = {
         {'awpColdef': 'level', 'caption': _('Level'), 'linkrequired': True},
         {'awpColdef': 'sector', 'caption': _('Sector'), 'linkrequired': True},
         {'awpColdef': 'profiel', 'caption': _('Profile'), 'linkrequired': True},
-        {'awpColdef': 'diplomanumber', 'caption': _('Diploma number')},
-        {'awpColdef': 'gradelistnumber', 'caption': _('Gradelist number')}
+        # PR2023-08-10 removed: {'awpColdef': 'diplomanumber', 'caption': _('Diploma number')},
+        # PR2023-08-10 removed: {'awpColdef': 'gradelistnumber', 'caption': _('Gradelist number')}
          ],
 
     KEY_IMPORT_PERMITS:
@@ -749,6 +784,7 @@ LABEL_TEXT = {
 HTMLCLASS_border_bg_invalid = 'border_bg_invalid'
 HTMLCLASS_border_bg_valid = 'border_bg_valid'
 HTMLCLASS_border_bg_warning = 'border_bg_warning'
+HTMLCLASS_border_bg_message = 'border_bg_message'
 HTMLCLASS_border_bg_transparent = 'border_bg_transparent'
 
 # XLSWRITER FORMATS

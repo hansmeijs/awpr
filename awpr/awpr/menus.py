@@ -38,7 +38,7 @@ MENUS_BUTTONS = {
                      'page_result', 'page_archive', 'page_exampaper'],  #, 'page_corrector', 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
                       'page_exams', 'page_grade', 'page_result', 'page_archive', 'page_exampaper'],  #,'page_report', 'page_analysis'],
-    c.ROLE_016_CORR: ['page_student', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive', 'page_exampaper'],
+    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive', 'page_exampaper'],
     c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive', 'page_exampaper'] # 'page_report',
 }
 
@@ -440,6 +440,7 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
 
 # - make background red when testsite PR2022-01-11
         class_bg_testsite = "tsa_tr_error" if s.IS_TESTSITE else ""
+        class_bg_testsite = "border_bg_warning" if s.IS_TESTSITE else ""
 
         headerbar_param = {
             'no_access': no_access,

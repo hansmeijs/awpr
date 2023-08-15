@@ -22,8 +22,8 @@ from awpr import constants as c
 from awpr import settings as s
 from awpr import validators as av
 from awpr import functions as af
-from awpr import downloads as dl
 from awpr import library as awpr_lib
+from awpr import logs as awpr_log
 
 from grades import views as grd_view
 from grades import validators as grad_val
@@ -1659,8 +1659,6 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
                                 upload_dict=upload_dict,
                                 idnumber_list=idnumber_list,
                                 examnumber_list=examnumber_list,
-                                diplomanumber_list=[],
-                                gradelistnumber_list=[],
                                 msg_list=msg_list,
                                 error_list=error_list,
                                 err_fields=err_fields,  # err_fields is only used in update student
@@ -1738,7 +1736,7 @@ class StudentApproveResultView(View):  # PR2023-06-11
 
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
-                    err_html = acc_prm.msghtml_error_occurred_with_border(e, _('The changes have not been saved.'))
+                    err_html = acc_prm.errhtml_error_occurred_with_border(e, _('The changes have not been saved.'))
 
             return updated_student_rows, err_html
 ########################
@@ -2221,7 +2219,7 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
         log_list = []
 
 
-        #PR2023-04-24 TODO implement approximate string matching
+        #PR2023-04-24 TODO implement fuzzy approximate string matching
         """
         https://stackoverflow.com/questions/31642940/finding-if-two-strings-are-almost-similar
         
@@ -3295,7 +3293,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
                 except Exception as e:
                    logger.error(getattr(e, 'message', str(e)))
-                   err_txt = acc_prm.msghtml_error_occurred_no_border(e)
+                   err_txt = acc_prm.errhtml_error_occurred_no_border(e)
 
             return studsubject_rows, err_txt
     ################################
@@ -4229,7 +4227,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            msg_html = acc_prm.msghtml_error_occurred_with_border(e)
+            msg_html = acc_prm.errhtml_error_occurred_with_border(e)
         return msg_html
 # - end of create_ex1_ex4_msg_list
 
@@ -5224,7 +5222,15 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
                             error_list = []
 
-                            studsubj, append_key = create_studsubj(student_instance, schemeitem, messages, error_list, request, False)  # False = don't skip_save
+                            studsubj, append_key = create_studsubj(
+                                student=student_instance,
+                                schemeitem=schemeitem,
+                                messages=messages,
+                                error_list=error_list,
+                                request=request,
+                                skip_save=False,
+                                is_import=False
+                            )
 
                             if logging_on:
                                 logger.debug('    studsubj: ' + str(studsubj))
@@ -5402,8 +5408,11 @@ def delete_studentsubject(student_instance, studsubj_instance, request):
     #       this_txt=this_txt)
 
     try:
+
+        updated_fields = []
         if is_submitted:
             setattr(studsubj_instance, 'tobedeleted', True)
+            updated_fields.append('tobedeleted')
 
     # - also remove approved and published info, store it in prev_auth1by_id etc
             setattr(studsubj_instance, 'prev_auth1by_id', getattr(studsubj_instance, 'subj_auth1by_id', None))
@@ -5411,10 +5420,10 @@ def delete_studentsubject(student_instance, studsubj_instance, request):
             setattr(studsubj_instance, 'prev_published_id', getattr(studsubj_instance, 'subj_published_id', None))
 
             tobedeleted_studsubj_pk = studsubj_instance.pk
-
         else:
             setattr(studsubj_instance, 'deleted', True)
             setattr(studsubj_instance, 'tobedeleted', False)
+            updated_fields.extend(('deleted', 'tobedeleted'))
 
             setattr(studsubj_instance, 'prev_auth1by_id', None)
             setattr(studsubj_instance, 'prev_auth2by_id', None)
@@ -5428,8 +5437,13 @@ def delete_studentsubject(student_instance, studsubj_instance, request):
         setattr(studsubj_instance, 'subj_auth1by_id', None)
         setattr(studsubj_instance, 'subj_auth2by_id', None)
         setattr(studsubj_instance, 'subj_published_id', None)
+        updated_fields.extend(('subj_auth1by_id', 'subj_auth2by_id', 'subj_published_id'))
 
         studsubj_instance.save(request=request)
+
+        # PR2023-08-14 Note: subj_auth1by_id etc have no effect in log, because value is already None.
+        # must see if an extra field 'is_removed' is necessary
+        awpr_log.savetolog_studentsubject(studsubj_instance.pk, 'u', request, updated_fields)
 
         if logging_on:
             logger.debug('    studsubj_instance: ' + str(studsubj_instance))
@@ -5758,6 +5772,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
     save_changes = False
     recalc_finalgrade = False
     recalc_subj_composition = False
+    updated_fields = []
 
     studsubj_pk_list = []
     for field, new_value in upload_dict.items():
@@ -5792,6 +5807,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                     save_changes = True
                     recalc_finalgrade = True
                     recalc_subj_composition = True
+                    updated_fields.append('schemeitem_id')
 
                     if logging_on:
                         logger.debug('>>>>> new_schemeitem save')
@@ -5818,6 +5834,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                     if new_value != saved_value:
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
+                        updated_fields.append(field)
 
         elif field == 'cluster_pk':
             new_cluster = subj_mod.Cluster.objects.get_or_none(pk=new_value)
@@ -5827,6 +5844,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             if new_cluster != saved_cluster:
                 setattr(studsubj_instance, db_field, new_cluster)
                 save_changes = True
+                updated_fields.append('cluster_id')
 
         elif field == 'exemption_year':
             # changing is only allowed when evening or lex student. Is set on client side
@@ -5839,6 +5857,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 setattr(studsubj_instance, field, new_value)
                 save_changes = True
                 recalc_finalgrade = True
+                updated_fields.append(field)
 
         elif field == 'is_thumbrule':
             saved_value = getattr(studsubj_instance, field)
@@ -5857,6 +5876,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 if new_value != saved_value:
                     setattr(studsubj_instance, field, new_value)
                     save_changes = True
+                    err_fields.append(field)
+
         # when combi: apply or remove thumbrule also to other combi subjects
                     if studsubj_instance.schemeitem.is_combi:
                         other_combi_subjects = stud_mod.Studentsubject.objects.filter(
@@ -5898,6 +5919,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 if new_value != saved_value:
                     setattr(studsubj_instance, field, new_value)
                     save_changes = True
+                    err_fields.append(field)
 
         # TODO check or delete has_sr, disabled for now
         elif field == 'has_sr' and False:
@@ -5936,6 +5958,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                             save_changes = True
                             recalc_finalgrade = True
                             recalc_grade_firstperiod = True
+                            err_fields.append(field)
                     else:
 # +++ delete re-examination school exam:
         # - check if deleting sr is allowed
@@ -5956,6 +5979,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                             setattr(studsubj_instance, field, new_value)
                             save_changes = True
                             recalc_finalgrade = True
+                            err_fields.append(field)
 
         # remove value from srgrade, also remove approval and published info
                             setattr(grade_firstperiod, 'srgrade', None)
@@ -5968,7 +5992,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         # recalculate sesr, pece, final in all grade_periods
                         grd_view.recalc_finalgrade_in_grade_and_save(grade_firstperiod, si_dict)
                         grade_firstperiod.save()
-
+                        # TODO savelog
         # - count 'exemption', 'sr', 'reex', 'reex03', 'is_thumbrule' records of this student an save count in student
                         update_reexcount_etc_in_student(field, studsubj_instance.student_id)
 
@@ -6010,6 +6034,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         save_changes = True
                         recalc_finalgrade = True
                         must_add_or_delete_exem_reex_reex03 = True
+                        err_fields.append(field)
+
                         if logging_on:
                             logger.debug(' add reex, field: ' + str(field) + ' ' + str(new_value))
 
@@ -6048,12 +6074,15 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         save_changes = True
                         recalc_finalgrade = True
                         must_add_or_delete_exem_reex_reex03 = True
+                        err_fields.append(field)
+
                         if logging_on:
                             logger.debug(' removed reex, field: ' + str(field) + ' new_value: ' + str(new_value))
 
         # - when deleting exemption: also delete exemption_year PR2022-04-15
                         if field == 'has_exemption':
                             setattr(studsubj_instance, 'exemption_year', None)
+                            err_fields.append('exemption_year')
 
 # --- add exem, reex, reex03 grade or make grade 'tobedeleted'
             # when adding: also put values of segrade, srgrade and pegrade in new grade_instance
@@ -6130,10 +6159,13 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             studsubj_instance.save(request=request)
             if logging_on:
                 logger.debug('The changes have been saved: ' + str(studsubj_instance))
+
+            awpr_log.savetolog_studentsubject(studsubj_instance.pk, 'u', request, updated_fields)
+
         except Exception as e:
             recalc_subj_composition = False
             logger.error(getattr(e, 'message', str(e)))
-            msg_list.append(acc_prm.msghtml_error_occurred_with_border(e, _('The changes have not been saved.')))
+            msg_list.append(acc_prm.errhtml_error_occurred_with_border(e, _('The changes have not been saved.')))
         else:
 
             if logging_on:
@@ -6316,7 +6348,7 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
                 if logging_on:
                     logger.debug('     set grade tobedeleted ')
 
-# +++ set grade tobedeleted
+# +++ when new_value = False: set grade tobedeleted
     # - when new has_exemption etc. is False: delete row by setting deleted=True and reset all fields
                 clear_grade_fields(grade)
                 # TODO PR2023-012-12 check difference between grade 'tobedeleted' and grade 'deleted'
@@ -6875,6 +6907,7 @@ def set_student_instance_tobedeleted(student_instance, request):
     # mark candidate as 'tobedeleted'
             setattr(student_instance, 'tobedeleted', True)
             student_instance.save(request=request)
+            awpr_log.savetolog_student(student_instance.pk, 'u', request, ['tobedeleted'])
 
     else:
         deleted_row = {'id': student_instance.pk,
@@ -6890,6 +6923,10 @@ def set_student_instance_tobedeleted(student_instance, request):
             setattr(student_instance, 'deleted', True)
             setattr(student_instance, 'tobedeleted', False)
             student_instance.save(request=request)
+
+            student_pk = deleted_row.get('id')
+            awpr_log.savetolog_student(student_pk, 'u', request, ['deleted', 'tobedeleted'])
+
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -7014,12 +7051,12 @@ def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_s
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_student_instance(examyear, school, department, idnumber_nodots,
                    lastname_stripped, firstname_stripped, prefix_stripped, full_name,
-                    lvlbase_pk, sctbase_pk, request, found_is_error, skip_save):
+                    lvlbase_pk, sctbase_pk, request, found_is_error, skip_save, is_import=False):
     # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15 PR2022-08-20
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug(' +++++++++++++++++ create_student +++++++++++++++++ ')
+        logger.debug(' +++++++++++++++++ create_student_instance +++++++++++++++++ ')
         logger.debug('    school: ' + str(school))
         logger.debug('    department: ' + str(department))
 
@@ -7059,7 +7096,7 @@ def create_student_instance(examyear, school, department, idnumber_nodots,
 # - validate if student already exists
             # either student, not_found or has_error is trueish
             # when importing: dont give error when found, but return found student  error_when_found
-            student, not_found, err_str = \
+            student, not_found, err_list = \
                 stud_val.lookup_student_by_idnumber_nodots(
                     school=school,
                     department=department,
@@ -7067,11 +7104,11 @@ def create_student_instance(examyear, school, department, idnumber_nodots,
                     upload_fullname=full_name,
                     found_is_error=found_is_error
                 )
-            if err_str:
+            if err_list:
                 has_error = True
-                error_list.append(str(err_str))
+                error_list.append(err_list)
             if logging_on:
-                logger.debug('    lookup_student_by_idnumber_nodots err_list: ' + str(err_str))
+                logger.debug('    lookup_student_by_idnumber_nodots err_list: ' + str(err_list))
                 logger.debug('    student: ' + str(student))
                 logger.debug('    not_found: ' + str(not_found))
                 logger.debug('    has_error: ' + str(has_error))
@@ -7113,6 +7150,8 @@ def create_student_instance(examyear, school, department, idnumber_nodots,
                     logger.debug('    student: ' + str(student))
                 if not skip_save:
                     student.save(request=request)
+                    mode = 'i' if is_import else 'c'
+                    awpr_log.savetolog_student(student.pk, mode, request, [])
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
@@ -7134,9 +7173,9 @@ def create_student_instance(examyear, school, department, idnumber_nodots,
 
 #######################################################
 def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
-                            idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
-                            msg_list, error_list, err_fields, log_list, request, skip_save):
-    # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04 PR2022-09-01
+                            idnumber_list, examnumber_list,
+                            msg_list, error_list, err_fields, log_list, request, skip_save, is_import=False):
+    # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04 PR2022-09-01 PR2023-08-13
     # log_list is only used when uploading students, is None otherwise
     instance_pk = instance.pk if instance else None
 
@@ -7180,9 +7219,10 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
         recalc_passed_failed = False
         recalc_subj_composition = False
 
+        updated_fields = []
+
         for field, new_value in upload_dict.items():
-            #try:
-            if True:
+            try:
     # - save changes in fields 'lastname', 'firstname'
                 if field in ['lastname', 'firstname']:
                     saved_value = getattr(instance, field)
@@ -7219,6 +7259,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if not has_error:
                             setattr(instance, field, new_value)
                             save_changes = True
+                            updated_fields.append(field)
                         else:
                             field_error = True
 
@@ -7256,6 +7297,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                             setattr(instance, field, new_gender)
                             save_changes = True
                             recalc_regnumber = True
+                            updated_fields.append(field)
 
                 elif field == 'idnumber':
                     caption = _('ID-number')
@@ -7319,8 +7361,6 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                                 logger.debug('    instance_pk: ' + str(instance_pk))
                             if instance_pk is None:
                                 idnumber_list.append((0, idnumber_nodots_stripped_lower))
-                            if logging_on:
-                                logger.debug('    idnumber_list: ' + str(idnumber_list))
 
                     if err_txt:
                         field_error = True
@@ -7332,6 +7372,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if new_value != saved_value:
                             setattr(instance, field, new_value)
                             save_changes = True
+                            updated_fields.append(field)
 
                 elif field == 'examnumber':
                     caption = _('Exam number')
@@ -7372,10 +7413,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
                                  for row in examnumber_list:
                                     # skip exam number of this student
-                                    if logging_on:
-                                        logger.debug('examnumber_list: ' + str(examnumber_list) + ' ' + str(type(examnumber_list)))
-                                        logger.debug('row: ' + str(row) + ' ' + str(type(row)))
-                                        logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+
                                     student_pk = row.get('student_id')
                                     if instance_pk is None or student_pk != instance_pk:
                                         examnumber_lower = row.get('examnumber')
@@ -7415,10 +7453,12 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if new_value != saved_value:
                             setattr(instance, field, new_value)
                             save_changes = True
-                            # TODO to be deprecated
+                            updated_fields.append(field)
+                            # recalc_regnumber is only used when examyear < 2023
                             recalc_regnumber = True
 
                 elif field in ('diplomanumber', 'gradelistnumber'):
+                    # field diplomanumber gradelistnumber are only used when examyear < 2023
                     caption = str(_('Diploma number')) if field == 'diplomanumber' else str(_('Gradelist number'))
                     err_txt = None
                     class_txt = None
@@ -7484,6 +7524,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if new_value != saved_value:
                             setattr(instance, field, new_value)
                             save_changes = True
+                            updated_fields.append(field)
                             if log_list is not None:
                                 log_list.append(get_log_txt(caption, new_value, saved_value))
 
@@ -7501,6 +7542,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
                         setattr(instance, field, new_value)
                         save_changes = True
+                        updated_fields.append(field)
 
     # 2. save changes in text fields
                 elif field in ('prefix', 'birthcountry', 'birthcity', 'classname'):
@@ -7518,6 +7560,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if new_value != saved_value:
                         setattr(instance, field, new_value)
                         save_changes = True
+                        updated_fields.append(field)
                         if logging_on and False:
                             logger.debug('save_changes field: ' + field + ' new_value: ' + str(new_value))
 
@@ -7572,6 +7615,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         save_changes = True
                         update_scheme = True
                         recalc_subj_composition = True
+                        updated_fields.append(field + '_id')
 
                         if field == 'level':
                             recalc_regnumber = True
@@ -7616,6 +7660,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if not has_published_exemptions:
                             setattr(instance, field, new_value)
                             save_changes = True
+                            updated_fields.append(field)
 
                 elif field == 'withdrawn': # PR2022-06-04
                     if not new_value:
@@ -7628,6 +7673,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         setattr(instance, field, new_value)
                         save_changes = True
                         recalc_passed_failed = True
+                        updated_fields.append(field)
 
                     # also set result
                         result_index = c.RESULT_WITHDRAWN if new_value else c.RESULT_NORESULT
@@ -7636,6 +7682,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         setattr(instance, 'result_status', result_status)
                         setattr(instance, 'result_info', None)
 
+                        updated_fields.extend(['result', 'result_status', 'result_info'])
 
                 elif field == 'gl_status': # PR2023-06-10
                     if not new_value:
@@ -7652,6 +7699,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         setattr(instance, 'gl_auth1by', request.user)
                         setattr(instance, 'gl_modifiedat', timezone.now())
 
+                        updated_fields.extend(['gl_status', 'gl_auth1by', 'gl_modifiedat'])
 
     # - save changes in other fields
                 elif field in ('iseveningstudent', 'islexstudent', 'partial_exam', 'extrafacilities'):
@@ -7693,12 +7741,15 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if not has_published_exemptions:
                             setattr(instance, field, new_value)
                             save_changes = True
+
+                            updated_fields.append(field)
+
                             if field in ('iseveningstudent', 'islexstudent', 'partial_exam'):
                                 recalc_subj_composition = True
 
-            #except Exception as e:
-            #    logger.error(getattr(e, 'message', str(e)))
-            #    logger.error('field: ' + str(field) + ' new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                logger.error('field: ' + str(field) + ' new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
 # --- end of for loop ---
 
@@ -7712,12 +7763,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 level=level,
                 sector=sector)
             setattr(instance, 'scheme', scheme)
-
-            if logging_on and False:
-                logger.debug('     dep:    ' + str(department) + ' ' + str(type(department)))
-                logger.debug('     new_level:  ' + str(level) + ' ' + str(type(level)))
-                logger.debug('     new_sector: ' + str(sector) + ' ' + str(type(sector)))
-                logger.debug('     new_scheme: ' + str(scheme) + ' ' + str(type(scheme)))
+            updated_fields.append('scheme_id')
 
             if scheme is None:
                 msg_arr = []
@@ -7738,17 +7784,16 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
             update_scheme_in_studsubj(instance, request)
 
 # +++ calculate registration number
-        if recalc_regnumber:
-            school_code, examyear_code, depbase, levelbase, bis_exam = None, None, None, None, False
+        #PR2023-08-11 from 2023 regnumber is created when printing diploma or gradelist
+        # only 2022 has regnumbers stored in table Student- not used in student any more
+        if recalc_regnumber and sel_examyear.code < 2023:
+            school_code, depbase, levelbase, bis_exam = None, None, None, False
 
             school = getattr(instance, 'school')
             if school:
                 schoolbase = getattr(school, 'base')
                 if schoolbase:
                     school_code = schoolbase.code
-                examyear = getattr(school, 'examyear')
-                if examyear:
-                    examyear_code = examyear.code
 
             department = getattr(instance, 'department')
             if department:
@@ -7767,6 +7812,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 examnumber = stud_fnc.get_next_examnumber(school, department)
                 setattr(instance, 'examnumber', examnumber)
                 save_changes = True
+                updated_fields.append('examnumber')
                 if logging_on:
                     logger.debug('setattr(instance, examnumber, examnumber: ' + str(examnumber))
 
@@ -7775,27 +7821,21 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
             depbase_code = depbase.code if depbase else None
             levelbase_code = levelbase.code if levelbase else None
 
-            new_regnumber = stud_fnc.calc_regnumber(
+            new_regnumber = stud_fnc.calc_regnumber_2022(
                 school_code=school_code,
                 gender=gender,
-                examyear_str=str(examyear_code),
+                examyear_str=str(sel_examyear.code),
                 examnumber_str=examnumber,
                 depbase_code=depbase_code,
                 levelbase_code=levelbase_code,
                 bis_exam=bis_exam
             )
 
-            if logging_on:
-                logger.debug('recalc_regnumber: ')
-                logger.debug('level:      ' + str(level))
-                logger.debug('gender:     ' + str(gender))
-                logger.debug('examnumber:     ' + str(examnumber))
-                logger.debug('new_regnumber:     ' + str(new_regnumber))
-
             saved_value = getattr(instance, 'regnumber')
             if new_regnumber != saved_value:
                 setattr(instance, 'regnumber', new_regnumber)
                 save_changes = True
+                updated_fields.append('regnumber')
                 if logging_on:
                     logger.debug('setattr(instance, regnumber, new_regnumber: ' + str(new_regnumber))
 
@@ -7810,16 +7850,15 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     (instance.subj_composition_checked and instance.subj_composition_ok != no_error):
                     setattr(instance, 'subj_composition_checked', True)
                     setattr(instance, 'subj_composition_ok', no_error)
+                    updated_fields.extend(['subj_composition_checked', 'subj_composition_ok'])
 
             try:
                 if not skip_save:
                     instance.save(request=request)
-                if logging_on:
-                    logger.debug('..............skip_save: ' + str(skip_save))
-                    logger.debug('after saving: instance.pk: ' + str(instance.pk))
-                    logger.debug('after saving: instance.level: ' + str(instance.level))
-                    logger.debug('after saving: instance.sector: ' + str(instance.sector))
-                    logger.debug('after saving: instance.scheme: ' + str(instance.scheme))
+
+                    mode = 'i' if is_import else 'u'
+                    awpr_log.savetolog_student(instance.pk, mode, request, updated_fields)
+
                 changes_are_saved = True
             except Exception as e:
                 save_error = True
@@ -8222,8 +8261,8 @@ def restore_tobedeleted_studsubjects(request, student_pk, studsubj_pk=None, incl
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_studsubj(student, schemeitem, messages, error_list, request, skip_save):
-    # --- create student subject # PR2020-11-21 PR2021-07-21 PR2023-01-02
+def create_studsubj(student, schemeitem, messages, error_list, request, skip_save, is_import):
+    # --- create student subject # PR2020-11-21 PR2021-07-21 PR2023-01-02 PR2023-08-14
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj ----- ')
@@ -8233,6 +8272,10 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
     has_error = False
     studsubj_instance = None
     append_key = None
+
+    savetolog_fields = []  # used in savetolog_studentsubject
+    savetolog_mode = None
+
 
     if student and schemeitem:
         subject_name = schemeitem.subject.name_nl if schemeitem.subject and schemeitem.subject.name_nl else '---'
@@ -8247,8 +8290,11 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
             logger.debug('    subject_name: ' + str(subject_name))
             logger.debug('    studsubj_instance: ' + str(studsubj_instance))
 
+# ++++++++++ studsubj_instance exists
+
         if studsubj_instance:
-# +++ if studsubj is not tobedeleted and not deleted:
+
+    # +++ if studsubj is not tobedeleted and not deleted:
             if not studsubj_instance.deleted and not studsubj_instance.tobedeleted:
 
                 if logging_on:
@@ -8283,6 +8329,9 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                         if not skip_save:
                             studsubj_instance.save(request=request)
 
+                            savetolog_mode = 'u'
+                            savetolog_fields.extend(('schemeitem_id', 'tobechanged'))
+
                     except Exception as e:
                         has_error = True
                         logger.error(getattr(e, 'message', str(e)))
@@ -8298,7 +8347,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                         messages.append({'class': "alert-danger", 'msg_html': msg_html})
 
             else:
- # +++ subject is found but is tobedeleted or deleted
+    # +++ subject is found but is tobedeleted or deleted
                 try:
                     if studsubj_instance.deleted:
                         # subject is deleted > remove deleted, remove prev_published, remove published
@@ -8317,6 +8366,9 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                         setattr(studsubj_instance, 'schemeitem', schemeitem)
 
                         append_key = 'created'
+
+                        savetolog_mode = 'u'
+                        savetolog_fields.extend(('deleted', 'tobedeleted'))
 
                     elif studsubj_instance.tobedeleted:
                         if schemeitem == studsubj_instance.schemeitem:
@@ -8354,6 +8406,9 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                     if not skip_save:
                         studsubj_instance.save(request=request)
 
+                        savetolog_mode = 'u'
+                        savetolog_fields.extend(('tobechanged', 'deleted', 'tobedeleted'))
+
         # +++++ also undelete grades
                     # PR2023-02-12 grades are only set tobedeleted or deleted when exem. reex or reex03
                     #  restore previously deleted grades with ep=1
@@ -8368,6 +8423,13 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                                 setattr(grade, 'deleted', False)
                                 if not skip_save:
                                     grade.save(request=request)
+
+                                    awpr_log.savetolog_grade(
+                                        grade_pk=grade.pk,
+                                        req_mode='u',
+                                        request=request,
+                                        updated_fields=('deleted', 'tobedeleted')
+                                    )
 
                 except Exception as e:
                     has_error = True
@@ -8392,14 +8454,22 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                 )
                 if not skip_save:
                     studsubj_instance.save(request=request)
+                    savetolog_mode = 'i' if is_import else 'c'
 
-        # - also create grade of first examperiod
+                    # - also create grade of first examperiod
                 grade = stud_mod.Grade(
                     studentsubject=studsubj_instance,
                     examperiod=c.EXAMPERIOD_FIRST
                 )
                 if not skip_save:
                     grade.save(request=request)
+                    awpr_log.savetolog_grade(
+                        grade_pk=grade.pk,
+                        req_mode='c',
+                        request=request,
+                        updated_fields=[]
+                    )
+
                 append_key = 'created'
 
             except Exception as e:
@@ -8418,6 +8488,13 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
         if has_error:
             studsubj_instance = None
+
+    # save to log
+        elif savetolog_mode:
+            # PR2023-08-14 Note: subj_auth1by_id etc have no effect in log, because value is already None.
+            # must see if an extra field 'is_removed' is necessary
+            # updated_fields.extend(('subj_auth1by_id', 'subj_auth2by_id', 'subj_published_id'))
+            awpr_log.savetolog_studentsubject(studsubj_instance.pk, savetolog_mode, request, savetolog_fields)
 
     if logging_on:
         logger.debug('    studsubj_instance: ' + str(studsubj_instance))

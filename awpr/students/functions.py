@@ -81,7 +81,8 @@ def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
 
 
 
-def calc_regnumber_OLD(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
+def calc_regnumber_2022(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
+    # PR2023-08-11 from 2023 regnumber is claculted when printing gradelist ordiploma and stored in DiplomaGradelist
     # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19 PR2021-11-17
     #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
     #    '12345:     SchoolID: CUR01 etc, BON01,
@@ -165,6 +166,7 @@ def calc_regnumber_OLD(school_code, gender, examyear_str, examnumber_str, depbas
 
 
 def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam, used_regnumber_list):
+    # PR2023-08-11 regnumber not in use as of examyear 2023
     # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19 PR2021-11-17
     #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
     #    '12345:     SchoolID: CUR01 etc, BON01,

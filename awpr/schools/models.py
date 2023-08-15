@@ -232,6 +232,62 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
         return schoolyear
 
 
+# +++++++++++++++++++  get and set setting +++++++++++++++++++++++
+    def get_examyearsetting_dict(cls, key_str):
+        # PR2023-07-18 function retrieves the string value of the setting row that match the filter and converts it to a dict
+
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ---  get_examyearsetting_dict  ------- ')
+            logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+            logger.debug('key_str: ' + str(key_str) + ' ' + str(type(key_str)))
+
+        setting_dict = {}
+        try:
+            if cls and key_str:
+                row = Examyearsetting.objects.filter(examyear=cls, key=key_str).order_by('-id').first()
+                if row and row.setting:
+                    setting_dict = json.loads(row.setting)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        return setting_dict
+
+    def set_examyearsetting_dict(cls, key_str, setting_dict):
+        # PR2023-07-18 function saves setting in first row that matches the filter, adds new row when not found
+
+        #  json.dumps converts a dict in a json object
+        #  json.loads retrieves a dict (or other type) from a json object
+
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ---  set_examyearsetting_dict  ------- ')
+            logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
+            logger.debug('key_str: ' + str(key_str) + ' ' + str(type(key_str)))
+            logger.debug('setting_dict: ' + str(setting_dict) + ' ' + str(type(setting_dict)))
+
+        try:
+            if cls and key_str:
+                setting_str = json.dumps(setting_dict)
+                row = Examyearsetting.objects.filter(examyear=cls, key=key_str).order_by('-id').first()
+                if row:
+                    row.setting = setting_str
+                else:
+                    # don't add row when setting has no value
+                    # note: empty setting_dict {} = False, empty json "{}" = True, therefore check if setting_dict is empty
+                    if setting_dict:
+                        row = Examyearsetting(examyear=cls, key=key_str, setting=setting_str)
+                row.save()
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            logger.error('key_str: ', str(key_str))
+            logger.error('setting_dict: ', str(setting_dict))
+
+
 # PR2018-06-06
 class Examyear_log(AwpBaseModel):
     objects = AwpModelManager()
@@ -242,37 +298,37 @@ class Examyear_log(AwpBaseModel):
     country = ForeignKey(Country, related_name='+', on_delete=PROTECT)
 
     code = PositiveSmallIntegerField(null=True)
-    published = BooleanField(default=False)
-    locked = BooleanField(default=False)
+    published = BooleanField(null=True)
+    locked = BooleanField(null=True)
 
-    no_practexam = BooleanField(default=False)
-    sr_allowed = BooleanField(default=False)
-    no_centralexam = BooleanField(default=False)
-    no_thirdperiod = BooleanField(default=False)
+    no_practexam = BooleanField(null=True)
+    sr_allowed = BooleanField(null=True)
+    no_centralexam = BooleanField(null=True)
+    no_thirdperiod = BooleanField(null=True)
 
     # PR2023-01-21, to skip thumbrule from 2023
-    thumbrule_allowed = BooleanField(default=False)
+    thumbrule_allowed = BooleanField(null=True)
 
     # PR2023-06-18, requests from Dorothee Inspectorate SXM  to block reex requests
-    reex_requests_blocked = BooleanField(default=False)
-    reex03_requests_blocked = BooleanField(default=False)
+    reex_requests_blocked = BooleanField(null=True)
+    reex03_requests_blocked = BooleanField(null=True)
 
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
 
     # parameters to calculate extra examns and tv2 exams PR2021-08-31
-    order_extra_fixed = PositiveSmallIntegerField(default=2)
-    order_extra_perc = PositiveSmallIntegerField(default=5)
-    order_round_to = PositiveSmallIntegerField(default=5)
+    order_extra_fixed = PositiveSmallIntegerField(null=True)
+    order_extra_perc = PositiveSmallIntegerField(null=True)
+    order_round_to = PositiveSmallIntegerField(null=True)
 
-    order_tv2_divisor = PositiveSmallIntegerField(default=25)
-    order_tv2_multiplier = PositiveSmallIntegerField(default=5)
-    order_tv2_max = PositiveSmallIntegerField(default=25)
+    order_tv2_divisor = PositiveSmallIntegerField(null=True)
+    order_tv2_multiplier = PositiveSmallIntegerField(null=True)
+    order_tv2_max = PositiveSmallIntegerField(null=True)
 
-    order_admin_divisor = PositiveSmallIntegerField(default=25)
-    order_admin_multiplier = PositiveSmallIntegerField(default=5)
-    order_admin_max = PositiveSmallIntegerField(default=25)
+    order_admin_divisor = PositiveSmallIntegerField(null=True)
+    order_admin_multiplier = PositiveSmallIntegerField(null=True)
+    order_admin_max = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -490,7 +546,7 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
                     row.setting = setting_str
                 else:
                     # don't add row when setting has no value
-                    # note: empty setting_dict {} = False, empty json "{}" = True, teherfore check if setting_dict is empty
+                    # note: empty setting_dict {} = False, empty json "{}" = True, therefore check if setting_dict is empty
                     if setting_dict:
                         row = Schoolsetting(schoolbase=cls, key=key_str, setting=setting_str)
                 row.save()

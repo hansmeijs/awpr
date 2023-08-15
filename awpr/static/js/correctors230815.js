@@ -11,6 +11,8 @@
 const corrector_dicts = {}; //PR2023-03-26
 const usercompensation_dicts = {}; //PR2023-02-24
 const usercomp_agg_dicts = {}; //PR2023-02-24
+const userdata_dicts = {}; //PR2023-07-19
+const bankname_rows = []; //PR2023-07-20
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -29,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mod_MCH_dict = {};
     const mod_MSM_dict = {};
     const mod_MAC_dict = {};
+    const mod_MUD_dict = {};
 
     let time_stamp = null; // used in mod add user
 
@@ -57,15 +60,35 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
 
     urls.url_download_excomp = get_attr_from_el(el_data, "data-url_download_excomp");
+    urls.url_download_paymentform = get_attr_from_el(el_data, "data-url_download_paymentform");
+    urls.url_download_invoice = get_attr_from_el(el_data, "data-url_download_invoice");
 
-    mod_MCOL_dict.columns.all = {
+    urls.url_userdata_upload = get_attr_from_el(el_data, "data-url_userdata_upload");
+
+    mod_MCOL_dict.columns.btn_usercompensation = {
         user_sb_code: "Organization", last_name: "Name",
         uc_depbase_code: "Department", uc_lvlbase_code: "Learning_path",
         subj_name_nl:  "Subject", exam_version: "Version",
-        uc_amount: "Number_approvals", uc_meetings: "Number_meetings"
+        sb_code: "School_code", uc_school_abbrev: "School",
+        uc_amount: "Number_approvals", uc_meetings: "Number_meetings" ,
+        uc_corr_amount: "Correction_approvals", uc_corr_meetings: "Correction_meetings",
+        compensation: "Compensation"
     };
-    mod_MCOL_dict.columns.btn_usercompensation = {sb_code: "School_code", uc_school_abbrev: "School"};
-    mod_MCOL_dict.columns.btn_usercomp_agg = { compensation: "Compensation"};
+    mod_MCOL_dict.columns.btn_usercomp_agg = {
+            user_sb_code: "Organization", last_name: "Name",
+        uc_depbase_code: "Department", uc_lvlbase_code: "Learning_path",
+        subj_name_nl:  "Subject", exam_version: "Version",
+        uc_amount: "Number_approvals", uc_meetings: "Number_meetings",
+        compensation: "Compensation",
+    };
+
+    mod_MCOL_dict.columns.btn_userdata = {
+        idnumber: "ID_number",
+        cribnumber: "CRIB_number",
+        bankname: "Bank_name",
+        bankaccount: "Bankaccount_number",
+        beneficiary: "Beneficiary_name"
+    };
 
 
 // --- get field_settings
@@ -83,10 +106,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_caption: ["", "Organization_twolines", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
                                     "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines",  "",
-                                    "Correction_approvals_2lines",  "Correction_meetings_2lines","Compensation_2lines"],
+                                    "Correction_approvals_2lines",  "Correction_meetings_2lines", "Compensation_2lines"],
                     field_names: ["select",  "user_sb_code", "last_name",
                                     "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
-                                     "sb_code", "uc_school_abbrev", "uc_amount", "uc_meetings", "status", "uc_corr_amount", "uc_corr_meetings", "uc_compensation"],
+                                     "sb_code", "uc_school_abbrev", "uc_amount", "uc_meetings", "status",
+                                      "uc_corr_amount", "uc_corr_meetings", "uc_compensation"],
                     field_tags: ["div", "div", "div",
                                     "div", "div", "div", "div", "div", "div",
                                      "div", "div","div", "div", "div", "input", "input", "div"],
@@ -119,6 +143,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l",  "l",
                                     "c", "c", "c", "l",  "l", "c",
                                         "c",  "c", "c"]};
+
+    field_settings.btn_userdata = {
+        field_caption: ["", "Name", "ID_number", "CRIB_number_2lines", "Bank_name", "Bankaccount_number_2lines", "Beneficiary_name"],
+        field_names: ["select", "last_name", "idnumber", "cribnumber", "bankname", "bankaccount",  "beneficiary"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["select", "text", "text", "text", "text", "text", "text"],
+        field_width:  ["032", "240", "120", "120", "240", "120", "240"],
+        field_align: ["c", "l", "l", "l", "l",  "l", "l"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -202,6 +234,47 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MCOL_btn_save.addEventListener("click", function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
+
+ // ---  MODAL USER DATA ------------------------------------
+        const el_MUD_header = document.getElementById("id_MUD_header");
+
+        const el_MUD_idnumber = document.getElementById("id_MUD_idnumber");
+
+        const el_MUD_cribnumber = document.getElementById("id_MUD_cribnumber");
+        const el_MUD_bankname = document.getElementById("id_MUD_bankname");
+        const el_MUD_bankaccount = document.getElementById("id_MUD_bankaccount");
+        const el_MUD_beneficiary = document.getElementById("id_MUD_beneficiary");
+        const el_MUD_select_bankname = document.getElementById("id_MUD_select_bankname");
+
+        const el_MUD_btn_save = document.getElementById("id_MUD_btn_save");
+        const el_MUD_btn_cancel = document.getElementById("id_MUD_btn_cancel");
+
+        const el_MUD_loader = document.getElementById("id_MUD_loader");
+        const el_MUD_msg_modified = document.getElementById("id_MUD_msg_modified");
+
+        if (el_MUD_idnumber){
+            el_MUD_idnumber.addEventListener("change", function() {MUD_InputChange(el_MUD_idnumber)}, false);
+        };
+        if (el_MUD_cribnumber){
+            el_MUD_cribnumber.addEventListener("change", function() {MUD_InputChange(el_MUD_cribnumber)}, false);
+        };
+        if (el_MUD_bankname){
+            el_MUD_bankname.addEventListener("change", function() {MUD_InputChange(el_MUD_bankname)}, false);
+        };
+        if (el_MUD_bankaccount){
+            el_MUD_bankaccount.addEventListener("change", function() {MUD_InputChange(el_MUD_bankaccount)}, false);
+        };
+        if (el_MUD_beneficiary){
+            el_MUD_beneficiary.addEventListener("change", function() {MUD_InputChange(el_MUD_beneficiary)}, false);
+        };
+
+        if (el_MUD_select_bankname){
+            el_MUD_select_bankname.addEventListener("change", function() {MUD_SelectBankname(el_MUD_select_bankname)}, false);
+        };
+        if (el_MUD_btn_save){
+            el_MUD_btn_save.addEventListener("click", function() {MUD_Save("validate")}, false);
+        };
+
 
  // ---  MODAL COMPENSATION HOURS ------------------------------------
         const el_MCH_header_text = document.getElementById("id_MCH_header_text")
@@ -398,6 +471,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("usercomp_agg_rows" in response) {
                     b_fill_datadicts("usercomp_agg", "u_id", "exam_id", response.usercomp_agg_rows, usercomp_agg_dicts);
                 };
+                if ("userdata_rows" in response) {
+                    b_fill_datadicts("userdata", "id", null, response.userdata_rows, userdata_dicts);
+                };
+                if ("bankname_rows" in response) {
+                    b_clear_array(bankname_rows)
+                    for (let i = 0, row; row = response.bankname_rows[i]; i++) {
+                        bankname_rows.push(row);
+                    };
+                    console.log("bankname_rows", bankname_rows)
+                };
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows) ;
@@ -453,10 +536,13 @@ document.addEventListener('DOMContentLoaded', function() {
         //PR2023-06-08 debug: to prevent creating submenu multiple times: skip if btn columns exists
         if (!document.getElementById("id_submenu_columns")){
 
-        // PR2023-07-17 show tab 'Personal data' only when role =corrector, and usergroup contains auth4
-            //const show_btn_personaldata = permit_dict.requsr_role_corr &&
-            //                              permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4");
-            //add_or_remove_class(document.getElementById("id_btn_personaldata"), cls_hide, !show_btn_personaldata)
+        // PR2023-07-17 show tab 'Personal data' only when role = corrector, and usergroup contains auth4
+        console.log( "    permit_dict.requsr_role_corr ", permit_dict.requsr_role_corr);
+        console.log( "    permit_dict.usergroup_list ", permit_dict.usergroup_list);
+            const show_btn_userdata = permit_dict.requsr_role_corr &&
+                                          permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4");
+            add_or_remove_class(document.getElementById("id_btn_userdata"), cls_hide, !show_btn_userdata)
+        console.log( "    show_btn_userdata ", show_btn_userdata);
 
             // PR2023-03-26 show tab 'Correctors' only when requsr_same_school, to add allowed clusters
             const show_btn_correctors = permit_dict.requsr_same_school;
@@ -470,6 +556,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Approve_compensations, function() {MAC_Open("approve")}, []);
                 AddSubmenuButton(el_submenu, loc.Preliminary_compensation_form, function() {ModConfirmOpen("prelim_excomp")}, []);
                 AddSubmenuButton(el_submenu, loc.Submit_compensation_form, function() {MAC_Open("submit")}, []);
+            };
+            if (permit_dict.permit_view_invoice){
+                AddSubmenuButton(el_submenu, loc.Download_invoice, function() {ModConfirmOpen("download_invoice")}, []);
+            };
+
+            if (show_btn_usercomp_agg){
+                AddSubmenuButton(el_submenu, loc.Download_payment_form, function() {ModConfirmOpen("payment_form")}, []);
             };
 
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_corrector")}, [])
@@ -490,9 +583,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // set to default "btn_usercompensation" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
-        if (data_btn && ["btn_correctors", "btn_usercompensation", "btn_usercomp_agg"].includes(data_btn)){
+        if (data_btn && ["btn_correctors", "btn_usercompensation", "btn_usercomp_agg", "btn_userdata"].includes(data_btn)){
             selected_btn = data_btn;
-        } else if (!["btn_correctors", "btn_usercompensation", "btn_usercomp_agg"].includes(data_btn)) {
+        } else {
             selected_btn = (permit_dict.requsr_same_school) ? "btn_correctors" : "btn_usercompensation";
         };
 
@@ -532,9 +625,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function FillTblRows() {
         console.log( "===== FillTblRows  === ");
         console.log( "    selected_btn: ", selected_btn);
-        //console.log( "    selected: ", selected);
+        console.log( "    selected: ", selected);
 
-        const tblName = get_tblName_from_selectedBtn() // tblName = userapproval or usercompensation
+        const tblName = get_tblName_from_selectedBtn() // tblName = userapproval, usercompensation or userdata
         const field_setting = field_settings[selected_btn];
         const data_dicts = get_datadicts_from_selectedBtn();
 
@@ -559,9 +652,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- create table rows
         if(data_dicts){
+
 // --- loop through data_rows
             for (const data_dict of Object.values(data_dicts)) {
-                //console.log("    data_dict", data_dict);
 
                 // PR2023-07-11 filter on depbase and lvlbase, don't use sel_depbase_pk and sel_lvlbase_pk
                 let show_row = false;
@@ -581,21 +674,27 @@ document.addEventListener('DOMContentLoaded', function() {
                             };
                         };
                     };
-
-                } else {
-                    if (!selected.sel_depbase_pk){
-                        show_row = true;
-                    } else {
-                        if (!selected.sel_dep_level_req){
-                            show_row = (data_dict.uc_depbase_id === selected.sel_depbase_pk);
+                } else if (["btn_usercompensation", "btn_usercomp_agg"].includes(selected_btn)){
+                    if (!selected.sel_dep_level_req){
+                        if (!selected.sel_depbase_pk){
+                            show_row = true;
                         } else {
-                            if (selected.sel_lvlbase_pk){
-                                show_row = (data_dict.uc_lvlbase_id === selected.sel_lvlbase_pk);
-                            } else {
+                            show_row = (data_dict.uc_depbase_id === selected.sel_depbase_pk);
+                        };
+                    } else {
+                        if (!selected.sel_depbase_pk){
+                            show_row = true;
+                        } else {
+                            if (!selected.sel_lvlbase_pk){
                                 show_row = (data_dict.uc_depbase_id === selected.sel_depbase_pk);
+                            } else {
+                                show_row = (data_dict.uc_lvlbase_id === selected.sel_lvlbase_pk);
                             };
                         };
                     };
+
+                } else if (selected_btn === "btn_userdata"){
+                    show_row = true;
                 };
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);
@@ -649,7 +748,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_header.classList.add("diamond_0_0");
                     };
 
-                    th_header.appendChild(el_header)
+                    th_header.appendChild(el_header);
                 tblRow_header.appendChild(th_header);
 
 // ++++++++++ create filter row +++++++++++++++
@@ -809,6 +908,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             td.addEventListener("click", function() {UploadToggleStatus(el)}, false)
                             add_hover(td);
                         };
+
+                    } else if (["last_name", "idnumber", "cribnumber", "bankname", "bankaccount",  "beneficiary"].includes(field_name)){
+                        el.addEventListener("click", function() {MUD_Open(el)}, false)
+                        el.classList.add("pointer_show");
+                        add_hover(el);
                     };
 // --- put value in field
                 UpdateField(el, data_dict)
@@ -842,7 +946,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // TODO add select multiple users option PR2020-08-18
 
             } else if (["user_sb_code", "username", "last_name", "sb_code", "uc_school_abbrev",
-                "depbase_code", "lvlbase_code", "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version"].includes(field_name)){
+                "depbase_code", "lvlbase_code", "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version",
+                "idnumber", "cribnumber", "bankname", "bankaccount",  "beneficiary"
+
+                ].includes(field_name)){
                 inner_text = data_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
 
@@ -901,17 +1008,19 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // UpdateField
 
 
-//========= get_tblName_from_selectedBtn  ======== // PR2023-02-26
+//========= get_tblName_from_selectedBtn  ======== // PR2023-02-26 PR2023-07-19
     function get_tblName_from_selectedBtn() {
         return (selected_btn === "btn_usercompensation") ? "userapproval" :
                         (selected_btn === "btn_usercomp_agg") ? "usercompensation" : null;
+                        (selected_btn === "btn_userdata") ? "userdata" : null;
     }  // get_tblName_from_selectedBtn
 
-//========= get_datadicts_from_selectedBtn  ======== // PR2023-02-26
+//========= get_datadicts_from_selectedBtn  ======== // PR2023-02-26 PR2023-07-19
     function get_datadicts_from_selectedBtn() {
         return (selected_btn === "btn_correctors") ? corrector_dicts :
                 (selected_btn === "btn_usercompensation") ? usercompensation_dicts :
-                (selected_btn === "btn_usercomp_agg") ? usercomp_agg_dicts : null;
+                (selected_btn === "btn_usercomp_agg") ? usercomp_agg_dicts :
+                (selected_btn === "btn_userdata") ? userdata_dicts : null;
     } // get_datadicts_from_selectedBtn
 
 //========= get_column_is_hidden  ====== PR2023-02-26
@@ -1185,7 +1294,9 @@ console.log( "  >>>>>>>> url_str", url_str);
                     if ("updated_usercompensation_rows" in response) {
                         RefreshDataRows("usercompensation", response.updated_usercompensation_rows, usercompensation_dicts, true)  // true = update
                     };
-
+                    if ("updated_userdata_rows" in response) {
+                        RefreshDataRows("userdata", response.updated_userdata_rows, userdata_dicts, true)  // true = update
+                    };
 
                     if ("messages" in response) {
                         b_show_mod_message_dictlist(response.messages)
@@ -1423,6 +1534,407 @@ console.log( "  >>>>>>>> url_str", url_str);
         return enable_save_btn;
     };  // MCH_Hide_Inputboxes
 
+// +++++++++++++++++++++++++++++++++
+
+
+// +++++++++ MOD USER DATA ++++++++++++++++++++++++++++++++++++++++++++++++++++ PR2023-07-19
+    function MUD_Open(el_input){
+        console.log(" -----  MUD_Open   ---- ");
+        console.log("permit_dict: ", permit_dict);
+        console.log("el_input: ", el_input);
+
+        let modifiedat = null, modby_name = null;
+
+        b_clear_dict(mod_MUD_dict);
+
+// --- get existing data_dict from data_rows
+        if(el_input){
+            const tblRow = t_get_tablerow_selected(el_input);
+            const data_dict = userdata_dicts[tblRow.id];
+
+            const fldName = get_attr_from_el(el_input, "data-field");
+            set_focus_on_id_with_timeout("id_MUD_" + fldName, 150)
+
+//console.log("data_dict", data_dict)
+
+            if (data_dict && data_dict.user_id === permit_dict.requsr_pk ){
+                mod_MUD_dict.userdata_id = data_dict.id;
+                mod_MUD_dict.idnumber = data_dict.idnumber;
+                mod_MUD_dict.cribnumber = data_dict.cribnumber;
+                mod_MUD_dict.bankaccount = data_dict.bankaccount;
+                mod_MUD_dict.bankname = data_dict.bankname;
+                mod_MUD_dict.beneficiary = data_dict.beneficiary;
+                mod_MUD_dict.user_id = data_dict.user_id;
+
+                mod_MUD_dict.err_list = [];
+
+        // ---  set header text
+                el_MUD_header.innerText = [loc.Personal_data, loc._of_, data_dict.last_name].join("");
+
+        // ---  set text last modified
+                el_MUD_msg_modified.innerText = f_format_last_modified_txt(loc.Last_modified, data_dict.modifiedat, data_dict.modby_name);
+
+        // ---  fill selecttable
+                MUD_FillOptionsBankname();
+
+        // ---  remove values from elements
+                MUD_ResetElements(true);  // true = also_remove_values
+
+        // ---  put values in input boxes
+                el_MUD_idnumber.value = data_dict.idnumber;
+                el_MUD_cribnumber.value = data_dict.cribnumber;
+                el_MUD_bankaccount.value = data_dict.bankaccount;
+                el_MUD_bankname.value = data_dict.bankname;
+                el_MUD_beneficiary.value = data_dict.beneficiary;
+
+        // ---  disable btn submit
+                MUD_validate_input(el_MUD_idnumber)
+
+        // ---  show modal
+                $("#id_mod_userdata").modal({backdrop: true});
+            };
+        };
+    };  // MUD_Open
+
+
+//========= MUD_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30 PR2023-04-04
+   function MUD_Save() {
+        console.log("=== MUD_Save === ");
+
+        const new_idnumber = (el_MUD_idnumber.value) ? el_MUD_idnumber.value : null;
+        const new_cribnumber = (el_MUD_cribnumber.value) ? el_MUD_cribnumber.value : null;
+        const new_bankname = (el_MUD_bankname.value) ? el_MUD_bankname.value : null;
+        const new_bankaccount = (el_MUD_bankaccount.value) ? el_MUD_bankaccount.value : null;
+        const new_beneficiary = (el_MUD_beneficiary.value) ? el_MUD_beneficiary.value : null;
+
+        const upload_dict = {
+            user_id: mod_MUD_dict.user_id,
+            userdata_id: mod_MUD_dict.userdata_id
+        };
+        if(new_idnumber !== mod_MUD_dict.idnumber ){
+            upload_dict.idnumber = new_idnumber;
+        };
+        if(new_cribnumber !== mod_MUD_dict.cribnumber ){
+            upload_dict.cribnumber = new_cribnumber
+        };
+        if(new_bankname !== mod_MUD_dict.bankname ){
+            upload_dict.bankname = new_bankname
+        };
+        if(new_bankaccount !== mod_MUD_dict.bankaccount ){
+            upload_dict.bankaccount = new_bankaccount
+        };
+        if(new_beneficiary !== mod_MUD_dict.beneficiary ){
+            upload_dict.beneficiary = new_beneficiary
+        };
+
+        if (!isEmpty(upload_dict)){
+            UploadChanges(upload_dict, urls.url_userdata_upload);
+        };
+
+        $("#id_mod_userdata").modal("hide");
+};  // MUD_Save
+
+
+//========= MUD_FillOptionsBankname  ============= PR2020--09-17
+    function MUD_FillOptionsBankname() {
+        console.log("===== MUD_FillOptionsBankname ===== ");
+        const selected_value = null;
+        let item_text = ""
+        for (let i = 0, value; value = bankname_rows[i]; i++){
+            item_text += "<option value=\"" + value + "\"";
+            if (selected_value && value === selected_value) {item_text += " selected" };
+            item_text +=  ">" + value + "</option>";
+        };
+
+        el_MUD_select_bankname.innerHTML = item_text;
+
+    } // MUD_FillOptionsBankname
+
+//========= MUD_ResetElements  ============= PR2020-08-03
+    function MUD_ResetElements(also_remove_values){
+        console.log( "===== MUD_ResetElements  ========= ");
+// ---  loop through input elements
+        const fields = ["idnumber", "cribnumber", "bankname", "bankaccount", "beneficiary"];
+        for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
+            el_input = document.getElementById("id_MUD_" + field);
+            if(el_input){
+                el_input.classList.remove("border_bg_invalid", "border_bg_valid");
+                if(also_remove_values){ el_input.value = null};
+            }
+            el_msg = document.getElementById("id_MUD_msg_" + field);
+
+            if(el_msg){
+                el_msg.innerText = (loc.msg_userdata[field]) ? loc.msg_userdata[field] : null;
+                el_msg.classList.remove("text-danger")
+            };
+        };
+
+// ---  reset text on btn cancel
+        if(el_MUD_btn_cancel) {el_MUD_btn_cancel.innerText = loc.Cancel};
+
+    }  // MUD_ResetElements
+
+//========= MUD_SetMsgElements  ============= PR2020-08-02 PR2022-12-31
+    function MUD_SetMsgElements(response){
+        console.log( "===== MUD_SetMsgElements  ========= ");
+        // TODO switch to render msg box
+        const err_dict = (response && "msg_err" in response) ? response.msg_err : {};
+        // was const validation_ok = get_dict_value(response, ["validation_ok"], false);
+        const validation_ok = (response && "validation_ok" in response) ? response.validation_ok : false;
+
+
+        if("user_without_userallowed" in response){
+
+            // ---  hide modal
+            $("#id_mod_userdata").modal("hide");
+            // function ModConfirmOpen(tblName, mode, el_input, user_without_userallowed) {
+            ModConfirmOpen(null, "user_without_userallowed", null, response.user_without_userallowed);
+
+        } else {
+
+
+            const el_msg_container = document.getElementById("id_MUD_msg_container")
+            let err_save = false;
+            let is_ok = (response && "msg_ok" in response);
+            if (is_ok) {
+                const ok_dict = response.msg_ok;
+                document.getElementById("id_msg_01").innerText = get_dict_value(ok_dict, ["msg01"]);
+                document.getElementById("id_msg_02").innerText = get_dict_value(ok_dict, ["msg02"]);
+                document.getElementById("id_msg_03").innerText = get_dict_value(ok_dict, ["msg03"]);
+                document.getElementById("id_msg_04").innerText = get_dict_value(ok_dict, ["msg04"]);
+
+                el_msg_container.classList.remove("border_bg_invalid");
+                el_msg_container.classList.add("border_bg_valid");
+    // ---  show only the elements that are used in this tab
+                b_show_hide_selected_elements_byClass("mud_show", "mud_ok");
+
+            } else {
+                // --- loop through input elements
+                if("save" in err_dict){
+
+            //console.log( "err_dict", err_dict);
+                    const save_dict = err_dict.save
+            //console.log( "save_dict", save_dict);
+                    err_save = true;
+
+                    document.getElementById("id_msg_01").innerText = get_dict_value(save_dict, ["msg01"]);
+                    document.getElementById("id_msg_02").innerText = get_dict_value(save_dict, ["msg02"]);
+                    document.getElementById("id_msg_03").innerText = get_dict_value(save_dict, ["msg03"]);
+                    document.getElementById("id_msg_04").innerText = get_dict_value(save_dict, ["msg04"]);
+
+                    el_msg_container.classList.remove("border_bg_valid");
+                    el_msg_container.classList.add("border_bg_invalid");
+    // ---  show only the elements that are used in this tab
+                    b_show_hide_selected_elements_byClass("mud_show", "mud_ok");
+
+                } else {
+                    const fields = ["username", "last_name", "email"]
+                    for (let i = 0, field; field = fields[i]; i++) {
+                        const msg_err = get_dict_value(err_dict, [field]);
+                        const msg_info = loc.msg_user_info[i];
+            //console.log( "-----------field", field);
+            //console.log( "msg_err", msg_err);
+            //console.log( "msg_info", msg_info);
+                        let el_input = document.getElementById("id_MUD_" + field);
+
+                        const must_blur = ( (!!msg_err && !el_input.classList.contains("border_bg_invalid")) ||
+                                            (!msg_err && !el_input.classList.contains("border_bg_valid")) );
+                        if( must_blur) { el_input.blur() };
+                        add_or_remove_class (el_input, "border_bg_invalid", (!!msg_err));
+                        add_or_remove_class (el_input, "border_bg_valid", (!msg_err));
+
+                        let el_msg = document.getElementById("id_MUD_msg_" + field);
+                        add_or_remove_class (el_msg, "text-danger", (!!msg_err));
+                        el_msg.innerText = (!!msg_err) ? msg_err : msg_info
+                    }
+                }
+
+                //el_MUD_btn_save.disabled = !validation_ok;
+                //if(validation_ok){el_MUD_btn_save.focus()}
+            }
+
+    // ---  hide submit btn and delete btnwhen is_ok or when error
+            add_or_remove_class(el_MUD_btn_save, cls_hide, is_ok || err_save)
+
+    // ---  set text on btn cancel
+            if (el_MUD_btn_cancel){
+                el_MUD_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close : loc.Cancel);
+                if(is_ok || err_save){el_MUD_btn_cancel.focus()}
+            };
+        };
+    }  // MUD_SetMsgElements
+
+//=========  MUD_SelectBankname  ================ PR2023-07-20
+    function MUD_SelectBankname(el_input) {
+        console.log( "===== MUD_SelectBankname  ========= ");
+        if(el_input){
+            el_MUD_bankname.value = el_input.value;
+            MUD_validate_input(el_MUD_bankname)
+        };
+
+    }; // MUD_SelectBankname
+
+
+//=========  MUD_InputChange  ================ PR2023-07-20
+    function MUD_InputChange(el_input) {
+        console.log( "===== MUD_InputChange  ========= ");
+
+        const fldName = get_attr_from_el(el_input, "data-field");
+        let field_value = el_input.value;
+    console.log( "fldName", fldName);
+    console.log( "field_value", field_value);
+        const has_error = MUD_validate_input(el_input);
+
+    }; // MUD_InputChange
+
+
+//=========  MUD_validate_input  ================  PR2023-07-20
+    function MUD_validate_input(el_input) {
+        console.log(" -----  MUD_validate_input   ----")
+
+        let has_error = false;
+        if (el_input) {
+            const fldName = get_attr_from_el(el_input, "data-field");
+            const field_value = el_input.value;
+            let msg_err = null;
+
+            if (fldName === "idnumber"){
+                const cpt = (loc.err_userdata[fldName]) ? loc.err_userdata[fldName] : "-";
+                if (!field_value) {
+                    msg_err = cpt + loc.err_userdata.cannot_be_blank;
+                } else {
+                    const idnumber_nodots = field_value.replaceAll(".", "");
+                    if (idnumber_nodots.length !== 10) {
+                        msg_err = cpt + loc.err_userdata.is_not_valid;
+                    } else if (idnumber_nodots.length >= 8) {
+                        const birthdate_iso = get_birthdate_from_idnumber(idnumber_nodots);
+                        if (!birthdate_iso) {
+                            msg_err = cpt + loc.err_userdata.is_not_valid;
+                        };
+                    };
+                };
+
+            } else if (fldName === "cribnumber"){
+
+                const cpt = (loc.err_userdata[fldName]) ? loc.err_userdata[fldName] : "-";
+                if (field_value && !Number(field_value)) {
+                    msg_err = cpt + loc.err_userdata.mustbe_whole_number;
+                };
+
+            } else if (["bankname", "select_bankname"].includes(fldName)){
+
+                if (field_value){
+                    MUD_set_msg_novalue(el_MUD_bankaccount);
+                    MUD_set_msg_novalue(el_MUD_beneficiary);
+                };
+
+            } else if (fldName === "bankaccount"){
+                if (field_value){
+                    MUD_set_msg_novalue(el_MUD_bankname);
+                    MUD_set_msg_novalue(el_MUD_beneficiary);
+                };
+
+            } else if (fldName === "beneficiary"){
+                if (field_value){
+                    MUD_set_msg_novalue(el_MUD_bankname);
+                    MUD_set_msg_novalue(el_MUD_bankaccount);
+                };
+
+            };
+            const el_msg = document.getElementById("id_MUD_msg_" + fldName);
+            if (el_msg){
+                const msg_txt = (msg_err) ? msg_err : (loc.msg_userdata[fldName]) ?  loc.msg_userdata[fldName] : null
+                el_msg.innerText = msg_txt;
+                add_or_remove_class(el_msg, "text-danger", msg_err)
+            };
+
+            add_or_remove_class(el_input, "border_bg_invalid", msg_err)
+
+            has_error = !!msg_err;
+            if (has_error){
+                if(!mod_MUD_dict.err_list.includes(fldName)){
+                    mod_MUD_dict.err_list.push(fldName);
+                };
+            } else {
+                if(mod_MUD_dict.err_list.includes(fldName)){
+                    b_remove_item_from_array(mod_MUD_dict.err_list, fldName);
+                };
+            }
+            el_MUD_btn_save.disabled = mod_MUD_dict.err_list.length;
+        };
+        return  has_error;
+    };  // MUD_validate_input
+
+//========= MUD_set_msg_novalue  ======== PR2023-07-20
+    function MUD_set_msg_novalue(el_input) {
+        const has_novalue = !el_input.value;
+        add_or_remove_class(el_input, "border_bg_invalid", has_novalue);
+
+        const fldName = get_attr_from_el(el_input, "data-field");
+        const el_MUD_msg = document.getElementById("id_MUD_msg_" + fldName);
+        if (el_MUD_msg){
+            const cpt = (loc.err_userdata[fldName]) ? loc.err_userdata[fldName] : "-";
+            el_MUD_msg.innerText = (has_novalue) ? cpt + loc.err_userdata.cannot_be_blank : null;
+            add_or_remove_class(el_MUD_msg, "text-danger", has_novalue);
+        };
+
+        if (has_novalue){
+            if(!mod_MUD_dict.err_list.includes(fldName)){
+                mod_MUD_dict.err_list.push(fldName);
+            };
+        } else {
+            if(mod_MUD_dict.err_list.includes(fldName)){
+                b_remove_item_from_array(mod_MUD_dict.err_list, fldName);
+            };
+        };
+
+    }; // MUD_set_msg_novalue
+
+
+//========= MUD_Filter_SelectRows  ======== PR2020-09-19
+    function MUD_Filter_SelectRows(filter_text) {
+        //console.log( "===== MUD_Filter_SelectRows  ========= ");
+        //console.log( "filter_text: <" + filter_text + ">");
+        const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
+        let has_selection = false, has_multiple = false;
+        let sel_value = null, sel_pk = null, sel_mapid = null;
+        let row_count = 0;
+
+        let tblBody_select = document.getElementById("id_MUD_tbody_select");
+        for (let i = 0, tblRow; tblRow = tblBody_select.rows[i]; i++) {
+            if (tblRow){
+                let hide_row = false
+// ---  show all rows if filter_text = ""
+                if (filter_text_lower){
+                    const data_value = get_attr_from_el(tblRow, "data-value")
+// ---  show row if filter_text_lower is found in data_value, hide when data_value is blank
+                    hide_row = (data_value) ? hide_row = (!data_value.toLowerCase().includes(filter_text_lower)) : true;
+                };
+                if (hide_row) {
+                    tblRow.classList.add(cls_hide)
+                } else {
+                    tblRow.classList.remove(cls_hide);
+                    row_count += 1;
+// ---  put values from first row that is shown in select_value etc
+                    if(!has_selection ) {
+                        sel_pk = get_attr_from_el(tblRow, "data-pk");
+                        sel_value = get_attr_from_el(tblRow, "data-value");
+                        sel_mapid = tblRow.id;
+                    } else {
+                        has_multiple = true;
+                    }
+                    has_selection = true;
+        }}};
+// ---  set select_value etc null when multiple items found
+        if (has_multiple){
+            sel_pk = null;
+            sel_value = null,
+            sel_mapid = null;
+        }
+        return {selected_pk: sel_pk, selected_value: sel_value, selected_mapid: sel_mapid};
+    }; // MUD_Filter_SelectRows
+
+// +++++++++ END MOD USER DATA ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
@@ -1430,7 +1942,7 @@ console.log( "  >>>>>>>> url_str", url_str);
 //=========  ModConfirmOpen  ================ PR2023-07-09
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "prelim_excomp"
+        // values of mode are : "prelim_excomp", "payment_form", "download_invoice"
 
         // ModConfirmOpen(null, "user_without_userallowed", null, response.user_without_userallowed);
         console.log("    mode", mode )
@@ -1439,19 +1951,24 @@ console.log( "  >>>>>>>> url_str", url_str);
         mod_dict = {mode: mode};
 
 // ---  put text in modal form
-        let dont_show_modal = false;
-        const header_text = (mode === "prelim_excomp") ? loc.Preliminary_compensation_form : "";
+        const show_modal = (mode === "prelim_excomp") ? true :
+                            (mode === "payment_form") ? (permit_dict.requsr_role_corr && permit_dict.permit_pay_comp) :
+                            (mode === "download_invoice") ? (permit_dict.requsr_role_corr && permit_dict.permit_view_invoice) : false;
+        const header_text = (mode === "prelim_excomp") ? loc.Preliminary_compensation_form :
+                            (mode === "payment_form") ? loc.Download_payment_form :
+                            (mode === "download_invoice") ? loc.Download_invoice : null;
 
         let msg_list = [];
         let hide_save_btn = false;
 
-        if(!dont_show_modal){
+        if(show_modal){
             el_confirm_header.innerText = header_text;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-
-            const msg_list = ["<p>", loc.The_preliminary_compensation_form,
-                                loc.will_be_downloaded_sing, "</p><p>",
+            const cpt = (mode === "prelim_excomp") ? loc.The_preliminary_compensation_form :
+                        (mode === "payment_form") ? loc.The_payment_form :
+                        (mode === "download_invoice") ? loc.The_invoice : "-";
+            const msg_list = ["<p>", cpt, loc.will_be_downloaded_sing, "</p><p>",
                                 loc.Do_you_want_to_continue, "</p>"];
             const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
@@ -1482,16 +1999,20 @@ console.log( "  >>>>>>>> url_str", url_str);
         let close_modal = false, skip_uploadchanges = false, url_str = null;
         const upload_dict = {mode: mod_dict.mode, mapid: mod_dict.mapid};
 
-       if (mod_dict.mode === "prelim_excomp"){
+        if (["prelim_excomp", "payment_form", "download_invoice"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 skip_uploadchanges = true;
-                const href_str = urls.url_download_excomp;
+
+                const href_str = (mod_dict.mode === "payment_form") ? urls.url_download_paymentform :
+                                (mod_dict.mode === "download_invoice") ? urls.url_download_invoice :
+                                urls.url_download_excomp;
                 el_modconfirm_link.setAttribute("href", href_str);
                 el_modconfirm_link.click();
 
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
+
             // close modal after 5 seconds
                 //setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
                 close_modal = true;

@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Schools' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import230329.js' %}"></script>
-    <script src="{% static 'js/schools230425.js' %}"></script>
+    <script src="{% static 'js/import230815.js' %}"></script>
+    <script src="{% static 'js/schools230815.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -75,7 +75,6 @@
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_school_upload="{% url 'url_school_upload' %}"
-                data-school_import_url="{% url 'school_import_url' %}"
                 data-url_old_awp_upload="{% url 'url_old_awp_upload' %}"
             >
             </div>

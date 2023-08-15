@@ -1658,13 +1658,17 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         return new_array;
     };  // b_copy_array_noduplicates
 
-//=========  b_clear_array  ================ PR2021-07-07 PR2022-03-24
+//=========  b_clear_array  ================ PR2021-07-07 PR2022-03-24 PR2023-07-20
     function b_clear_array(array){
         // according to https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
-        // the splice function is fastest, pop is slowest
+        // according to https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
         if(array){
-            array.splice(0, array.length);
+            array.length = 0
         };
+
+        //if(array){
+        //    array.splice(0, array.length);
+        //};
 
        // clear the array. from https://love2dev.com/blog/javascript-remove-from-array/
         //if(array){

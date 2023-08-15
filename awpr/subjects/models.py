@@ -519,6 +519,7 @@ class Envelopsubject(sch_mod.AwpBaseModel):  # PR2022-10-09
 
     # labels can be printed with errata labels, without errata labels of errata labels only
     has_errata = BooleanField(default=False)
+    # PR2023-08-10 todo: to be removesremove, use secret_exam in Exam instead
     secret_exam = BooleanField(default=False)  # PR2023-03-31 added
 
 
@@ -779,8 +780,9 @@ class Schemeitem(sch_mod.AwpBaseModel):
     subjecttype = ForeignKey(Subjecttype, related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
-    # PR2023-06-18 TODO secret exam is also on Exam and Examsubjects. Inplement this one and remove at other
-    #secret_exam = BooleanField(default=False)  # PR2023-06-18 added
+    # PR2023-08-10 secret_exam cannot be stored in schemeitem, becasue it can have diferent value per examperiod
+    # keep it in exam, although it is awkward because score cannot be entered when tehre is no exam selected
+    # was: secret_exam = BooleanField(default=False)  # PR2023-08-10 added
 
     # PR2021-10-11 request ETS Esther: subject may have different language per level,
     # therefore otherlang is moved from subject to schemeitem
@@ -930,9 +932,6 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     subjecttype_log = ForeignKey(Subjecttype_log, null=True,  related_name='+', on_delete=CASCADE)
 
     ete_exam = BooleanField(default=False)
-
-    # PR2023-06-18 TODO secret exam is also on Exam and Examsubjects. Inplement this one and remove at other
-    #secret_exam = BooleanField(default=False)  # PR2023-06-18 added
 
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 

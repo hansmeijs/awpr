@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # === validate_unique_username =====================================
 def validate_unique_username(sel_examyear, username, schoolbaseprefix, cur_user_id=None, skip_msg_activated=False):
     # PR2020-03-31 PR2020-09-24 PR2021-01-01 PR2021-08-05 PR2022-12-31
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  validate_unique_username  -----')
         logger.debug ('    username: <' + str(username) + '>')
@@ -190,7 +190,7 @@ def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False)
 # === validate_level_sector_in_student ========= PR2022-08-20
 
 def validate_level_sector_in_student(examyear, school, department, lvlbase_pk, sctbase_pk):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- validate_level_sector_in_student ----- ')
@@ -254,43 +254,46 @@ def validate_unique_examyear(country, examyear_int, request):
 
 
 # === validate_delete_examyear ======== PR2020-10-05 PR2022-07-31
-def validate_delete_examyear(examyear):
+def validate_delete_examyear(examyear_instance):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('  -----  validate_delete_examyear  -----')
-        logger.debug ('examyear: ' + str(examyear))
+        logger.debug ('examyear_instance: ' + str(examyear_instance))
 
     err_html = None
 
-    if examyear is None:
-        err_html = str(_('There is no exam year.'))
+    if examyear_instance is None:
+        err_html = gettext('There is no exam year.')
     else:
         msg_txt = None
+
+        examyear_code = str(examyear_instance.code)
+
 # - check if examyear is locked
-        if examyear.locked:
-            msg_txt = str(_('Exam year %(exyr)s is closed.') % {'exyr': examyear.code})
+        if examyear_instance.locked:
+            msg_txt = gettext('Exam year %(exyr)s is closed.') % {'exyr': examyear_code}
 
         else:
 
 # - check if examyear has students
             examyear_has_students = stud_mod.Student.objects.filter(
-                school__examyear=examyear
+                school__examyear=examyear_instance
             ).exists()
 
 # - check if examyear is published
-            if examyear.published:
+            if examyear_instance.published:
                 if examyear_has_students:
-                    msg_txt = str(_('Exam year %(ey_code)s has candidates.') % {'ey_code': examyear.code})
+                    msg_txt = str(_('Exam year %(ey_code)s has candidates.') % {'ey_code': examyear_code})
                 else:
-                    msg_txt = str(_('Exam year %(ey_code)s is published.') % {'ey_code': examyear.code})
+                    msg_txt = str(_('Exam year %(ey_code)s is published.') % {'ey_code': examyear_code})
 
             elif examyear_has_students:
-                msg_txt = str(_('Exam year %(ey_code)s is published and has candidates.') % {'ey_code': examyear.code})
+                msg_txt = str(_('Exam year %(ey_code)s is published and has candidates.') % {'ey_code': examyear_code})
 
         if msg_txt:
             err_html = '<br>'.join((
                 str(msg_txt),
-                str(_("You cannot delete exam year %(ey_code)s.") % {'ey_code': examyear.code})
+                str(_("You cannot delete exam year %(ey_code)s.") % {'ey_code': examyear_code})
             ))
 
     if logging_on:
@@ -340,7 +343,7 @@ def validate_examyear_locked(examyear):  #  PR2021-12-04
 
 # === validate_undo_published_examyear ======== PR2022-07-31
 def validate_undo_published_examyear(examyear):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('  -----  validate_undo_published_examyear  -----')
         logger.debug ('examyear: ' + str(examyear))
@@ -395,7 +398,7 @@ def validate_undo_locked_examyear(examyear):
 # ============ SCHOOLS
 
 def validate_schoolcode_blank_length_exists(examyear, school_code, request, cur_school=None):  # PR2020-10-22 PR2021-06-20 PR2022-08-07
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- validate_schoolcode_blank_length_exists ----------- ')
         logger.debug('school_code: ' + str(school_code) + ' ' + str(type(school_code)))
@@ -640,7 +643,7 @@ def validate_scheme_name_exists(lookup_value, examyear, error_list, cur_scheme=N
 def validate_subjecttypebase_code_name_abbrev_exists(field, lookup_value, cur_subjecttypebase=None):
 # - function checks if this name or abbrev already exists in this scheme  # PR2021-06-29
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- validate_subjecttypebase_code_name_abbrev_exists -----')
         logger.debug('field: ' + str(field))
@@ -824,7 +827,6 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     De waardepapieren zijn terug te vinden in de pagina Archief, tab Dipi=oma’s en cijferlijsten.
     """
 
-
     msg = ''.join((
         '<p><b>', gettext("The results need the approval of the Inspectorate"), '</b></p>',
         "<ul class='manual_bullet mb-0 pb-2'><li>",
@@ -844,6 +846,7 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     ))
 
     message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+    message = None
 
     return message
 

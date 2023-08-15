@@ -40,7 +40,7 @@ from awpr import constants as c
 from awpr import library as awpr_lib
 from awpr import validators as av
 from awpr import menus as awpr_menu
-from awpr import downloads as dl
+from awpr import logs as awpr_log
 
 from schools import functions as sf
 from schools import dicts as sch_dicts
@@ -136,11 +136,9 @@ def Loggedin(request):
     return HttpResponseRedirect(reverse_lazy(page_url))
 
 
-
-
 def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_examtype=None, published_pk=None):
     # --- create rows of published records PR2021-01-21 PR2022-09-16 PR2023-04-19
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_published_rows -----')
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
@@ -1076,7 +1074,7 @@ def update_mailbox_instance(mailbox_instance, upload_dict, request):
                 mailbox_instance.save(request=request)
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                err_html = acc_prm.msghtml_error_occurred_no_border(e, _('This item could not be updated.'))
+                err_html = acc_prm.errhtml_error_occurred_no_border(e, _('This item could not be updated.'))
     return err_html
 # - end of update_mailbox_instance
 
@@ -2088,68 +2086,213 @@ class ExamyearListView(View):
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023-07-06
+class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023-08-09
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= ExamyearUploadView ============= ')
-            logger.debug('    permit_list: ' + str(acc_prm.get_permit_list('page_examyear', request.user)))
+            #logger.debug('    permit_list: ' + str(acc_prm.get_permit_list('page_examyear', request.user)))
 
-            usergroup_list, userallowed_sections_dict, allowed_clusters_list, sel_examyear_instance = \
-                acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(request.user)
+            #usergroup_list, userallowed_sections_dict, allowed_clusters_list, sel_examyear_instance = \
+            #    acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(request.user)
 
-            logger.debug('    usergroup_list: ' + str(usergroup_list))
-            logger.debug('    permit_list: ' + str(acc_prm.get_permit_list('page_examyear', request.user)))
+            #logger.debug('    usergroup_list: ' + str(usergroup_list))
+            #logger.debug('    permit_list: ' + str(acc_prm.get_permit_list('page_examyear', request.user)))
+
+        def get_last_examyear():
+            # PR2023-08-08
+            if logging_on:
+                logger.debug(' ----- get_last_examyear ----- ')
+
+            last_examyear_instance = None
+            err_html = None
+
+   # - get last_examyear of this req_usr_country
+            try:
+                last_examyear_instance = sch_mod.Examyear.objects.filter(
+                    country=request.user.country
+                ).order_by('-code').first()
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                err_html = acc_prm.errhtml_error_occurred_no_border(e)
+
+            finally:
+
+                if last_examyear_instance is None:
+                    err_html = '<br>'.join((
+                        gettext('There is no previous exam year.'),
+                        gettext("%(cpt)s could not be %(action)s.")
+                            % {'cpt': gettext('The exam year'), 'action': gettext('Created').lower() if is_create else gettext('Deleted').lower()}
+                    ))
+
+            if logging_on:
+                logger.debug('last_examyear_instance: ' + str(last_examyear_instance))
+                logger.debug('err_html: ' + str(err_html))
+
+            return last_examyear_instance, err_html
+# - end of get_last_examyear
+
+        def create_examyear_instance(upload_dict, request):
+            # --- create_examyear_instance PR2022-08-09
+            if logging_on:
+                logger.debug(' ----- create_examyear_instance ----- ')
+
+            examyear_instance = None
+            err_html = None
+            log_list = []
+
+            req_usr_country = request.user.country
+
+            # - get last_examyear_instance of this req_usr_country
+            last_examyear_instance = sch_mod.Examyear.objects.filter(
+                country=req_usr_country
+            ).order_by('-pk').first()
+
+            if last_examyear_instance is None:
+                caption = _('Exam year')
+                examyear_code = upload_dict.get('examyear_code') or '---'
+                err_html = '<br>'.join((
+                    str(_('There is no previous exam year.')),
+                    str(_("%(caption)s '%(val)s' could not be created.")
+                        % {'caption': caption, 'val': str(examyear_code)})))
+
+            else:
+                last_examyear_pk = last_examyear_instance.pk
+                new_examyear_code_int = 1 + last_examyear_instance.code
+
+            # - create new examyear
+                new_examyear_pk, msg_err, log_txt = create_examyear(last_examyear_pk, new_examyear_code_int, request)
+
+                if log_txt:
+                    log_list.append(c.STRING_SPACE_05 + log_txt)
+
+                if msg_err:
+                    err_html = msg_err
+
+                elif new_examyear_pk:
+                    examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=new_examyear_pk)
+
+            return examyear_instance, err_html, log_list
+        # - end of create_examyear_instance
+
+        def delete_examyear_instance(last_examyear_instance, is_check, request):
+            # --- delete examyear_instancee # PR2022-08-07
+
+            if logging_on:
+                logger.debug(' ------- delete_examyear_instance -------')
+                logger.debug('last_examyear_instance: ' + str(last_examyear_instance))
+
+            deleted_row = None
+            tobedeleted_row = None
+            msg_html = None
+
+            if last_examyear_instance:
+                last_examyear_pk = last_examyear_instance.pk
+                this_txt = _("Exam year %(exyr)s ") % {'exyr': str(last_examyear_instance.code)}
+
+                if logging_on:
+                    logger.debug('    this_txt: ' + str(this_txt))
+
+                # - check if last_examyear_instance is closed or schools have activated or locked it
+                err_html = av.validate_delete_examyear(last_examyear_instance)
+
+                if logging_on:
+                    logger.debug('    is_check: ' + str(is_check))
+
+                if err_html:
+                    msg_html = err_html
+                elif is_check:
+                    # - add deleted_row to last_examyear_instance
+                    tobedeleted_row = {'pk': last_examyear_pk,
+                                       'mapid': 'examyear_' + str(last_examyear_pk),
+                                       'tobedeleted': True}
+                    msg_html = '<br>'.join((
+                        gettext('%(cpt)s will be deleted.') % {'cpt': this_txt},
+                        gettext('Do you want to continue?')
+                    ))
+                else:
+
+                    if logging_on:
+                        logger.debug('    sch_mod.delete_instance: ')
+
+                    deleted_row, err_html = sch_mod.delete_instance(
+                        table='examyear',
+                        instance=last_examyear_instance,
+                        request=request,
+                        this_txt=this_txt
+                    )
+                    if err_html:
+                        msg_html = err_html
+                    if deleted_row:
+                        examyear_pk = deleted_row.get('id')
+                        awpr_log.savetolog_examyear(examyear_pk, 'd', request, [])
+                    if logging_on:
+                        logger.debug('    deleted_row: ' + str(deleted_row))
+                        logger.debug('    err_html: ' + str(err_html))
+
+            if logging_on:
+                logger.debug('deleted_row' + str(deleted_row))
+                logger.debug('msg_html' + str(msg_html))
+
+            return deleted_row, tobedeleted_row, msg_html
+        # - end of delete_examyear_instance
+##############
+
+        return_dict = {}
         update_wrap = {}
+
         msg_list = []
-        border_class = None
+        log_list = []
+
+        has_error, is_created, is_delete, is_check = False, False, False, False
 
 # - reset language
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-# - get permit
-        has_permit = acc_prm.get_permit_crud_of_this_page('page_examyear', request)
-        if not has_permit:
-            border_class = c.HTMLCLASS_border_bg_invalid
-            msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
-        else:
-
 # - get country of requsr, only if country is not locked
-            if request.user.country and not request.user.country.locked:
-                req_usr_country = request.user.country
+        if request.user.country and not request.user.country.locked:
 
 # - get upload_dict from request.POST
-                upload_json = request.POST.get('upload', None)
-                if upload_json:
-                    upload_dict = json.loads(upload_json)
+            upload_json = request.POST.get('upload')
+            if upload_json:
+                upload_dict = json.loads(upload_json)
 
-                    if logging_on:
-                        logger.debug('upload_dict: ' + str(upload_dict))
-                    """
-                    upload_dict: {'table': 'examyear', 'country_pk': 1, 'examyear_pk': 85, 'mapid': 'examyear_85', 'mode': 'update', 'published': True} 
-                    """
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+                """
+                upload_dict: {'table': 'examyear', 'country_pk': 1, 'examyear_pk': 85, 'mapid': 'examyear_85', 'mode': 'update', 'published': True} 
+                """
 
 # - get mode
-                    mode = upload_dict.get('mode')
-                    is_create = (mode == 'create')
-                    is_delete = (mode == 'delete')
-                    is_check = upload_dict.get('check') or False
+                mode = upload_dict.get('mode')
+                is_create = (mode == 'create')
+                is_delete = (mode == 'delete')
+                is_check = upload_dict.get('check') or False
+
+        # - get permit
+                has_permit = acc_prm.get_permit_crud_of_this_page('page_examyear', request)
+                if not has_permit:
+                    has_error = True
+                    msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
+                else:
 
  # - get  variables
-                    return_dict = {}
                     updated_rows = []
-                    error_list = []
-                    log_list = []
-                    messages = []
 
-                    header_txt = _('Add exam year') if is_create else _('Delete exam year') if is_delete else _(
-                        'Edit exam year')
+                    last_examyear_instance, err_html = get_last_examyear()
+                    if err_html:
+                        has_error = True
+                        msg_list.append(err_html)
 
 # +++ create new examyear, copy data from last exam year
-                    if is_create:
+                    elif is_create:
+                        last_examyear_pk = last_examyear_instance.pk
+                        new_examyear_code_int = 1 + last_examyear_instance.code
+
                         examyear_instance, err_html, log_lst = create_examyear_instance(upload_dict, request)
 
                         if logging_on:
@@ -2161,16 +2304,30 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
                             log_list.extend(log_lst)
 
                         if err_html:
+                            has_error = True
                             if len(updated_rows) == 0:
                                 updated_rows.append({})
                             updated_rows[0]['error'] = [err_html]
 
                         elif examyear_instance:
-                            msg_html = str(_('Exam year %(exyr)s has been created.') % {'exyr': str(examyear_instance.code)})
 
-                            return_dict = {'created': True, 'msg_html': msg_html}
+         # - copy all tables from last examyear
+                            log_lst, msg_err = copy_tables_from_last_year(
+                                prev_examyear_pk=last_examyear_instance.pk,
+                                new_examyear_pk=examyear_instance.pk,
+                                skip_copy_schools=False
+                            )
+                            if log_lst:
+                                log_list.extend(log_lst)
+                            if msg_err:
+                                err_html = msg_err
 
+                            is_created = True
+                            msg_list.append(
+                                gettext('Exam year %(exyr)s has been created.')
+                                % {'exyr': str(examyear_instance.code)})
 
+                            return_dict['created'] = True
                             append_dict = {'created': True}
                             examyear_pk = getattr(examyear_instance, 'pk')
 
@@ -2182,34 +2339,28 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
                             )
                             if logging_on:
                                 logger.debug('    examyear_pk: ' + str(examyear_pk))
-                                logger.debug('    updated_rows: ' + str(updated_rows))
 
 # +++ delete last_examyear_instance
                     elif is_delete:
 
-                        deleted_row, tobedeleted_row, err_html = delete_examyear_instance(is_check, request)
+                        deleted_row, tobedeleted_row, err_html = delete_examyear_instance(last_examyear_instance, is_check, request)
 
                         if is_check:
                             # when is_check err_html contains 'will be deleted text', tobedeleted_row is None when error
 
                             if tobedeleted_row:
-                                msg_html = ''.join(("<div class='p-2'>", str(err_html), "</div>"))
-                                return_dict = {
-                                    'examyear_tobedeleted': tobedeleted_row,
-                                    'msg_html': msg_html
-                                }
+                                msg_list.append(err_html)
+                                return_dict['examyear_tobedeleted'] = tobedeleted_row
 
                             elif err_html:
-                                msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(err_html), "</div>"))
-                                return_dict = {'error': True, 'msg_html': msg_html}
+                                has_error = True
+                                msg_list.append(err_html)
+
                         else:
                             # when not is_check err_html has only value when error
                             if err_html:
-                                msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(err_html), "</div>"))
-                                # return_dict = {'error': True, 'msg_html': msg_html}
-                                #messages.append(msg_html)
-
-                                messages.append({'class': "border_bg_invalid", 'header': header_txt, 'msg_html': err_html})
+                                has_error = True
+                                msg_list.append(err_html)
 
                             else:
                                 updated_rows.append(deleted_row)
@@ -2237,14 +2388,12 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
                                     msg_err = av.validate_undo_published_examyear(current_examyear_instance)
 
                                     if msg_err:
-                                        msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(msg_err), "</div>"))
-                                        return_dict = {'error': True, 'msg_html': msg_html}
-
+                                        has_error = True
+                                        msg_list.append(msg_err)
                                     else:
-                                        msg_html = '<br>'.join((str(_("Publication of exam year %(exyr)s will be undone.") % {
+                                        msg_list.append('<br>'.join((str(_("Publication of exam year %(exyr)s will be undone.") % {
                                             'exyr': current_examyear_instance.code}),
-                                            str(_('Do you want to continue?'))))
-                                        return_dict = {'msg_html': msg_html}
+                                            str(_('Do you want to continue?')))))
 
                                 # upload_dict: {'mode': 'update', 'check': True, 'examyear_pk': 1, 'published': False}
                                 elif 'locked' in upload_dict:
@@ -2253,18 +2402,20 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
                                     msg_err = av.validate_undo_locked_examyear(current_examyear_instance)
 
                                     if msg_err:
-                                        msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(msg_err), "</div>"))
-                                        return_dict = {'error': True, 'msg_html': msg_html}
+                                        has_error = True
+                                        msg_list.append(msg_err)
 
                                     else:
-                                        msg_html = '<br>'.join((str(_("Exam year %(exyr)s will be unlocked.") % {
+                                        msg_list.append('<br>'.join((str(_("Exam year %(exyr)s will be unlocked.") % {
                                             'exyr': current_examyear_instance.code}),
-                                            str(_('Do you want to continue?'))))
-                                        return_dict = {'msg_html': msg_html}
+                                            str(_('Do you want to continue?')))))
 
                             else:
 
-                                updated = update_examyear(current_examyear_instance, upload_dict, error_list, request)
+                                updated, err_html = update_examyear(current_examyear_instance, upload_dict, request)
+                                if err_html:
+                                    msg_list.append(err_html)
+
                                 if updated:
                                     updated_rows = sch_dicts.create_examyear_rows(
                                         req_usr=request.user,
@@ -2272,152 +2423,49 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
                                         examyear_pk=current_examyear_instance.pk
                                     )
                                 if logging_on:
-                                    logger.debug('error_list: ' + str(error_list))
+                                    logger.debug('err_html: ' + str(err_html))
 
-                    if return_dict:
-                        update_wrap['checked_examyear'] = return_dict
-                    if messages:
-                        update_wrap['messages'] = messages
+                    #if error_list:
+                    #    if len(updated_rows) == 0:
+                    #        updated_rows.append({})
+                    #    updated_rows[0]['error'] = error_list
 
-                    if error_list:
-                        if len(updated_rows) == 0:
-                            updated_rows.append({})
-                        updated_rows[0]['error'] = error_list
-
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('updated_rows' + str(updated_rows))
 
-                    update_wrap['updated_examyear_rows'] = updated_rows
+                    if updated_rows:
+                        update_wrap['updated_examyear_rows'] = updated_rows
+
+        if has_error:
+            return_dict['error'] = True
+
+        if is_created:
+            return_dict['created'] = True
+
+        #if is_deleted:
+        #    return_dict['deleted'] = True
 
         if msg_list:
-            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
+            border_class = c.HTMLCLASS_border_bg_invalid if has_error else c.HTMLCLASS_border_bg_valid if is_created else c.HTMLCLASS_border_bg_message
 
-        if logging_on:
+            return_dict['msg_html'] = ''.join(("<div class='p-2'>", '<br'.join(msg_list), "</div>"))
+            return_dict['border_class'] = border_class
+
+        if return_dict:
+            if is_delete:
+                update_wrap['checked_examyear_delete'] = return_dict
+            else:
+                update_wrap['checked_examyear'] = return_dict
+
+        if log_list:
+            update_wrap['log_list'] = log_list
+
+        if logging_on and False:
             logger.debug('update_wrap' + str(update_wrap))
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ExamyearUploadView
-
-
-def create_examyear_instance(upload_dict, request):
-    # --- create_examyear_instance PR2022-08-09
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- create_examyear_instance ----- ')
-
-    examyear_instance = None
-    err_html = None
-    log_list = []
-
-    req_usr_country = request.user.country
-
-# - get last_examyear_instance of this req_usr_country
-    last_examyear_instance = sch_mod.Examyear.objects.filter(
-        country=req_usr_country
-    ).order_by('-pk').first()
-
-    if last_examyear_instance is None:
-        caption = _('Exam year')
-        examyear_code = upload_dict.get('examyear_code') or '---'
-        err_html = '<br>'.join((
-            str(_('There is no previous exam year.')),
-            str(_("%(caption)s '%(val)s' could not be created.")
-                % {'caption': caption, 'val': str(examyear_code)})))
-
-    else:
-        last_examyear_pk = last_examyear_instance.pk
-        new_examyear_code_int = 1 + last_examyear_instance.code
-
-# - create new examyear
-        new_examyear_pk, msg_err, log_txt = create_examyear(last_examyear_pk, new_examyear_code_int)
-
-        if log_txt:
-            log_list.append(c.STRING_SPACE_05 + log_txt)
-
-        if msg_err:
-            err_html = msg_err
-
-        elif new_examyear_pk:
-            examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=new_examyear_pk)
-# - copy all tables from last examyear
-            log_lst, msg_err = copy_tables_from_last_year(
-                prev_examyear_pk=last_examyear_pk,
-                new_examyear_pk=new_examyear_pk,
-                skip_copy_schools=False
-            )
-            if log_lst:
-                log_list.extend(log_lst)
-            if msg_err:
-                err_html = msg_err
-
-    return examyear_instance, err_html, log_list
-# - end of create_examyear_instance
-
-
-def delete_examyear_instance(is_check, request):
-    # --- delete examyear_instancee # PR2022-08-07
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ------- delete_examyear_instance -------')
-
-    deleted_row = None
-    tobedeleted_row = None
-    msg_html = None
-
-# - get last_examyear_instance of this req_usr_country
-    last_examyear_instance = sch_mod.Examyear.objects.filter(
-        country=request.user.country
-    ).order_by('-pk').first()
-
-    if last_examyear_instance:
-        last_examyear_pk = last_examyear_instance.pk
-        last_examyear_code = last_examyear_instance.code
-
-# - check if last_examyear_instance is closed or schools have activated or locked it
-        msg_err = av.validate_delete_examyear(last_examyear_instance)
-
-        if is_check:
-            if msg_err:
-                #msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(msg_err), "</div>"))
-                msg_html = str(msg_err)
-
-            else:
-# - add deleted_row to last_examyear_instance
-                tobedeleted_row = {'pk': last_examyear_pk,
-                                        'mapid': 'examyear_' + str(last_examyear_pk),
-                                        'tobedeleted': True}
-                msg_html = '<br>'.join((
-                    str(_('Exam year %(exyr)s will be deleted.') % {'exyr': last_examyear_code}),
-                    str(_('Do you want to continue?'))
-                ))
-        else:
-            if msg_err:
-                # should not be possible, because error is trapped on check
-                msg_html = msg_err
-            else:
-                this_txt = _("Exam year '%(tbl)s' ") % {'tbl': str(last_examyear_instance.code)}
-
-                deleted_row, err_html = sch_mod.delete_instance(
-                    table='examyear',
-                    instance=last_examyear_instance,
-                    request=request,
-                    this_txt=this_txt
-                )
-                if err_html:
-                    msg_html = err_html
-
-                if logging_on:
-                    logger.debug('    deleted_row: ' + str(deleted_row))
-                    logger.debug('    err_html: ' + str(err_html))
-
-    if logging_on:
-        logger.debug('deleted_row' + str(deleted_row))
-        logger.debug('msg_html' + str(msg_html))
-
-    return deleted_row, tobedeleted_row, msg_html
-# - end of delete_examyear_instance
-
 
 
 ############ ORDER LIST ##########################
@@ -2464,7 +2512,7 @@ class OrderlistsParametersView(View):  # PR2021-08-31
                     logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
 
                 if sel_examyear_instance:
-                    update_examyear(sel_examyear_instance, upload_dict, error_list, request)
+                    is_updated, err_html = update_examyear(sel_examyear_instance, upload_dict, request)
 
 # - create examyear_row
                     updated_rows = sch_dicts.create_examyear_rows(
@@ -3260,7 +3308,7 @@ def send_email_orderlist(examyear, school, is_total_orderlist,
 
         except Exception as e:
             mail_sent = False
-            logging_on.error(getattr(e, 'message', str(e)))
+            logger.error(getattr(e, 'message', str(e)))
 
         if logging_on:
             logger.debug('mail_sent: ' + str(mail_sent))
@@ -3367,7 +3415,7 @@ def save_published_excelfile(published_instance, file_path, output, request):
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
-        err_html = acc_prm.msghtml_error_occurred_no_border(e, _('The file has not been saved.'))
+        err_html = acc_prm.errhtml_error_occurred_no_border(e, _('The file has not been saved.'))
 
     return err_html
 # - end of save_published_excelfile
@@ -3392,7 +3440,7 @@ def save_published_file(published_instance, file_path, file, request):
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            err_html = acc_prm.msghtml_error_occurred_no_border(e, _('The file has not been saved.'))
+            err_html = acc_prm.errhtml_error_occurred_no_border(e, _('The file has not been saved.'))
 
     return err_html
 # - end of save_published_file
@@ -3555,188 +3603,11 @@ def create_final_orderlist_perschool_xlsx(output, sel_examyear_instance,
 
     return msg_err
 # - end of create_final_orderlist_perschool_xlsx
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-# PR2023-07-06 removed:
-@method_decorator([login_required], name='dispatch')
-class ExamyearCopyToSxmViewNIU(View):  # PR2021-08-06
-
-    def post(self, request):
-        logging_on = False  # s.LOGGING_ON
-
-        update_wrap = {}
-        error_list = []
-        SXM_added_list = []
-        if request.user is not None and request.user.country is not None:
-            req_usr = request.user
-            permit_list, requsr_usergroups_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, 'page_examyear')
-            has_permit = 'permit_crud' in permit_list
-
-            if logging_on:
-                logger.debug(' ')
-                logger.debug(' ============= ExamyearCopyToSxmView ============= ')
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit:  ' + str(has_permit))
-
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get upload_dict from request.POST - upload_dict not in use
-            upload_json = request.POST.get('upload', None)
-            if has_permit and upload_json:
-                # upload_dict = json.loads(upload_json)
-
-# - get examyear_code_int of current examyear
-                sel_examyear_code_int = None
-                sel_examyear, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
-                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-                if sel_examyear:
-                    sel_examyear_code_int = sel_examyear.code
-
-# - get examyear curacao with current examyear_code (logged in with SXM gives different examyear_instance)
-                curacao_country_instance = af.get_country_instance_by_abbrev('cur')
-                curacao_examyear_instance = sch_mod.Examyear.objects.get_or_none(
-                    code=sel_examyear_code_int,
-                    country=curacao_country_instance
-                )
-                if logging_on:
-                    logger.debug('sel_examyear_code_int: ' + str(sel_examyear_code_int))
-                    logger.debug('curacao_country_instance: ' + str(curacao_country_instance))
-                    logger.debug('curacao_examyear_instance: ' + str(curacao_examyear_instance))
-
-# - get countr sxm
-                sxm_country_instance = af.get_country_instance_by_abbrev('sxm')
-                if logging_on:
-                    logger.debug('sxm_country_instance: ' + str(sxm_country_instance))
-
-# - get examyear of SXM with  sel_examyear_code_int
-                sxm_examyear_instance = sch_mod.Examyear.objects.get_or_none(
-                    code=sel_examyear_code_int,
-                    country=sxm_country_instance
-                )
-                if logging_on:
-                    logger.debug('sxm_examyear_instance: ' + str(sxm_examyear_instance))
-
-# - create new examyear if it does not exist yet
-                log_list = []
-                if sxm_examyear_instance is None:
-                    sxm_examyear_instance, msg_err, log_txt = create_examyear(sxm_country_instance, sel_examyear.code)
-                    if log_txt:
-                        log_list.append(c.STRING_SPACE_05 + log_txt)
-                    if msg_err:
-                        error_list.append(msg_err)
-                    if logging_on:
-                        logger.debug('msg_err: ' + str(msg_err))
-                        logger.debug('created sxm_examyear_instance: ' + str(sxm_examyear_instance))
-
-                SXM_added_list.append('sxm_examyear_instance: ' + str(sxm_examyear_instance))
-                if sxm_examyear_instance:
-                    SXM_added_list.append('sxm_examyear_country: ' + str(sxm_examyear_instance.country))
-
-# - copy all tables from current_examyear_instance_instance to new_sxm_examyear_instance
-                if curacao_examyear_instance and sxm_examyear_instance:
-                    if logging_on:
-                        logger.debug('curacao_examyear_instance and sxm_examyear_instance')
-
-                    log_list = copy_tables_from_last_year(
-                        prev_examyear_pk=curacao_examyear_instance,
-                        new_examyear_pk=sxm_examyear_instance,
-                        skip_copy_schools=True
-                    )
-
-        update_wrap['error_list'] = error_list
-        update_wrap['SXM_added_list'] = SXM_added_list
-
-
-# - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of ExamyearCopyToSxmView
-
-
-# PR2023-07-06 removed:
-@method_decorator([login_required], name='dispatch')
-class CopySchemesFromExamyearViewNIU(View):  # PR2021-09-24
-
-    def post(self, request):
-        logging_on = False  # s.LOGGING_ON
-
-        update_wrap = {}
-        log_list = []
-        if request.user is not None and request.user.country is not None:
-            req_usr = request.user
-            permit_list, requsr_usergroups_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, 'page_examyear')
-            has_permit = 'permit_crud' in permit_list and request.user.is_role_system
-
-            if logging_on:
-                logger.debug(' ')
-                logger.debug(' ============= CopySchemesFromExamyearView ============= ')
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit:  ' + str(has_permit))
-
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if has_permit and upload_json:
-                upload_dict = json.loads(upload_json)
-                if logging_on:
-                    logger.debug('upload_dict: ' + str(upload_dict))
-                """
-                upload_dict: {'mode': 'copy_scheme', 'copyto_mapid': 'examyear_64', 'copyto_examyear_pk': 64, 'copyto_country_id': 2, 'copyto_country': 'Sint Maarten'}
-                """
-
-                copyto_examyear_pk = upload_dict.get('copyto_examyear_pk')
-
-# - get copyfrom_examyear  - which is the current examyear
-                copyfrom_examyear_instance, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
-                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-
-                if logging_on:
-                    logger.debug('copyfrom_examyear_instance: ' + str(copyfrom_examyear_instance) + ' ' + str(copyfrom_examyear_instance.country.abbrev))
-
-# - get copyto_examyear from upload_dict
-                copyto_examyear_instance = sch_mod.Examyear.objects.get_or_none(
-                    pk=copyto_examyear_pk
-                )
-                if logging_on:
-                    logger.debug('copyto_examyear_instance: ' + str(copyto_examyear_instance) + ' ' + str(copyto_examyear_instance.country.abbrev))
-
-# - copy all tables from current_examyear_instance_instance to new_copyto_examyear_instance, except for schools
-                if copyfrom_examyear_instance and copyto_examyear_instance:
-
-# - create log_list
-                    today_dte = af.get_today_dateobj()
-                    today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-
-                    log_list = [c.STRING_DOUBLELINE_80,
-                                str(_('Copy subject schemes ')) + ' ' + str(_('date')) + ': ' + str(
-                                    today_formatted),
-                                c.STRING_DOUBLELINE_80]
-                    from_examyear = ' '.join((str(_("From exam year:")), copyfrom_examyear_instance.country.name, str(copyfrom_examyear_instance.code)))
-                    to_examyear = ' '.join((str(_("To exam year:  ")), copyto_examyear_instance.country.name, str(copyto_examyear_instance.code)))
-                    log_list.append(c.STRING_SPACE_05 + from_examyear)
-                    log_list.append(c.STRING_SPACE_05 + to_examyear)
-
-                    log_list = copy_tables_from_last_year(
-                        prev_examyear_pk=copyfrom_examyear_instance,
-                        new_examyear_pk=copyto_examyear_instance,
-                        skip_copy_schools=True
-                    )
-        if logging_on:
-            logger.debug('log_list: ' + str(log_list) )
-        update_wrap['log_list'] = log_list
-
-
-# - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of CopySchemesFromExamyearView
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_examyear(prev_examyear_pk, new_examyear_code_int):
+def create_examyear(prev_examyear_pk, new_examyear_code_int, request):
     # --- create examyear
     # PR2019-07-30 PR2020-10-05 PR2021-07-14 PR2021-08-21  PR2022-08-01 PR2023-03-02
     # PR2023-07-06 also field list checked: is ok
@@ -3809,7 +3680,8 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
                         new_examyear_pk = row[0]
 
             log_txt = str(_("%(caption)s %(val)s has been created.") % {'caption': caption, 'val': name})
-
+            if new_examyear_pk:
+               awpr_log.savetolog_examyear(new_examyear_pk, 'c', request, [])
             if logging_on:
                 logger.debug('log_txt: ' + str(log_txt))
 
@@ -3825,7 +3697,7 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
 # - end of create_examyear
 
 
-def update_examyear(instance, upload_dict, msg_list, request):
+def update_examyear(instance, upload_dict, request):
     # --- update existing examyear instance PR2019-06-06 PR2021-09-03
     # add new values to update_dict (don't reset update_dict, it has values)
     logger.debug(' ------- update_examyear -------')
@@ -3838,7 +3710,9 @@ def update_examyear(instance, upload_dict, msg_list, request):
 
     # upload_dict: {'table': 'examyear', 'country_pk': 1, 'examyear_pk': 58, 'mapid': 'examyear_58', 'mode': 'update', 'published': True}
 
-    updated = False
+    is_updated = False
+    err_html = None
+
     if instance:
         try:
             save_changes = False
@@ -3898,23 +3772,19 @@ def update_examyear(instance, upload_dict, msg_list, request):
 # --- save changes
             if save_changes:
                 instance.save(request=request)
-                updated = True
+                is_updated = True
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            msg_html = ''.join((
-                str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
-                str(_("The changes have not been saved."))))
-            msg_dict = {'header': str(_('Update exam year')), 'class': 'border_bg_invalid','msg_html': msg_html}
-            msg_list.append(msg_dict)
-    return updated
+            err_html = acc_prm.errhtml_error_occurred_no_border(e, _("The changes have not been saved."))
+    return is_updated, err_html
 # - end of update_examyear
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, skip_copy_schools):
     # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06 PR2022-08-23
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_tables_from_last_year -------')
         logger.debug('prev_examyear_pk: ' + str(prev_examyear_pk))
@@ -3926,20 +3796,21 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, skip_copy_scho
         # all fields of table Examyear are copied while creating new examyear, no need to use
         #   sf.copy_examyear_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        # schoolsetting and mailinglist don't have to be copied, because they are  not examyear dependent
+        # schoolsetting and mailinglist don't have to be copied, because they are not examyear dependent
 
+        # PR2023-07-18 TODO copy examyearsettings
         # PR2023-03-01 added: copy  userallowed to new examyear
         msg_err = sf.copy_userallowed_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
         if msg_err is None:
+
+            sf.copy_examyearsetting_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+
             sf.copy_exfilestext_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
             mapped_deps = sf.copy_deps_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-            # PR2023-07-06: dont copy schools, but map them
-            #if not skip_copy_schools:
-            mapped_schools = sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk)
-            # mapped_schools = sf.map_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk)
+            mapped_schools = sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
             mapped_levels = sf.copy_levels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
             mapped_sectors = sf.copy_sectors_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
@@ -3957,16 +3828,18 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, skip_copy_scho
             # envelopsubjects will be created in orderlists.py function check_envelopsubject_rows
             # when downloading envelopsubject_rows
 
+            sf.copy_envelopsubjects_from_prev_examyear(prev_examyear_pk, mapped_subjects, mapped_deps, mapped_levels, mapped_envelopbundles, log_list)
+
             mapped_enveloplabels = sf.copy_enveloplabels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
             mapped_envelopitems = sf.copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
             sf.copy_envelopbundlelabels_from_prev_examyear(prev_examyear_pk, mapped_envelopbundles, mapped_enveloplabels, log_list)
             sf.copy_enveloplabelitems_from_prev_examyear(prev_examyear_pk, mapped_enveloplabels, mapped_envelopitems, log_list)
 
-            sf.copy_exams_from_prev_examyear(prev_examyear_pk,
-                                             mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
+            sf.copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
 
             sf.copy_clusters_from_prev_examyear(prev_examyear_pk, mapped_schools, mapped_deps, mapped_subjects)
+
         # Not in use
         #mapped_packages = sf.copy_packages_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
         #sf.copy_packageitems_from_prev_examyear(prev_examyear_pk, mapped_packages, mapped_schemeitems, log_list)
@@ -3997,6 +3870,9 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, skip_copy_scho
         # Exam
         # Envelopsubject
         # Cluster
+    if logging_on:
+        logger.debug('    log_list: ' + str(log_list))
+        logger.debug('    msg_err: ' + str(msg_err))
     return log_list, msg_err
 # end of copy_tables_from_last_year
 
@@ -4156,7 +4032,7 @@ class SchoolImportView(View):  # PR2020-10-01
             #                      {'tsaKey': 'orderdatelast', 'caption': _('Last date order')} ]
 
     # get coldef_list  and caption
-            coldef_list = c.COLDEF_SUBJECT
+            coldef_list = []  # c.COLDEF_SUBJECT
             captions_dict = c.CAPTION_IMPORT
 
             settings_json = request.user.schoolbase.get_schoolsetting_dict(c.KEY_IMPORT_SUBJECT)
@@ -4208,10 +4084,10 @@ class SchoolImportView(View):  # PR2020-10-01
 
 
 @method_decorator([login_required], name='dispatch')
-class SchoolImportUploadSetting(View):   # PR2019-03-10
+class SchoolImportUploadSettingNIU(View):   # PR2019-03-10
     # function updates mapped fields, no_header and worksheetname in table Companysetting
     def post(self, request, *args, **kwargs):
-        #logger.debug(' ============= SubjectImportUploadSetting ============= ')
+        #logger.debug(' ============= SchoolImportUploadSettingNIU ============= ')
         #logger.debug('request.POST' + str(request.POST) )
         schoolsetting_dict = {}
         has_permit = False
@@ -4265,7 +4141,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
                 request.user.schoolbase.set_schoolsetting_dict(settings_key, new_setting_json)
 
         return HttpResponse(json.dumps(schoolsetting_dict, cls=LazyEncoder))
-# --- end of SubjectImportUploadSetting
+# --- end of SchoolImportUploadSettingNIU
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -4519,7 +4395,7 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
                     logger.debug('parent changes saved')
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                error_list.append(acc_prm.msghtml_error_occurred_with_border(e, _('The changes have not been saved.')))
+                error_list.append(acc_prm.errhtml_error_occurred_with_border(e, _('The changes have not been saved.')))
 
         if save_changes:
             try:
@@ -4528,7 +4404,7 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
                     logger.debug('school_instance changes saved')
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                error_list.append(acc_prm.msghtml_error_occurred_no_border(e, _('The changes have not been saved.')))
+                error_list.append(acc_prm.errhtml_error_occurred_no_border(e, _('The changes have not been saved.')))
 
     if logging_on:
         for err in error_list:
@@ -4783,3 +4659,183 @@ class Validate_examyear(object):
                     _isOK = True
         return _isOK
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+"""
+# PR2023-07-06 removed:
+@method_decorator([login_required], name='dispatch')
+class ExamyearCopyToSxmViewNIU(View):  # PR2021-08-06
+
+    def post(self, request):
+        logging_on = False  # s.LOGGING_ON
+
+        update_wrap = {}
+        error_list = []
+        SXM_added_list = []
+        if request.user is not None and request.user.country is not None:
+            req_usr = request.user
+            permit_list, requsr_usergroups_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, 'page_examyear')
+            has_permit = 'permit_crud' in permit_list
+
+            if logging_on:
+                logger.debug(' ')
+                logger.debug(' ============= ExamyearCopyToSxmView ============= ')
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit:  ' + str(has_permit))
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST - upload_dict not in use
+            upload_json = request.POST.get('upload', None)
+            if has_permit and upload_json:
+                # upload_dict = json.loads(upload_json)
+
+# - get examyear_code_int of current examyear
+                sel_examyear_code_int = None
+                sel_examyear, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                if sel_examyear:
+                    sel_examyear_code_int = sel_examyear.code
+
+# - get examyear curacao with current examyear_code (logged in with SXM gives different examyear_instance)
+                curacao_country_instance = af.get_country_instance_by_abbrev('cur')
+                curacao_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+                    code=sel_examyear_code_int,
+                    country=curacao_country_instance
+                )
+                if logging_on:
+                    logger.debug('sel_examyear_code_int: ' + str(sel_examyear_code_int))
+                    logger.debug('curacao_country_instance: ' + str(curacao_country_instance))
+                    logger.debug('curacao_examyear_instance: ' + str(curacao_examyear_instance))
+
+# - get countr sxm
+                sxm_country_instance = af.get_country_instance_by_abbrev('sxm')
+                if logging_on:
+                    logger.debug('sxm_country_instance: ' + str(sxm_country_instance))
+
+# - get examyear of SXM with  sel_examyear_code_int
+                sxm_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+                    code=sel_examyear_code_int,
+                    country=sxm_country_instance
+                )
+                if logging_on:
+                    logger.debug('sxm_examyear_instance: ' + str(sxm_examyear_instance))
+
+# - create new examyear if it does not exist yet
+                log_list = []
+                if sxm_examyear_instance is None:
+                    sxm_examyear_instance, msg_err, log_txt = create_examyear(sxm_country_instance, sel_examyear.code)
+                    if log_txt:
+                        log_list.append(c.STRING_SPACE_05 + log_txt)
+                    if msg_err:
+                        error_list.append(msg_err)
+                    if logging_on:
+                        logger.debug('msg_err: ' + str(msg_err))
+                        logger.debug('created sxm_examyear_instance: ' + str(sxm_examyear_instance))
+
+                SXM_added_list.append('sxm_examyear_instance: ' + str(sxm_examyear_instance))
+                if sxm_examyear_instance:
+                    SXM_added_list.append('sxm_examyear_country: ' + str(sxm_examyear_instance.country))
+
+# - copy all tables from current_examyear_instance_instance to new_sxm_examyear_instance
+                if curacao_examyear_instance and sxm_examyear_instance:
+                    if logging_on:
+                        logger.debug('curacao_examyear_instance and sxm_examyear_instance')
+
+                    log_list = copy_tables_from_last_year(
+                        prev_examyear_pk=curacao_examyear_instance,
+                        new_examyear_pk=sxm_examyear_instance,
+                        skip_copy_schools=True
+                    )
+
+        update_wrap['error_list'] = error_list
+        update_wrap['SXM_added_list'] = SXM_added_list
+
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of ExamyearCopyToSxmViewNIU
+
+
+# PR2023-07-06 removed:
+@method_decorator([login_required], name='dispatch')
+class CopySchemesFromExamyearViewNIU(View):  # PR2021-09-24
+
+    def post(self, request):
+        logging_on = False  # s.LOGGING_ON
+
+        update_wrap = {}
+        log_list = []
+        if request.user is not None and request.user.country is not None:
+            req_usr = request.user
+            permit_list, requsr_usergroups_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, 'page_examyear')
+            has_permit = 'permit_crud' in permit_list and request.user.is_role_system
+
+            if logging_on:
+                logger.debug(' ')
+                logger.debug(' ============= CopySchemesFromExamyearViewNIU ============= ')
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit:  ' + str(has_permit))
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if has_permit and upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+                
+                # upload_dict: {'mode': 'copy_scheme', 'copyto_mapid': 'examyear_64', 'copyto_examyear_pk': 64, 'copyto_country_id': 2, 'copyto_country': 'Sint Maarten'}
+               
+                copyto_examyear_pk = upload_dict.get('copyto_examyear_pk')
+
+# - get copyfrom_examyear  - which is the current examyear
+                copyfrom_examyear_instance, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('copyfrom_examyear_instance: ' + str(copyfrom_examyear_instance) + ' ' + str(copyfrom_examyear_instance.country.abbrev))
+
+# - get copyto_examyear from upload_dict
+                copyto_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+                    pk=copyto_examyear_pk
+                )
+                if logging_on:
+                    logger.debug('copyto_examyear_instance: ' + str(copyto_examyear_instance) + ' ' + str(copyto_examyear_instance.country.abbrev))
+
+# - copy all tables from current_examyear_instance_instance to new_copyto_examyear_instance, except for schools
+                if copyfrom_examyear_instance and copyto_examyear_instance:
+
+# - create log_list
+                    today_dte = af.get_today_dateobj()
+                    today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+                    log_list = [c.STRING_DOUBLELINE_80,
+                                str(_('Copy subject schemes ')) + ' ' + str(_('date')) + ': ' + str(
+                                    today_formatted),
+                                c.STRING_DOUBLELINE_80]
+                    from_examyear = ' '.join((str(_("From exam year:")), copyfrom_examyear_instance.country.name, str(copyfrom_examyear_instance.code)))
+                    to_examyear = ' '.join((str(_("To exam year:  ")), copyto_examyear_instance.country.name, str(copyto_examyear_instance.code)))
+                    log_list.append(c.STRING_SPACE_05 + from_examyear)
+                    log_list.append(c.STRING_SPACE_05 + to_examyear)
+
+                    log_list = copy_tables_from_last_year(
+                        prev_examyear_pk=copyfrom_examyear_instance,
+                        new_examyear_pk=copyto_examyear_instance,
+                        skip_copy_schools=True
+                    )
+        if logging_on:
+            logger.debug('log_list: ' + str(log_list) )
+        update_wrap['log_list'] = log_list
+
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of CopySchemesFromExamyearViewNIU
+
+"""

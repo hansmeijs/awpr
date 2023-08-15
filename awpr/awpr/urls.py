@@ -174,7 +174,10 @@ urlpatterns = [
         path('usercomp_approve_single', acc_corr.UserCompensationApproveSingleView.as_view(), name='url_usercomp_approve_single'),
 
         path('download_excomp', acc_corr.UserCompensationDownloadExcompView.as_view(), name='url_download_excomp'),
+        path('download_paymentform', acc_corr.UserCompensationDownloadPaymentView.as_view(), name='url_download_paymentform'),
+        path('download_invoice', acc_corr.UserCompensationDownloadInvoiceView.as_view(), name='url_download_invoice'),
 
+        path('userdata_upload', acc_corr.UserdataUploadView.as_view(), name='url_userdata_upload'),
     ])),
 
     url(r'session_security/', include('session_security.urls')),
@@ -230,7 +233,7 @@ urlpatterns = [
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 
-        path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url')
+        # PR2023-08-09 removed: path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url')
     ])),
 
 # ===== SUBJECTS ==========================  PR2018-08-23 PR2020-10-20
@@ -376,7 +379,6 @@ urlpatterns = [
         path('download_conversion_pdf/<list>/', subject_views.ExamDownloadConversionView.as_view(), name='url_exam_download_conversion_pdf'),
         path('download_exam_json', subject_views.ExamDownloadExamJsonView.as_view(), name='url_exam_download_exam_json'),
     ])),
-
 
 # ===== WOLF ========================== PR2022-12-16
     path('wolf/', include([

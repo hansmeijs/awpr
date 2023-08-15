@@ -295,10 +295,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-06-20
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
-        //console.log("permit_dict:", permit_dict);
+        console.log("===  CreateSubmenu == ");
+        console.log("permit_dict:", permit_dict);
 
         let el_submenu = document.getElementById("id_submenu")
+        console.log("el_submenu:", el_submenu);
+        console.log("permit_dict.permit_crud:", permit_dict.permit_crud);
         if(el_submenu){
             if (permit_dict.permit_crud){
                 AddSubmenuButton(el_submenu, loc.Add_school, function() {MSCH_Open()});
@@ -307,7 +309,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (permit_dict.permit_upload_awpfile){
                 AddSubmenuButton(el_submenu, loc.Upload_awpdata, function() {ModUploadAwp_open()}, null, "id_submenu_importawp");
             };
-            const hide_submenu =  (!permit_dict.permit_crud && !permit_dict.permit_upload_awpfile);
+            const hide_submenu = (!permit_dict.permit_crud && !permit_dict.permit_upload_awpfile);
+        console.log("hide_submenu:", hide_submenu);
             add_or_remove_class(el_submenu, cls_hide, hide_submenu);
         };
     };//function CreateSubmenu

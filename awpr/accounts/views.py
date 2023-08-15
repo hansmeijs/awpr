@@ -67,6 +67,7 @@ from awpr import validators as awpr_val
 from awpr import functions as af
 from awpr import menus as awpr_menu
 from awpr import excel as awpr_excel
+from awpr import logs as awpr_logs
 
 from schools import models as sch_mod
 from subjects import  models as subj_mod
@@ -1295,7 +1296,7 @@ def update_grouppermit(userpermit_instance, upload_dict, request): # PR2021-03-2
             updated_userpermit_pk = userpermit_instance.pk
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            err_html = acc_prm.msghtml_error_occurred_no_border(e, _('The changes have not been saved.'))
+            err_html = acc_prm.errhtml_error_occurred_no_border(e, _('The changes have not been saved.'))
 
     if logging_on:
         logger.debug('err_html' + str(err_html))
@@ -1687,7 +1688,7 @@ def send_activation_email(user_pk, request):
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 has_error = True
-                msg_html = acc_prm.msghtml_error_occurred_with_border(e, _('The activation email has not been sent.'))
+                msg_html = acc_prm.errhtml_error_occurred_with_border(e, _('The activation email has not been sent.'))
                 # err_dict['msg01'] = _('An error occurred.')
                 # err_dict['msg02'] = _('The activation email has not been sent.')
 
@@ -2740,9 +2741,20 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
             #logger.debug('new_user: ' + str(new_user))
             if new_user:
-                usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
+
+    # - add Userdata record
+                new_userdata = acc_mod.Userdata(
+                    user=new_user,
+                    modifiedby=request.user,
+                    modifiedat=now_utc
+                )
+                new_userdata.save()
+
+    # - add UserAllowed record for each examyear.
                 # PR2023-02-17 add UserAllowed record for each examyear.
                 # otherwise new users cannot access previous years
+                usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
+
                 examyears = sch_mod.Examyear.objects.filter(
                     country=country
                 )
@@ -2853,6 +2865,7 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
         user_pk = user_instance.pk
 
         data_has_changed = False
+        updated_fields = []
         # upload_dict: {'mode': 'update', 'schoolbase_pk': 23, 'username': 'Ete', 'last_name': 'Ete2',
         #           'email': 'hmeijs@gmail.com', 'user_pk': 41}
         for field, field_value in upload_dict.items():
@@ -2877,7 +2890,7 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                     prefixed_username = usr_schoolbase.prefix + new_username
                     user_instance.username = prefixed_username
                     data_has_changed = True
-
+                    updated_fields.append(field)
 # - check if namelast is blank
             elif field == 'last_name':
                 new_last_name = field_value
@@ -2893,6 +2906,7 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                 if not has_error and new_last_name and new_last_name != user_instance.last_name:
                     user_instance.last_name = new_last_name
                     data_has_changed = True
+                    updated_fields.append(field)
 
 # - check if this is a valid email address:
             elif field == 'email':
@@ -2916,12 +2930,14 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                 if not has_error and new_email and new_email != user_instance.email:
                     user_instance.email = new_email
                     data_has_changed = True
+                    updated_fields.append(field)
 
             elif field == 'usergroups':
                 # field_value is dict: {'edit': True}
                 usergroups_haschanged = update_userallowed_usergroups(request, user_instance, sel_examyear, field_value)
                 if usergroups_haschanged:
                     data_has_changed = True
+                    updated_fields.append(field)
                 if logging_on:
                     logger.debug('    usergroups_haschanged: ' + str(usergroups_haschanged))
 
@@ -2929,6 +2945,7 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                 allowedcluster_haschanged = update_allowedclusters(request, user_instance, sel_examyear, field_value, True) # True = validate
                 if allowedcluster_haschanged:
                     data_has_changed = True
+                    updated_fields.append(field)
                 if logging_on:
                     logger.debug('    allowedcluster_haschanged: ' + str(allowedcluster_haschanged))
 
@@ -2942,6 +2959,7 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                 if field_value != old_value:
                     setattr(user_instance, field, field_value)
                     data_has_changed = True
+                    updated_fields.append(field)
                 if logging_on:
                     logger.debug('field_value: ' + str(field_value))
                     logger.debug('data_has_changed: ' + str(data_has_changed))
@@ -2990,6 +3008,7 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                 if not has_error and new_isactive != user_instance.is_active:
                     user_instance.is_active = new_isactive
                     data_has_changed = True
+                    updated_fields.append(field)
 
 # -  update user
         if not has_error:
@@ -3008,6 +3027,8 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                     user_instance.save(request=request)
 
                     ok_dict = {'msg01':  _("The changes have been saved successfully.")}
+
+                    awpr_logs.savetolog_user(user_instance, 'u', request, updated_fields)
 
                     if logging_on:
                         logger.debug(' user_instance.modified_by_id: ' + str(user_instance.modified_by_id))
@@ -5249,7 +5270,7 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False, p
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
     # this function gets sel_examyear, from req_usr and usersetting
-    # used in user_upload, userallowed.uplaod, publish orderlist and upload dnt, where no selected school or dep is needed
+    # used in user_upload, userallowed.uplaod, publish orderlist, download comp_payment and upload dnt, where no selected school or dep is needed
     # checks if country is locked and if examyear is missing, not published or locked
 
     req_usr = request.user
@@ -5778,7 +5799,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, page=None, skip_all
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
-        msg_list.append(acc_prm.msghtml_error_occurred_with_border(e))
+        msg_list.append(acc_prm.errhtml_error_occurred_with_border(e))
 
 
     may_edit = len(msg_list) == 0

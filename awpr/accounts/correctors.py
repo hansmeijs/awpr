@@ -11,13 +11,10 @@ from django.core.files import File
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 
-from django.contrib.auth import get_user_model, authenticate
-# UserModel = get_user_model()
-
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 
-#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+# PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext, gettext_lazy as _, pgettext_lazy
 from django.views.generic import View
 
@@ -33,8 +30,6 @@ from awpr import library as awpr_lib
 
 from schools import models as sch_mod
 
-from datetime import datetime
-import pytz
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -423,7 +418,7 @@ def update_usercompensation_instance(instance, upload_dict, request):
                 changes_are_saved = True
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                err_list.append(acc_prm.msghtml_error_occurred_no_border(e, _('The changes have not been saved.')))
+                err_list.append(acc_prm.errhtml_error_occurred_no_border(e, _('The changes have not been saved.')))
 
     if logging_on:
         logger.debug('    changes_are_saved: ' + str(changes_are_saved))
@@ -509,7 +504,6 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
         # - add 1 to count_dict committed
                         af.add_one_to_count_dict(count_dict, 'committed')
-
         # - end of approve_usercomp
 
         def submit_usercomp(usercomp_row, is_test, count_dict, tobe_updated_usercomp_pk_list, tobe_updated_user_pk_list):
@@ -564,7 +558,6 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
         def create_published_usercomp_instance(sel_school, sel_department, sel_level, now_arr, request):
             # PR2023-03-23
-            logging_on = False  # s.LOGGING_ON
             if logging_on:
                 logger.debug('----- create_published_usercomp_instance -----')
                 logger.debug('     sel_school: ' + str(sel_school))
@@ -643,7 +636,6 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
         def batch_update_usercomp(usercomp_pk_list, is_submit, is_reset, requsr_auth, req_user, published_pk):
             # PR2023-07-09 PR2023-07-16
 
-            logging_on = s.LOGGING_ON
             if logging_on:
                 logger.debug(' ')
                 logger.debug('----- batch_update_usercomp -----')
@@ -683,7 +675,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                 action_txt = str(_('submitted') if is_submit else _('approved'))
                 cpt = gettext('compensations')
                 err_txt = gettext('The %(cpt)s could not be %(action)s.') % {'cpt': cpt, 'action': action_txt}
-                err_list = acc_prm.msglist_error_occurred(e, err_txt)
+                err_list = acc_prm.errlist_error_occurred(e, err_txt)
 
             if logging_on:
                 logger.debug('    updated_usercomp_pk_list: ' + str(updated_usercomp_pk_list))
@@ -1173,7 +1165,8 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                                 sel_department=sel_department,
                                 sel_level=sel_level,
                                 now_arr=now_arr,
-                                request=request)
+                                request=request
+                            )
                             if published_instance:
                                 published_instance_pk = published_instance.pk
                                 published_instance_filename = published_instance.filename
@@ -1621,7 +1614,7 @@ class UserCompensationDownloadExcompView(View):  # PR2023-07-09
 
             if sel_examyear and sel_school:
 
-    # +++ create ex1_xlsx
+    # +++ create create_excomp_xlsx
                 save_to_disk = False
                 # just to prevent PyCharm warning on published_instance=published_instance
                 # published_instance = None  # sch_mod.School.objects.get_or_none(pk=None)
@@ -1640,6 +1633,383 @@ class UserCompensationDownloadExcompView(View):  # PR2023-07-09
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of UserCompensationDownloadExcompView
+
+
+
+@method_decorator([login_required], name='dispatch')
+class UserCompensationDownloadPaymentView(View):  # PR2023-07-20
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= UserCompensationDownloadPaymentView ============= ')
+
+        ##################
+        def get_usercomp_rows_all_schools(sel_examyear, user_lang):
+            # PR2023-07-09 like in UserCompensationDownloadExcompView, but without filter schools
+            # PR2023-08-15 filter on requsr when his usergroups contains corrector
+            logging_on = s.LOGGING_ON
+            if logging_on:
+                logger.debug(' ----- get_usercomp_rows_all_schools -----')
+
+            usercomp_rows = []
+
+            try:
+                sql = ''.join((
+                    "SELECT uc.id, uc.user_id, CONCAT('usercomp_', uc.id::TEXT) AS mapid,",
+                    "au.last_name, ",
+                    "uc_school.base_id AS uc_schoolbase_id, uc_school.abbrev AS uc_school_abbrev, uc_schoolbase.code AS uc_sb_code,",
+                    "depbase.code AS uc_depbase_code, lvlbase.code AS uc_lvlbase_code,",
+                    "exam.version AS exam_version, exam.examperiod,",
+
+                    "subj.name_nl AS subj_name_nl, subjbase.code AS subjbase_code,",
+
+                    "uc.amount AS uc_amount, uc.meetings AS uc_meetings,",
+                    "uc.correction_amount AS uc_corr_amount, uc.correction_meetings AS uc_corr_meetings, ",
+                    "uc.compensation / 100 AS uc_compensation, ",
+                    "uc.meetingdate1 AS uc_meetingdate1, uc.meetingdate2 AS uc_meetingdate2, ",
+                    "publ.datepublished AS uc_datepublished "
+                    
+                    "FROM accounts_usercompensation AS uc ",
+
+                    "INNER JOIN accounts_user AS au ON (au.id = uc.user_id) ",
+
+                    "INNER JOIN subjects_exam AS exam ON (exam.id = uc.exam_id) ",
+
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id) ",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id) ",
+
+                    "INNER JOIN schools_school AS uc_school ON (uc_school.id = uc.school_id) ",
+                    "INNER JOIN schools_schoolbase AS uc_schoolbase ON (uc_schoolbase.id = uc_school.base_id) ",
+
+                    "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id) ",
+                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id) ",
+
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id) ",
+                    "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id) ",
+
+                    "LEFT JOIN schools_published AS publ ON (publ.id = uc.published_id) ",
+
+                    "WHERE uc_school.examyear_id=", str(sel_examyear.pk), "::INT ",
+                    "AND au.role=", str(c.ROLE_016_CORR), "::INT ",
+
+                    "ORDER BY LOWER(au.last_name), LOWER(uc_schoolbase.code), LOWER(subjbase.code), dep.sequence, lvl.sequence, LOWER(exam.version), exam.examperiod"
+                ))
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    usercomp_rows = af.dictfetchall(cursor)
+
+                    for row in usercomp_rows:
+
+                        uc_meetingdate1 = row.get('uc_meetingdate1')
+                        uc_meetingdate2 = row.get('uc_meetingdate2')
+                        uc_meetingdates = None
+                        if uc_meetingdate1 or uc_meetingdate2:
+                            if uc_meetingdate1 and uc_meetingdate2:
+                                # sort dates
+                                uc_meetingdate_list = [uc_meetingdate1, uc_meetingdate2]
+                                uc_meetingdate_list.sort()
+                                uc_meetingdates = ', '.join(filter(None, (
+                                    af.format_DMY_from_dte(uc_meetingdate_list[0], user_lang, True, True),
+                                    # month_abbrev=True, skip_year=True
+                                    af.format_DMY_from_dte(uc_meetingdate_list[1], user_lang, True, True)
+                                # month_abbrev=True, skip_year=True
+                                )))
+                            else:
+                                uc_meetingdate = uc_meetingdate1 if uc_meetingdate1 else uc_meetingdate2 if uc_meetingdate2 else None
+                                uc_meetingdates = af.format_DMY_from_dte(uc_meetingdate, user_lang, True,
+                                                                         True)  # month_abbrev=True, skip_year=True
+
+                        row['uc_meetingdates'] = uc_meetingdates
+
+                        row['datepublished'] = af.format_DMY_from_dte(row.get('uc_datepublished'), user_lang, True, False) # month_abbrev=True, skip_year=False
+
+                        if logging_on:
+                            logger.debug('    row: ' + str(row))
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+
+            return usercomp_rows
+
+        def get_payment_rows(sel_examyear):
+            # PR2023-07-21
+
+            logging_on = False  # s.LOGGING_ON
+            if logging_on:
+                logger.debug(' ----- get_payment_rows -----')
+            rows = []
+            try:
+                subsub_sql = ''.join((
+                    "SELECT uc.user_id, ",
+                    "CASE WHEN uc.amount > 0 THEN 1 ELSE 0 END AS uc_exam_count, "
+                    "CASE WHEN uc.amount > 0 AND published_id IS NOT NULL THEN 1 ELSE 0 END AS uc_published_count, "
+                    "uc.amount + uc.correction_amount AS uc_amount_plus_corr, ",
+                    "uc.meetings + uc.correction_meetings AS uc_meetings_plus_corr, ",
+                    "uc.compensation AS uc_compensation ",
+
+                    "FROM accounts_usercompensation AS uc ",
+                    "INNER JOIN schools_school AS school ON (school.id = uc.school_id) ",
+
+                    "WHERE school.examyear_id=", str(sel_examyear.pk), "::INT ",
+                ))
+
+                sub_sql = ''.join((
+                    "WITH uc AS (", subsub_sql, ")",
+                    "SELECT uc.user_id, ",
+                    "SUM(uc.uc_exam_count) AS exam_count, ",
+                    "SUM(uc.uc_published_count) AS published_count, ",
+
+                    "SUM(uc.uc_amount_plus_corr) AS sum_amount, ",
+                    "SUM(uc.uc_meetings_plus_corr) AS sum_meetings, ",
+                    "SUM(uc.uc_compensation) / 100 AS sum_compensation ",
+
+                    "FROM uc ",
+                    "GROUP BY uc.user_id"
+                ))
+
+                sql_list = [
+                    "WITH uc AS (", sub_sql, ") ",
+                    "SELECT au.id, au.last_name, ud.idnumber, ud.cribnumber, ud.bankname, ud.bankaccount, ud.beneficiary, ",
+                    "uc.exam_count, uc.published_count, ",
+                    "CASE WHEN uc.published_count = 0 THEN  0 ELSE ",
+                        "CASE WHEN uc.published_count < uc.exam_count THEN 1 ELSE 2 ",
+                            "END END AS published_status, ",
+                    "sum_amount, sum_meetings, sum_compensation ",
+
+                    "FROM accounts_user AS au ",
+                    "INNER JOIN uc ON (uc.user_id = au.id) ",
+                    "INNER JOIN accounts_userdata AS ud ON (ud.user_id = au.id) ",
+
+                    "WHERE au.role=", str(c.ROLE_016_CORR), "::INT ",
+
+                    "ORDER BY LOWER(au.last_name);"
+                    ]
+                sql = ''.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    rows = af.dictfetchall(cursor)
+                    if logging_on and False:
+                        for row in rows:
+                            logger.debug('  row ' + str(row))
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+            return rows
+
+##################
+
+    # - function creates, Ex1 xlsx file based on settings in usersetting
+        response = None
+        req_usr = request.user
+        msg_list = []
+
+    # - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+        permit_list = acc_prm.get_permit_list('page_corrector', req_usr)
+        if logging_on:
+            logger.debug('    permit_list: ' + str(permit_list))
+
+    # - get permit
+        has_permit = acc_prm.has_permit( request, 'page_corrector', ['permit_pay_comp'])
+        if logging_on:
+            logger.debug('    has_permit: ' + str(has_permit))
+        if not has_permit:
+            msg_list.append(str(_("You don't have permission to perform this action.")))
+        else:
+
+    # - get selected examyear from usersettings,
+            # - checks if country is locked and if examyear is missing, not published or locked
+            # - skip allow_not_published when req_usr is admin (ETE) or system
+            sel_examyear, err_lst = acc_view.get_selected_examyear_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('    sel_examyear: ' + str(sel_examyear))
+            if err_lst:
+                border_class = c.HTMLCLASS_border_bg_invalid
+                msg_list.extend(err_lst)
+            elif sel_examyear:
+
+                payment_rows = get_payment_rows(sel_examyear)
+                usercomp_rows = get_usercomp_rows_all_schools(sel_examyear, user_lang)
+
+                if logging_on:
+                    logger.debug('payment_rows: ' + str(payment_rows))
+
+    # +++ create ex1_xlsx
+                save_to_disk = False
+                # just to prevent PyCharm warning on published_instance=published_instance
+                # published_instance = None  # sch_mod.School.objects.get_or_none(pk=None)
+                response, is_saved_to_disk = create_payment_xlsx(
+                    published_instance=None,
+                    sel_examyear=sel_examyear,
+                    payment_rows=payment_rows,
+                    usercomp_rows=usercomp_rows,
+                    save_to_disk=save_to_disk,
+                    request=request,
+                    user_lang=user_lang
+                )
+
+        if logging_on:
+            logger.debug('    response: ' + str(response))
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of UserCompensationDownloadPaymentView
+
+
+@method_decorator([login_required], name='dispatch')
+class UserCompensationDownloadInvoiceView(View):  # PR2023-08-15
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= UserCompensationDownloadInvoiceView ============= ')
+
+        response = None
+        req_usr = request.user
+        msg_list = []
+
+    # - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+    # - get permit
+        has_permit = acc_prm.has_permit( request, 'page_corrector', ['view_invoice'])
+        if not has_permit:
+            msg_list.append(str(_("You don't have permission to perform this action.")))
+        else:
+            pass
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of UserCompensationDownloadInvoiceView
+
+########################################################################
+# === UserdataUploadView ===================================== PR2023-07-20
+@method_decorator([login_required], name='dispatch')
+class UserdataUploadView(View):
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserdataUploadView ===============')
+
+        def update_userdata_instance(instance, upload_dict, request):
+
+            if logging_on:
+                logger.debug(' ------- update_userdata_instance -------')
+                logger.debug('    upload_dict: ' + str(upload_dict))
+                logger.debug('    instance:    ' + str(instance))
+
+            changes_are_saved = False
+            err_list = []
+
+            if instance:
+                save_changes = False
+                for field, new_value in upload_dict.items():
+                    if logging_on:
+                        logger.debug('    field: ' + str(field))
+
+                    if field in (('idnumber', 'cribnumber', 'bankname', 'bankaccount', 'beneficiary')):
+                        saved_value = getattr(instance, field)
+
+                        if new_value != saved_value:
+                            setattr(instance, field, new_value)
+                            save_changes = True
+
+
+                # - save changes
+                if save_changes:
+                    try:
+                        instance.save(request=request)
+                        changes_are_saved = True
+                    except Exception as e:
+                        logger.error(getattr(e, 'message', str(e)))
+                        err_list.append(
+                            acc_prm.errhtml_error_occurred_no_border(e, _('The changes have not been saved.')))
+
+            return changes_are_saved, err_list
+        # - end of update_userdata_instance
+
+        msg_list = []
+        update_wrap = {}
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+            # upload_dict: {'mode': 'update', 'usercompensation_pk': 609, 'uc_meetings': 1}
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get permit - only requsr can make changes on his own userdata record
+            user_pk = upload_dict.get('user_id')
+            has_permit = user_pk and user_pk == request.user.pk
+
+            if logging_on:
+                logger.debug('    upload_dict: ' + str(upload_dict))
+                logger.debug('    user_pk:    ' + str(user_pk))
+                logger.debug('    has_permit:    ' + str(has_permit))
+
+            if not has_permit:
+                msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
+            else:
+                updated_rows = []
+
+# - get variables
+                userdata_pk = upload_dict.get('userdata_id')
+
+# +++  get existing usercompensation_instance
+                userdata_instance = acc_mod.Userdata.objects.get_or_none(pk=userdata_pk)
+                if userdata_instance:
+                    if logging_on:
+                        logger.debug('    userdata_instance: ' + str(userdata_instance))
+# +++ Update usercompensation_instance
+                    changes_are_saved, err_lst = \
+                        update_userdata_instance(
+                            instance=userdata_instance,
+                            upload_dict=upload_dict,
+                            request=request
+                        )
+                    if err_lst:
+                        msg_list.extend(err_lst)
+
+# - create userdata_rows
+                    if changes_are_saved:
+                        updated_pk_list = [userdata_pk]
+                        updated_rows = create_userdata_rows(request=request, updated_pk_list=updated_pk_list)
+                        update_wrap['updated_userdata_rows'] = updated_rows
+
+    # show modmessage when single update
+        if msg_list:
+            update_wrap['msg_html'] = ''.join((
+                "<div class='p-2 ", c.HTMLCLASS_border_bg_invalid, "'>",
+                ''.join(msg_list),
+                "</div>"))
+            if logging_on:
+                logger.debug('msg_list:    ' + str(msg_list))
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of UserdataUploadView
+
+#######################################################
 
 
 def get_usercomp_rows(sel_examyear_pk, sel_schoolbase_pk, upload_dict, user_lang):
@@ -1986,8 +2356,58 @@ def create_usercompensation_rows(sel_examyear, sel_department, sel_lvlbase, requ
 # - end of create_usercompensation_rows
 
 
+def create_userdata_rows(request, updated_pk_list=None):
+    # --- create list of userdata row of this user PR2023-07-18
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_userdata_rows ============= ')
+        logger.debug('    request.user.role: ' + str(request.user.role))
+        logger.debug('    request.user.schoolbase.pk: ' + str(request.user.schoolbase.pk))
+
+    userdata_rows = []
+    try:
+        sql_list = [
+            "SELECT ud.id, ud.user_id, ",
+            "CONCAT('userdata_', ud.id::TEXT) AS mapid, ",
+            "au.last_name, ud.idnumber, ud.cribnumber, ud.bankname, ud.bankaccount, ud.beneficiary, ",
+            "ud.modifiedat, ud.modifiedby_id, modusr.last_name AS modby_name ",
+
+            "FROM accounts_userdata AS ud ",
+            "INNER JOIN accounts_user AS au ON (au.id = ud.user_id) ",
+            "LEFT JOIN accounts_user AS modusr ON (modusr.id = ud.modifiedby_id) ",
+            "WHERE "
+            ]
+        if updated_pk_list:
+            if len(updated_pk_list) == 1:
+                sql_list.extend(("ud.id=", str(updated_pk_list[0]), "::INT;"))
+            else:
+                sql_list.extend(("ud.id IN (SELECT UNNEST(ARRAY", str(updated_pk_list), "::INT[];"))
+        else:
+            sql_list.extend(("ud.user_id=", str(request.user.pk), "::INT;"))
+
+        sql = ''.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            userdata_rows = af.dictfetchall(cursor)
+
+        if logging_on :
+            for row in userdata_rows:
+                logger.debug(' > row: ' + str(row))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('  len  userdata_rows: ' + str(len(userdata_rows)))
+
+    return userdata_rows
+# - end of create_userdata_rows
+
+
 def create_usercomp_agg_rows(sel_examyear, sel_department,  sel_lvlbase, request):
-    # --- create list of all approvals per correctors per exam and calcultae total compensation PR2023-02-25
+    # --- create list of all approvals per correctors per exam and calculate total compensation PR2023-02-25
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_usercomp_agg_rows ============= ')
@@ -2007,13 +2427,11 @@ def create_usercomp_agg_rows(sel_examyear, sel_department,  sel_lvlbase, request
                             "SUBSTRING(u.username, 7) AS username, u.last_name, u.is_active,",
                             "user_sb.code AS user_sb_code,",
 
-                            "depbase.code AS depbase_code,",
-                            "lvlbase.code AS lvlbase_code,",
-                            "exam.version AS exam_version,",
-                            "exam.examperiod AS examperiod,",
+                            "depbase.id AS uc_depbase_id, depbase.code AS depbase_code,",
+                            "lvlbase.id AS uc_lvlbase_id, lvlbase.code AS lvlbase_code,",
+                            "exam.version AS exam_version, exam.examperiod AS examperiod,",
 
-                            "subj.name_nl AS subj_name_nl,",
-                            "subjbase.code AS subjbase_code,",
+                            "subj.name_nl AS subj_name_nl, subjbase.code AS subjbase_code,",
 
                             "SUM(uc.amount) AS uc_amount, SUM(uc.meetings) AS uc_meetings,",
                             "SUM(uc.correction_amount) AS uc_corr_amount, SUM(uc.correction_meetings) AS uc_corr_meetings,",
@@ -2054,7 +2472,8 @@ def create_usercomp_agg_rows(sel_examyear, sel_department,  sel_lvlbase, request
                     sql_list.extend(("AND u.id=", str(request.user.pk), "::INT"))
 
                 sql_list.extend(("GROUP BY u.id, u.username, u.last_name, u.is_active, user_sb.code, exam.id,",
-                                 "exam.version, exam.examperiod, depbase.code, lvlbase.code, subj.name_nl, subjbase.code"))
+                                 "exam.version, exam.examperiod,",
+                                 "depbase.id, depbase.code, lvlbase.id, lvlbase.code, subj.name_nl, subjbase.code"))
 
                 sql = ' '.join(sql_list)
 
@@ -2087,6 +2506,22 @@ def create_usercomp_agg_rows(sel_examyear, sel_department,  sel_lvlbase, request
 
     return usercompensation_agg_rows
 # - end of create_usercomp_agg_rows
+
+
+def create_bankname_rows(sel_examyear):
+    # --- create list of userdata row of this user PR2023-07-20
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_bankname_rows ============= ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+    bankname_rows = sel_examyear.get_examyearsetting_dict(c.KEY_BANKLIST)
+
+    if logging_on:
+        logger.debug(' > bankname_rows: ' + str(bankname_rows) + ' ' + str(type(bankname_rows)) )
+
+    return bankname_rows
+# - end of create_bankname_rows
 
 
 ####################################################
@@ -2400,6 +2835,7 @@ def update_usercompensation(sel_examyear, request):
                     for row in rows:
                         logger.debug('row: ' + str(row))
 
+
     # ++++++++++++++++++++++++++++++++++++++
 
     if request.user.country and request.user.schoolbase and sel_examyear:
@@ -2506,9 +2942,10 @@ def create_excomp_xlsx(published_instance, sel_examyear, sel_school, save_to_dis
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
-        title = ' '.join( ('Ex4', str(sel_examyear), sel_school.base.code, today_dte.isoformat() ) )
+        ex_txt = gettext('Compensation correctors')
+        title = ' '.join( (ex_txt, str(sel_examyear), sel_school.base.code, today_dte.isoformat() ) )
         file_name = title + ".xlsx"
-        worksheet_name = str(_('Ex4'))
+        worksheet_name = str(_('Compensation'))
 
 # - Create an in-memory output file for the new workbook.
         # from https://docs.python.org/3/library/tempfile.html
@@ -2754,4 +3191,382 @@ def create_excomp_xlsx(published_instance, sel_examyear, sel_school, save_to_dis
     # response['Content-Disposition'] = "attachment; filename=" + file_name
     return response, is_saved_to_disk
 # --- end of create_excomp_xlsx
+
+
+#//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def create_payment_xlsx(published_instance, sel_examyear, payment_rows, usercomp_rows, save_to_disk, request, user_lang):  # PR2023-07-21
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_payment_xlsx -----')
+
+    is_saved_to_disk = False
+
+    response = None
+
+    # - get text from examyearsetting
+    # settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
+
+    if payment_rows:
+
+        # PR2021-07-28 changed to file_dir = 'published/'
+        # this one gives path: awpmedia / awpmedia / media / private / published
+        # PR2021-08-06 create different folders for country and examyear
+        # this one gives path: awpmedia / awpmedia / media / private / cur / 2022 / published
+        # published_instance is None when downloading preliminary Ex1 form
+
+        examyear_str = str(sel_examyear.code)
+
+        file_path = None
+        if published_instance:
+
+# ---  create file_path
+            # PR2021-08-07 changed to file_dir = 'country/examyear/published/'
+            # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+            requsr_school = sch_mod.School.objects.get_or_none(
+                base=request.user.schoolbase,
+                examyear=sel_examyear
+            )
+            requsr_schoolcode = requsr_school.base.code if requsr_school.base.code else '---'
+            country_abbrev = sel_examyear.country.abbrev.lower()
+            file_dir = '/'.join((country_abbrev, examyear_str, requsr_schoolcode, 'exfiles'))
+            file_path = '/'.join((file_dir, published_instance.filename))
+            file_name = published_instance.name
+
+            if logging_on:
+                logger.debug('file_dir: ' + str(file_dir))
+                logger.debug('file_name: ' + str(file_name))
+                logger.debug('filepath: ' + str(file_path))
+
+# ---  create file Name and worksheet Name
+        today_dte = af.get_today_dateobj()
+        today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
+        title = ' '.join( ('Compensation payment form', str(sel_examyear), 'dd', today_dte.isoformat() ) )
+        file_name = title + ".xlsx"
+
+# - Create an in-memory output file for the new workbook.
+        # from https://docs.python.org/3/library/tempfile.html
+        temp_file = tempfile.TemporaryFile()
+
+        output = temp_file if save_to_disk else io.BytesIO()
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        #  book = xlsxwriter.Workbook(response, {'in_memory': True})
+        book = xlsxwriter.Workbook(output)
+
+        # --- create format of workbook
+        bold_format = book.add_format({'bold': True})
+        bold_blue = book.add_format({'font_color': 'blue', 'bold': True})
+        normal_blue = book.add_format({'font_color': 'blue'})
+
+        f_comp_caption = awpr_excel.xl_book_add_format(book, font_size=8)
+        f_comp_value = awpr_excel.xl_book_add_format(book, font_size=8, font_color='blue', h_align='right',
+                                                     num_format='num_dig_2')
+        f_exmyear_value = awpr_excel.xl_book_add_format(book, font_color='blue', font_bold=True, h_align='right')
+
+        row_align_left_blue = book.add_format(
+            {'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter', 'border': True})
+        row_align_center_blue = book.add_format(
+            {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
+        row_align_center_blue_num0 = book.add_format(
+            {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True,
+             'num_format': '#,##0'})
+        row_align_right_blue_num2 = book.add_format(
+            {'font_size': 8, 'font_color': 'blue', 'align': 'right', 'valign': 'vcenter', 'border': True,
+             'num_format': '#,##0.00'})
+
+        th_prelim = book.add_format({'bold': True, 'align': 'left', 'valign': 'vcenter', 'text_wrap': True})
+        th_align_left = awpr_excel.xl_book_add_format(book, font_size=8, font_bold=True, v_align='top', text_wrap=True,
+                                                      border=True)
+        th_align_center = awpr_excel.xl_book_add_format(book, font_size=8, font_bold=True, h_align='center',
+                                                        v_align='top', text_wrap=True, border=True)
+        th_align_right = awpr_excel.xl_book_add_format(book, font_size=8, font_bold=True, h_align='right',
+                                                       v_align='top', text_wrap=True, border=True)
+
+        totalrow_align_center_num0 = awpr_excel.xl_book_add_format(book, font_size=8, font_bold=True, h_align='center',
+                                                                   text_wrap=True, border=True, num_format='#,##0')
+        totalrow_align_right_num2 = awpr_excel.xl_book_add_format(book, font_size=8, font_bold=True, h_align='right',
+                                                                  text_wrap=True, border=True, num_format='#,##0.00')
+        totalrow_align_left = awpr_excel.xl_book_add_format(book, font_size=8, font_bold=True, h_align='left',
+                                                            text_wrap=True, border=True)
+
+# ++++++++++++++ worksheet payment ++++++++++++++++++++++++++++++++++
+        worksheet_name = gettext('Total compensation')
+        sheet = book.add_worksheet(worksheet_name)
+
+        sheet.hide_zero()
+
+        header_formats = [th_align_left, th_align_left, th_align_left,
+                          th_align_left, th_align_left, th_align_left,
+                          th_align_center, th_align_center, th_align_center,
+                          th_align_right, th_align_center]
+        row_formats = [row_align_left_blue, row_align_left_blue, row_align_left_blue,
+                       row_align_left_blue, row_align_left_blue, row_align_left_blue,
+                       row_align_center_blue_num0, row_align_center_blue_num0, row_align_center_blue_num0,
+                       row_align_right_blue_num2, row_align_center_blue]
+        totalrow_formats = [totalrow_align_left, totalrow_align_left, totalrow_align_left,
+                            totalrow_align_left, totalrow_align_left, totalrow_align_left,
+                            totalrow_align_center_num0, totalrow_align_center_num0, totalrow_align_center_num0,
+                            totalrow_align_right_num2, totalrow_align_left]
+
+        field_width = [10, 10, 25, 25, 10, 25, 10, 10, 10, 10, 10]
+        field_names = ['idnumber', 'cribnumber', 'last_name', 'bankname', 'bankaccount', 'beneficiary',
+                       'exam_count', 'sum_amount', 'sum_meetings', 'sum_compensation', 'published_status']
+        field_captions = [gettext('ID number'), gettext('CRIB number'), gettext('Name of Second Corrector'),
+                          gettext('Bank'), gettext('Bank account number'), gettext('Name of the account holder'), gettext('Number of different exams'),
+                          gettext('Number of approvals'), gettext('Number of meetings'), gettext('Compensation'), gettext('Submitted by school')]
+
+# --- set column width
+        for i, width in enumerate(field_width):
+            sheet.set_column(i, i, width)
+        row_index = 0
+
+# --- title row
+        title_str = gettext('Compensations second correctors')
+
+        minond_str = gettext('Ministry of Education, Culture, Youth and Sport').upper()
+        sheet.write(row_index, 0, minond_str, bold_format)
+        row_index += 1
+        sheet.write(row_index, 0, title_str, bold_format)
+
+        row_index += 2
+        sheet.write(row_index, 0, gettext('Exam year') + ':', bold_format)
+        sheet.write(row_index, 1, examyear_str, f_exmyear_value)
+        row_index += 2
+
+        col_count = len(field_width)
+
+        if not save_to_disk:
+            prelim_txt = gettext('Compensations second correctors').upper()
+
+            sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
+            row_index += 1
+
+    # print compenastion per exam
+        row_index += 1
+        comp_captions = ( gettext('Compensation first exam'),
+                          gettext('Compensation per following exam'),
+                          gettext('Compensation per meeting'))
+        comp_values = (c.CORRCOMP_FIRST_APPROVAL, c.CORRCOMP_OTHER_APPROVAL, c.CORRCOMP_MEETING_COMP)
+        for i, comp_caption in enumerate(comp_captions):
+            sheet.write(row_index, 0, comp_caption + ':', f_comp_caption)
+            sheet.write(row_index, 2, comp_values[i] / 100, f_comp_value)
+            sheet.write(row_index, 3, gettext('ANG'), f_comp_caption)
+            row_index += 1
+
+        #if has_published_ex1_rows(examyear, sel_school, sel_department):
+        #    exists_txt = str(_('Attention: an Ex1 form has already been submitted. The subjects in that form are not included in this form.'))
+        #    sheet.merge_range(row_index, 0, row_index, col_count - 1, exists_txt, th_exists)
+        #    row_index += 1
+
+# ---  table header row
+        row_index += 1
+        #sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)    first_subject_column = col_count
+
+        for i, field_caption in enumerate(field_captions):
+             sheet.write(row_index, i, field_caption, header_formats[i])
+
+        start_row_index = row_index + 1
+
+        for row in payment_rows:
+            row_index += 1
+            for i, field_name in enumerate(field_names):
+                exc_format = row_formats[i]
+                value = ''
+                if field_name == 'published_status':
+
+                    status = row.get(field_name)
+                    if status == 2:
+                        # fully approved
+                        value = u"\u2B24"  # large solid circle
+                        exc_format = row_align_center_blue
+
+                    elif status == 1:
+                        # partly approved
+                        value = u"\u2B58"  # large outlined circle
+
+                else:
+                    value = row.get(field_name, '')
+                sheet.write(row_index, i, value, exc_format)
+# end of iterate through levels,
+
+
+# ---  table total row
+        row_index += 1
+        #         field_names = ['idnumber', 'cribnumber', 'last_name', 'bankname', 'bankaccount', 'beneficiary',
+        #         'exam_count', 'sum_amount', 'sum_meetings', 'sum_compensation']
+        for i, field_name in enumerate(field_names):
+
+            if field_name in ('exam_count', 'sum_amount', 'sum_meetings', 'sum_compensation'):
+
+                upper_cell_ref = awpr_excel.xl_rowcol_to_cell(start_row_index, i)  # cell_ref: 10,0 > A11
+                lower_cell_ref = awpr_excel.xl_rowcol_to_cell(row_index -1, i)  # cell_ref: 10,0 > A11
+
+                sum_cell_ref = awpr_excel.xl_rowcol_to_cell(row_index, i)  # cell_ref: 10,0 > A11
+
+                formula = ''.join(['=SUM(', upper_cell_ref, ':', lower_cell_ref, ')'])
+                sheet.write_formula(sum_cell_ref, formula, totalrow_formats[i])
+
+            elif field_name == 'last_name':
+                sheet.write(row_index, i, gettext('Total'), totalrow_formats[i])
+
+            else:
+                sheet.write(row_index, i, ' ', totalrow_formats[i])
+                # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+
+    # -  place, date
+        row_index += 2
+        sheet.write(row_index, 0, gettext('Date') + ':')
+        sheet.write(row_index, 1, today_formatted, normal_blue)
+
+# ++++++++++++++ worksheet compensation details ++++++++++++++++++++++++++++++++++
+        sheet = book.add_worksheet(gettext('Compensation details'))
+
+        sheet.hide_zero()
+
+ # --- create format of workbook
+        header_formats = [th_align_left, th_align_left, th_align_left, th_align_center, th_align_center, th_align_left,
+                          th_align_left, th_align_center, th_align_center, th_align_center, th_align_center, th_align_center, th_align_center,
+                          th_align_center, th_align_center]
+        row_formats = [row_align_left_blue, row_align_left_blue,row_align_left_blue,row_align_center_blue, row_align_center_blue, row_align_left_blue,
+                       row_align_left_blue, row_align_center_blue, row_align_center_blue, row_align_center_blue,
+                       row_align_left_blue, row_align_left_blue, row_align_left_blue, row_align_right_blue_num2, row_align_center_blue]
+        totalrow_formats = [totalrow_align_left, totalrow_align_left, totalrow_align_left, totalrow_align_center_num0, totalrow_align_center_num0, totalrow_align_center_num0,
+                            totalrow_align_center_num0, totalrow_align_center_num0, totalrow_align_center_num0,
+                            totalrow_align_center_num0, totalrow_align_center_num0, totalrow_align_center_num0, totalrow_align_center_num0, totalrow_align_right_num2, totalrow_align_center_num0]
+
+        field_width = [25, 8, 12, 8, 8, 25,
+                       10, 8, 10, 10, 10,
+                       10, 10, 10, 10]
+        field_names = ['last_name', 'uc_sb_code', 'uc_school_abbrev', 'uc_depbase_code', 'uc_lvlbase_code', 'subj_name_nl',
+                       'exam_version', 'examperiod', 'uc_amount', 'uc_meetings', 'uc_meetingdates',
+                       'uc_corr_amount', 'uc_corr_meetings', 'uc_compensation', 'datepublished']
+        field_captions = [gettext('Name of Second Corrector'), gettext('School code'), gettext('School'), gettext('Department'), gettext('Learning path'), gettext('Subject'),
+                          gettext('Version'), gettext('Exam period'), gettext('Number of approvals'), gettext('Number of meetings'), gettext('Meeting dates'),
+                          gettext('Correction of approvals'), gettext('Correction of meetings'),
+                          gettext('Compensation'), gettext('Date submitted by school')]
+
+        # --- set column width
+        for i, width in enumerate(field_width):
+            sheet.set_column(i, i, width)
+        row_index = 0
+        # --- title row
+        # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
+        title_str = gettext('Compensations second correctors')
+
+        # minond_str = gettext('MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT')
+        minond_str = gettext('Ministry of Education, Culture, Youth and Sport').upper()
+        sheet.write(row_index, 0, minond_str, bold_format)
+        row_index += 1
+        sheet.write(row_index, 0, title_str, bold_format)
+
+        row_index += 2
+
+        sheet.write(row_index, 0, gettext('Exam year') + ':', bold_format)
+        sheet.write(row_index, 1, examyear_str, f_exmyear_value)
+        row_index += 2
+
+        col_count = len(field_width)
+
+        if not save_to_disk:
+            prelim_txt = gettext('Compensations second correctors').upper()
+
+            sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
+            row_index += 1
+
+        # print compenastion per exam
+        row_index += 1
+        comp_captions = (gettext('Compensation first exam'),
+                         gettext('Compensation per following exam'),
+                         gettext('Compensation per meeting'))
+        comp_values = (c.CORRCOMP_FIRST_APPROVAL, c.CORRCOMP_OTHER_APPROVAL, c.CORRCOMP_MEETING_COMP)
+        for i, comp_caption in enumerate(comp_captions):
+            sheet.write(row_index, 0, comp_caption + ':', f_comp_caption)
+            sheet.write(row_index, 1, comp_values[i] / 100, f_comp_value)
+            sheet.write(row_index, 2, gettext('ANG'), f_comp_caption)
+            row_index += 1
+
+        # if has_published_ex1_rows(examyear, sel_school, sel_department):
+        #    exists_txt = str(_('Attention: an Ex1 form has already been submitted. The subjects in that form are not included in this form.'))
+        #    sheet.merge_range(row_index, 0, row_index, col_count - 1, exists_txt, th_exists)
+        #    row_index += 1
+
+        # ---  table header row
+        row_index += 1
+        # sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)    first_subject_column = col_count
+
+        for i, field_caption in enumerate(field_captions):
+            sheet.write(row_index, i, field_caption, header_formats[i])
+
+        start_row_index = row_index + 1
+
+        for row in usercomp_rows:
+            row_index += 1
+            for i, field_name in enumerate(field_names):
+                exc_format = row_formats[i]
+
+                value = row.get(field_name, '')
+                sheet.write(row_index, i, value, exc_format)
+    # ---  table total row
+        row_index += 1
+
+        for i, field_name in enumerate(field_names):
+            # logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
+            value = ''
+
+            if field_name in ('uc_amount', 'uc_meetings', 'uc_corr_amount', 'uc_corr_meetings', 'uc_compensation'):
+
+                upper_cell_ref = awpr_excel.xl_rowcol_to_cell(start_row_index, i)  # cell_ref: 10,0 > A11
+                lower_cell_ref = awpr_excel.xl_rowcol_to_cell(row_index - 1, i)  # cell_ref: 10,0 > A11
+
+                sum_cell_ref = awpr_excel.xl_rowcol_to_cell(row_index, i)  # cell_ref: 10,0 > A11
+
+                formula = ''.join(['=SUM(', upper_cell_ref, ':', lower_cell_ref, ')'])
+                sheet.write_formula(sum_cell_ref, formula, totalrow_formats[i])
+
+            elif field_name == 'last_name':
+                sheet.write(row_index, i, gettext('Total'), totalrow_formats[i])
+
+            else:
+                sheet.write(row_index, i, ' ', totalrow_formats[i])
+
+ # -  place, date
+        row_index += 2
+        sheet.write(row_index, 0, gettext('Date') + ':')
+        sheet.write(row_index, 1, today_formatted, normal_blue)
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        book.close()
+
+# +++ save file to disk
+        if save_to_disk:
+            excel_file = File(temp_file)
+
+            published_instance.file.save(file_path, excel_file)
+
+            # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
+            published_instance.save(request=request)
+            is_saved_to_disk = True
+
+            logger.debug('file_path: ' + str(file_path))
+            # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
+            # stored in dir:
+            logger.debug('published_instance.file: ' + str(published_instance.file))
+        else:
+    # Rewind the buffer.
+            output.seek(0)
+
+        # Set up the Http response.
+            response = HttpResponse(
+                output,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+
+            response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+    # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # response['Content-Disposition'] = "attachment; filename=" + file_name
+    return response, is_saved_to_disk
+# --- end of create_payment_xlsx
 

@@ -20,6 +20,7 @@ from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
 from awpr import validators as awpr_val
+from awpr import logs as awpr_log
 
 from grades import validators as grade_val
 from grades import views as grade_view
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 class UploadImportSettingView(View):   # PR2020-12-05
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= UploadImportSettingView ============= ')
 
@@ -84,7 +85,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
                     sel_schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=sel_schoolbase_pk)
 
                     sel_depbase_pk = new_setting_dict.get('sel_depbase_pk')
-                    sel_depbase = sch_mod.Schoolbase.objects.get_or_none(pk=sel_depbase_pk)
+                    sel_depbase = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk)
 
                     if logging_on:
                         logger.debug('setting_key: ' + str(setting_key))
@@ -119,7 +120,12 @@ class UploadImportSettingView(View):   # PR2020-12-05
         # get updated stored_setting from database, return to page to update mimp_stored
                     request_item_setting = {'setting_key': setting_key}
                     update_wrap['schoolsetting_dict'] = sch_fnc.get_schoolsettings(
-                        request, request_item_setting, sel_examyear, sel_schoolbase, sel_depbase)
+                        request=request,
+                        request_item_setting=request_item_setting,
+                        sel_examyear=sel_examyear,
+                        sel_schoolbase=sel_schoolbase,
+                        sel_depbase=sel_depbase
+                    )
 
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of UploadImportSettingView
@@ -183,8 +189,7 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23 PR2021-07-17
 
 
 @method_decorator([login_required], name='dispatch')
-class \
-        UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
+class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -802,19 +807,21 @@ class UploadImportStudentView(View):
         # - get double_idnumber_list, a list of idnumbers/lastname/firstname that occur multiple times in data_list
                         double_idnumber_list = stud_val.get_double_idnumberlist_from_uploadfile(data_list)
 
-        # - get list of diplomanumber and gradelistnumber, that occur multiple times in data_list
-                        double_diplomanumber_list, double_gradelistnumber_list = \
-                            stud_val.get_double_diplomanumber_gradelistnumber_from_uploadfile(data_list)
-
         # - get id_number_list, the list of idnumbers of this school
                         # idnumber_list and examnumber_list will be filled in upload_student_from_datalist
                         # without a row the reference to these lists get lost. Cost me 2 hours to figure this out. PR2022-08-22
                         idnumber_list, examnumber_list = [], []
 
+        # - get list of diplomanumber and gradelistnumber, that occur multiple times in data_list
+                        # PR2023-08-12 not in use from 2023
+                        # was: double_diplomanumber_list, double_gradelistnumber_list = \
+                        # was:     stud_val.get_double_diplomanumber_gradelistnumber_from_uploadfile(data_list)
+
         # - get diplomanumber_list, gradelistnumber_list, the list of examnumbers of this school
+                        # PR2023-08-12 not in use from 2023
                         # new values will be added to the value_list in upload_student_from_datalist
-                        diplomanumber_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database('diplomanumber', sel_school)
-                        gradelistnumber_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database('gradelistnumber', sel_school)
+                        # was: diplomanumber_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database('diplomanumber', sel_school)
+                        # was: gradelistnumber_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database('gradelistnumber', sel_school)
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # +++++ loop through data_list
@@ -856,12 +863,8 @@ class UploadImportStudentView(View):
                                         department=sel_department,
                                         is_test=is_test,
                                         double_idnumber_list=double_idnumber_list,
-                                        double_diplomanumber_list=double_diplomanumber_list,
-                                        double_gradelistnumber_list=double_gradelistnumber_list,
                                         idnumber_list=idnumber_list,
                                         examnumber_list=examnumber_list,
-                                        diplomanumber_list=diplomanumber_list,
-                                        gradelistnumber_list=gradelistnumber_list,
                                         log_list=log_list,
                                         request=request
                                     )
@@ -908,11 +911,9 @@ class UploadImportStudentView(View):
 
 # ========  upload_student_from_datalist  =======
 def upload_student_from_datalist(data_dict, examyear, school, department, is_test,
-                                 double_idnumber_list, double_diplomanumber_list, double_gradelistnumber_list,
-                                 idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
-                                 log_list, request):
+                                 double_idnumber_list,  idnumber_list, examnumber_list,  log_list, request):
 
-    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-21 PR2023-01-16
+    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-21 PR2023-01-16 PR2023-08-12
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_student_from_datalist  --------------------')
@@ -1012,20 +1013,22 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
             double_entrieslist=double_idnumber_list,
             error_list=error_list
         )
-    if not has_error and not is_diff_dep_student:
-        has_error = stud_val.validate_double_entries_in_uploadfile(
-            caption=str(_('Diploma number')),
-            lookup_value=data_dict.get('diplomanumber'),
-            double_entrieslist=double_diplomanumber_list,
-            error_list=error_list
-        )
-    if not has_error and not is_diff_dep_student:
-        has_error = stud_val.validate_double_entries_in_uploadfile(
-            caption=str(_('Gradelist number')),
-            lookup_value=data_dict.get('gradelistnumber'),
-            double_entrieslist=double_gradelistnumber_list,
-            error_list=error_list
-        )
+
+    # PR2023-08-12 not in use from 2023
+        # if not has_error and not is_diff_dep_student:
+            #     has_error = stud_val.validate_double_entries_in_uploadfile(
+            #         caption=str(_('Diploma number')),
+            #         lookup_value=data_dict.get('diplomanumber'),
+            #         double_entrieslist=double_diplomanumber_list,
+            #         error_list=error_list
+        #     )
+        # if not has_error and not is_diff_dep_student:
+            #     has_error = stud_val.validate_double_entries_in_uploadfile(
+            #         caption=str(_('Gradelist number')),
+            #     lookup_value=data_dict.get('gradelistnumber'),
+            #     double_entrieslist=double_gradelistnumber_list,
+            #     error_list=error_list
+        #  )
 
 # - validate length of name firstname prefix
     if not has_error and not is_diff_dep_student:
@@ -1041,7 +1044,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
 # - lookup student in database
        # either student, not_found or has_error is trueish
-        student, not_found, msg_err = \
+        student, not_found, err_list = \
             stud_val.lookup_student_by_idnumber_nodots(
                 school=school,
                 department=department,
@@ -1050,9 +1053,9 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
                 found_is_error=True
             )
 
-        if msg_err:
+        if err_list:
             has_error = True
-            error_list.append(str(msg_err))
+            error_list.extend(err_list)
 
         if logging_on:
             student_pk = student.pk if student else 'None'
@@ -1129,7 +1132,8 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
                 sctbase_pk=student_sctbase_pk,
                 request=request,
                 found_is_error=True, # was: False
-                skip_save=is_test
+                skip_save=is_test,
+                is_import=True
             )
             #student = stud_view.create_student_instance(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
             if logging_on:
@@ -1176,14 +1180,13 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
                     upload_dict=data_dict,
                     idnumber_list=idnumber_list,
                     examnumber_list=examnumber_list,
-                    diplomanumber_list=diplomanumber_list,
-                    gradelistnumber_list=gradelistnumber_list,
                     msg_list=messagesNIU,
                     error_list=error_list,
                     err_fields=[],  # err_fields is only used in update student
                     log_list=update_list,
                     request=request,
-                    skip_save=is_test
+                    skip_save=is_test,
+                    is_import=True
                 )
 
             append_dict = {'created': True} if is_new_student else {}
@@ -1760,8 +1763,16 @@ def upload_username_from_datalist(sel_examyear_instance, data_dict, double_usern
                     new_user.save()
                     new_user_pk = new_user.pk
 
-    # add user_allowed record with usergroups PR2023-01-29
+    # add userdata record PR2023-07-18
                     now_utc = timezone.now()
+                    new_user_allowed = acc_mod.Userdata(
+                        user=new_user,
+                        modifiedby=request.user,
+                        modifiedat=now_utc
+                    )
+                    new_user_allowed.save()
+
+    # add user_allowed record with usergroups PR2023-01-29
                     new_user_allowed = acc_mod.UserAllowed(
                         user=new_user,
                         examyear=sel_examyear_instance,
@@ -3021,7 +3032,8 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
     if not has_error:
         log_list.append(idnumber_nodots + '  ' + student.fullname + ' ' + str(student.scheme))
 
-        import_pws_title_or_subjects = ('pws_title' in data_dict or 'pws_subjects' in data_dict)
+        import_pws_title = data_dict.get('pws_title')
+        import_pws_subjects = data_dict.get('pws_subjects')
 
         # mapped_subjectbase_pk_dict = { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code, has_pws] }, ... }
         # mapped_subjectbase_pk_dict: {249: {140: [2070, 'sp', False], 133: [2054, 'ne', False],
@@ -3107,13 +3119,16 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
             # - add studentsubject  - schemeitem_pk is the subject with the lowest subjecttype sequence
                                 messages = []
                                 err_list = []
+
                                 studsubj = stud_view.create_studsubj(
                                     student=student,
                                     schemeitem=schemeitem,
                                     messages=messages,
                                     error_list=err_list,
                                     request=request,
-                                    skip_save=is_test)
+                                    skip_save=is_test,
+                                    is_import=True
+                                )
 
                                 if studsubj:
                                     has_created_studsubj = True
@@ -3159,19 +3174,17 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
 
 
 # +++ add pws_title pws_subjects ++++++++++++++++++++++++++++++++++++++
-        if import_pws_title_or_subjects:
+        if import_pws_title or import_pws_subjects:
 
             caption_txt = c.STRING_SPACE_05 + (c.STRING_SPACE_10)[:8]
-            upload_pws_title = data_dict.get('pws_title')
-            upload_pws_subjects = data_dict.get('pws_subjects')
 
             not_added_str = str(_("Assignment info will not be added.")) \
                 if is_test else str(_("Assignment info is not added."))
 
             logger.debug('-----------> has_pws_subjbase_pk: ' + str(has_pws_subjbase_pk))
             logger.debug('-----------> has_multiple_pws_subjects: ' + str(has_multiple_pws_subjects))
-            logger.debug('-----------> upload_pws_title: ' + str(upload_pws_title))
-            logger.debug('-----------> upload_pws_subjects: ' + str(upload_pws_subjects))
+            logger.debug('-----------> import_pws_title: ' + str(import_pws_title))
+            logger.debug('-----------> import_pws_subjects: ' + str(import_pws_subjects))
 
             if has_multiple_pws_subjects:
                 log_list.append(''.join( (caption_txt, not_added_str)))
@@ -3199,29 +3212,28 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                     logger.debug('-----------> saved_pws_title: ' + str(saved_pws_title))
                     logger.debug('-----------> saved_pws_subjects: ' + str(saved_pws_subjects))
 
-
                     # only save if value has changed, skip if upload_pws has no value
                     pws_has_changed = False
-                    if upload_pws_title:
+                    if import_pws_title:
     # check length of title and pws_subjects
-                        err_list = stud_val.validate_studsubj_pws_title_subjects_length('pws_title', upload_pws_title)
+                        err_list = stud_val.validate_studsubj_pws_title_subjects_length('pws_title', import_pws_title)
                         if err_list:
                             for err_txt in err_list:
                                 log_list.append(''.join((caption_txt, str(err_txt))))
 
-                        elif upload_pws_title != saved_pws_title:
-                            studsubj.pws_title = upload_pws_title
+                        elif import_pws_title != saved_pws_title:
+                            studsubj.pws_title = import_pws_title
                             pws_has_changed = True
                             logger.debug('-----------> pws_title_has_changed: ' + str(pws_has_changed))
 
-                    if upload_pws_subjects:
-                        err_list = stud_val.validate_studsubj_pws_title_subjects_length('pws_subjects', upload_pws_title)
+                    if import_pws_subjects:
+                        err_list = stud_val.validate_studsubj_pws_title_subjects_length('pws_subjects', import_pws_title)
                         if err_list:
                             for err_txt in err_list:
                                 log_list.append(''.join((caption_txt, str(err_txt))))
 
-                        elif upload_pws_subjects != saved_pws_subjects:
-                            studsubj.pws_subjects = upload_pws_subjects
+                        elif import_pws_subjects != saved_pws_subjects:
+                            studsubj.pws_subjects = import_pws_subjects
                             pws_has_changed = True
                             logger.debug('-----------> pws_subjects_has_changed: ' + str(pws_has_changed))
 
@@ -3237,6 +3249,12 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                         else:
                             studsubj.save(request=request)
                             log_list.append(''.join( (caption_txt, str(_("Assignment info is added.")))))
+                            updated_fields = []
+                            if import_pws_title:
+                                updated_fields.append(import_pws_title)
+                            if import_pws_subjects:
+                                updated_fields.append(import_pws_subjects)
+                            awpr_log.savetolog_studentsubject(studsubj.pk, 'u', request, updated_fields)
                         # add field_dict to studsubj_dict
                            # studsubj_dict[field] = field_dict
         # +++ end of add pws_title pws_subjects ++++++++++++++++++++++++++++++++++++++
@@ -3993,7 +4011,8 @@ def update_grade_batch(tobe_updated_dict, sel_db_field, request):  #PR2022-02-03
 
                         if row[1] not in updated_studsubj_pk_list:
                             updated_studsubj_pk_list.append(row[1])
-                        #row: (61180, '7.1')
+                # PR2023-08-15 TODO: batch savetolog
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 

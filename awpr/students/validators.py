@@ -83,6 +83,9 @@ def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_sch
     # PR2021-09-05 PR2023-01-19
     # function looks up matching students in previous year(s)
 
+    # PR2023-08-10 use from difflib import SequenceMatcher
+    # from https://stackoverflow.com/questions/17388213/find-the-similarity-metric-between-two-strings
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- lookup_multiple_occurrences ----------- ')
@@ -299,7 +302,7 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
     return firstinrange_examyear_int, sorted_idnumber_list
 # - end of get_idnumbers_with_multiple_occurrence
 
-
+# NOT IN USE
 def link_students_with_multiple_occurrences(dictlist):  # PR2023-01-18
 
     logging_on = s.LOGGING_ON
@@ -311,7 +314,7 @@ def link_students_with_multiple_occurrences(dictlist):  # PR2023-01-18
 # ########################### validate students ##############################
 
 def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, upload_fullname, found_is_error):
-    # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21  PR2021-09-22 PR2022-08-21
+    # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21  PR2021-09-22 PR2022-08-21 PR2022-08-12
     # called before creating new student, by upload_student_from_datalist and create_student
     # function searches for existing student by idnumber, only in this school and this examyear
     # if student exists in other schools is checked by StudentLinkStudentView
@@ -319,7 +322,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 
     # this one is not used for uploading subjects and grade - they lookup idnumber in students_dict_with_subjbase_pk_list
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- lookup_student_by_idnumber_nodots ----------- ')
         logger.debug('--- school:           ' + str(school))
@@ -329,7 +332,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 
     student = None
     not_found = False
-    err_str = None
+    err_list = []
 
     # msg_err already given when id is blank or too long ( in stud_val.get_idnumber_nodots_stripped_lower)
     if idnumber_nodots:
@@ -362,14 +365,14 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
             if row.department_id == department.pk:
                 # return error when creating single student
                 if found_is_error:
-                    full_name = stud_fnc.get_firstname_prefix_lastname(
-                        last_name=row.lastname or '',
-                        first_name=row.firstname or '',
-                        prefix=row.prefix or ''
+                    full_name = stud_fnc.get_full_name(
+                        last_name=row.lastname,
+                        first_name=row.firstname,
+                        prefix=row.prefix
                     )
-                    err_str = '<br>'.join((
-                        str(_("%(cpt)s '%(val)s' already exists in this department.") % msg_keys),
-                        str(_("%(cand)s has this ID number.") % {'cand': full_name})
+                    err_list.extend((
+                        gettext("%(cpt)s '%(val)s' already exists in this department.") % msg_keys,
+                        gettext("%(cand)s has this ID number.") % {'cand': full_name}
                     ))
                 else:
                     # return student when importing, to update student info PR2021-08-23
@@ -380,7 +383,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
                 # in evening school student can do exam in two different departments at the same time
                 # info from Richard Westerink, confirmed by Nancy Josephina August 2021
                 if not school.iseveningschool and not school.islexschool:
-                    err_str = str(_("%(cpt)s '%(val)s' already exists in a different department.") % msg_keys)
+                    err_list.append(gettext("%(cpt)s '%(val)s' already exists in a different department.") % msg_keys)
                 else:
                     not_found = True
 
@@ -404,21 +407,21 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 
     # - return error if both students exist in this this or other department: return error
             if student is None:
-                err_str = get_error_multiple_students(rows, department, msg_keys)
+                err_list.append(get_error_multiple_students(rows, department, msg_keys))
             elif found_is_error:
-                err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
+                err_list.append(gettext("%(cpt)s '%(val)s' already exists.") % msg_keys)
 
 # - return error if multiple students found (2 or more in dayschool, 3 or more in eveningschool or lexschool)
         else:
-            err_str = get_error_multiple_students(rows, department, msg_keys)
+            err_list.append(get_error_multiple_students(rows, department, msg_keys))
 
         if logging_on:
             logger.debug('student: ' + str(student))
             logger.debug('not_found: ' + str(not_found))
-            logger.debug('err_str: ' + str(err_str))
+            logger.debug('err_list: ' + str(err_list))
             logger.debug('----------- end of lookup_student_by_idnumber_nodots ---- ')
 
-    return student, not_found, err_str
+    return student, not_found, err_list
 # --- end of lookup_student_by_idnumber_nodots
 
 
@@ -833,7 +836,7 @@ def get_is_sxm_student(student_instance):  # PR 2022-09-01
 def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperiod=None):
     # PR2022-02-15 don't check on submitted studsubj, only on submitted grades
     # PR2022-03-05 used in remove bis_exam in student page
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- validate_submitted_locked_grades ----- ')
@@ -2025,41 +2028,6 @@ def validate_double_schoolcode_email_in_uploadfile(schoolcode, email, double_ent
 # - end of validate_double_schoolcode_username_in_uploadfile
 
 
-# ========  get_double_diplomanumber_gradelistnumber_from_uploadfile  ======= PR2022-06-26
-def get_double_diplomanumber_gradelistnumber_from_uploadfile(data_list):
-    # function returns list of diplomanumber and gradelistnumber, that occur multiple times in data_list
-
-    diplomanumber_list = []
-    gradelistnumber_list = []
-    double_diplomanumber_list = []
-    double_gradelistnumber_list = []
-
-    for data_dict in data_list:
-        diplomanumber = data_dict.get('diplomanumber')
-
-        if diplomanumber:
-            if not isinstance(diplomanumber, str):
-                diplomanumber = str(diplomanumber)
-
-            if diplomanumber not in diplomanumber_list:
-                diplomanumber_list.append(diplomanumber)
-            elif diplomanumber not in double_diplomanumber_list:
-                double_diplomanumber_list.append(diplomanumber)
-
-        gradelistnumber = data_dict.get('gradelistnumber')
-        if gradelistnumber:
-            if not isinstance(gradelistnumber, str):
-                gradelistnumber = str(gradelistnumber)
-
-            if gradelistnumber not in gradelistnumber_list:
-                gradelistnumber_list.append(gradelistnumber)
-            elif diplomanumber not in double_gradelistnumber_list:
-                double_gradelistnumber_list.append(gradelistnumber)
-
-    return double_diplomanumber_list, double_gradelistnumber_list
-# - end of get_double_diplomanumber_gradelistnumber_from_uploadfile
-
-
 # ========  get_double_idnumberlist_from_uploadfile  ======= PR2021-06-14 PR2021-07-17 PR2022-01-04
 def get_double_idnumberlist_from_uploadfile(data_list):
     # function returns list of valid idnumbers, that occur multiple times in data_list
@@ -2301,7 +2269,7 @@ def validate_student_name_length(lastname_stripped, firstname_stripped, prefix_s
 
 def validate_length(caption, input_value, max_length, blank_allowed, hide_value_in_msg=False):
     #  PR2021-08-05 PR2022-06-29 PR2022-09-28
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- validate_length ----------- ')
         logger.debug('    input_value: ' + str(input_value))
@@ -2467,7 +2435,7 @@ def validate_thumbrule_allowed(studsubj_instance, si_dict):
     # WARNING : calc_result uses schemeitem.thumb_rule + studsubj.is_thumbrule
     # must also set thumb_rule in schemeitem
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_thumbrule_allowed -------')
         logger.debug('    studsubj_instance: ' + str(studsubj_instance))
@@ -2542,7 +2510,7 @@ def validate_thumbrule_allowed(studsubj_instance, si_dict):
 
 
 def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08 PR2023-06-14
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_extra_nocount_allowed -------')
         logger.debug('    studsubj_instance: ' + str(studsubj_instance))
@@ -2603,3 +2571,41 @@ def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08 PR2023-06
 
     return err_list
 # --- end of validate_extra_nocount_allowed
+
+"""
+NOT IN USE
+# ========  get_double_diplomanumber_gradelistnumber_from_uploadfile  ======= PR2022-06-26
+def get_double_diplomanumber_gradelistnumber_from_uploadfile(data_list):
+    # function returns list of diplomanumber and gradelistnumber, that occur multiple times in data_list
+
+    diplomanumber_list = []
+    gradelistnumber_list = []
+    double_diplomanumber_list = []
+    double_gradelistnumber_list = []
+
+    for data_dict in data_list:
+        diplomanumber = data_dict.get('diplomanumber')
+
+        if diplomanumber:
+            if not isinstance(diplomanumber, str):
+                diplomanumber = str(diplomanumber)
+
+            if diplomanumber not in diplomanumber_list:
+                diplomanumber_list.append(diplomanumber)
+            elif diplomanumber not in double_diplomanumber_list:
+                double_diplomanumber_list.append(diplomanumber)
+
+        gradelistnumber = data_dict.get('gradelistnumber')
+        if gradelistnumber:
+            if not isinstance(gradelistnumber, str):
+                gradelistnumber = str(gradelistnumber)
+
+            if gradelistnumber not in gradelistnumber_list:
+                gradelistnumber_list.append(gradelistnumber)
+            elif diplomanumber not in double_gradelistnumber_list:
+                double_gradelistnumber_list.append(gradelistnumber)
+
+    return double_diplomanumber_list, double_gradelistnumber_list
+# - end of get_double_diplomanumber_gradelistnumber_from_uploadfile
+
+"""

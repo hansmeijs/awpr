@@ -433,11 +433,23 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Number_meetings'] = _('Number of meetings')
         dict['Number_approvals_2lines'] = _('Number of\napprovals')
         dict['Number_meetings_2lines'] = _('Number of\nmeetings')
+        dict['Correction_approvals'] = _('Correction of approvals')
         dict['Correction_approvals_2lines'] = _('Correction of\napprovals')
+        dict['Correction_meetings'] = _('Correction of meetings')
         dict['Correction_meetings_2lines'] = _('Correction of\nmeetings')
         dict['Compensation'] = _('Compensation')
 
         dict['Compensation_2lines'] = _('Compen-\nsation')
+
+        dict['Personal_data'] = _('Personal data')
+        dict['Name'] = _('Name')
+        dict['ID_number'] = TXT_IDnumber
+        dict['CRIB_number'] = _('CRIB number')
+        dict['CRIB_number_2lines'] = _('CRIB\nnumber')
+        dict['Bank_name'] = _('Bank name')
+        dict['Bankaccount_number'] = _('Bankaccount number')
+        dict['Bankaccount_number_2lines'] = _('Bankaccount\nnumber')
+        dict['Beneficiary_name'] = _('Beneficiary name')
 
         dict['Version'] = _('Version')
         dict['Exam_period'] = _('Exam period')
@@ -478,6 +490,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Preliminary_compensation_form'] = _('Preliminary %(form)s') % {'form': _('compensation form')}
         dict['The_preliminary_compensation_form'] = _("The preliminary %(form)s form") % {'form': gettext('Compensation').lower()}
 
+        dict['Download_payment_form'] = _('Download payment form')
+        dict['The_payment_form'] = _('The payment form')
+
+        dict['Download_invoice'] = _('Download invoice')
+        dict['The_invoice'] = _('The invoice')
+
         dict['MAC_info'] ={
             'checking_compensations': _('AWP is checking the compensations'),
             'approving_compensations': _('AWP is approving the compensations'),
@@ -485,6 +503,23 @@ def get_locale_dict(table_dict, user_lang, request):
             'Creating_comp_form': _("AWP is creating the compensation form"),
 
             'sending_verifcode': TXT_Sending_verifcode,
+        }
+
+        dict['msg_userdata'] = {
+            'idnumber': _("Enter your ID number without dots."),
+            'bankname': _("Select a bank from the list or enter the name of your bank."),
+            'The_idnumber': _('The ID number')
+        }
+
+        dict['err_userdata'] = {
+            'idnumber': _('The ID number'),
+            'cribnumber': _('The CRIB number'),
+            'bankname': _('The name of your bank'),
+            'bankaccount': _('The bankaccount number'),
+            'beneficiary': _('The name of the account holder'),
+            'cannot_be_blank': _(' cannot be blank.'),
+            'is_not_valid': _(' is not valid.'),
+            'mustbe_whole_number': _(' must be a whole number.')
         }
 
 
@@ -865,7 +900,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
-        dict['ID_number'] = _('ID number')
+        dict['ID_number'] = TXT_IDnumber
 
         dict['Birthdate'] = _('Birthdate')
         dict['Country_of_birth'] = _('Country of birth')
@@ -1472,7 +1507,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
-        dict['ID_number'] = _('ID number')
+        dict['ID_number'] = TXT_IDnumber
         dict['Exam'] = _('Exam')
         dict['Select_exam'] = _("Select exam")
 
@@ -2161,6 +2196,8 @@ TXT_Organization_twolines = _('Organi-\nzation')
 
 TXT_Examnumber = _('Exam number')
 TXT_Examnumber_twolines = _('Exam\nnumber')
+
+TXT_IDnumber = _('ID number')
 
 TXT_Abbreviation_twolines = _('Abbre-\nviation')
 

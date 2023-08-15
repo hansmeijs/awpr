@@ -1201,8 +1201,13 @@ def system_updates(examyear, request):
 # PR2021-03-26 run this to update text in ex-forms, when necessary
     update_library_in_awpr_lib(examyear, request)
 
+
+# PR2023-07-18 fill banklist in examyearsetting of examyear 2023
+    fillBanklistONCEONLY(request)
+    fillUserdataONCEONLY(request)
+
 # PR2023-05-01 add usergroup 'wolf' and archive to all users with usergroup 'edit'
-    add_usergroup_wolf(request)
+    #add_usergroup_wolf(request)
 
 # function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
     #add_usergroup_msgsend_msgreceive_ONCEONLY(request)
@@ -1355,6 +1360,111 @@ def update_library_in_awpr_lib(examyear, request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
+
+##########################
+
+
+# add banks to examyearsetting PR2023-07-18
+def fillBanklistONCEONLY(request):
+    #  PR2023-07-18 one time function fills list of banks in  examyearsetting
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- fillBanklistONCEONLY -------')
+
+    try:
+        name = 'fill_banklist'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+
+        if not exists:
+
+            banklist_cur = (
+                "Algemene Spaar- en Kredietcoöperatie ACU",
+                "Banco di Caribe N.V.",
+                "Maduro & Curiel's Bank N.V.",
+                "Orco Bank N.V.",
+                "PSB Bank N.V.",
+                "RBC Royal Bank N.V.",
+                "Vidanova Bank N.V."
+                )
+            banklist_sxm = (
+                "Banco di Caribe N.V.",
+                "First Caribbean International Bank, CIBC",
+                "Orco Bank N.V.",
+                "RBC Royal Bank N.V.",
+                "Republic Bank Sint Maarten N.V.",
+                "The Windward Islands Bank Ltd."
+                )
+
+            examyears = sch_mod.Examyear.objects.filter(
+                code=2023
+                )
+            for examyear in examyears:
+                is_sxm = examyear.country.abbrev == 'Sxm'
+                banklist = banklist_sxm if is_sxm else banklist_cur
+                examyear.set_examyearsetting_dict(c.KEY_BANKLIST, banklist)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    else:
+# - add function to systemupdate, so it won't run again
+        systemupdate = sch_mod.Systemupdate(
+            name=name
+        )
+        systemupdate.save(request=request)
+        if logging_on:
+            logger.debug('systemupdate: ' + str(systemupdate))
+# -end of fillBanklistONCEONLY
+
+
+# add users to table Userdata PR2023-07-18
+def fillUserdataONCEONLY(request):
+    # PR2023-07-18 one time function fills table userdata - 1 for each user
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- fillUserdataONCEONLY -------')
+
+    name = 'fill_userdata'
+    exists = sch_mod.Systemupdate.objects.filter(
+        name=name
+    ).exists()
+    if logging_on:
+        logger.debug('exists: ' + str(exists))
+
+    if not exists:
+        try:
+            modifiedat_str = ''.join(("'", str(timezone.now()), "'"))
+            sql = ' '.join((
+                "INSERT INTO accounts_userdata(user_id, modifiedat)",
+                "SELECT id, ", modifiedat_str,
+                "FROM accounts_user",
+                "RETURNING id;"
+            ))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                if logging_on:
+                    logger.debug('    rows: ' + str(cursor.fetchall()))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+
+   # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+# -end of fillUserdataONCEONLY
+
+##########################
 
 
 def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
@@ -3085,9 +3195,11 @@ def get_admin_name_capitalized(requsr_or_examyear_instance):
     return capitalize_first_char(str(get_admin_name(requsr_or_examyear_instance)))
 
 def get_admin_name(requsr_or_examyear_instance):
-    #PR2023-05-28
-    is_sxm = requsr_or_examyear_instance.country.abbrev.lower() == 'sxm' \
-            if requsr_or_examyear_instance and requsr_or_examyear_instance.country else False
+    #PR2023-05-28 PR2023-07-21
+    is_sxm = True if requsr_or_examyear_instance and \
+                    requsr_or_examyear_instance.country and \
+                    requsr_or_examyear_instance.country.abbrev.lower() == 'sxm' \
+        else False
     return _('the Division of Examinations') if is_sxm else _('the ETE')
 
 def get_country_instance_by_abbrev(abbrev):

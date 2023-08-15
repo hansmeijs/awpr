@@ -23,9 +23,9 @@ from awpr import constants as c
 from awpr import settings as s
 from awpr import menus as awpr_menu
 from awpr import functions as af
-from awpr import downloads as dl
 from awpr import excel as awpr_excel
 from awpr import library as awpr_lib
+from  awpr import logs as awpr_log
 
 from schools import models as sch_mod
 from schools import views as sch_view
@@ -193,7 +193,7 @@ class GradeBlockView(View):  # PR2022-04-16 PR2023-04-08
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                err_html = acc_prm.msghtml_error_occurred_with_border(e, _('This CVTE exam can not be deleted.'))
+                err_html = acc_prm.errhtml_error_occurred_with_border(e, _('This CVTE exam can not be deleted.'))
 
             return updated_grade_rows, err_html
 ########################
@@ -3059,7 +3059,8 @@ class GradeUploadView(View):
                                             sel_examyear=sel_examyear,
                                             sel_department=sel_department,
                                             si_dict=si_dict,
-                                            request=request)
+                                            request=request
+                                        )
                                     if err_list:
                                         msg_list.extend(err_list)
 
@@ -3120,7 +3121,7 @@ class GradeUploadView(View):
             except Exception as e:
                 # - create error when exam is not created PR2023-03-20
                 logger.error(getattr(e, 'message', str(e)))
-                msg_list.append(acc_prm.msghtml_error_occurred_no_border(e, _('The changes have not been saved.')))
+                msg_list.append(acc_prm.errhtml_error_occurred_no_border(e, _('The changes have not been saved.')))
         if logging_on:
             logger.debug('    msg_list: ' + str(msg_list))
 
@@ -3140,7 +3141,7 @@ class GradeUploadView(View):
 #######################################################
 
 def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_department, si_dict, request):
-    # --- update existing grade PR2020-12-16 PR2021-12-13 PR2021-12-25 PR2022-04-24
+    # --- update existing grade PR2020-12-16 PR2021-12-13 PR2021-12-25 PR2022-04-24 PR2023-08-15
     # add new values to update_dict (don't reset update_dict, it has values)
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -3157,6 +3158,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
     save_changes = False
     recalc_finalgrade = False
     must_recalc_reex_reex03 = False
+
+    savetolog_mode = None
+    savetolog_fields = []
 
     def get_ce_score_is_approved():
         return getattr(grade_instance, 'ce_auth1by') is not None or \
@@ -3194,16 +3198,25 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 # - save changes if changed and no_error
                 if validated_value != saved_value:
                     setattr(grade_instance, field, validated_value)
+
+        # - remove exemption_imported - is only True when AWP has entered exemption from previous year
+                    saved_exemption_imported = getattr(grade_instance, 'exemption_imported')
+                    if saved_exemption_imported:
+                        setattr(grade_instance, 'exemption_imported', False)
+                        savetolog_fields.append('exemption_imported')
+
                     save_changes = True
                     recalc_finalgrade = True
+
+                    savetolog_mode = 'u'
+                    savetolog_fields.append((field))
+
                     if logging_on:
                         logger.debug('  > save_changes of : ' + str(field))
 
         # - when reex or reex03: copy segrade, srgrade and pegrade to reex grade_instance
                     must_recalc_reex_reex03 = field in ('segrade', 'srgrade', 'pegrade')
 
-        # - remove exemption_imported - is only True when AWP has entered exemption from previous year
-                    setattr(grade_instance, 'exemption_imported', False)
 
  # when score has changed: recalc grade when cesuur/nterm is given
                     # PR2022-05-29 changed my mind: due to batch update needs those grades in reex_grade to calc final grade
@@ -3298,6 +3311,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     save_changes = True
                     recalc_finalgrade = True
 
+                    savetolog_mode = 'u'
+                    # ce_exam_id is not stored in log
+                    savetolog_fields.append(('cegrade', 'pecegrade', 'finalgrade'))
 
 # - save changes in field 'ce_exam_result', 'pe_exam_result'
         elif field in ('ce_exam_result', 'pe_exam_result'):
@@ -3345,6 +3361,8 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
             setattr(grade_instance, field_prefix + 'blanks', total_blanks)
 
             save_changes = True
+
+            # ce_exam is not stored in log
 
         # - save changes in fields 'xx_status' and 'xxpublished'
         elif field in ('se_status', 'pe_status', 'ce_status', 'sepublished', 'pepublished', 'cepublished'):
@@ -3397,6 +3415,14 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
         try:
             grade_instance.save(request=request)
+            if savetolog_mode:
+                # PR2023-08-15
+                awpr_log.savetolog_grade(
+                    grade_pk=grade_instance.pk,
+                    req_mode=savetolog_mode,
+                    request=request,
+                    updated_fields=savetolog_fields
+                )
 
             if logging_on:
                 logger.debug('The changes have been saved.')

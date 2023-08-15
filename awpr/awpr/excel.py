@@ -5581,21 +5581,24 @@ def create_student_xlsx(sel_examyear, sel_school, sel_department, user_lang):  #
         field_names = ['sb_code', 'school_name', 'db_code', 'lvlbase_code', 'sctbase_code',
                        'examnumber', 'lastname', 'firstname', 'prefix', 'gender', 'idnumber',
                        'birthdate', 'birthcountry', 'birthcity',
-                       'classname', 'regnumber',  'bis_exam',
-                       'iseveningstudent', 'islexstudent', 'partial_exam', 'extra_facilities',
+                       'classname',
+                       # PR2023-08-10 removed: 'regnumber',
+                       'bis_exam', 'iseveningstudent', 'islexstudent', 'partial_exam', 'extra_facilities',
                        'modifiedat', 'modby_name']
 
         field_captions = [str(_('School code')), str(_('School name')), str(_('Department')), str(_('Level')), str(_('Sector / Profiel')),
                           str(_('Exam number')), str(_('Last name')), str(_('First name')), str(_('Prefix')), str(_('Gender')), str(_('ID-number')),
                           str(_('Date of birth')), str(_('Country of birth')), str(_('Place of birth')),
-                          str(_('Class')), str(_('Registration number')), str(_('Bis exam')),
-                          str(_('Evening student')), str(_('Landsexamen')), str(_('Partial exam')), str(_('Extra facilities')),
+                          str(_('Class')),
+                          # PR2023-08-10 removed: str(_('Registration number')),
+                          str(_('Bis exam')), str(_('Evening student')), str(_('Landsexamen')), str(_('Partial exam')), str(_('Extra facilities')),
                           str(_('Last modified on ')), str(_('Last modified by'))]
 
         field_width = [12, 25, 9, 9, 12,
                        12, 20, 25, 9, 6, 12,
                        15, 15, 12,
-                       9, 15, 12,
+                       9, # PR2023-08-10 removed: 15,
+                       12,
                        12, 12, 12, 12,
                        15, 15
                        ]
@@ -5604,7 +5607,9 @@ def create_student_xlsx(sel_examyear, sel_school, sel_department, user_lang):  #
         row_formats = [row_align_center, row_align_left, row_align_center, row_align_center, row_align_center,
                        row_align_center, row_align_left,  row_align_left, row_align_left, row_align_center, row_align_center,
                        row_date_format, row_align_left, row_align_left,
-                       row_align_center, row_align_center, row_align_center,
+                       row_align_center,
+                       # PR2023-08-10 removed: row_align_center,
+                       row_align_center,
                        row_align_center, row_align_center, row_align_center, row_align_center,
                        row_align_left, row_align_left
                        ]
@@ -5612,11 +5617,12 @@ def create_student_xlsx(sel_examyear, sel_school, sel_department, user_lang):  #
         row_formats_strikeout = [row_align_center_strikeout, row_align_left_strikeout, row_align_center_strikeout, row_align_center_strikeout, row_align_center_strikeout,
                        row_align_center_strikeout, row_align_left_strikeout, row_align_left_strikeout, row_align_left_strikeout, row_align_center_strikeout, row_align_center_strikeout,
                        row_date_format_strikeout, row_align_left_strikeout, row_align_left_strikeout,
-                       row_align_center_strikeout, row_align_center_strikeout, row_align_center_strikeout,
+                       row_align_center_strikeout,
+                       # PR2023-08-10 removed: row_align_center_strikeout,
+                       row_align_center_strikeout,
                        row_align_center_strikeout, row_align_center_strikeout, row_align_center_strikeout, row_align_center_strikeout,
                        row_align_left_strikeout, row_align_left_strikeout
                        ]
-
 
 # --- set column width
         for i, width in enumerate(field_width):

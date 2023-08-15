@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Second correctors' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/correctors230717.js' %}"></script>
+    <script src="{% static 'js/correctors230815.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -52,6 +52,7 @@
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectmultiple.html' %}
             {% include 'accounts/modcompensationhours.html' %}
+            {% include 'accounts/moduserdata.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modmessage.html' %}
@@ -90,7 +91,7 @@
                 <button id="id_btn_correctors" data-btn="btn_correctors" class="btn btn-secondary display_hide">{% trans 'Second correctors' %}</button>
                 <button data-btn="btn_usercompensation" class="btn btn-secondary">{% trans 'Approvals' %}</button>
                 <button id="id_btn_usercomp_agg" data-btn="btn_usercomp_agg" class="btn btn-secondary display_hide">{% trans 'Compensation' %}</button>
-                <button id="id_btn_personaldata" data-btn="btn_correctors" class="btn btn-secondary display_hide">{% trans 'Personal data' %}</button>
+                <button id="id_btn_userdata" data-btn="btn_userdata" class="btn btn-secondary display_hide">{% trans 'Personal data' %}</button>
             </div>
 <!-- end BUTTON GROUP -->
 
@@ -114,8 +115,11 @@
                 data-url_usercomp_approve_single="{% url 'url_usercomp_approve_single' %}"
                 data-url_usercomp_approve_submit="{% url 'url_usercomp_approve_submit' %}"
                 data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
-
                 data-url_download_excomp="{% url 'url_download_excomp' %}"
+                data-url_download_paymentform="{% url 'url_download_paymentform' %}"
+                data-url_download_invoice"{% url 'url_download_invoice' %}"
+
+                data-url_userdata_upload="{% url 'url_userdata_upload' %}"
             >
             </div>
         {% endif %}

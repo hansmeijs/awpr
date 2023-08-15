@@ -2359,7 +2359,7 @@ class ExamUploadDuoExamView(View):
                     except Exception as e:
                         deleted_row = None
                         logger.error(getattr(e, 'message', str(e)))
-                        err_html = acc_prm.msghtml_error_occurred_with_border(e, _('This CVTE exam can not be deleted.'))
+                        err_html = acc_prm.errhtml_error_occurred_with_border(e, _('This CVTE exam can not be deleted.'))
 
             if logging_on:
                 logger.debug('    deleted_row: ' + str(deleted_row))
@@ -3329,7 +3329,7 @@ def batch_approve_grade_exam_rows(request, requsr_auth, is_reset, grade_exams_to
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             err_txt = _('No approvals have been removed.') if is_reset else _('No exams have been approved.')
-            err_html = acc_prm.msghtml_error_occurred_no_border(e, err_txt)
+            err_html = acc_prm.errhtml_error_occurred_no_border(e, err_txt)
 
     if logging_on:
         logger.debug('updated_grade_exam_pk_list:' + str(updated_grade_exam_pk_list))
@@ -3400,7 +3400,7 @@ def batch_submit_grade_exam_rows(req_usr, published_pk, is_reset, grade_exams_to
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
         err_txt = _('No submissions have been removed.') if is_reset else _('No exams have been submitted.')
-        err_html = acc_prm.msghtml_error_occurred_no_border(e, err_txt)
+        err_html = acc_prm.errhtml_error_occurred_no_border(e, err_txt)
 
     if logging_on:
         logger.debug('updated_grade_exam_pk_list:' + str(updated_grade_exam_pk_list))
@@ -4887,7 +4887,7 @@ def create_exam_instance(subject, department, level, examperiod_int, ete_exam, r
     except Exception as e:
 # - create error when exam is not created PR2023-03-20
         logger.error(getattr(e, 'message', str(e)))
-        err_html = acc_prm.msghtml_error_occurred_with_border(e, _('The exam could not be created.'))
+        err_html = acc_prm.errhtml_error_occurred_with_border(e, _('The exam could not be created.'))
 
     return exam, err_html
 # - end of create_exam_instance
@@ -4905,7 +4905,7 @@ def delete_exam_instance(instance, request):  #  PR2021-04-05 PR2022-01-22 PR202
     except Exception as e:
         deleted_row = None
         logger.error(getattr(e, 'message', str(e)))
-        err_txt = acc_prm. msghtml_error_occurred_no_border(e, _('This exam could not be deleted.'))
+        err_txt = acc_prm. errhtml_error_occurred_no_border(e, _('This exam could not be deleted.'))
     return deleted_row, err_txt
 # - end of delete_exam_instance
 
@@ -5201,7 +5201,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                 #msg_err = ''.join((str(_('An error occurred.')), str(_('This exam could not be updated.'))))
                 #error_list.append(msg_err)
 
-                err_html = acc_prm.msghtml_error_occurred_no_border(e, _('This exam could not be updated.'))
+                err_html = acc_prm.errhtml_error_occurred_no_border(e, _('This exam could not be updated.'))
                 error_list.append(err_html)
 
     return updated_cegrade_count

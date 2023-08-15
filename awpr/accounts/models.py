@@ -69,21 +69,21 @@ class User(AbstractUser):
         ],)
     email = EmailField( _('email address'),)
 
-    idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
+    # PR2023-07-18 moved to table Userdata
+    #idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
 
-    telephone = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_SCHOOLABBREV)
+    # NIU telephone = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_SCHOOLABBREV)
 
     role = PositiveSmallIntegerField(default=0)
 
-    #PR2023-01-12 to be deprecated, moved to table UserAllowed
-    usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    #PR2023-07-18 deprecated, moved to table UserAllowed
+    # usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
 
-    #PR2023-01-12 to be deprecated, moved to table UserAllowed
-    allowed_depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    allowed_levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    allowed_schoolbases = CharField(max_length=2048, null=True)
-    allowed_subjectbases = CharField(max_length=2048, null=True)
-    allowed_clusterbases = CharField(max_length=2048, null=True)
+    # allowed_depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    # allowed_levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    # allowed_schoolbases = CharField(max_length=2048, null=True)
+    # allowed_subjectbases = CharField(max_length=2048, null=True)
+    # allowed_clusterbases = CharField(max_length=2048, null=True)
 
     activated = BooleanField(default=False)
     activated_at = DateTimeField(null=True)
@@ -209,7 +209,8 @@ class User_log(Model):
     last_name = CharField( max_length=150, null=True)
     email = EmailField(null=True)
 
-    idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
+    # PR2023-07-18 moved to table Userdata
+    # idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
 
     last_login = DateTimeField(null=True)
     is_superuser = BooleanField(default=False)
@@ -218,7 +219,8 @@ class User_log(Model):
     date_joined = DateTimeField(null=True)
 
     role = PositiveSmallIntegerField(null=True)
-    permits = PositiveSmallIntegerField(null=True)
+
+    #permits = PositiveSmallIntegerField(null=True)
 
     activated = BooleanField(default=False)
     activated_at = DateTimeField(null=True)
@@ -364,4 +366,18 @@ class UserCompensation_log(sch_mod.AwpBaseModel):
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
+
+# PR2023-07-18 this table stores the personal dat for paying compensation to correctors.
+# It is created when creating a new user, once created in fillUserdataONCEONLY
+# only when a user is role corrector
+class Userdata(sch_mod.AwpBaseModel):
+    objects = CustomUserManager()
+
+    user = ForeignKey(User, related_name='+', on_delete=CASCADE)
+
+    idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
+    cribnumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
+    bankname = CharField(null=True, blank=True, max_length=c.USER_LASTNAME_MAX_LENGTH)
+    bankaccount = CharField( null=True, blank=True, max_length=c.USERNAME_SLICED_MAX_LENGTH)
+    beneficiary = CharField( null=True, blank=True, max_length=c.MAX_LENGTH_NAME)
 

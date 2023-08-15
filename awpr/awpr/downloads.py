@@ -163,6 +163,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     acc_corr.update_usercompensation(sel_examyear, request)
                     datalists['usercompensation_rows'] = acc_corr.create_usercompensation_rows(sel_examyear, sel_department,  sel_lvlbase, request)
                     datalists['usercomp_agg_rows'] = acc_corr.create_usercomp_agg_rows(sel_examyear, sel_department, sel_lvlbase, request)
+                    datalists['userdata_rows'] = acc_corr.create_userdata_rows(request)
+                    datalists['bankname_rows'] = acc_corr.create_bankname_rows(sel_examyear)
 
 # ----- examyears
                 if datalist_request.get('examyear_rows'):

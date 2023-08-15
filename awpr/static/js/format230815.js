@@ -431,18 +431,18 @@
                                         (i === 2) ? loc.Secretary : "";
                     const field_usr = prefix_auth + "by_usr";
                     const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
-        console.log("    field_usr", field_usr);
-        console.log("    auth_usr", auth_usr);
+        //console.log("    field_usr", field_usr);
+        //console.log("    auth_usr", auth_usr);
 
                     title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
                 };
             };
         };
-
+/*
         console.log("    className", className);
         console.log("    title_text", title_text);
         console.log("    filter_value", filter_value);
-
+*/
         return [className, title_text, filter_value]
     };  // f_format_status_subject
 
