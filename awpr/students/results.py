@@ -755,10 +755,18 @@ class DownloadPokView(View):  # PR2022-07-02
                     """
 
                     file_name = 'Ex6 Bewijs van vrijstelling' if sel_school.iseveningschool or sel_school.islexschool else 'Ex6 Bewijs van kennis'
-                    if len(proof_of_knowledge_dict) == 1:
-                        for pok_dict in  proof_of_knowledge_dict.values():
-                            file_name += ' ' + pok_dict.get('full_name')
-                            break
+
+                    # PR2023-08-18 Sentry INTERNAL SERVER ERROR when downloading a document with special characters
+                    # UnicodeEncodeError  gunicorn.util in to_bytestring
+
+                    # found it, thanks to https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-normalize-in-a-python-unicode-string
+                    # problem is not in the buffer or pdf, but gunicorn does not accept special characters
+                    # solution: don't add student name in file_name
+                    # was:
+                        #if len(proof_of_knowledge_dict) == 1:
+                        #    for pok_dict in  proof_of_knowledge_dict.values():
+                        #        file_name += ' ' + pok_dict.get('full_name')
+                        #        break
                     now_formatted = af.get_now_formatted_from_now_arr(upload_dict.get('now_arr'))
                     if now_formatted:
                         file_name += ' ' + now_formatted
