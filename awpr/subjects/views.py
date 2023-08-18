@@ -4682,6 +4682,8 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
             crit.add(Q(level=exam_instance.level), crit.connector)
 
         count_exams = subj_mod.Exam.objects.filter(crit).count()
+        if logging_on:
+            logger.debug('    count_exams:     ' + str(count_exams))
 
     # skip if there are multiple exams
         if count_exams == 1:

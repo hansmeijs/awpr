@@ -124,7 +124,7 @@ class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
 # - end of GetGradelistDiplomaAuthView
 
 
-def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
+def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17 PR2023-08-18
     # function creates a dict of auth1 and auth2 users
     # also retrieves the selected auth and printdate from schoolsettings
 
@@ -133,8 +133,12 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
         logger.debug(' ----- get_pres_secr_dict -----')
 
     auth_dict = {}
+
 # get selected auth and printdatum from schoolsettings
     if request.user and request.user.schoolbase:
+        sel_examyear = acc_prm.get_sel_examyear_from_requsr(request)
+
+    # get stored schoolsettings, to get selected_auth_pk
         settings_json = request.user.schoolbase.get_schoolsetting_dict(c.KEY_GRADELIST)
         stored_setting = json.loads(settings_json) if settings_json else {}
         if logging_on:
@@ -142,32 +146,34 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
             logger.debug('    stored_setting: ' + str(stored_setting))
             # stored_setting: {'auth1_pk': 120, 'auth2_pk': None, 'printdate': None}
 
-        # auth_dict: {'auth1': [{'pk': 120, 'name': 'jpd'}, {'pk': 116, 'name': 'Hans meijs'}], 'auth2': []}
-        sql_keys = {'sb_id': request.user.schoolbase_id, 'c_id': request.user.country_id, 'role': c.ROLE_008_SCHOOL}
-        sql_list = ["SELECT au.id, au.last_name,",
-                    # TODO 2023-02-24 change to userallowed usergroups
-                    "(POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0) AS auth1,",
-                    "(POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0) AS auth2",
+        sql = ''.join((
+            "SELECT au.id, au.last_name, ",
+                    "(POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN ual.usergroups) > 0) AS auth1, ",
+                    "(POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN ual.usergroups) > 0) AS auth2 ",
 
-                    "FROM accounts_user AS au",
-                    "INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)",
-                    "INNER JOIN schools_country AS c ON (c.id = au.country_id)",
+                    "FROM accounts_user AS au ",
+                    "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = au.id) ",
 
-                    "WHERE sb.id = %(sb_id)s::INT AND c.id = %(c_id)s::INT AND au.role = %(role)s::INT",
-                    # TODO 2023-02-24 change to userallowed usergroups
-                    "AND ( (POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0)",
-                    "OR (POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0 ) )"
-                    "AND au.activated AND au.is_active"
-                    ]
-        sql = ' '.join(sql_list)
+                    "WHERE au.schoolbase_id = ", str(request.user.schoolbase_id), "::INT ",
+                    "AND au.country_id = ", str(request.user.country_id), "::INT ",
+                    "AND ual.examyear_id = ", str(sel_examyear.pk), "::INT ",
+                    "AND au.role = ", str(c.ROLE_008_SCHOOL),  "::INT ",
+
+                    "AND ( (POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN ual.usergroups) > 0) ",
+                    "OR (POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN ual.usergroups) > 0 ) ) "
+                    "AND au.activated AND au.is_active;"
+        ))
+
         with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
+            cursor.execute(sql)
             rows = af.dictfetchall(cursor)
 
         for row in rows:
             if logging_on:
                 logger.debug('row: ' + str(row))
                 # row: {'id': 47, 'last_name': 'Hans', 'auth1': False, 'auth2': True}
+
+        # loop through 'auth1' and 'auth2'
             for usergroup in ('auth1', 'auth2'):
                 if row.get(usergroup, False):
                     last_name = row.get('last_name')
@@ -183,11 +189,12 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
                             auth_dict[usergroup] = []
 
                         auth_dict[usergroup].append(a_dict)
-# add printdate
+    # add printdate
         print_date = stored_setting.get('printdate')
         if print_date:
             auth_dict['printdate'] = print_date
 
+    # auth_dict: {'auth1': [{'pk': 120, 'name': 'jpd'}, {'pk': 116, 'name': 'Hans meijs'}], 'auth2': []}
     return auth_dict
 # - -end of get_pres_secr_dict
 
@@ -467,30 +474,9 @@ class DownloadGradelistDiplomaView(View):
                 af.register_font_garamond()
                 af.register_font_palace_script()
 
-                auth1_name, auth2_name = '---', '---'
-                # get auth1_pk from upload_dict, check if user exists and has auth1 permission
-                if auth1_pk:
-                    auth1 = acc_mod.User.objects.get_or_none(
-                        pk=auth1_pk,
-                        schoolbase=request.user.schoolbase,
-                        activated=True,
-                        is_active=True,
-                        usergroups__contains='auth1'
-                    )
-                    if auth1:
-                        auth1_name = auth1.last_name
+                auth1_name = acc_prm.get_auth_name(auth1_pk, c.USERGROUP_AUTH1_PRES, sel_examyear, request)
+                auth2_name = acc_prm.get_auth_name(auth2_pk, c.USERGROUP_AUTH2_SECR, sel_examyear, request)
 
-                # get auth1_pk from upload_dict, check if user exists and has auth1 permission
-                if auth2_pk:
-                    auth2 = acc_mod.User.objects.get_or_none(
-                        pk=auth2_pk,
-                        schoolbase=request.user.schoolbase,
-                        activated=True,
-                        is_active=True,
-                        usergroups__contains='auth2'
-                    )
-                    if auth2:
-                        auth2_name = auth2.last_name
 
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
@@ -516,9 +502,9 @@ class DownloadGradelistDiplomaView(View):
 
                     else:
                         if is_sxm:
-                            grd_draw.draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
+                            grd_draw.draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, auth1_name, auth2_name, printdate, sel_examyear, request)
                         else:
-                            grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
+                            grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_name, auth2_name, printdate, sel_examyear, request)
 
                     canvas.showPage()
 
@@ -576,10 +562,10 @@ class DownloadGradelistDiplomaView(View):
                         else:
                             if is_sxm:
                                 grd_draw.draw_gradelist_sxm(canvas_tobesaved, library, student_dict, is_prelim,
-                                                            print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
+                                                            print_reex, auth1_name, auth2_name, printdate, sel_examyear, request)
                             else:
                                 grd_draw.draw_gradelist_cur(canvas_tobesaved, library, student_dict, is_prelim,
-                                                            print_reex, auth1_pk, auth2_pk, printdate, sel_examyear.code, request)
+                                                            print_reex, auth1_name, auth2_name, printdate, sel_examyear, request)
 
                         canvas_tobesaved.showPage()
 
@@ -736,22 +722,13 @@ class DownloadPokView(View):  # PR2022-07-02
                     except Exception as e:
                         logger.error(getattr(e, 'message', str(e)))
 
-                    auth1_name = '---'
-                    # get auth1_pk from upload_dict, check if user exists and has auth1 permission
-                    if auth1_pk:
-                        auth1 = acc_mod.User.objects.get_or_none(
-                            pk=auth1_pk,
-                            schoolbase=request.user.schoolbase,
-                            activated=True,
-                            is_active=True,
-                            usergroups__contains='auth1'
-                        )
+                    auth1_name = acc_prm.get_auth_name(auth1_pk, c.USERGROUP_AUTH1_PRES, sel_examyear, request)
 
                     buffer = io.BytesIO()
                     canvas = Canvas(buffer)
 
                     for student_dict in proof_of_knowledge_dict.values():
-                        grd_draw.draw_pok(canvas, library, student_dict, auth1_pk, printdate, sel_examyear.code, request)
+                        grd_draw.draw_pok(canvas, library, student_dict, auth1_name, printdate, sel_examyear.code)
 
                         canvas.showPage()
 
@@ -845,7 +822,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 "stud.gl_status, stud.ep01_result,",
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,",
-                "ey.code::TEXT AS examyear_txt, c.name AS country,",
+                "ey.code AS examyear_code, ey.code::TEXT AS examyear_txt, c.name AS country,",
                 "dep.name AS dep_name, dep.abbrev AS dep_abbrev, dep.level_req, dep.has_profiel,",
                 "lvl.name AS lvl_name, sct.name AS sct_name, sctbase.code AS sctbase_code,",
                 "cl.name AS cluster_name, stud.classname,",
@@ -1151,7 +1128,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
                 "stud.gl_status,"
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
-                "ey.code::TEXT AS examyear_txt, c.name AS country,",
+                "ey.code AS examyear_code, ey.code::TEXT AS examyear_txt, c.name AS country,",
                 "dep.name AS dep_name, dep.abbrev AS dep_abbrev, dep.level_req, dep.has_profiel,",
                 "lvl.name AS lvl_name, sct.name AS sct_name, sctbase.code AS sctbase_code,",
                 "stud.classname",

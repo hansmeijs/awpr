@@ -1444,14 +1444,14 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  MGL_Open  ================ PR2021-11-18 PR2021-12-28  PR2022-06-08
     function MGL_Open(mode) {
         console.log(" -----  MGL_Open   ----")
-        // only called by menubtn Preliminary_gradelist and PrintGradelist and CalcResults
+        // called by menubtn Preliminary_gradelist and PrintGradelist and CalcResults
         mod_dict = {mode: mode}; // modes are "calc_results", "prelim", "final", "diploma"
         el_MGL_header.innerText = (mode === "calc_results") ? loc.Calculate_results :
                                     (mode === "prelim") ? loc.Preliminary_gradelist :
                                     (mode === "final") ? loc.Download_gradelist :
                                     (mode === "diploma") ? loc.Download_diploma :
                                     (mode === "pok") ? loc.Download_Ex6_pok :
-                                    (mode === "calc_reex") ? loc.Calculate_reex :
+                                    //(mode === "calc_reex") ? loc.Calculate_reex :
                                     null;
 
         el_MGL_printdate_label.innerText = (
@@ -1474,6 +1474,7 @@ function RefreshDataRowsAfterUpload(response) {
 
             const pk_int = get_attr_from_el_int(tr, "data-pk");
             if(pk_int){
+                const is_selected = tr.classList.contains("tsa_tr_selected");
 
 // --- get existing data_dict from data_rows
                 // check if student has passed - only when printing diploma
@@ -1568,17 +1569,30 @@ function RefreshDataRowsAfterUpload(response) {
                         ].join("");
 
         } else  if (mode === "pok"){
-            msg_html = ["<p>",
+            if(!student_pk_list_length){
+                msg_html = ["<p>", loc.No_candidates_failed, "</p>"].join("");
+            } else {
+                msg_html = ["<p>",
                             msg01_txt, " ",  msg02_txt, " ", loc.will_be_downloaded_sing , "</p>"
                           ].join("");
-
+            };
+        } else  if (mode === "diploma"){
+            if(!student_pk_list_length){
+                msg_html = ["<p>", loc.No_candidates_passed, "</p>"].join("");
+            } else {
+                msg_html = ["<p>",
+                                msg01_txt, " ",  msg02_txt, " ",
+                                (student_pk_list_length === 1) ? loc.will_be_downloaded_sing : loc.will_be_downloaded_plur,
+                                 "</p>"
+                              ].join("");
+            };
         } else {
             msg_html = ["<p>",
                             msg01_txt, " ",  msg02_txt, " ",
                             (student_pk_list_length === 1) ? loc.will_be_downloaded_sing : loc.will_be_downloaded_plur,
                              "</p>"
                           ].join("");
-        }
+        };
 
         el_MGL_info_container.innerHTML = msg_html;
 
@@ -1595,7 +1609,7 @@ function RefreshDataRowsAfterUpload(response) {
 // show loader
         add_or_remove_class(el_MGL_loader, cls_hide, ["calc_results", "calc_reex"].includes(mode) )
 
-// ---  show msg_info when printing final gardelist or diploma
+// ---  show msg_info when printing final gradelist or diploma
         add_or_remove_class(el_MGL_msg_info, cls_hide, !["final", "diploma"].includes(mod_dict.mode));
 
         if (!["calc_results"].includes(mode)) {

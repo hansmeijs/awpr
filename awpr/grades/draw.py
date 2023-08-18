@@ -9,6 +9,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import activate, pgettext_lazy, gettext, gettext_lazy as _
 
 from accounts import models as acc_mod
+from accounts import permits as acc_prm
 
 from awpr import constants as c
 from awpr import settings as s
@@ -987,48 +988,17 @@ def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, prin
 # #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # # draw gradelist
 
-def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, examyear_int,
+def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, auth1_name, auth2_name, printdate, sel_examyear,
                        request):
-    # PR2023-07-05
+    # PR2023-07-05 PR2023-08-18
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_gradelist_sxm +++++++++++++')
-        logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
         logger.debug('     student_dict: ' + str(student_dict))
         logger.debug('     is_prelim: ' + str(is_prelim))
-        logger.debug('     examyear_int: ' + str(examyear_int))
+        logger.debug('     sel_examyear: ' + str(sel_examyear))
 
-    auth1_name = '---'
-    if auth1_pk:
-        auth1 = acc_mod.User.objects.get_or_none(
-            pk=auth1_pk,
-            schoolbase=request.user.schoolbase,
-            activated=True,
-            is_active=True,
-            usergroups__contains='auth1'
-        )
-        if auth1:
-            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
-            auth1_name = auth1.last_name.strip() if auth1.last_name else ''
-
-        if logging_on:
-            logger.debug('     auth1: ' + str(auth1))
-            logger.debug('     auth1_name: ' + str(auth1_name))
-            logger.debug('     auth1.usergroups: ' + str(auth1.usergroups))
-
-    auth2_name = '---'
-    if auth2_pk:
-        auth2 = acc_mod.User.objects.get_or_none(
-            pk=auth2_pk,
-            schoolbase=request.user.schoolbase,
-            activated=True,
-            is_active=True,
-            usergroups__contains='auth2'
-        )
-        if auth2:
-            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
-            auth2_name = auth2.last_name.strip() if auth2.last_name else ''
 
     is_lexschool = student_dict.get('islexschool', False)
 
@@ -1084,7 +1054,7 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, aut
         student_dict=student_dict,
         is_prelim=is_prelim,
         is_lexschool=is_lexschool,
-        examyear_int=examyear_int
+        examyear_int=sel_examyear.code
     )
 
     # - draw column header
@@ -1166,52 +1136,18 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, aut
 
     # - draw page signatures
     draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, False, library, student_dict, auth1_name,
-                                 auth2_name, printdate, examyear_int, reg_number)
+                                 auth2_name, printdate, sel_examyear.code, reg_number)
 
 # - end of draw_gradelist_sxm
 
 
-def draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, examyear_int,
+def draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_name, auth2_name, printdate, sel_examyear,
                        request):
+    # PR2023-08-18
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_gradelist +++++++++++++')
-        #logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
-        #logger.debug('     student_dict: ' + str(student_dict))
-        #logger.debug('     is_prelim: ' + str(is_prelim))
-        #logger.debug('     is_sxm: ' + str(is_sxm))
-
-    auth1_name = '---'
-    if auth1_pk:
-        auth1 = acc_mod.User.objects.get_or_none(
-            pk=auth1_pk,
-            schoolbase=request.user.schoolbase,
-            activated=True,
-            is_active=True,
-            usergroups__contains='auth1'
-        )
-        if auth1:
-            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
-            auth1_name = auth1.last_name.strip() if auth1.last_name else ''
-
-        if logging_on:
-            logger.debug('     auth1: ' + str(auth1))
-            logger.debug('     auth1_name: ' + str(auth1_name))
-            logger.debug('     auth1.usergroups: ' + str(auth1.usergroups))
-
-    auth2_name = '---'
-    if auth2_pk:
-        auth2 = acc_mod.User.objects.get_or_none(
-            pk=auth2_pk,
-            schoolbase=request.user.schoolbase,
-            activated=True,
-            is_active=True,
-            usergroups__contains='auth2'
-        )
-        if auth2:
-            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
-            auth2_name = auth2.last_name.strip() if auth2.last_name else ''
 
     is_lexschool = student_dict.get('islexschool', False)
 
@@ -1259,7 +1195,7 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, aut
         student_dict=student_dict,
         is_prelim=is_prelim,
         is_lexschool=is_lexschool,
-        examyear_int=examyear_int
+        examyear_int=sel_examyear.code
     )
 
 # - cur: draw column header
@@ -1350,7 +1286,7 @@ def draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, aut
         auth1_name=auth1_name,
         auth2_name=auth2_name,
         printdate=printdate,
-        examyear_int=examyear_int,
+        examyear_int=sel_examyear.code,
         reg_number=reg_number
     )
 # - end of draw_gradelist_cur
@@ -2371,31 +2307,12 @@ def draw_red_cross(canvas, x, y):
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # draw pok
 
-def draw_pok(canvas, library, student_dict, auth1_pk, printdate, examyear_int, request):
+def draw_pok(canvas, library, student_dict, auth1_name, printdate, examyear_int):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_pok +++++++++++++')
-        logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
         logger.debug('     student_dict: ' + str(student_dict))
-
-    auth1_name = '---'
-    if auth1_pk:
-        auth1 = acc_mod.User.objects.get_or_none(
-            pk=auth1_pk,
-            schoolbase=request.user.schoolbase,
-            activated=True,
-            is_active=True,
-            usergroups__contains='auth1'
-        )
-        if auth1:
-            # PR2023-07-05 strip() added because MPC had spaces in front of auth name
-            auth1_name = auth1.last_name.strip() if auth1.last_name else ''
-
-        if logging_on:
-            logger.debug('     auth1: ' + str(auth1))
-            logger.debug('     auth1_name: ' + str(auth1_name))
-            logger.debug('     auth1.usergroups: ' + str(auth1.usergroups))
 
     is_eveningstudent = student_dict.get('iseveningstudent') or False
     is_lexstudent = student_dict.get('islexstudent') or False

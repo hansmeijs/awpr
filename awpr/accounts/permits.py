@@ -128,6 +128,37 @@ def get_sel_depbase_from_selected_pk_dict(selected_pk_dict):
     return sel_depbase_instance
 
 
+def get_auth_name(auth_pk, auth_field, sel_examyear, request):
+    # PR2023-08-18 get auth_name for gradelist and diploma
+    auth_name = None
+    if auth_pk and sel_examyear and request.user:
+        sql = ''.join((
+            "SELECT au.last_name ",
+            "FROM accounts_user AS au ",
+            "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = au.id) ",
+
+            "WHERE au.id = ", str(auth_pk), "::INT ",
+            "AND au.schoolbase_id = ", str(request.user.schoolbase_id), "::INT ",
+            "AND ual.examyear_id = ", str(sel_examyear.pk), "::INT ",
+            "AND POSITION('" + auth_field + "' IN ual.usergroups) > 0 ",
+            "AND au.activated AND au.is_active;"
+        ))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            # row = ('Hans Meijs',)
+            if row and row[0]:
+                auth_name = row[0].strip()
+
+    # convert empty string to None
+    if not auth_name:
+        auth_name = None
+
+    return auth_name
+# - end of get_auth_name
+
+
 def get_userallowed_instance(user_instance, sel_examyear_instance):
     #   PR2023-01-13 get userallowed_instance from user_instance and selected examyear
 

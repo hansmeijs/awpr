@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from accounts import views as acc_view
-from  accounts import  permits as acc_prm
+from accounts import  permits as acc_prm
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
@@ -440,7 +440,6 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
 
 # - make background red when testsite PR2022-01-11
         class_bg_testsite = "tsa_tr_error" if s.IS_TESTSITE else ""
-        class_bg_testsite = "border_bg_warning" if s.IS_TESTSITE else ""
 
         headerbar_param = {
             'no_access': no_access,

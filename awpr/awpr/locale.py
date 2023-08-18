@@ -2002,6 +2002,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Log_change_birth_country'] = _('Log change country of birth')
         dict['Log_change_birth_country'] = _('Log change country of birth')
 
+        dict['No_candidates_passed'] = _('The selection contains no candidates that have %(cpt)s.') % {'cpt': gettext('Passed').lower()}
+        dict['No_candidates_failed'] = _('The selection contains no candidates that have %(cpt)s.') % {'cpt': gettext('Failed').lower()}
+
 # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:
         dict['Name_ex_form'] = TXT_Name_ex_form
