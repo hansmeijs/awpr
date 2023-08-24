@@ -2066,7 +2066,10 @@ def get_usercomp_rows(sel_examyear_pk, sel_schoolbase_pk, upload_dict, user_lang
             "LEFT JOIN accounts_user AS auth2 ON (auth2.id = uc.auth2by_id)",
 
             "WHERE uc_school.examyear_id=", str(sel_examyear_pk), "::INT ",
-            "AND uc_school.base_id=", str(sel_schoolbase_pk), "::INT "
+            "AND uc_school.base_id=", str(sel_schoolbase_pk), "::INT ",
+
+            # PR2023-08-24 request ETE Pien van Dijk: show only correctors appointed by Ministry
+            "AND au.role=", str(c.ROLE_016_CORR), "::INT "
             ]
 
         # don't use selected_pk values, but get them from upload_dict
@@ -2321,8 +2324,11 @@ def create_usercompensation_rows(sel_examyear, sel_department, sel_lvlbase, requ
             #       - req_usr.role = corrector and usergroups countains auth1 or auth2: show usercomp rows of all schools / this req_usr.role = correcor
 
             if request.user.role == c.ROLE_008_SCHOOL:
-                # filter is set by inner join on uc_sub and filter uc_school.base_id
-                pass
+                # filter only users with uc rows. This is set by inner join on uc_sub and filter uc_school.base_id
+
+                # PR2023-08-24 request ETE Pien van Dijk: show only correctors appointed by Ministry
+                sql_list.append(''.join(("AND u.role=", str(c.ROLE_016_CORR), "::INT")))
+
             elif request.user.role == c.ROLE_016_CORR:
                 # only show correctors with role=correctors (schools can also appoint correcteord, they are not included)
                 sql_list.append(''.join(("AND u.role=", str(c.ROLE_016_CORR), "::INT")))
@@ -2459,6 +2465,10 @@ def create_usercomp_agg_rows(sel_examyear, sel_department,  sel_lvlbase, request
 
                             # for testimg only: "AND u.last_name ILIKE '%%jeska%%'"
                             ]
+
+                # PR2023-08-24 request ETE Pien van Dijk: show only correctors appointed by Ministry
+                sql_list.append(''.join(("AND u.role=", str(c.ROLE_016_CORR), "::INT")))
+
             # only show correctors of this school when role = school
                 if request.user.role == c.ROLE_008_SCHOOL:
                     sql_list.extend(("AND school.base_id=", str(request.user.schoolbase.pk), "::INT"))

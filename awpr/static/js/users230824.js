@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 examyear_rows: {get: true},
                 user_rows: {get: true},
                 //corrector_rows: {get: true},
-                usercompensation_rows: {get: true},
+                //usercompensation_rows: {get: true},
                 department_rows: {skip_allowed_filter: true},
                 school_rows: {skip_allowed_filter: true},
                 level_rows: {skip_allowed_filter: true},
@@ -4475,7 +4475,6 @@ console.log( "new_value", new_value);
         console.log("    datalist_request", datalist_request);
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
-
     };
 
 

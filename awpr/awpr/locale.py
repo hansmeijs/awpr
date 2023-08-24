@@ -1898,8 +1898,15 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
-        dict['Ex6_pok'] = ' '.join(('Ex6', str(_('Proof of knowledge'))))
-        dict['Download_Ex6_pok'] = _('Download Ex6 Proof of knowledge')
+        dict['Proof_of_knowledge'] = _('Proof of knowledge')
+        dict['Download_pok'] = _('Download Proof of knowledge')
+
+        dict['Preliminary_ex6_form'] = _('Preliminary %(form)s') % {'form': 'Ex6'}
+        dict['The_preliminary_ex6_form'] = _('The preliminary %(form)s form') % {'form': 'Ex6'}
+
+        dict['Submit_Ex6'] = _('Submit %(form)s') % {'form': 'Ex6'}
+        dict['Submit_Ex6_form'] = _('Submit %(form)s form') % {'form': 'Ex6'}
+        dict['The_ex6_form'] = _('The %(form)s form') % {'form': 'Ex6'}
 
         dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary

@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_result_download_ex5 = get_attr_from_el(el_data, "data-url_result_download_ex5");
+    urls.url_result_download_ex6 = get_attr_from_el(el_data, "data-url_result_download_ex6");
     urls.url_result_download_overview = get_attr_from_el(el_data, "data-url_result_download_overview");
     urls.url_result_download_shortgradelist = get_attr_from_el(el_data, "data-url_result_download_shortgradelist");
     urls.url_change_birthcountry = get_attr_from_el(el_data, "data-url_change_birthcountry");
@@ -561,7 +562,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if(permit_dict.requsr_same_school && permit_dict.permit_submit_gl_dipl){
                 AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
                 AddSubmenuButton(el_submenu, loc.Diplomas, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
-                AddSubmenuButton(el_submenu, loc.Ex6_pok, function() {MGL_Open("pok")}, ["tab_show", "tab_btn_result"]);
+                AddSubmenuButton(el_submenu, loc.Proof_of_knowledge, function() {MGL_Open("pok")}, ["tab_show", "tab_btn_result"]);
+            };
+            AddSubmenuButton(el_submenu, loc.Preliminary_ex6_form, function() {ModConfirmOpen("prelim_ex6")}, ["tab_show", "tab_btn_result"]);
+
+            if(permit_dict.requsr_same_school && permit_dict.permit_submit_gl_dipl){
+                AddSubmenuButton(el_submenu, loc.Submit_Ex6, function() {MAG_Open("submit_ex6")}, ["tab_show", "tab_btn_result"]);
             };
 
             AddSubmenuButton(el_submenu, loc.Download_result_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
@@ -1450,7 +1456,7 @@ function RefreshDataRowsAfterUpload(response) {
                                     (mode === "prelim") ? loc.Preliminary_gradelist :
                                     (mode === "final") ? loc.Download_gradelist :
                                     (mode === "diploma") ? loc.Download_diploma :
-                                    (mode === "pok") ? loc.Download_Ex6_pok :
+                                    (mode === "pok") ? loc.Download_pok :
                                     //(mode === "calc_reex") ? loc.Calculate_reex :
                                     null;
 
@@ -1756,7 +1762,7 @@ function RefreshDataRowsAfterUpload(response) {
     function ModConfirmOpen(mode, response) {
         console.log(" -----  ModConfirmOpen   ----")
         console.log("   mode", mode)
-        // values of mode are : "check_birthcountry", "prelim_ex5", "pok", "overview", "withdrawn"
+        // values of mode are : "check_birthcountry", "prelim_ex5", "prelim_ex6", "pok", "overview", "withdrawn"
         // respons contains response from server, only used in "check_birthcountry"
         const tblName = "student";
         let show_modal = false;
@@ -1816,8 +1822,6 @@ function RefreshDataRowsAfterUpload(response) {
         } else if(mode === "prelim_ex5"){
             show_modal = true;
 
-            const has_selected_item = (!isEmpty(map_dict));
-
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
             header_text = loc.Download_Ex_form;
@@ -1829,6 +1833,19 @@ function RefreshDataRowsAfterUpload(response) {
                 el_modconfirm_link.setAttribute("href", url_str);
             };
 
+        } else if(mode === "prelim_ex6"){
+            show_modal = true;
+
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
+
+            header_text = loc.Download_Ex_form;
+            msg_html = ["<p>", loc.The_preliminary_ex6_form, " ", loc.will_be_downloaded_sing, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
+
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                const url_str = urls.url_result_download_ex6;
+                el_modconfirm_link.setAttribute("href", url_str);
+            };
         } else if(mode === "withdrawn"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
             if (may_edit){
@@ -1959,12 +1976,10 @@ function RefreshDataRowsAfterUpload(response) {
                 UploadChanges(upload_dict, urls.url_change_birthcountry);
             };
 
-        } else if(["prelim_ex5", "overview"].includes(mod_dict.mode)){
+        } else if(["prelim_ex5", "prelim_ex6", "overview"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 el_modconfirm_link.click();
-                   console.log("el_modconfirm_link", el_modconfirm_link)
-
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
             };

@@ -93,14 +93,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     field_settings.btn_correctors = {
-                    field_caption: ["", "Name", "Allowed_departments",
+                    field_caption: ["", "Organization_twolines", "Name", "Allowed_departments",
                                     "Allowed_levels", "Allowed_subjects", "Allowed_clusters"],
-                    field_names: ["select", "last_name","allowed_depbases",
+                    field_names: ["select", "sb_code", "last_name","allowed_depbases",
                                     "allowed_lvlbases", "allowed_subjbases", "allowed_clusters"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text"],
-                    field_width:  ["032", "180", "180", "180", "180", "180"],
-                    field_align: ["c", "l", "l", "l", "l",  "l", "l", "l"]};
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "text", "text", "text"],
+                    field_width:  ["032", "090", "180", "180", "180", "180", "180"],
+                    field_align: ["c", "l", "l", "l", "l", "l",  "l", "l", "l"]};
 
     field_settings.btn_usercompensation = {
                     field_caption: ["", "Organization_twolines", "Name",

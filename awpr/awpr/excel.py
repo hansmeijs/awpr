@@ -32,6 +32,8 @@ from subjects import calc_orderlist as subj_calc
 from students import views as stud_view
 from students import functions as stud_fnc
 
+from grades import calc_results as calc_res
+
 import xlsxwriter
 from zipfile import ZipFile
 import io
@@ -1719,6 +1721,53 @@ class GradeDownloadEx5View(View):  # PR2022-02-17
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of GradeDownloadEx5View
+
+
+@method_decorator([login_required], name='dispatch')
+class GradeDownloadEx6View(View):  # PR2023-08-23
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= GradeDownloadEx6View ============= ')
+        # function creates, Ex2 xlsx file based on settings in usersetting
+
+        response = None
+        # try:
+        if True:
+            if request.user and request.user.country and request.user.schoolbase:
+                req_user = request.user
+
+    # - reset language
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+    # - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
+                if logging_on:
+                    logger.debug('     sel_school: ' + str(sel_school))
+                    logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+
+                if sel_examyear and sel_school and sel_department:
+
+                    # - get library from examyearsetting
+                    library = awpr_lib.get_library(sel_examyear, ['exform', 'ex6', 'gradelist'])
+                    student_pk_list = []
+                    proof_of_knowledge_dict = calc_res.get_proof_of_knowledge_dict(sel_examyear, sel_school,
+                                                                                   sel_department, sel_lvlbase_pk,
+                                                                                   student_pk_list)
+                    if proof_of_knowledge_dict:
+                        if logging_on:
+                            logger.debug('     proof_of_knowledge_dict: ' + str(proof_of_knowledge_dict))
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of GradeDownloadEx6View
 
 
 @method_decorator([login_required], name='dispatch')
