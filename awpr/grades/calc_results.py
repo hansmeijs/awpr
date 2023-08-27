@@ -16,13 +16,13 @@ from accounts import  permits as acc_prm
 from awpr import constants as c
 from awpr import settings as s
 from awpr import functions as af
-from awpr import downloads as dl
 
 from grades import calculations as grade_calc
 from grades import calc_score as calc_score
 from students import functions as stud_fnc
 from students import views as stud_view
 
+from operator import itemgetter
 
 import json
 
@@ -3793,7 +3793,7 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
 def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, student_pk_list=None):
     # PR2022-07-02 temporary, to be replaced by calc_proof_of_knowledge as part of  calc_studsubj_result
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_proof_of_knowledge  --------- ')
 
@@ -3836,6 +3836,8 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
         sql_keys['student_pk_arr'] = student_pk_list
         sql_list.append("AND stud.id IN ( SELECT UNNEST( %(student_pk_arr)s::INT[]))")
     else:
+        sql_list.extend(("AND stud.result=", str(c.RESULT_FAILED), "::INT"))
+
         if lvlbase_pk:
             sql_keys['lvlbase_pk'] = lvlbase_pk
             sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
@@ -3874,7 +3876,12 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
 
 # if pok: create student_dict if not yet exist
                 if student_pk not in proof_of_knowledge_dict:
-                    full_name = stud_fnc.get_firstname_prefix_lastname(row.get('lastname'), row.get('firstname'), row.get('prefix'))
+
+                    last_name = row.get('lastname') or ""
+                    first_name = row.get('firstname') or ""
+                    prefix = row.get('prefix') or ""
+                    full_name = stud_fnc.get_firstname_prefix_lastname(last_name, first_name, prefix)
+
                     birth_date = row.get('birthdate', '')
                     birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
                     birth_country = row.get('birthcountry')
@@ -3914,7 +3921,12 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
                         'examyear_txt': str(row.get('examyear_code')),
                         'country': row.get('country_name'),
                         'country_abbrev': row.get('country_abbrev'),
+
+                        'lastname': last_name,
+                        'firstname': first_name,
+                        'prefix': prefix,
                         'full_name': full_name,
+
                         'gender': row.get('gender'),
                         'birth_date_formatted': birth_date_formatted,
                         'birth_place': birth_place,
@@ -3927,13 +3939,14 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
                 student_dict = proof_of_knowledge_dict[student_pk]
 
                 student_dict['subjects'].append({
+                        'subj_code': row.get('subj_code'),
                         'subj_name': row.get('subj_name'),
                         'segrade': sesr_grade.replace('.', ',') if sesr_grade else None,
                         'pecegrade': pece_grade.replace('.', ',') if pece_grade else None,
                         'finalgrade': final_grade
                     })
 
-    if logging_on:
+    if logging_on and False:
         logger.debug('    proof_of_knowledge_dict: ' + str(proof_of_knowledge_dict))
     """
     proof_of_knowledge_dict: {
@@ -3944,6 +3957,14 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
                     {'subj_name': 'Profielwerkstuk', 'sesr_grade': '7.9', 'pece_grade': None, 'final_grade': '8'}, 
                     {'subj_name': 'Wiskunde A', 'sesr_grade': '6.5', 'pece_grade': '7.0', 'final_grade': '7'}]}, 
     """
+
+    pok_list = list(proof_of_knowledge_dict.values())
+
+    grade_dictlist_sorted = sorted(pok_list, key=lambda k: (k['lvl_name'], k['lastname'].lower(), k['firstname'].lower()))
+
+    if logging_on:
+        for row in grade_dictlist_sorted:
+            logger.debug('    row: ' + str(row))
     return proof_of_knowledge_dict
 # end of get_proof_of_knowledge
 
@@ -4012,7 +4033,7 @@ def calc_proof_of_knowledge(subj_code, examperiod, this_examperiod_dict, no_cent
 
         if logging_on:
             logger.debug('   this_examperiod_dict: ' + str(this_examperiod_dict))
-# - end of calc_noinput
+# - end of calc_proof_of_knowledge
 
 
 def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,

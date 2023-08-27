@@ -711,16 +711,17 @@ class DownloadPokView(View):  # PR2022-07-02
         # - get library from examyearsetting
                 library = awpr_lib.get_library(sel_examyear, ['exform', 'ex6', 'gradelist'])
 
-                proof_of_knowledge_dict = calc_res.get_proof_of_knowledge_dict(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, student_pk_list)
+                proof_of_knowledge_dict = calc_res.get_proof_of_knowledge_dict(
+                    examyear=sel_examyear,
+                    school=sel_school,
+                    department=sel_department,
+                    lvlbase_pk=sel_lvlbase_pk,
+                    student_pk_list=student_pk_list
+                )
                 if proof_of_knowledge_dict:
 
-                    # - get arial font
-                    try:
-                        filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
-                        ttfFile = TTFont('Arial', filepath)
-                        pdfmetrics.registerFont(ttfFile)
-                    except Exception as e:
-                        logger.error(getattr(e, 'message', str(e)))
+        # - get arial font
+                    af.register_font_arial()
 
                     auth1_name = acc_prm.get_auth_name(auth1_pk, c.USERGROUP_AUTH1_PRES, sel_examyear, request)
 

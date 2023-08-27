@@ -1182,7 +1182,7 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
         # put schoolbase_id field at the end, to make sure there is never a comma in front of FROM
 
         # PR2023-007-10 Sentry debug: %(experiod)s not in sql_keys
-        # TODO must add experiod, otherwise E5 ep01 cannot be submitted when tehere are reex candidates
+        # TODO must add experiod, otherwise E5 ep01 cannot be submitted when there are reex candidates
 
         sql_list = [
             "SELECT grd.id, grd.examperiod, studsubj.id AS studsubj_id, ",
@@ -1474,7 +1474,7 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                                             sel_examtype=sel_examtype,
                                             sel_examperiod=sel_examperiod,
                                             is_test=is_test,
-                                            is_ex5=False,
+                                            ex_form=form_name,  # 'ex2', 'ex2a'
                                             now_arr=now_arr,
                                             request=request
                                         )
@@ -1516,22 +1516,36 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                     # - get text from examyearsetting
                                         library = awpr_lib.get_library(sel_examyear, ['exform', 'ex2', 'ex2a'])
                                         # just to prevent PyCharm warning on published_instance=published_instance
-                                        # response = awpr_excel.create_ex2_ex2a_xlsx(
+                                        # response = awpr_excel.create_ex2_ex2a_ex6_xlsx(
                                         if logging_on:
                                             logger.debug('     is_test: ' + str(is_test))
 
-                                        responseNIU, saved_to_disk = awpr_excel.create_ex2_ex2a_xlsx(
+                                        # PR2023-08-26 function create_ex2_ex2a_rows_dict moved from within create_ex2_ex2a_ex6_xlsx TODO check if this causes any bugs
+                                        ex_rows_dict, grades_auth_dict = awpr_excel.create_ex2_ex2a_rows_dict(
+                                            examyear=sel_examyear,
+                                            school=sel_school,
+                                            department=sel_department,
+                                            level=sel_level,
+                                            examperiod=sel_examperiod,
+                                            ex_form=form_name,
+                                            published_instance=published_instance
+                                        )
+
+                                        responseNIU, saved_to_disk = awpr_excel.create_ex2_ex2a_ex6_xlsx(
                                             published_instance=published_instance,
                                             examyear=sel_examyear,
                                             school=sel_school,
                                             department=sel_department,
                                             level=sel_level,
                                             examperiod=sel_examperiod,
+                                            ex_rows_dict=ex_rows_dict,
+                                            grades_auth_dict=grades_auth_dict,
                                             library=library,
-                                            is_ex2a= form_name == 'ex2a',
+                                            ex_form=form_name,
                                             save_to_disk=True,
                                             request=request,
-                                            user_lang=user_lang)
+                                            user_lang=user_lang
+                                        )
 
                                         update_wrap['updated_published_rows'] = sch_view.create_published_rows(
                                             request=request,
@@ -1712,7 +1726,7 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
                                             sel_examtype='',
                                             sel_examperiod=sel_examperiod,
                                             is_test=is_test,
-                                            is_ex5=True,
+                                            ex_form='ex5',
                                             now_arr=now_arr,
                                             request=request
                                         )
@@ -1728,7 +1742,7 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
                                     if not is_test:
                     # - get text from examyearsetting
                                         # just to prevent PyCharm warning on published_instance=published_instance
-                                        # response = awpr_excel.create_ex2_ex2a_xlsx(
+                                        # response = awpr_excel.create_ex2_ex2a_ex6_xlsx(
                                         if logging_on:
                                             logger.debug('     is_test: ' + str(is_test))
 
@@ -1743,7 +1757,7 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
                                             request=request,
                                             user_lang=user_lang)
 
-                                        msg_html = create_submit_ex5_saved_msg_html(saved_is_ok)
+                                        msg_html = create_submit_ex5_ex6_saved_msg_html(saved_is_ok)
 
 # - add  msg_html to update_wrap
         update_wrap['test_is_ok'] = test_is_ok
@@ -1755,6 +1769,211 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of GradeSubmitEx5View
+
+
+
+@method_decorator([login_required], name='dispatch')
+class GradeSubmitEx6View(View):  # PR2023-08-26
+    # function creates new published_instance, Ex6 xlsx and sets published_id in grade
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= GradeSubmitEx6View ============= ')
+
+        update_wrap = {}
+        messages = []
+        msg_html = None
+        msg_dict = {}
+        test_is_ok = False
+
+# - get permit
+
+        has_permit = acc_prm.get_permit_of_this_page('page_result', 'submit_ex5', request)
+        if logging_on:
+            logger.debug('     has_permit: ' + str(has_permit))
+        if has_permit:
+            req_usr = request.user
+
+# -  get user_lang
+            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                """
+                upload_dict{'table': 'grade', 'mode': 'submit_test', 'auth_index': 1, 'now_arr': [2022, 3, 14, 11, 13]}
+                upload_dict: {'table': 'grade', 'form': 'ex2a', 'auth_index': 1, 'now_arr': [2022, 6, 1, 9, 38], 'mode': 'submit_test'}
+                """
+
+# -- get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                if err_list:
+                    msg_html = '<br>'.join(err_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                else:
+
+    # - get selected mode. Modes are 'submit_test' 'submit_save'
+                    mode = upload_dict.get('mode')
+                    is_test = (mode == 'submit_test')
+                    auth_index = upload_dict.get('auth_index')
+
+                    if logging_on:
+                        logger.debug('     upload_dict: ' + str(upload_dict))
+                        logger.debug('     mode:        ' + str(mode))
+                        logger.debug('     auth_index:  ' + str(auth_index))
+
+                    if auth_index:
+
+                        # msg_err is made on client side. Here: just skip if user has no or multiple functions
+
+        # - get auth_index (1 = Chairperson, 2 = Secretary, 3 = Examiner, 4 = Corrector
+                        # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
+                        #  function may have changed if gradepage is not refreshed in time)
+                        #  was: auth_index = upload_dict.get('auth_index')
+                        #  >>> can't do it like this any more. User can have be examiner and pres/secr at the same time
+                        #  back to upload_dict.get('auth_index')
+
+    # - get selected examperiod, levelbase from usersetting
+                        sel_examperiod, sel_lvlbase_pk = None, None
+                        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                        if selected_pk_dict:
+                            sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+                            sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+
+                        if logging_on:
+                            logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+
+# - when mode = submit_submit: check verificationcode.
+                        verification_is_ok = True
+                        if not is_test:
+                            verification_is_ok, verif_msg_html = af.check_verifcode_local(upload_dict, request)
+                            if verif_msg_html:
+                                msg_html = verif_msg_html
+                            if verification_is_ok:
+                                update_wrap['verification_is_ok'] = True
+
+                        if verification_is_ok:
+# - may submit Ex6 per level
+                            sel_level = None
+                            if sel_lvlbase_pk:
+                                sel_level = subj_mod.Level.objects.get_or_none(
+                                    base_id=sel_lvlbase_pk,
+                                    examyear=sel_examyear
+                                )
+
+                            if logging_on:
+                                logger.debug('     sel_level: ' + str(sel_level))
+# - check ex6_grade_approved_rows
+                            # not necessary to check grades
+                            test_is_ok = True
+                            msg_html = ''.join((
+                                "<div class='p-2 ", c.HTMLCLASS_border_bg_valid, "'>",
+                                    gettext("The %(cpt)s form can be submitted.") % {'cpt': 'Ex6'},
+                                '</div>'
+                            ))
+
+                            if test_is_ok:
+# +++ create new published_instance.
+                                # only save it when it is not a test
+                                # file_name will be added after creating Ex-form
+                                published_instance = None
+                                published_pk = None
+                                file_name = None
+
+                                if not is_test:
+                                    now_arr = upload_dict.get('now_arr')
+                                    published_instance = create_published_instance(
+                                        sel_examyear=sel_examyear,
+                                        sel_school=sel_school,
+                                        sel_department=sel_department,
+                                        sel_level=sel_level,
+                                        sel_examtype='',
+                                        sel_examperiod=sel_examperiod,
+                                        is_test=is_test,
+                                        ex_form='ex6',
+                                        now_arr=now_arr,
+                                        request=request
+                                    )
+                                    if published_instance:
+                                        published_pk = published_instance.pk
+                                        file_name = published_instance.name
+
+                                if logging_on:
+                                    logger.debug('     published_pk: ' + str(published_pk))
+                                    logger.debug('     file_name:    ' + str(file_name))
+
+# +++ create Ex5_xlsx
+                                if not is_test:
+                # - get text from examyearsetting
+                                    # just to prevent PyCharm warning on published_instance=published_instance
+                                    # response = awpr_excel.create_ex2_ex2a_ex6_xlsx(
+                                    if logging_on:
+                                        logger.debug('     is_test: ' + str(is_test))
+
+                # - get library from examyearsetting
+                                    save_to_disk = True
+                                    library = awpr_lib.get_library(sel_examyear, ['exform', 'ex6', 'gradelist'])
+                                    ex_rows_dict, subject_dictlist_sorted = awpr_excel.create_ex6_rows_dict(
+                                        sel_examyear, sel_school, sel_department, sel_level)
+
+                                    # put name of req_usr in field chairperson or secretary.
+                                    req_user = request.user
+                                    requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(req_user)
+                                    auth1_in_requsr_usergroups = 'auth1' in requsr_usergroup_list if requsr_usergroup_list else False
+                                    auth2_in_requsr_usergroups = 'auth2' in requsr_usergroup_list if requsr_usergroup_list else False
+
+                                    grades_auth_dict = {}
+                                    if auth1_in_requsr_usergroups:
+                                        grades_auth_dict['auth1'] = [req_user.last_name]  # value is a list
+                                    elif auth2_in_requsr_usergroups:
+                                        grades_auth_dict['auth2'] = [req_user.last_name]  # value is a list
+
+                    # +++ create Ex6_xlsx
+                                    response, saved_to_disk = awpr_excel.create_ex2_ex2a_ex6_xlsx(
+                                        published_instance=published_instance,
+                                        examyear=sel_examyear,
+                                        school=sel_school,
+                                        department=sel_department,
+                                        ex_rows_dict=ex_rows_dict,
+                                        grades_auth_dict=grades_auth_dict,
+                                        level=sel_level,
+                                        examperiod=c.EXAMPERIOD_FIRST,
+                                        library=library,
+                                        ex_form='ex6',
+                                        save_to_disk=save_to_disk,
+                                        request=request,
+                                        user_lang=user_lang
+                                    )
+
+                                    published_instance_filename = None
+                                    published_instance_file_url = None
+                                    if published_instance:
+                                        published_instance_filename = published_instance.filename
+                                        if published_instance.file:
+                                            published_instance_file_url = published_instance.file.url
+
+                                    msg_html = create_submit_ex5_ex6_saved_msg_html(
+                                        saved_is_ok=saved_to_disk,
+                                        is_ex6=True,
+                                        published_instance_file_url=published_instance_file_url,
+                                        published_instance_filename=published_instance_filename
+                                    )
+
+# - add  msg_html to update_wrap
+        update_wrap['test_is_ok'] = test_is_ok
+        if msg_html:
+            update_wrap['approve_msg_html'] = msg_html
+        if msg_dict:
+            update_wrap['approve_msg_dict'] = msg_dict
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of GradeSubmitEx6View
 
 
 def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict, subj_not_published_list, authmissing_list, file_name, saved_to_disk, is_test, exform_txt): # PR2022-03-11
@@ -1952,13 +2171,13 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
             elif committed == 1:
                 class_str = 'border_bg_valid'
                 sc_gr = gettext('score') if is_score else gettext('grade')
-                msg_list.append(gettext("One %(sc_gr)s will be added to the %(cpt)s form.") % \
-                                {'cpt': exform_txt, 'sc_gr': sc_gr})
+                msg_list.append(gettext("One %(sc_gr)s will be added to the %(frm)s form.") % \
+                                {'frm': exform_txt, 'sc_gr': sc_gr})
             else:
                 class_str = 'border_bg_valid'
                 sc_gr = gettext('scores') if is_score else gettext('grades')
-                msg_list.append(gettext("%(val)s %(sc_gr)s will be added to the %(cpt)s form.") % \
-                                         {'cpt': exform_txt, 'val': committed, 'sc_gr': sc_gr})
+                msg_list.append(gettext("%(val)s %(sc_gr)s will be added to the %(frm)s form.") % \
+                                         {'frm': exform_txt, 'val': committed, 'sc_gr': sc_gr})
             msg_list.append('</p>')
 
     # - warning if any subjects are not fully approved
@@ -1974,7 +2193,7 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
 
         elif test_is_ok:
             class_str = 'border_bg_valid'
-            msg_list.append(''.join(("<p>", str(_("The %(cpt)s form can be submitted.") % {'cpt': exform_txt}), '</p>')))
+            msg_list.append(''.join(("<p>", str(_("The %(frm)s form can be submitted.") % {'frm': exform_txt}), '</p>')))
 
         if logging_on:
             logger.debug('  ????  class_str: ' + str(class_str))
@@ -1984,20 +2203,20 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
         saved = count_dict.get('saved', 0)
         if not saved:
             class_str = 'border_bg_invalid'
-            msg_list.append(gettext("The %(cpt)s form has not been submitted.") % {'cpt': exform_txt })
+            msg_list.append(gettext("The %(frm)s form has not been submitted.") % {'frm': exform_txt })
 
         else:
             class_str = 'border_bg_valid'
             test_is_ok = True
             if saved == 1:
-                msg_list.append( ' '.join((str(_("The %(cpt)s has been submitted.") % {'cpt': exform_txt }),
+                msg_list.append( ' '.join((str(_("The %(frm)s form has been submitted.") % {'frm': exform_txt }),
                                                    str(_("It contains 1 grade.")))))
             else:
-                msg_list.append(' '.join((str(_("The %(cpt)s has been submitted.") % {'cpt': exform_txt}),
+                msg_list.append(' '.join((str(_("The %(frm)s form has been submitted.") % {'frm': exform_txt}),
                                                    str(_("It contains %(val)s grades.") % {'val': saved}))))
             if file_name:
                 msg_list.append(''.join(('<br>',
-                    str(_("The %(cpt)s form has been saved as '%(val)s'.") % {'cpt': exform_txt, 'val': file_name}),
+                    str(_("The %(frm)s form has been saved as '%(val)s'.") % {'frm': exform_txt, 'val': file_name}),
                     '<br>',
                     str(_("Go to the page 'Archive' to download the file."))
                 )))
@@ -2073,23 +2292,28 @@ def create_submit_ex5_test_msg_html(sel_department, sel_level, log_list, test_is
 # - end of create_submit_ex5_test_msg_html
 
 
-def create_submit_ex5_saved_msg_html(saved_is_ok):
-    # PR2022-06-12 PR2023-06-15
+def create_submit_ex5_ex6_saved_msg_html(saved_is_ok, is_ex6, published_instance_file_url, published_instance_filename):
+    # PR2022-06-12 PR2023-06-15 PR2023-08-27
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug('  ----- create_submit_ex5_saved_msg_html -----')
+        logger.debug('  ----- create_submit_ex5_ex6_saved_msg_html -----')
 
     msg_list = []
-
+    ex_form = 'Ex6' if is_ex6 else 'Ex5'
     if not saved_is_ok:
         class_str = 'border_bg_invalid'
-        msg_list.append(gettext("The %(cpt)s form has not been submitted.") % {'cpt': 'Ex5' })
+        msg_list.append(gettext("The %(frm)s form has not been submitted.") % {'frm': ex_form })
     else:
-   # if file_name:
         class_str = 'border_bg_valid'
-        msg_list.append(''.join((gettext("The %(cpt)s form has been saved.") % {'cpt': 'Ex5'},
-                                         '<br>', gettext("Go to the page 'Archive' to download the file."))))
+        msg_list.extend((
+            gettext("The %(frm)s form has been submitted.") % {'frm': ex_form}, ' ',
+            gettext("Click <a href='%(href)s' class='awp_href' target='_blank'>here</a> to download it.")
+            % {'href': published_instance_file_url},
+            '<br>',
+            gettext("It has been saved in the page 'Archive' as '%(frm)s'.")
+            % {'frm': published_instance_filename},
+        ))
 
     msg_html = ''.join((
             "<div class='p-2 ", class_str, "'>",
@@ -2100,19 +2324,21 @@ def create_submit_ex5_saved_msg_html(saved_is_ok):
         logger.debug('    msg_html: ' + str(msg_html))
 
     return msg_html
-# - end of create_submit_ex5_msg_dict
+# - end of create_submit_ex5_ex6_saved_msg_html
 
 
 def create_published_instance(sel_examyear, sel_school, sel_department, sel_level,
-                              sel_examtype, sel_examperiod, is_test, is_ex5, now_arr, request):  # PR2021-01-21 PR2022-04-21
+                              sel_examtype, sel_examperiod, is_test, ex_form, now_arr, request):
+    # PR2021-01-21 PR2022-04-21 PR2023-08-26
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_published_instance ----- ')
 
+    # ex_form = 'ex2', 'ex2a', 'ex5', 'ex6', 'wolf'
+    exform_capitalized = ex_form.capitalize() if ex_form else '---'
+
     # create new published_instance and save it when it is not a test
     depbase_code = sel_department.base.code if sel_department.base.code else '-'
-    if sel_level:
-        depbase_code += ' ' + sel_level.base.code
 
     school_code = sel_school.base.code if sel_school.base.code else '-'
     school_abbrev = sel_school.abbrev if sel_school.abbrev else '-'
@@ -2122,14 +2348,9 @@ def create_published_instance(sel_examyear, sel_school, sel_department, sel_leve
         logger.debug('school_code: ' + str(school_code))
         logger.debug('school_abbrev: ' + str(school_abbrev))
 
-    ex_form, examperiod_str, examtype_caption = '', '', ''
+    examtype_caption = None
 
-    if is_ex5:
-        ex_form = 'Ex5'
-    elif sel_examtype == 'se':
-        ex_form = 'Ex2'
-    else:
-        ex_form = 'Ex2A'
+    if ex_form == 'ex2a':
         if sel_examperiod == 2:
             examtype_caption = sel_examtype.upper() + '-tv2'
         elif sel_examperiod == 3:
@@ -2156,9 +2377,18 @@ def create_published_instance(sel_examyear, sel_school, sel_department, sel_leve
     #hour_str = ("00" + str(now_arr[3]))[-2:]
     #minute_str = ("00" +str( now_arr[4]))[-2:]
     #now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
-    now_formatted = af.get_now_formatted_from_now_arr(now_arr)
 
-    file_name = ' '.join((ex_form, school_code, school_abbrev, depbase_code, examtype_caption, now_formatted))
+    now_formatted = af.get_now_formatted_from_now_arr(now_arr)
+    filename_list = [exform_capitalized, school_code, school_abbrev]
+    if depbase_code:
+        filename_list.append(depbase_code)
+    if sel_level:
+        filename_list.append(sel_level.base.code)
+    if examtype_caption:
+        filename_list.append(examtype_caption)
+    filename_list.append(now_formatted)
+    file_name = ' '.join(filename_list)
+
     # skip school_abbrev if total file_name is too long
     if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
         file_name = ' '.join((ex_form, school_code, depbase_code, examtype_caption, now_formatted))
@@ -2264,7 +2494,7 @@ def create_published_instance_gradelist_diploma(sel_examyear, sel_school, sel_de
 
 def create_published_diplomagradelist_rows(sel_school, sel_department):
     # --- create rows of published records PR2021-01-21 PR2022-09-16 PR2023-04-19
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_published_diplomagradelist_rows -----')
 
@@ -2280,8 +2510,6 @@ def create_published_diplomagradelist_rows(sel_school, sel_department):
         student__department=sel_department
     )
     for row in rows:
-        if logging_on:
-            logger.debug('    row: ' + str(row))
 
         if row.file:
             file_url = row.file.url

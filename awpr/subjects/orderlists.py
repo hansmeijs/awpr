@@ -1234,7 +1234,9 @@ def update_envelopsubject_instance(examyear, envelopsubject_instance, upload_dic
 def create_orderlist_rows(request, sel_examyear):
     # --- create rows of all schools with published subjects PR2021-08-18
     # only used in downloads.py
-    # PR2022-02-15 filter also on student.tobedeleted=False
+    # PR2022-02-15 filter also on NOT student.tobedeleted
+    # PR2023-08-27 filter also on NOT student.deleted
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== students.view create_orderlist_rows ============= ')
@@ -1269,67 +1271,69 @@ def create_orderlist_rows(request, sel_examyear):
 
         requsr_country_pk = request.user.country.pk
         is_curacao = request.user.country.abbrev.lower() == 'cur'
-        show_sxm_only = "AND ey.country_id = %(requsr_country_pk)s::INT" if not is_curacao else ''
+        show_sxm_only = ''.join(("AND ey.country_id = ", str(requsr_country_pk), "::INT")) if not is_curacao else ''
 
-        sel_exam_period = 1
-        sql_keys = {'ey_code_int': sel_examyear.code,
-                    'ex_period_int': sel_exam_period,
-                    'default_role': c.ROLE_008_SCHOOL,
-                    'requsr_country_pk': requsr_country_pk}
+        sql_sublist = [
+            "SELECT stud.school_id AS school_id, publ.id AS subj_published_id, count(*) AS publ_count,",
+            "publ.datepublished, publ.examperiod",
 
-        sql_sublist = ["SELECT st.school_id AS school_id, publ.id AS subj_published_id, count(*) AS publ_count,",
-                       "publ.datepublished, publ.examperiod",
+            "FROM students_studentsubject AS studsubj",
+            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
 
-                       "FROM students_studentsubject AS studsubj",
-                       "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+            "INNER JOIN schools_published AS publ ON (publ.id = studsubj.subj_published_id)",
 
-                       "INNER JOIN schools_published AS publ ON (publ.id = studsubj.subj_published_id)",
-                       "WHERE publ.examperiod = %(ex_period_int)s::INT",
-                       "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted",
+            "WHERE publ.examperiod = ", str(c.EXAMPERIOD_FIRST), "::INT",
+            "AND NOT stud.deleted AND NOT stud.tobedeleted",
+            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
 
-                       "GROUP BY st.school_id, publ.id, publ.datepublished, publ.examperiod"
-                       ]
+            "GROUP BY stud.school_id, publ.id, publ.datepublished, publ.examperiod"
+        ]
         sub_sql = ' '.join(sql_sublist)
 
-        total_sublist = ["SELECT st.school_id AS school_id, count(*) AS total",
-                         "FROM students_studentsubject AS studsubj",
-                         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-                         "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted",
-                         "GROUP BY st.school_id"
-                         ]
+        total_sublist = [
+            "SELECT stud.school_id AS school_id, count(*) AS total",
+            "FROM students_studentsubject AS studsubj",
+            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+            "WHERE NOT stud.deleted AND NOT stud.tobedeleted",
+            "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+            "GROUP BY stud.school_id"
+        ]
         total_sql = ' '.join(total_sublist)
+
         # see https://www.postgresqltutorial.com/postgresql-group-by/
-        total_students_sublist = ["SELECT st.school_id, count(*) AS total_students",
-                                  "FROM students_student AS st",
-                                  "WHERE NOT st.tobedeleted",
-                                  "GROUP BY st.school_id"
-                                  ]
+        total_students_sublist = [
+            "SELECT stud.school_id, count(*) AS total_students",
+            "FROM students_student AS stud",
+            "WHERE NOT stud.deleted AND NOT stud.tobedeleted",
+            "GROUP BY stud.school_id"
+        ]
         total_students_sql = ' '.join(total_students_sublist)
 
-        sql_list = ["WITH sub AS (", sub_sql, "), total AS (", total_sql, "), total_students AS (", total_students_sql, ")",
-                    "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sub.subj_published_id,",
-                    "total.total, total_students.total_students, sub.publ_count, sub.datepublished, sub.examperiod",
+        sql_list = [
+            "WITH sub AS (", sub_sql, "), total AS (", total_sql, "), total_students AS (", total_students_sql, ")",
+            "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sub.subj_published_id,",
+            "total.total, total_students.total_students, sub.publ_count, sub.datepublished, sub.examperiod",
 
-                    "FROM schools_school AS sch",
-                    "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+            "FROM schools_school AS sch",
+            "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
 
-                    "LEFT JOIN sub ON (sub.school_id = sch.id)",
-                    "LEFT JOIN total ON (total.school_id = sch.id)",
-                    "LEFT JOIN total_students ON (total_students.school_id = sch.id)",
+            "LEFT JOIN sub ON (sub.school_id = sch.id)",
+            "LEFT JOIN total ON (total.school_id = sch.id)",
+            "LEFT JOIN total_students ON (total_students.school_id = sch.id)",
 
-                    "WHERE schbase.defaultrole = %(default_role)s::INT",
-                    "AND ey.code = %(ey_code_int)s::INT",
-                    show_sxm_only,
-                    "ORDER BY sch.id"
-                    ]
+            "WHERE schbase.defaultrole = ", str(c.ROLE_008_SCHOOL), "::INT",
+            "AND ey.code = ", str(sel_examyear.code), "::INT",
+            show_sxm_only,
+            "ORDER BY sch.id"
+        ]
         sql = ' '.join(sql_list)
 
         if logging_on:
             logger.debug('sql: ' + str(sql))
 
         with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
+            cursor.execute(sql)
             rows = af.dictfetchall(cursor)
 
             for row in rows:

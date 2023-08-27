@@ -15,6 +15,8 @@ from awpr import constants as c
 from awpr import settings as s
 from awpr import functions as af
 
+from students import functions as stud_fnc
+
 from grades import exfiles as grd_exfiles
 
 from reportlab.pdfgen.canvas import Canvas
@@ -2308,7 +2310,7 @@ def draw_red_cross(canvas, x, y):
 # draw pok
 
 def draw_pok(canvas, library, student_dict, auth1_name, printdate, examyear_int):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_pok +++++++++++++')

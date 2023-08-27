@@ -3038,7 +3038,7 @@ class ExamApproveOrSubmitWolfView(View):
                                 sel_examtype='ce',
                                 sel_examperiod=sel_examperiod,
                                 is_test=is_test,
-                                is_ex5=False,
+                                ex_form='wolf',
                                 now_arr=now_arr,
                                 request=request
                             )

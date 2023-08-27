@@ -1943,8 +1943,11 @@ def get_locale_dict(table_dict, user_lang, request):
             'verif_03': _("The verification code expires in 30 minutes."),
             'sending_verifcode': TXT_Sending_verifcode,
 
-            'creating_ex5_form': _("AWP is creating %(ex)s...") % {'ex': gettext('The Ex5 form').lower()},
+            'creating_ex5_form': _("AWP is creating %(ex)s...") % {'ex': gettext('the Ex5 form')},
             'submit_ok_ex5': _("%(ex)s is succesfully created.") % {'ex': _('The Ex5 form')},
+
+            'creating_ex6_form': _("AWP is creating %(ex)s...") % {'ex': gettext('the Ex6 form')},
+            'submit_ok_ex6': _("%(ex)s is succesfully created.") % {'ex': _('The Ex6 form')},
 
         }
 

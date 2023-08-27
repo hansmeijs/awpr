@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Results' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/results230824.js' %}"></script>
+    <script src="{% static 'js/results230827.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -106,8 +106,9 @@
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
-                data-url_grade_submit_ex5="{% url 'url_grade_submit_ex5' %}"
                 data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
+                data-url_result_submit_ex5="{% url 'url_result_submit_ex5' %}"
+                data-url_result_submit_ex6="{% url 'url_result_submit_ex6' %}"
 
                 data-url_download_gradelist="{% url 'url_download_gradelist' '-' %}"
                 data-url_calc_results="{% url 'url_calc_results' '-' %}"

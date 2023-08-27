@@ -322,16 +322,17 @@ urlpatterns = [
         path('calc_reex/<list>/', grade_calc_reex.CalcReexView.as_view(), name='url_calc_reex'),
         path('download_gradelist/<lst>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
 
-        path('download_pok/<lst>/', student_results.DownloadPokView.as_view(), name='url_download_pok'),
-
-        path('submit_ex5', grade_views.GradeSubmitEx5View.as_view(), name='url_grade_submit_ex5'),
+        path('submit_ex5', grade_views.GradeSubmitEx5View.as_view(), name='url_result_submit_ex5'),
 
         path('download_shortgradelist/<lst>/', student_results.GradeDownloadShortGradelist.as_view(), name='url_result_download_shortgradelist'),
 
         path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5'),
         path('result_download_overview', grade_excel.GradeDownloadResultOverviewView.as_view(), name='url_result_download_overview'),
 
+        path('download_pok/<lst>/', student_results.DownloadPokView.as_view(), name='url_download_pok'),
         path('result_download_ex6', grade_excel.GradeDownloadEx6View.as_view(), name='url_result_download_ex6'),
+        path('submit_ex6', grade_views.GradeSubmitEx6View.as_view(), name='url_result_submit_ex6'),
+
         path('change_birthcountry', student_views.ChangeBirthcountryView.as_view(), name='url_change_birthcountry'),
 
         path('approve_result', student_views.StudentApproveResultView.as_view(), name='url_approve_result'),

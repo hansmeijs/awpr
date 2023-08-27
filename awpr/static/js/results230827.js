@@ -66,7 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
     urls.url_studsubj_validate_scheme = get_attr_from_el(el_data, "data-url_studsubj_validate_scheme");
-    urls.url_grade_submit_ex5 = get_attr_from_el(el_data, "data-url_grade_submit_ex5");
+    urls.url_result_submit_ex5 = get_attr_from_el(el_data, "data-url_result_submit_ex5");
+    urls.url_result_submit_ex6 = get_attr_from_el(el_data, "data-url_result_submit_ex6");
 
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
 
@@ -288,6 +289,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MOD APPROVE GRADE ------------------------------------
         const el_mod_approve_grade = document.getElementById("id_mod_approve_grade");
         const el_MAG_header = document.getElementById("id_MAG_header");
+
+        // el_MAG_select_container not in use on this page - hide them in MAG_Open
         const el_MAG_select_container = document.getElementById("id_MAG_select_container");
             const el_MAG_subheader = document.getElementById("id_MAG_subheader");
             const el_MAG_examperiod = document.getElementById("id_MAG_examperiod");
@@ -314,10 +317,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MAG_input_verifcode.addEventListener("change", function() {MAG_InputVerifcode(el_MAG_input_verifcode)}, false);
         };
         const el_MAG_err_verifcode = document.getElementById("id_MAG_err_verifcode");
+
+        // el_MAG_btn_delete not in use on this page
         const el_MAG_btn_delete = document.getElementById("id_MAG_btn_delete");
-        if (el_MAG_btn_delete){
-            el_MAG_btn_delete.addEventListener("click", function() {MAG_Save("delete")}, false );  // true = reset
-        };
+
         const el_MAG_btn_save = document.getElementById("id_MAG_btn_save");
         if (el_MAG_btn_save){
             el_MAG_btn_save.addEventListener("click", function() {MAG_Save("save")}, false );
@@ -2080,27 +2083,29 @@ function RefreshDataRowsAfterUpload(response) {
 
 
 //###########################
-//========= MOD APPROVE GRADE ================ PR2023-06-15
+//========= MOD APPROVE GRADE ================ PR2023-06-15 PR2023-08-26
+    // only used to submit Ex5 and Ex6, not to approve
     function MAG_Open (open_mode ) {
          console.log("===  MAG_Open  =====") ;
         console.log("    open_mode", open_mode) ;
         console.log("    setting_dict.sel_examperiod", setting_dict.sel_examperiod, typeof setting_dict.sel_examperiod)
 
-        // only used in Submit_Ex5
-
-        // open_mode = 'submit_ex5'
+        // open_mode = 'submit_ex5' or 'submit_ex6'
 
         b_clear_dict(mod_MAG_dict);
 
+        mod_MAG_dict.is_ex6 = (open_mode === "submit_ex6");
+
 // --- check sel_examperiod
         let msg_html = null;
-        if ([1 ,2, 3].includes(setting_dict.sel_examperiod) ){
-            mod_MAG_dict.examperiod = setting_dict.sel_examperiod;
-        } else {
-            mod_MAG_dict.examperiod = null;
-            msg_html = loc.Please_select_examperiod;
+        if (!mod_MAG_dict.is_ex6){
+            if ([1 ,2, 3].includes(setting_dict.sel_examperiod) ){
+                mod_MAG_dict.examperiod = setting_dict.sel_examperiod;
+            } else {
+                mod_MAG_dict.examperiod = null;
+                msg_html = loc.Please_select_examperiod;
+            };
         };
-
         if (msg_html) {
             b_show_mod_message_html(msg_html);
         } else {
@@ -2115,8 +2120,6 @@ function RefreshDataRowsAfterUpload(response) {
             mod_MAG_dict.submit_is_ok = false;
             mod_MAG_dict.is_reset = false;
 
-            mod_MAG_dict.is_approve_mode = (open_mode === "approve");
-
 // get selected auth_index
             mod_MAG_dict.auth_index = setting_dict.sel_auth_index;
             MAG_get_sel_auth_index();
@@ -2130,10 +2133,7 @@ function RefreshDataRowsAfterUpload(response) {
             if (mod_MAG_dict.has_permit && mod_MAG_dict.auth_index){
 
 // --- get header_txt and subheader_txt
-                el_MAG_header.innerText = loc.Submit_Ex5_form;
-                const subheader_txt = (mod_MAG_dict.is_approve_mode) ? (is_examperiod_exemption) ? loc.MAG_info.subheader_approve_exem : loc.MAG_info.subheader_approve_grade :
-                                      (mod_MAG_dict.is_submit_ex2a_mode) ? loc.MAG_info.subheader_submit_ex2a : null;
-                el_MAG_subheader.innerText = subheader_txt;
+                el_MAG_header.innerText = (mod_MAG_dict.is_ex6) ? loc.Submit_Ex6_form : loc.Submit_Ex5_form;
 
 // --- get examperiod and examtype text
                 // sel_examperiod 4 shows "Vrijstelling" as examperiod, replace by "Eerste tijdvak"
@@ -2160,8 +2160,7 @@ function RefreshDataRowsAfterUpload(response) {
 // --- reset ok button
 
 //----------------
-// ---  show info container and delete button only in approve mode
-            //console.log("...........is_submit", is_submit) ;
+// ---  info container and delete button not in use on this page
             add_or_remove_class(el_MAG_select_container, cls_hide, true);
             add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
 
@@ -2172,7 +2171,6 @@ function RefreshDataRowsAfterUpload(response) {
                 // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
                 add_or_remove_class(el_MAG_loader, cls_hide, true);
                 //add_or_remove_class(el_MAG_btn_save, cls_hide, true);
-                //add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
 
                 MAG_Save ("save");
 
@@ -2186,11 +2184,8 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  MAG_Save  ================
     function MAG_Save(save_mode) {
         console.log("===  MAG_Save  =====") ;
-        console.log("    save_mode", save_mode) ;
         console.log("    mod_MAG_dict", mod_MAG_dict) ;
-        console.log("    mod_MAG_dict.examperiod", mod_MAG_dict.examperiod) ;
-        console.log("    mod_MAG_dict.examtype", mod_MAG_dict.examtype) ;
-        // save_mode = 'save' or 'delete'
+        // save_mode is always 'save'
 
         if (permit_dict.permit_submit_ex5) {
 
@@ -2198,7 +2193,7 @@ function RefreshDataRowsAfterUpload(response) {
             const upload_dict = {
                 table: "grade",
                 page: "page_result",
-                form: "ex5",
+                form: (mod_MAG_dict.is_ex6) ? "ex6" : "ex5",
                 auth_index: mod_MAG_dict.auth_index,
                 examperiod: mod_MAG_dict.examperiod,
                 level_abbrev: mod_MAG_dict.sel_lvlbase_code,
@@ -2210,7 +2205,7 @@ function RefreshDataRowsAfterUpload(response) {
                 url_str = urls.url_send_email_verifcode;
 
             } else {
-                url_str = urls.url_grade_submit_ex5;
+                url_str = (mod_MAG_dict.is_ex6) ? urls.url_result_submit_ex6 : urls.url_result_submit_ex5;
 
                 if (mod_MAG_dict.test_is_ok || mod_MAG_dict.retry_verifcode){
                     upload_dict.mode = "submit_save";
@@ -2235,7 +2230,6 @@ function RefreshDataRowsAfterUpload(response) {
             //add_or_remove_class(el_MAG_input_verifcode.parentNode, cls_hide, true);
 
     // ---  hide delete btn
-            add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
             UploadChanges(upload_dict, url_str);
 
         console.log("--- from MAG_Save");
@@ -2324,18 +2318,6 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  MAG_get_sel_auth_index  ================
     function MAG_get_sel_auth_index() {  // PR2023-02-03
         //console.log("===  MAG_get_sel_auth  =====") ;
-    //console.log("    mod_MAG_dict.is_approve_mode", mod_MAG_dict.is_approve_mode);
-
-    //console.log("    permit_dict.usergroup_list", permit_dict.usergroup_list) ;
-   // console.log("    setting_dict.sel_auth_index", setting_dict.sel_auth_index) ;
-        // parameters of this function are:
-        //      permit_dict.usergroup_list
-        //      setting_dict.sel_auth_index
-        //      mod_MAG_dict.is_approve_mode
-        //      mod_MAG_dict.examperiod
-        // output is:
-        //      mod_MAG_dict.requsr_auth_list
-        //      mod_MAG_dict.auth_index
 
         let sel_auth_index = null;
 
@@ -2388,7 +2370,7 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
         };
     };  // MAG_fill_select_authindex
 
-//=========  MAG_SetInfoboxesAndBtns  ================ PR2023-02-23 PR2023-04-10
+//=========  MAG_SetInfoboxesAndBtns  ================ PR2023-02-23 PR2023-04-10 PR2023-08-26
     function MAG_SetInfoboxesAndBtns(response) {
         console.log("===  MAG_SetInfoboxesAndBtns  =====") ;
         // called by MAG_Save and MAG_UpdateFromResponse
@@ -2415,7 +2397,6 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
     console.log("    verification_is_ok", mod_MAG_dict.verification_is_ok) ;
     console.log("    verificationkey", mod_MAG_dict.verificationkey) ;
 
-        // ---  in MAG_Open: show el_MAG_select_container and delete button only in approve mode
         let show_loader = false, show_input_verifcode = false, reset_input_verifcode = false;
         let show_info_request_verifcode = false;
         let msg_info_html = null, msg_info_txt = null;
@@ -2447,7 +2428,7 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
                 show_info_request_verifcode = mod_MAG_dict.test_is_ok;
 
             } else {
-                // after clicking on 'Request_verificationcode' the msg shows: sening verifcode
+                // after clicking on 'Request_verificationcode' the msg shows: sending verifcode
                 msg_info_txt = loc.MAG_ex5_info.sending_verifcode;
                 show_loader = true;
                 mod_MAG_dict.btn_save_enabled = false;
@@ -2463,11 +2444,10 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
                 msg_info_html = (response.approve_msg_html) ? response.approve_msg_html : null;
                 // show_input_verifcode only when a verificationkey is received
 
-                // TODO handling wrong verif code goes wrong
                 // show_input_verifcode = !!mod_MAG_dict.verificationkey || !mod_MAG_dict.verification_is_ok;
                 show_input_verifcode = !!mod_MAG_dict.verificationkey || mod_MAG_dict.retry_verifcode;
                 reset_input_verifcode = show_input_verifcode;
-                btn_save_txt = loc.Submit_Ex5_form;
+                btn_save_txt =  (mod_MAG_dict.is_ex6) ?  loc.Submit_Ex6_form : loc.Submit_Ex5_form;
                 mod_MAG_dict.btn_save_enabled = true;
 
             } else {
@@ -2477,7 +2457,7 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
                 mod_MAG_dict.show_err_verifcode = (el_MAG_input_verifcode.value && !mod_MAG_dict.btn_save_enabled);
 
                 if (mod_MAG_dict.btn_save_enabled){
-                    msg_info_txt = loc.MAG_ex5_info.creating_ex5_form;
+                    msg_info_txt = (mod_MAG_dict.is_ex6) ? loc.MAG_ex5_info.creating_ex6_form : loc.MAG_ex5_info.creating_ex5_form;
                     show_loader = true;
                 };
             };
@@ -2553,10 +2533,6 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
 // ---  show only the elements that are used in this tab
         const show_class = "tab_step_" + mod_MAG_dict.step;
         b_show_hide_selected_elements_byClass("tab_show", show_class, el_mod_approve_grade);
-
-// ---  hide delete btn when reset or publish mode
-        const show_delete_btn = (mod_MAG_dict.step === 1 && mod_MAG_dict.is_approve_mode && mod_MAG_dict.has_already_approved);
-        add_or_remove_class(el_MAG_btn_delete, cls_hide, !show_delete_btn);
 
 };  // MAG_SetInfoboxesAndBtns
 
