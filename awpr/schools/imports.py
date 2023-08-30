@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 class UploadImportSettingView(View):   # PR2020-12-05
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= UploadImportSettingView ============= ')
 
@@ -586,9 +586,9 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                     filename = upload_dict.get('filename', '')
 
                     if logging_on:
-                        logger.debug('is_test: ' + str(is_test))
-                        logger.debug('lookup_field: ' + str(lookup_field))
-                        logger.debug('filename: ' + str(filename))
+                        logger.debug('    is_test: ' + str(is_test))
+                        logger.debug('    lookup_field: ' + str(lookup_field))
+                        logger.debug('    filename: ' + str(filename))
                         if data_list:
                             logger.debug('length data_list: ' + str(len(data_list)))
 
@@ -647,7 +647,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                             # for key, val in student.items():
                             # #logger.debug( str(key) +': ' + val + '" found in "' + str(student) + '"')
                             if logging_on:
-                                logger.debug('data_dict: ' + str(data_dict))
+                                logger.debug('    data_dict: ' + str(data_dict))
     # skip empty rows
                             has_values = False
                             if data_dict.get(lookup_field):
@@ -690,7 +690,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                                 #   count_bisexam += 1
 # +++++ end of loop through data_list
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # - return html with number of students, existing, new and erros
+        # - return html with number of students, existing, new and errors
                     result_html = create_result_html(
                         is_test=is_test,
                         count_total=count_total,
@@ -2706,30 +2706,35 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_idnumberl
     # output:       dict: { idnumber: {student_id: id, subjectbase_pk: subject_code, ...}, ... }
     # '2004042204': {'stud_id': 3110, 133: 'ne', 134: 'en', 135: 'mm1', 136: 'lo', 138: 'pa', 141: 'wk', 142: 'ns1', 154: 'ns2', 155: 'sws'},
 
+    # PR2023-08-29 debug KAP Hans Vlinkervleugel: cannot uploaded subjects for certain students not showing.
+    # # cause: were added to deleted students.
+    # solution: add stud.deleted and stud.tobedeleted to where clause
+
    # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
-    sql_keys = {'sch_id': school.pk, 'dep_id': department.pk}
-    sql_studsubj_list = ["SELECT studsubj.student_id, subj.base_id AS subjbase_id, subjbase.code AS subjbase_code, sjtp.has_pws",
+    sub_sql = ' '.join((
+        "SELECT studsubj.student_id, subj.base_id AS subjbase_id, subjbase.code AS subjbase_code, sjtp.has_pws",
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
         "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
-        # "WHERE subj.examyear_id = %(ey_id)s::INT AND NOT studsubj.tobedeleted"]
-        #"WHERE NOT studsubj.tobedeleted"]
-        "WHERE NOT studsubj.tobedeleted AND NOT studsubj.deleted"]
-    sub_sql = ' '.join(sql_studsubj_list)
+        "WHERE NOT studsubj.deleted AND NOT studsubj.tobedeleted"
+    ))
     # sub_sql row: (8855, 422, 'ne')
 
-    sql_list = ["WITH sub_sql AS (" + sub_sql + ")",
+    sql = ' '.join((
+        "WITH sub_sql AS (" + sub_sql + ")",
         "SELECT stud.idnumber, stud.id AS stud_id, stud.lastname, stud.firstname, stud.prefix, ",
         "sub_sql.subjbase_id, sub_sql.subjbase_code, sub_sql.has_pws",
         "FROM students_student AS stud",
         "LEFT JOIN sub_sql ON (sub_sql.student_id = stud.id)",
-        "WHERE stud.school_id = %(sch_id)s::INT AND stud.department_id = %(dep_id)s::INT"]
-    sql = ' '.join(sql_list)
+        "WHERE stud.school_id = ", str(school.pk), "::INT ",
+        "AND stud.department_id = ", str(department.pk), "::INT",
+        "AND NOT stud.deleted AND NOT stud.tobedeleted"
+    ))
 
     with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
+        cursor.execute(sql)
         rows = cursor.fetchall()
 
     subjectbase_pk_dict = {}
@@ -2773,10 +2778,15 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_idnumberl
                     if subjectbase_pk not in student_dict:
                         student_dict[subjectbase_pk] = subjectbase_code
 
-    if logging_on:
-        logger.debug('subjectbase_pk_dict: ' + str(subjectbase_pk_dict))
+                if logging_on:
+                    logger.debug('    student_dict: ' + str(student_dict))
         # {'2003031202': {'stud_id': 9240, 'has_pws_subjbase_pk': 123, 372: 'ne', 373: 'en', 374: 'mm1', 375: 'lo', 376: 'cav', 377: 'pa', 380: 'wk', 392: 'ac', 395: 'stg', 414: 'ec', False]},
-
+    """
+    PR2023-08-29 KAP Hans Vlinkervleugel: error importing studsubjects
+    from upload:  data_dict: {'idnumber': '2005102301', 'subjects': {'116': 'lo', '117': 'cav', '118': 'pa', '142': 'asw', '148': 'pws', '149': 'wa', '152': 'kv', '155': 'ec', '159': 'sptl', '165': 'netl', '167': 'entl'}}
+    from database: student_dict: {'stud_id': 9109, 116: 'lo', 117: 'cav', 118: 'pa', 142: 'asw', 'has_pws_subjbase_pk': 148, 148: 'pws', 149: 'wa', 152: 'kv', 155: 'ec', 159: 'sptl', 165: 'netl', 167: 'entl', None: '-'}
+    
+    """
     return subjectbase_pk_dict
 # - end of get_students_dict_with_subjbase_pk_list
 
@@ -2969,10 +2979,10 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
 
     if logging_on:
         #logger.debug('students_dict_with_subjbase_pk_list: ' + str(students_dict_with_subjbase_pk_list))
-        logger.debug('lookup_field_caption: ' + str(lookup_field_caption))
-        logger.debug('idnumber_nodots: ' + str(idnumber_nodots) + ' ' + str(type(idnumber_nodots)))
-        logger.debug('error_list: ' + str(error_list))
-        logger.debug('has_error: ' + str(has_error))
+        logger.debug('    lookup_field_caption: ' + str(lookup_field_caption))
+        logger.debug('    idnumber_nodots: ' + str(idnumber_nodots) + ' ' + str(type(idnumber_nodots)))
+        logger.debug('    error_list: ' + str(error_list))
+        logger.debug('    has_error: ' + str(has_error))
 
     student = None
     is_existing_student = False
@@ -2989,7 +2999,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
             # {'2003031202': {'stud_id': 9240, has_pws': False, 372: 'ne', 373: 'en', 374: 'mm1', 375: 'lo', 376: 'cav', 377: 'pa', 380: 'wk', 392: 'ac', 395: 'stg', 414: 'ec', False]},
 
             if logging_on:
-                logger.debug('student_dict: ' + str(student_dict))
+                logger.debug('    student_dict: ' + str(student_dict))
 
             student_pk = student_dict.get('stud_id')
             if student_pk:
@@ -3004,7 +3014,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                     has_multiple_pws_subjects = True
 
         if logging_on:
-            logger.debug('student: ' + str(student))
+            logger.debug('    student: ' + str(student))
 
         if student is None:
             has_error = True
@@ -3029,6 +3039,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
             log_list.append(''.join((caption_txt, str(not_added_txt))))
         else:
             is_existing_student = True
+
     if not has_error:
         log_list.append(idnumber_nodots + '  ' + student.fullname + ' ' + str(student.scheme))
 
@@ -3129,6 +3140,8 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                                     skip_save=is_test,
                                     is_import=True
                                 )
+                                if logging_on:
+                                    logger.debug('..... ' + str(studsubj))
 
                                 if studsubj:
                                     has_created_studsubj = True

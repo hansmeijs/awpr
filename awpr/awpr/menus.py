@@ -440,6 +440,7 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
 
 # - make background red when testsite PR2022-01-11
         class_bg_testsite = "tsa_tr_error" if s.IS_TESTSITE else ""
+        class_bg_testsite = "tsa_tr_ok" if s.IS_TESTSITE else ""
 
         headerbar_param = {
             'no_access': no_access,

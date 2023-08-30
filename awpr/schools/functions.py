@@ -1529,7 +1529,7 @@ def get_department(old_examyear, new_examyear):
 # ===============================
 def get_schoolsettings(request, request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):
     # PR2020-04-17 PR2020-12-28  PR2021-01-12 PR2022-03-19 PR2023-05-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_schoolsetting ---------------- ')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
@@ -1597,7 +1597,7 @@ def get_schoolsettings(request, request_item_setting, sel_examyear, sel_schoolba
 
 # ===============================
 def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-08-01
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
         logger.debug('    setting_key: ' + str(setting_key))

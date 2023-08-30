@@ -846,6 +846,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Add_candidate'] = _('Add candidate')
         dict['Delete_candidate'] = _('Delete candidate')
+        dict['Restore_deleted_candidate'] = _('Restore deleted candidate')
         dict['Remove_bis_exam'] = _('Remove bis-exam')
         dict['The_bis_exam'] = _('The bis-exam')
         dict['The_evening_student_label'] = _("Label 'evening student'")

@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         idnumber: "ID_number", prefix: "Prefix", gender: "Gender",
         birthdate: "Birthdate", birthcountry: "Country_of_birth", birthcity: "Place_of_birth",
         lvl_abbrev:  "Learning_path", sct_abbrev: "Sector",classname: "Class",
-        examnumber: "Examnumber", regnumber: "Regnumber", extrafacilities: "Extra_facilities", bis_exam: "Bis_exam"
+        examnumber: "Examnumber", extrafacilities: "Extra_facilities", bis_exam: "Bis_exam"
     };
 
 // --- get field_settings
@@ -1266,7 +1266,14 @@ function RefreshDataRowsAfterUpload(response) {
             el_MSTUD_msg_modified.innerText = display_txt;
 
     // ---  hide delete btn when is_addnew
+            const is_deleted = (mod_MSTUD_dict && mod_MSTUD_dict.deleted);
             add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
+            if (el_MSTUD_btn_delete){
+               el_MSTUD_btn_delete.innerText = (is_deleted) ? loc.Restore_deleted_candidate : loc.Delete_candidate;
+            };
+
+            add_or_remove_class(el_MSTUD_btn_symbols, cls_hide, is_deleted);
+            add_or_remove_class(el_MSTUD_div_form_controls, "tsa_tr_error", is_deleted);
 
     // ---  show modal
             $("#id_mod_student").modal({backdrop: true});

@@ -4000,7 +4000,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
         # - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
                     if not count:
-                        msg_list.append('if not count')
+                        subj_txt = get_subject_count_text(examperiod, count)
+                        msg_list.append(gettext("The selection contains %(val)s.") % {'val': subj_txt})
+
                     elif committed == count:
                         msg_list.append("<div class='pt-2'>" + str(_("All %(cpt)s will be approved.") % {'cpt': subjects_plural}) + ':</div><ul>')
                     else:
