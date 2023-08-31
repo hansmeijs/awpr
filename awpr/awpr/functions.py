@@ -1371,9 +1371,9 @@ def fillBanklistONCEONLY(request):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- fillBanklistONCEONLY -------')
-
+    # PR2023-08-31 debug 'name' was declared in try block, therefore at every login a new row wascreaded
+    name = 'fill_banklist'
     try:
-        name = 'fill_banklist'
         exists = sch_mod.Systemupdate.objects.filter(
             name=name
         ).exists()
