@@ -1203,8 +1203,8 @@ def system_updates(examyear, request):
 
 
 # PR2023-07-18 fill banklist in examyearsetting of examyear 2023
-    fillBanklistONCEONLY(request)
-    fillUserdataONCEONLY(request)
+    #fillBanklistONCEONLY(request)
+    #fillUserdataONCEONLY(request)
 
 # PR2023-05-01 add usergroup 'wolf' and archive to all users with usergroup 'edit'
     #add_usergroup_wolf(request)
