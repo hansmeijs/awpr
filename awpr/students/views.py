@@ -5796,15 +5796,19 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
             # - also remove approved and published info
                     # TODO also from grades??
+                    subj_published_id = getattr(studsubj_instance, 'subj_published_id')
                     setattr(studsubj_instance, 'prev_auth1by_id', getattr(studsubj_instance, 'subj_auth1by_id', None))
                     setattr(studsubj_instance, 'prev_auth2by_id', getattr(studsubj_instance, 'subj_auth2by_id', None))
-                    setattr(studsubj_instance, 'prev_published_id', getattr(studsubj_instance, 'subj_published_id', None))
+                    setattr(studsubj_instance, 'prev_published_id', subj_published_id)
 
                     setattr(studsubj_instance, 'subj_auth1by', None)
                     setattr(studsubj_instance, 'subj_auth2by', None)
                     setattr(studsubj_instance, 'subj_published', None)
 
-                    setattr(studsubj_instance, 'tobechanged', True)
+                    # PR2023-08-30 Hans Vlinkervleugel: gives open circle before submitting first Ex1.
+                    # solved bij adding check if is_published
+                    if subj_published_id:
+                        setattr(studsubj_instance, 'tobechanged', True)
 
                     save_changes = True
                     recalc_finalgrade = True
@@ -8314,9 +8318,10 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
                 if schemeitem != studsubj_instance.schemeitem:
                     try:
+                        subj_published_id = getattr(studsubj_instance, 'subj_published_id')
+
                         # set schemeitem
                         setattr(studsubj_instance, 'schemeitem', schemeitem)
-                        setattr(studsubj_instance, 'tobechanged', True)
 
                         setattr(studsubj_instance, 'prev_auth1by_id', None)
                         setattr(studsubj_instance, 'prev_auth2by_id', None)
@@ -8325,6 +8330,11 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                         setattr(studsubj_instance, 'subj_auth1by_id', None)
                         setattr(studsubj_instance, 'subj_auth2by_id', None)
                         setattr(studsubj_instance, 'subj_published_id', None)
+
+                        # PR2023-08-30 Hans Vlinkervleugel: gives open circle before submitting first Ex1.
+                        # solved bij adding check if is_published
+                        if subj_published_id:
+                            setattr(studsubj_instance, 'tobechanged', True)
 
                         append_key = 'changed'
 
@@ -8391,7 +8401,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                     # if new studsubj has different schemeitem as tobedeleted one:
                     # if studsubject is tobedeleted > remove tobedeleted, set schemeitem, keep prevpublished , remove published (should be None already)
 
-                            setattr(studsubj_instance, 'tobechanged', True)
+                            subj_published_id = getattr(studsubj_instance, 'subj_published_id')
 
                             setattr(studsubj_instance, 'deleted', False)
                             setattr(studsubj_instance, 'tobedeleted', False)
@@ -8400,7 +8410,12 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                             setattr(studsubj_instance, 'subj_auth2by_id', None)
                             setattr(studsubj_instance, 'subj_published_id', None)
 
-                    # set schemeitem
+                            # PR2023-08-30 Hans Vlinkervleugel: gives open circle before submitting first Ex1.
+                            # solved bij adding check if is_published
+                            if subj_published_id:
+                                setattr(studsubj_instance, 'tobechanged', True)
+
+                        # set schemeitem
                             setattr(studsubj_instance, 'schemeitem', schemeitem)
 
                         append_key = 'restored'

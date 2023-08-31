@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def update_library(examyear):
-    # function to add sysadmin permit to admin users PR2020-07-30
-    # logger.debug('........update_sysadmin_in_user..........')
+    # function to update library PR2020-07-30 PR2023-08-31
+    # logger.debug('........update_library..........')
 
     key_value_list = [
         ('exform', 'minond', 'MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT'),
@@ -79,16 +79,19 @@ def update_library(examyear):
         ('exam', 'duo_exam', 'CVTE examen'),
 
         ('ex1', 'title', 'Genummerde alfabetische naamlijst van de kandidaten'),
-        ('ex1', 'submit_before', 'Inzenden vóór 1 november *'),
+        # PR2023-08-31 email Esther ETE: chnage to 31 august. was:  ('ex1', 'submit_before', 'Inzenden vóór 1 november *'),
+        ('ex1', 'submit_before', 'Inzenden vóór 1 september *'),
         ('ex1', 'footnote01', 'Dit formulier dient tevens voor bestelling schriftelijk werk.'),
         ('ex1', 'footnote02', 'Examennummer.: onder dit nummer doet de kandidaat examen.'),
         ('ex1', 'footnote03', 'Vakken waarin geëxamineerd moet worden zijn aangegeven met een cirkel.'),
         ('ex1', 'footnote04', None),
         ('ex1', 'footnote05', None),
         ('ex1', 'footnote06', '*  Het getekend exemplaar en een digitale versie'),
-        ('ex1', 'footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie'),
+        # PR2023-08-31 email Esther ETE: chnage to 31 august. was:     ('ex1', 'footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie'),
+        ('ex1', 'footnote07', '   vóór 1 september inzenden naar de Onderwijs Inspectie'),
         ('ex1', 'footnote08', '   en een digitale versie naar het ETE.'),
-        ('ex1', 'lex_footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie.'),
+        # PR2023-08-31 email Esther ETE: chnage to 31 august. was:     ('ex1', 'footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie'),
+        ('ex1', 'lex_footnote07', '   vóór 1 september inzenden naar de Onderwijs Inspectie.'),
         ('ex1', 'lex_footnote08', None),
 
         ('ex2', 'ex2_title', 'Verzamellijst van cijfers van schoolexamens'),
