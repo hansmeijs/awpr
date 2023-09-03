@@ -344,7 +344,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Add_user'] = _('Add user')
         dict['Add_users_from_prev_year'] = _('Add users from previous exam years')
         dict['Add_user_to'] = _('Add user to ')
-        dict['Delete_user'] = _('Delete user')
+        dict['Delete_user'] = _('Delete user account')
         dict['This_user'] = _('This user')
         dict['Submit_employee_as_user'] = _('Submit employee as user')
         dict['Submit'] = TXT_Submit
@@ -852,6 +852,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_evening_student_label'] = _("Label 'evening student'")
         dict['Remove_evening_student_label'] = _("Remove label 'evening student'")
         dict['Download_candidate_data'] = _('Download candidate data')
+
+        dict['Create_exam_numbers'] = _('Create exam numbers')
+        dict['AWP_will_create_examnumber'] = _('AWP will create an exam number for all candidates ')
+        dict['skip_existing_examnumbers'] = _('Candidates who have an exam number will be skipped.')
+        dict['replace_examnumbers'] = _('The existing exam numbers will be replaced by new ones.')
+        dict['of_the'] = _('of the ')
+        dict['of_all_learning_paths'] = _('of all learning paths')
+
+        dict['Replace_existing_examnumbers'] = _('Replace existing exam numbers by new ones')
 
         dict['has_submitted_subjects'] = _('has submitted subjects.')
         dict['Todelete_candidate_follow2steps'] = _('To delete a candidate with submitted subjects, follow these two steps:')

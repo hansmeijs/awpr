@@ -254,12 +254,14 @@ urlpatterns = [
     path('students/', include([
         path('student', student_views.StudentListView.as_view(), name='students_url'),
         path('student_upload', student_views.StudentUploadView.as_view(), name='url_student_upload'),
+        path('create_examnumbers', student_views.StudentCreateExamnumbersView.as_view(), name='url_create_examnumbers'),
 
         path('multiple_occurrences', student_views.StudentMultipleOccurrencesView.as_view(), name='url_student_multiple_occurrences'),
         path('link_student', student_views.StudentLinkStudentView.as_view(), name='url_student_linkstudent'),
         path('enter_exemptions', student_views.StudentEnterExemptionsView.as_view(), name='url_student_enter_exemptions'),
 
         path('download_student_xlsx', grade_excel.StudentDownloadXlsxView.as_view(), name='url_download_student_xlsx'),
+
     ])),
 
 # ===== STUDENTSUBJECTS ==========================

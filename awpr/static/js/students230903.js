@@ -66,6 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
+    urls.url_create_examnumbers = get_attr_from_el(el_data, "data-url_create_examnumbers");
+
     urls.url_download_student_xlsx = get_attr_from_el(el_data, "data-url_download_student_xlsx");
     urls.url_studsubj_validate_scheme = get_attr_from_el(el_data, "data-url_studsubj_validate_scheme");
 
@@ -190,8 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_SBR_filter = document.getElementById("id_SBR_filter")
         if(el_SBR_filter){
             el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
-        }
-
+        };
 
 // ---  SUBMENU ------------------------------------
         // get element in CreateSubmenu, because element does not exist here yet. PR2023-05-12
@@ -327,9 +328,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
         let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_msg01 = document.getElementById("id_modconfirm_msg01")
-        let el_confirm_msg02 = document.getElementById("id_modconfirm_msg02")
-        let el_confirm_msg03 = document.getElementById("id_modconfirm_msg03")
+
+        const el_confirm_checkbox_container = document.getElementById("id_modconfirm_checkbox_container");
+        const el_confirm_checkbox_label = document.getElementById("id_modconfirm_checkbox_label");
+        const el_confirm_checkbox = document.getElementById("id_modconfirm_checkbox");
+        if(el_confirm_checkbox){ el_confirm_checkbox.addEventListener("change", function() {ModConfirmCheckboxChanged()}) };
 
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
@@ -508,6 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
             AddSubmenuButton(el_submenu, loc.Download_candidate_data, function() {ModConfirmOpen("download_studentxlsx")});
+            AddSubmenuButton(el_submenu, loc.Create_exam_numbers, function() {ModConfirmOpen("create_examnumbers")});
 
 
         };
@@ -1969,10 +1973,10 @@ function RefreshDataRowsAfterUpload(response) {
 // +++++++++ END MOD STUDENT +++++++++++++++++++++++++++++++++++++++++
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23 PR2022-04-11 PR2022-12-28
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23 PR2022-04-11 PR2022-12-28 PR2023-09-01
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-        // called by menubtn Delete_candidate and mod MSTUD btn delete and MSTUD_InputToggle
+        // called by menubtn Delete_candidate, Create_exam_numbers and mod MSTUD btn delete and MSTUD_InputToggle
         // values of mode are : "delete_candidate", "validate_scheme", "correct_scheme",
         //  in UploadToggle:  fldName, in MSTUD_InputToggle: "MSTUD_" + data_field)
         //  el_input has only value when called by UploadToggle
@@ -1999,6 +2003,9 @@ function RefreshDataRowsAfterUpload(response) {
     console.log("data_dict", data_dict)
 
         const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
+        if (el_confirm_checkbox){
+            el_confirm_checkbox.checked = false;
+        };
 
 // ---  create mod_dict
         mod_dict = {mode: mode};
@@ -2015,10 +2022,8 @@ function RefreshDataRowsAfterUpload(response) {
         } else if (["validate_scheme", "correct_scheme"].includes(mode)){
             show_modal = permit_dict.requsr_role_system;
 
-        } else if (mode === "download_studentxlsx"){
-
+        } else if (["download_studentxlsx", "create_examnumbers"].includes(mode)){
             show_modal = true;
-
         };
 
 // ---  put text in modal for
@@ -2123,6 +2128,21 @@ function RefreshDataRowsAfterUpload(response) {
             msg_list.push("<p>" +  loc.Do_you_want_to_continue + "</p>");
             caption_save = loc.Yes_download;
             caption_close = loc.No_cancel;
+
+        } else if (mode === "create_examnumbers"){
+
+            header_txt = loc.Create_exam_numbers;
+            msg_list.push(ModConfirmCreateMsgExamnumber());
+            caption_save = loc.Yes_create;
+            caption_close = loc.No_cancel;
+
+            if (el_confirm_checkbox_container){
+                add_or_remove_class(el_confirm_checkbox_container, cls_hide, false);
+                if (el_confirm_checkbox_label){
+                    el_confirm_checkbox_label.innerText = loc.Replace_existing_examnumbers;
+                };
+            };
+
         };
 
         el_confirm_header.innerText = header_txt;
@@ -2152,7 +2172,7 @@ function RefreshDataRowsAfterUpload(response) {
         };
     };  // ModConfirmOpen
 
-//=========  ModConfirmSave  ================ PR2019-06-23
+//=========  ModConfirmSave  ================ PR2019-06-23 PR2023-09-01
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
@@ -2227,6 +2247,14 @@ function RefreshDataRowsAfterUpload(response) {
             // close modal after 5 seconds
                 //setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
             };
+
+        } else if (mod_dict.mode === "create_examnumbers"){
+    // ---  upload changes
+            const upload_dict = {
+                mode: mod_dict.mode,
+                replace_all: (el_confirm_checkbox) ? el_confirm_checkbox.checked : false
+            };
+            UploadChanges(upload_dict, urls.url_create_examnumbers);
         };
 // ---  hide modal
         $("#id_mod_confirm").modal("hide");
@@ -2274,6 +2302,30 @@ function RefreshDataRowsAfterUpload(response) {
             $("#id_mod_confirm").modal("hide");
         }
     }  // ModConfirmResponse
+
+
+
+//=========  ModConfirmCheckboxChanged ================ PR2023-09-01
+    function ModConfirmCheckboxChanged() {
+        console.log(" --- ModConfirmCheckboxChanged --- ");
+        if (el_confirm_msg_container){
+        el_confirm_msg_container.innerHTML = ModConfirmCreateMsgExamnumber();
+        };
+
+    };
+
+//=========  ModConfirmCreateMsgExamnumber ================ PR2023-09-01
+    function ModConfirmCreateMsgExamnumber() {
+        const msg_list = ["<p>", loc.AWP_will_create_examnumber];
+        if (setting_dict.sel_dep_level_req){
+            msg_list.push("<br>" + ( (setting_dict.sel_level_pk) ? loc.of_the + setting_dict.sel_level_name : loc.of_all_learning_paths ));
+        };
+        msg_list.push( ".</p><p>");
+        msg_list.push( (el_confirm_checkbox && el_confirm_checkbox.checked) ? loc.replace_examnumbers : loc.skip_existing_examnumbers);
+        msg_list.push("</p><p>" +  loc.Do_you_want_to_continue + "</p>");
+        return msg_list.join("")
+    };
+
 
 //=========  ModMessageHide  ================ PR2022-05-28
     function ModMessageHide() {

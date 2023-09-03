@@ -1757,7 +1757,12 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
                                             request=request,
                                             user_lang=user_lang)
 
-                                        msg_html = create_submit_ex5_ex6_saved_msg_html(saved_is_ok)
+                                        msg_html = create_submit_ex5_ex6_saved_msg_html(
+                                            saved_is_ok=saved_is_ok,
+                                            is_ex6=False,
+                                            published_instance=published_instance
+                                        )
+
 
 # - add  msg_html to update_wrap
         update_wrap['test_is_ok'] = test_is_ok
@@ -1950,18 +1955,10 @@ class GradeSubmitEx6View(View):  # PR2023-08-26
                                         user_lang=user_lang
                                     )
 
-                                    published_instance_filename = None
-                                    published_instance_file_url = None
-                                    if published_instance:
-                                        published_instance_filename = published_instance.filename
-                                        if published_instance.file:
-                                            published_instance_file_url = published_instance.file.url
-
                                     msg_html = create_submit_ex5_ex6_saved_msg_html(
                                         saved_is_ok=saved_to_disk,
                                         is_ex6=True,
-                                        published_instance_file_url=published_instance_file_url,
-                                        published_instance_filename=published_instance_filename
+                                        published_instance=published_instance
                                     )
 
 # - add  msg_html to update_wrap
@@ -2292,8 +2289,8 @@ def create_submit_ex5_test_msg_html(sel_department, sel_level, log_list, test_is
 # - end of create_submit_ex5_test_msg_html
 
 
-def create_submit_ex5_ex6_saved_msg_html(saved_is_ok, is_ex6, published_instance_file_url, published_instance_filename):
-    # PR2022-06-12 PR2023-06-15 PR2023-08-27
+def create_submit_ex5_ex6_saved_msg_html(saved_is_ok, is_ex6, published_instance):
+    # PR2022-06-12 PR2023-06-15 PR2023-09-03
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -2305,6 +2302,14 @@ def create_submit_ex5_ex6_saved_msg_html(saved_is_ok, is_ex6, published_instance
         class_str = 'border_bg_invalid'
         msg_list.append(gettext("The %(frm)s form has not been submitted.") % {'frm': ex_form })
     else:
+
+        published_instance_filename = ''
+        published_instance_file_url = ''
+        if published_instance:
+            published_instance_filename = published_instance.filename
+            if published_instance.file:
+                published_instance_file_url = published_instance.file.url
+
         class_str = 'border_bg_valid'
         msg_list.extend((
             gettext("The %(frm)s form has been submitted.") % {'frm': ex_form}, ' ',

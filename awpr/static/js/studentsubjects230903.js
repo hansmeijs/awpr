@@ -5962,7 +5962,7 @@ console.log( "......filter_dict", filter_dict);
                 let subject_text = null;
                 if(setting_dict.sel_subject_pk){
                     const data_dict = b_get_datadict_by_integer_from_datarows(subject_rows, "id", setting_dict.sel_subject_pk);
-                    subject_text =  (data_dict.name_nl) ? data_dict.name_nl : "---";
+                    subject_text = (data_dict && data_dict.name_nl) ? data_dict.name_nl : "---";
                 } else {
                     subject_text = "<" + loc.All_subjects + ">";
                 }

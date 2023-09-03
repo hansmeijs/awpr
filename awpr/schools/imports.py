@@ -825,7 +825,6 @@ class UploadImportStudentView(View):
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # +++++ loop through data_list
-
                         for data_dict in data_list:
                             # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
                             # for key, val in student.items():
@@ -843,7 +842,7 @@ class UploadImportStudentView(View):
                             
                             awpColdef_list: [
                                 'department', 'level', 'sector', 'examnumber', 'lastname', 'firstname', 'prefix',
-                                 'gender', 'idnumber', 'extrafacilities', 'birthdate', 'birthcountry', 'birthcity', 'classname']
+                                'gender', 'idnumber', 'extrafacilities', 'birthdate', 'birthcountry', 'birthcity', 'classname']
                             """
 
     # skip empty rows
@@ -858,9 +857,9 @@ class UploadImportStudentView(View):
                                 student_dict, is_existing, is_new_student, is_diff_dep_student, has_error, might_be_bisexam = \
                                     upload_student_from_datalist(
                                         data_dict=data_dict,
-                                        examyear=sel_examyear,
-                                        school=sel_school,
-                                        department=sel_department,
+                                        sel_examyear=sel_examyear,
+                                        sel_school=sel_school,
+                                        sel_department=sel_department,
                                         is_test=is_test,
                                         double_idnumber_list=double_idnumber_list,
                                         idnumber_list=idnumber_list,
@@ -910,8 +909,8 @@ class UploadImportStudentView(View):
 
 
 # ========  upload_student_from_datalist  =======
-def upload_student_from_datalist(data_dict, examyear, school, department, is_test,
-                                 double_idnumber_list,  idnumber_list, examnumber_list,  log_list, request):
+def upload_student_from_datalist(data_dict, sel_examyear, sel_school, sel_department, is_test,
+                                 double_idnumber_list, idnumber_list, examnumber_list, log_list, request):
 
     #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-21 PR2023-01-16 PR2023-08-12
     logging_on = s.LOGGING_ON
@@ -945,7 +944,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
     update_list = []
     is_existing_student, is_new_student, is_diff_dep_student, has_error, might_be_bisexam = False, False, False, False, False
 
-# - get variables from data_dict
+# - get variables from data_dict (data_dict is the dict with the upload information)
     id_number = data_dict.get('idnumber', '')
     last_name = data_dict.get('lastname', '')
     first_name = data_dict.get('firstname', '')
@@ -961,15 +960,14 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
         logger.debug('student_lvlbase_pk: ' + str(student_lvlbase_pk))
         logger.debug('student_sctbase_pk: ' + str(student_sctbase_pk))
 
-# - base_pk only has value when user has ticked off 'same_student' after test_upload
-    # TODO change to linked fields ( ';'-delimited string of linked student_id
+# - NIU: base_pk only has value when user has ticked off 'same_student' after test_upload
     # instead of creating a new student_base, the base_pk will be used and 'islinked' will be set True
     # base_pk = data_dict.get('base_pk')
 
 # - skip when student is from different department
     # PR2022-06-26 debug: Havo student was added to Vsbo in ATC. Must filter out students from different departments
     # only when student_depbase_pk has value (student_depbase_pk is None when school has only 1 department)
-    if student_depbase_pk and student_depbase_pk != department.base_id:
+    if student_depbase_pk and student_depbase_pk != sel_department.base_id:
         is_diff_dep_student = True
         error_list.append(str(_("This candidate belongs to a different department.")))
 
@@ -1008,13 +1006,13 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 # - check for double occurrence in upload file
     if not has_error and not is_diff_dep_student:
         has_error = stud_val.validate_double_entries_in_uploadfile(
-            caption=str(_('ID-number')),
+            caption=gettext('ID-number'),
             lookup_value=idnumber_nodots,
             double_entrieslist=double_idnumber_list,
             error_list=error_list
         )
 
-    # PR2023-08-12 not in use from 2023
+    # PR2023-08-12 double_diplomanumber_list#55 and double_gradelistnumber_list are not in use from 2023
         # if not has_error and not is_diff_dep_student:
             #     has_error = stud_val.validate_double_entries_in_uploadfile(
             #         caption=str(_('Diploma number')),
@@ -1034,7 +1032,6 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
     if not has_error and not is_diff_dep_student:
         has_error = stud_val.validate_student_name_length(lastname_stripped, firstname_stripped, prefix_stripped, error_list)
 
-    student_instance = None
     is_new_student, error_create, changes_are_saved, error_save, field_error = False, False, False, False, False
 
     if not has_error and not is_diff_dep_student:
@@ -1044,168 +1041,165 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
 # - lookup student in database
        # either student, not_found or has_error is trueish
-        student, not_found, err_list = \
+        student_instance, not_found, err_list = \
             stud_val.lookup_student_by_idnumber_nodots(
-                school=school,
-                department=department,
+                school=sel_school,
+                department=sel_department,
                 idnumber_nodots=idnumber_nodots,
                 upload_fullname=full_name,
-                found_is_error=True
+                found_is_error=False
             )
+
+        if logging_on:
+            logger.debug(' >> student.pk: ' + (str(student_instance.pk) if student_instance else 'None'))
+            logger.debug('    student_instance:    ' + str(student_instance))
+            logger.debug('    not_found:  ' + str(not_found))
+            logger.debug('    msg_err:    ' + str(msg_err))
 
         if err_list:
             has_error = True
             error_list.extend(err_list)
 
-        if logging_on:
-            student_pk = student.pk if student else 'None'
-            logger.debug(' >>>student.pk: ' + str(student_pk))
-            logger.debug('    student:    ' + str(student))
-            logger.debug('    not_found:  ' + str(not_found))
-            logger.debug('    msg_err:    ' + str(msg_err))
-
-    if not has_error and not is_diff_dep_student:
-        messagesNIU = []
-
-# - check if birthdate is a valid date
-        # birthdate has format of excel ordinal
-        birthdate_ordinal = data_dict.get('birthdate')
-        if logging_on and False:
-            logger.debug('birthdate_ordinal: ' + str(birthdate_ordinal) + ' ' + str(type(birthdate_ordinal)))
-
-        birthdate_iso = af.get_dateiso_from_excel_ordinal(birthdate_ordinal, error_list)
-        if birthdate_iso is None:
-            birthdate_iso = af.get_birthdateiso_from_idnumber(idnumber_nodots)
-            #if birthdate_iso:
-            #    error_list.append(str(_("AWP has calculated the birthdate from the ID-number.")))
-            if logging_on and False:
-                logger.debug('    birthdateiso_from_idnumber: ' + str(birthdate_iso) + ' ' + str(type(birthdate_iso)))
-
-    # - replace birthdate with birthdate_iso in data_dict
-        # PR2021-08-12 debug: must also replace 0 with None, otherwise error occurs in update_student_instance
-
-        data_dict['birthdate'] = birthdate_iso
-
-        if logging_on and False:
-            logger.debug('    birthdate_iso: ' + str(birthdate_iso) + ' ' + str(type(birthdate_iso)))
-
-        if student_instance:
-            is_existing_student = True
-            student_dict['student_pk'] = getattr(student_instance, 'pk')
         else:
+            messagesNIU = []
 
-# +++ create new student when student not found in database
-            #base = None
-            #is_linked = False
+    # - check if birthdate is a valid date
+            # birthdate has format of excel ordinal
+            birthdate_ordinal = data_dict.get('birthdate')
+            if logging_on and False:
+                logger.debug('birthdate_ordinal: ' + str(birthdate_ordinal) + ' ' + str(type(birthdate_ordinal)))
 
-            # check if student exists in other year is replaced to exemption.
-            # here it is not in use
-            # base_pk only has vaue when user has ticked of 'same_student' after test_upload
-            # instead of creating a new student_base, the base_pk will be used and 'islinked' will be set True
+            birthdate_iso = af.get_dateiso_from_excel_ordinal(birthdate_ordinal, error_list)
+            if birthdate_iso is None:
+                birthdate_iso = af.get_birthdateiso_from_idnumber(idnumber_nodots)
+                #if birthdate_iso:
+                #    error_list.append(str(_("AWP has calculated the birthdate from the ID-number.")))
+                if logging_on and False:
+                    logger.debug('    birthdateiso_from_idnumber: ' + str(birthdate_iso) + ' ' + str(type(birthdate_iso)))
 
-            #if base_pk:
-            #    base = stud_mod.Studentbase.objects.filter( pk=base_pk)
+        # - replace birthdate with birthdate_iso in data_dict
+            # PR2021-08-12 debug: must also replace 0 with None, otherwise error occurs in update_student_instance
 
-    # - create base record. Don't save when is_test
-            # skip_save = is_test
-            # note: error_list is list of strings,
-            #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-            """
-            create_student_instance(examyear, school, department, idnumber_nodots, 
-                               lastname_stripped, firstname_stripped, prefix_stripped, full_name,
-                                lvlbase_pk, sctbase_pk, request, skip_save)
-            """
-            # TODO replacing values with import when student already exists is not working properly.
-            #  Turned off for now (found_is_error=True) PR2022-08-21
-            # TODO also: return message on import modal not giving indo '22 candidates are skipped' etc
-    # - create student record
-            student_instance, error_list = stud_view.create_student_instance(
-                examyear=examyear,
-                school=school,
-                department=department,
-                idnumber_nodots=idnumber_nodots,
-                lastname_stripped=lastname_stripped,
-                firstname_stripped=firstname_stripped,
-                prefix_stripped=prefix_stripped,
-                full_name=full_name,
-                lvlbase_pk=student_lvlbase_pk,
-                sctbase_pk=student_sctbase_pk,
-                request=request,
-                found_is_error=True, # was: False
-                skip_save=is_test,
-                is_import=True
-            )
-            #student = stud_view.create_student_instance(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
-            if logging_on:
-                student_pk = student_instance.pk if student_instance else 'None'
-                logger.debug('student_instance: ' + str(student_instance))
-                logger.debug('student_pk:       ' + str(student_pk))
-                logger.debug('error_list:       ' + str(error_list))
+            data_dict['birthdate'] = birthdate_iso
 
-            if student_instance is None:
-    # - give error msg when creating student failed - is already done in create_student
-                error_create = True
+            if logging_on and False:
+                logger.debug('    birthdate_iso: ' + str(birthdate_iso) + ' ' + str(type(birthdate_iso)))
 
+            if student_instance:
+                is_existing_student = True
+                student_dict['student_pk'] = getattr(student_instance, 'pk')
             else:
-                is_new_student = True
 
-                student_dict['created'] = True
+    # +++ create new student when student not found in database
+                #base = None
+                #is_linked = False
 
-# -- check for doubles, only when is new student
-                double_dict = validate_students_doubles(request.user.country, idnumber_nodots,
-                                                lastname_stripped,
-                                                firstname_stripped, birthdate_iso)
-                #if logging_on:
-                #    logger.debug('double_dict: ' + str(double_dict))
-                #if double_dict:
-                #    might_be_bisexam = True
-                #    bisexam_dict[row_index] = double_dict
-                #    if logging_on:
-                #        logger.debug('double_dict: ' + str(double_dict))
-                #        #logger.debug('bisexam_dict: ' + str(bisexam_dict))
+                # NIU: check if student exists in other year is replaced to exemption.
+                # here it is not in use
+                # base_pk only has vaue when user has ticked of 'same_student' after test_upload
+                # instead of creating a new student_base, the base_pk will be used and 'islinked' will be set True
 
-# - update fields, both in new and existing students
-        if student_instance:
-            data_dict.pop('rowindex')
+                #if base_pk:
+                #    base = stud_mod.Studentbase.objects.filter( pk=base_pk)
 
-            # idnumber_list and examnumber_list will be filled in upload_student_from_datalist
-            # without a row the reference to these lists get lost. Cost me 2 hours to figure this out. PR2022-08-22
+        # - create base record. Don't save when is_test
+                # skip_save = is_test
+                # note: error_list is list of strings,
+                #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
 
-            changes_are_saved, error_save, field_error = \
-                stud_view.update_student_instance(
-                    instance=student_instance,
-                    sel_examyear=school.examyear,
-                    sel_school=school,
-                    sel_department=department,
-                    upload_dict=data_dict,
-                    idnumber_list=idnumber_list,
-                    examnumber_list=examnumber_list,
-                    msg_list=messagesNIU,
-                    error_list=error_list,
-                    err_fields=[],  # err_fields is only used in update student
-                    log_list=update_list,
+                # PR2022-08-21 replacing values with import when student already exists is not working properly.
+                #  Turned off for now (found_is_error=True) PR2022-08-21
+                #  Turned on again PR2022-09-02 - no issues yet
+
+                # TODO also: return message on import modal not giving info '22 candidates are skipped' etc
+        # - create student record
+                student_instance, error_list = stud_view.create_student_instance(
+                    examyear=sel_examyear,
+                    school=sel_school,
+                    department=sel_department,
+                    idnumber_nodots=idnumber_nodots,
+                    lastname_stripped=lastname_stripped,
+                    firstname_stripped=firstname_stripped,
+                    prefix_stripped=prefix_stripped,
+                    full_name=full_name,
+                    lvlbase_pk=student_lvlbase_pk,
+                    sctbase_pk=student_sctbase_pk,
                     request=request,
+                    found_is_error=False, # was: True, # was: False
                     skip_save=is_test,
                     is_import=True
                 )
 
-            append_dict = {'created': True} if is_new_student else {}
-            rows, error_dictNIU = stud_view.create_student_rows(
-                request=request,
-                sel_examyear=school.examyear,
-                sel_schoolbase=school.base,
-                sel_depbase=department.base,
-                append_dict=append_dict,
-                student_pk_list=[student_instance.pk] if student_instance else []
-            )
+                if logging_on:
+                    student_pk = student_instance.pk if student_instance else 'None'
+                    logger.debug('student_instance: ' + str(student_instance))
+                    logger.debug('student_pk:       ' + str(student_pk))
+                    logger.debug('error_list:       ' + str(error_list))
 
-            if rows and rows[0]:
-                student_dict = rows[0]
+                if student_instance is None:
+        # - give error msg when creating student failed - is already done in create_student
+                    error_create = True
 
-        if logging_on:
-            logger.debug('changes_are_saved: ' + str(changes_are_saved))
-            logger.debug('field_error: ' + str(field_error))
-            logger.debug('error_list: ' + str(error_list))
+                else:
+                    is_new_student = True
+
+                    student_dict['created'] = True
+
+    # -- check for doubles, only when is new student
+                    #double_dict = validate_students_doubles(request.user.country, idnumber_nodots,
+                    #                                lastname_stripped,
+                    #                                firstname_stripped, birthdate_iso)
+                    #if logging_on:
+                    #    logger.debug('double_dict: ' + str(double_dict))
+                    #if double_dict:
+                    #    might_be_bisexam = True
+                    #    bisexam_dict[row_index] = double_dict
+                    #    if logging_on:
+                    #        logger.debug('double_dict: ' + str(double_dict))
+                    #        #logger.debug('bisexam_dict: ' + str(bisexam_dict))
+
+    # - update fields, both in new and existing students
+            if student_instance:
+                data_dict.pop('rowindex')
+
+                # idnumber_list and examnumber_list will be filled in upload_student_from_datalist
+                # without a row the reference to these lists get lost. Cost me 2 hours to figure this out. PR2022-08-22
+
+                changes_are_saved, error_save, field_error = \
+                    stud_view.update_student_instance(
+                        instance=student_instance,
+                        sel_examyear=sel_examyear,
+                        sel_school=sel_school,
+                        sel_department=sel_department,
+                        upload_dict=data_dict,
+                        idnumber_list=idnumber_list,
+                        examnumber_list=examnumber_list,
+                        msg_list=messagesNIU,
+                        error_list=error_list,
+                        err_fields=[],  # err_fields is only used in update student
+                        log_list=update_list,
+                        request=request,
+                        skip_save=is_test,
+                        is_import=True
+                    )
+
+                append_dict = {'created': True} if is_new_student else {}
+                rows, error_dictNIU = stud_view.create_student_rows(
+                    request=request,
+                    sel_examyear=sel_examyear,
+                    sel_schoolbase=sel_school.base,
+                    sel_depbase=sel_department.base,
+                    append_dict=append_dict,
+                    student_pk_list=[student_instance.pk] if student_instance else []
+                )
+
+                if rows and rows[0]:
+                    student_dict = rows[0]
+
+            if logging_on:
+                logger.debug('changes_are_saved: ' + str(changes_are_saved))
+                logger.debug('field_error: ' + str(field_error))
+                logger.debug('error_list: ' + str(error_list))
 
 # create log for this student
     student_header = ''.join(((idnumber_nodots + c.STRING_SPACE_10)[:10], c.STRING_SPACE_05, full_name)) if idnumber_nodots else full_name
@@ -2778,8 +2772,8 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_idnumberl
                     if subjectbase_pk not in student_dict:
                         student_dict[subjectbase_pk] = subjectbase_code
 
-                if logging_on:
-                    logger.debug('    student_dict: ' + str(student_dict))
+                    if logging_on:
+                        logger.debug('    student_dict: ' + str(student_dict))
         # {'2003031202': {'stud_id': 9240, 'has_pws_subjbase_pk': 123, 372: 'ne', 373: 'en', 374: 'mm1', 375: 'lo', 376: 'cav', 377: 'pa', 380: 'wk', 392: 'ac', 395: 'stg', 414: 'ec', False]},
     """
     PR2023-08-29 KAP Hans Vlinkervleugel: error importing studsubjects
@@ -3131,7 +3125,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                                 messages = []
                                 err_list = []
 
-                                studsubj = stud_view.create_studsubj(
+                                studsubj, append_keyNIU = stud_view.create_studsubj(
                                     student=student,
                                     schemeitem=schemeitem,
                                     messages=messages,

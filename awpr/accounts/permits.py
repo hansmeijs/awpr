@@ -1745,6 +1745,9 @@ def err_txt_cannot_make_changes():  # PR2023-04-16
     return gettext("You cannot make changes.")
 
 
+def err_txt_changes_not_saved():  # PR2023-09-02
+    return gettext("The changes have not been saved.")
+
 def errlist_error_occurred(err_txt, msg_txt=None):  # PR2023-07-16
     msg_list = [gettext('An error occurred')]
     if err_txt:

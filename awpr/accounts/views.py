@@ -283,8 +283,7 @@ class UserUploadView(View):
 
                         if not has_permit:
                             border_class = c.HTMLCLASS_border_bg_invalid
-                            msg_list.append(
-                                gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
+                            msg_list.append(gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
 
                         else:
                             updated_dict = {}
@@ -399,13 +398,13 @@ class UserUploadView(View):
                                                         logger.debug('deleted: ' + str(True))
                                                 except Exception as e:
                                                     logger.error(getattr(e, 'message', str(e)))
-                                                    msg_html = ''.join((
-                                                        str(_("User account '%(val)s' can not be deleted.") % {'val': user_instance.username_sliced}),
-                                                        '<br>',
-                                                        str(_("Instead, you can make the user account inactive."))))
-                                                    msg_dict = {'header': str(_('Delete user')), 'class': 'border_bg_invalid',
-                                                                'msg_html': msg_html}
-                                                    msg_list.append(msg_dict)
+                                                    border_class = c.HTMLCLASS_border_bg_invalid
+                                                    msg_list.extend((
+                                                        gettext("User account '%(val)s' can not be deleted.") % {'val': user_instance.username_sliced},
+                                                        gettext("Instead, you can make the user account inactive.") + ' ' +
+                                                        gettext("Click on the icon in the column <i>Inactive</i> to make the user account inactive.")
+                                                    ))
+
                                                 else:
                                                     user_instance = None
                                                     deleted_ok = True
@@ -496,9 +495,8 @@ class UserUploadView(View):
                         elif is_validate_only:
                             update_wrap['validation_ok'] = True
 
-        # TODO append  err_dict to  msg_list
-        if msg_list:
-            update_wrap['msg_dictlist'] = msg_list
+        #if msg_list:
+        #    update_wrap['msg_dictlist'] = msg_list
 
         if msg_list:
             update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
@@ -4830,7 +4828,13 @@ def get_settings_levelbase(request, request_item_setting, sel_examyear_instance,
     # every user can change lvlbase, if in sel_department_lvlbases and in user allowed_lvlbases
     # only called by DatalistDownloadView.download_setting
 
+    # PR2023-09-01 debug: when request_item_setting is: {'sel_lvlbase_pk': None}
+    # the selected level must be set to All levels, not to saved level
+    # when key 'sel_lvlbase_pk' is not in  request_item_setting, then get saved level
+    # solved by putting '-9' as value instead of None
+
 # - get sel_lvlbase_instance from request_item_lvlbase
+
     request_item_lvlbase_pk = request_item_setting.get(c.KEY_SEL_LVLBASE_PK) if request_item_setting else None
     if logging_on:
         logger.debug('    request_item_lvlbase_pk: ' + str(request_item_lvlbase_pk) + ' ' + str(type(request_item_lvlbase_pk)))
@@ -6139,7 +6143,7 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
     # PR2023-01-11 only called by get_settings_levelbase
     # ThisCodeIsOK
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_lvlbase_instance  -----')
         logger.debug('    sel_department: ' + str(sel_department))

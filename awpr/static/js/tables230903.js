@@ -3038,11 +3038,13 @@ const mod_MCOL_dict = {
 
 //=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-03-26
     function t_SBR_select_level_sector(tblName, el_select, SBR_lvl_sct_response, skip_upload) {
-        //console.log("===== t_SBR_select_level_sector =====");
-        //console.log( "    tblName: ", tblName) // tblName = "lvlbase" or "sctbase"
-        //console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
+        console.log("===== t_SBR_select_level_sector =====");
+        console.log( "    tblName: ", tblName) // tblName = "lvlbase" or "sctbase"
+        console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
+        // PR2023-09-01 debug: must return -9 when el_select.value = -9, but returned null
+        // solved by adding : const selected_pk_int = (sel_pk_int !== -9) ? -9 :
 
-// - clear datatable, don't delete table header
+// - clear tblBody_datatable, don't delete table header
         const tblBody_datatable = document.getElementById("id_tblBody_datatable");
         if (tblBody_datatable) {tblBody_datatable.innerText = null};
 
@@ -3051,7 +3053,8 @@ const mod_MCOL_dict = {
 
 // - get new value from el_select
             const sel_pk_int = (el_select.value && Number(el_select.value)) ? Number(el_select.value) : null;
-
+            // all levels /sectors has value sel_pk_int =  -9 number
+    console.log("    sel_pk_int", sel_pk_int, typeof sel_pk_int);
 // - put new value in setting_dict
             const sel_pk_key_str = (is_sctbase) ? "sel_sctbase_pk" : "sel_lvlbase_pk";
             const code_key_str = (is_sctbase) ? "name" : "lvlbase_code";
@@ -3059,15 +3062,18 @@ const mod_MCOL_dict = {
             const data_rows = (is_sctbase) ? sector_rows : level_rows;
 
             let selected_dict = null;
-            if (data_rows && data_rows.length){
+            if (sel_pk_int !== -9 && data_rows && data_rows.length){
                 for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
                     if(data_dict.base_id && data_dict.base_id === sel_pk_int ){
                         selected_dict = data_dict;
                         break;
             }}};
 
-            const selected_pk_int = (selected_dict) ? selected_dict.base_id : null;
+            const selected_pk_int = (selected_dict) ? selected_dict.base_id : (sel_pk_int === -9) ? -9 : null;
             const new_sel_code = (selected_dict && selected_dict[code_key_str]) ? selected_dict[code_key_str] : "---";
+    console.log("    selected_pk_int", selected_pk_int);
+    console.log("    new_sel_code", new_sel_code);
+
             setting_dict[sel_pk_key_str] = selected_pk_int;
             if (is_sctbase) {
                 setting_dict["sel_sector_name"] = new_sel_code;

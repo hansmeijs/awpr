@@ -2,7 +2,7 @@
 from django.contrib.auth.decorators import login_required
 
 from django.core.mail import send_mail
-
+from django.db.models.functions import Lower
 from django.db.models import Q
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
@@ -63,7 +63,7 @@ class LazyEncoder(DjangoJSONEncoder):
 class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25 PR2023-04-05
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  StudentListView  =====")
 
@@ -1691,6 +1691,158 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of StudentUploadView
+
+
+@method_decorator([login_required], name='dispatch')
+class StudentCreateExamnumbersView(View):  # PR2023-09-02
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= StudentCreateExamnumbersView ============= ')
+
+        def remove_existing_examnumbers():
+            err_html = None
+            try:
+                sql_list = [
+                    "UPDATE students_student SET examnumber = NULL ",
+                    "WHERE school_id = ", str(sel_school.pk), "::INT ",
+                    "AND department_id = ", str(sel_department.pk), "::INT "
+                ]
+
+                if sel_department.level_req and sel_level is not None:
+                    sql_list.extend(("AND level_id = ", str(sel_level.pk), "::INT "))
+
+                sql_list.extend((
+                    "AND examnumber IS NOT NULL ",
+                    "AND NOT deleted AND NOT tobedeleted;"
+                    ))
+                sql = ''.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                err_html = acc_prm.errhtml_error_occurred_no_border(e, acc_prm.err_txt_changes_not_saved())
+            return err_html
+
+
+        def add_new_examnumbers():
+            updated_student_pk_list = []
+            err_list = None
+            try:
+                new_examnumber = stud_fnc.get_next_examnumber(sel_school, sel_department)
+
+                crit = Q(school=sel_school) & \
+                       Q(department=sel_department) & \
+                       Q(tobedeleted=False) & \
+                       Q(deleted=False) & \
+                       Q(examnumber__isnull=True)
+                if sel_department.level_req and sel_level:
+                    crit.add(Q(level=sel_level), crit.connector)
+
+                students = stud_mod.Student.objects.filter(crit).order_by(Lower('lastname'), Lower('firstname'))
+
+
+                for student in students:
+                    new_examnumber_str = str(new_examnumber) if new_examnumber else None
+                    if logging_on:
+                        logger.debug('    student: ' + str(student))
+                        logger.debug('    new_examnumber: ' + str(new_examnumber) + str(type(new_examnumber)) )
+                        logger.debug('    new_examnumber_str: ' + str(new_examnumber_str))
+
+                    setattr(student, 'examnumber', new_examnumber_str)
+                    if logging_on:
+                        logger.debug('    setattr student: ' + str(student))
+                    student.save(request=request)
+
+                    if logging_on:
+                        logger.debug('    save student: ' + str(student))
+                    updated_student_pk_list.append(student.pk)
+
+                    new_examnumber += 1
+
+                    awpr_log.savetolog_student(student.pk, 'u', request, ['examnumber'])
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                err_list = acc_prm.errlist_error_occurred(e, acc_prm.err_txt_changes_not_saved())
+            return updated_student_pk_list, err_list
+###############
+
+        msg_list = []
+        border_class = None
+        update_wrap = {}
+
+    # - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+
+    # - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+    # - get permit
+            page_name = 'page_student'
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+            if logging_on:
+                logger.debug('    has_permit:' + str(has_permit))
+
+            if not has_permit:
+                border_class = c.HTMLCLASS_border_bg_invalid
+                msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
+            else:
+
+    # - get variables
+                replace_all = upload_dict.get('replace_all') or False
+
+    # ----- get selected examyear, school and department and sel_level from usersettings
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('    upload_dict:       ' + str(upload_dict))
+
+                if sel_msg_list:
+                    border_class = c.HTMLCLASS_border_bg_warning
+                    msg_list.extend(sel_msg_list)
+                else:
+                    if replace_all:
+                        err_html = remove_existing_examnumbers()
+                        if err_html:
+                            border_class = c.HTMLCLASS_border_bg_invalid
+                            msg_list.append(err_html)
+
+                    if not msg_list:
+                        updated_student_pk_list, err_list = add_new_examnumbers()
+                        if err_list:
+                            border_class = c.HTMLCLASS_border_bg_invalid
+                            msg_list.extend(err_list)
+                        elif updated_student_pk_list:
+
+                            updated_rows, error_dictNIU = create_student_rows(
+                                request=request,
+                                sel_examyear=sel_school.examyear,
+                                sel_schoolbase=sel_school.base,
+                                sel_depbase=sel_department.base,
+                                append_dict={},
+                                student_pk_list=updated_student_pk_list
+                            )
+                            if updated_rows:
+                                update_wrap['updated_student_rows'] = updated_rows
+
+    # - addd msg_html to update_wrap
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
+
+    # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# +++ end of StudentCreateExamnumbersView
+
+
 
 #####################
 
@@ -5149,10 +5301,11 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
 
                 if studsubj_list:
 
-# - get schemitem_info of the scheme of this student, separately, instead of getting t for each subject, should be faster
+# - get schemitem_info of the scheme of this student, separately, instead of getting it for each subject, should be faster
                     schemeitems_dict = subj_vw.get_scheme_si_dict(sel_examyear.pk, sel_department.base_id, student_instance.scheme_id)
 
-                    # PR2023-02-22 when studsubj is set to 'deleted' instead of 'tobedeleted' (happens when row is not piblished), iit is not included in updated rows.
+                    # PR2023-02-22 when studsubj is set to 'deleted' instead of 'tobedeleted' (happens when row is not published),
+                    # it is not included in updated rows.
                     # add it to list 'deleted_rows' and add it to updated_rows at the end.
                     # necessary to remove deleted row from studsubj table
                     deleted_rows = []
@@ -5165,6 +5318,7 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                     for studsubj_dict in studsubj_list:
                         # values of mode are: 'delete', 'create', 'update'
                         mode = studsubj_dict.get('mode')
+
                         studsubj_pk = studsubj_dict.get('studsubj_pk')
                         schemeitem_pk = studsubj_dict.get('schemeitem_pk')
 
@@ -5246,7 +5400,8 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
 
                                 recalc_subj_composition = True
 
-                                if append_key:  # append_key = 'created' when new or 'updated' when 'restored'
+                                # values of append_key are 'created' 'changed' 'restored' or None
+                                if append_key:
                                     append_dict = {append_key: True}
 
                             elif error_list:
@@ -7100,8 +7255,9 @@ def create_student_instance(examyear, school, department, idnumber_nodots,
 
         if not has_error:
 # - validate if student already exists
-            # either student, not_found or has_error is trueish
+            # when importing, this function is already called in the parent function. Let it stay.
             # when importing: dont give error when found, but return found student  error_when_found
+            # either student, not_found or has_error is trueish
             student, not_found, err_list = \
                 stud_val.lookup_student_by_idnumber_nodots(
                     school=school,
@@ -7400,7 +7556,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
                     if err_txt is None:
 
-            # check examnumber_already_exists
+            # check if examnumber_already_exists
                         examnumber_already_exists = False
                         studentname_list = []
 
@@ -7759,9 +7915,11 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
 # --- end of for loop ---
 
+        school = getattr(instance, 'school')
+        department = getattr(instance, 'department')
+
 # - update scheme if level or sector have changed
         if update_scheme:
-            department = getattr(instance, 'department')
             level = getattr(instance, 'level')
             sector = getattr(instance, 'sector')
             scheme = subj_mod.Scheme.objects.get_or_none(
@@ -7789,19 +7947,29 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
             # - update scheme in all studsubj of this student
             update_scheme_in_studsubj(instance, request)
 
-# +++ calculate registration number
+# - create examnumber if it does not yet exist
+        examnumber = getattr(instance, 'examnumber')
+        if examnumber is None:
+            # get highest examnumber + 1
+            examnumber = stud_fnc.get_next_examnumber(school, department)
+            examnumber_str = str(examnumber) if examnumber else None
+            setattr(instance, 'examnumber', examnumber_str)
+            save_changes = True
+            updated_fields.append('examnumber')
+            if logging_on:
+                logger.debug('setattr(instance, examnumber, examnumber: ' + str(examnumber))
+
+# - calculate registration number
         #PR2023-08-11 from 2023 regnumber is created when printing diploma or gradelist
         # only 2022 has regnumbers stored in table Student- not used in student any more
         if recalc_regnumber and sel_examyear.code < 2023:
             school_code, depbase, levelbase, bis_exam = None, None, None, False
 
-            school = getattr(instance, 'school')
             if school:
                 schoolbase = getattr(school, 'base')
                 if schoolbase:
                     school_code = schoolbase.code
 
-            department = getattr(instance, 'department')
             if department:
                 depbase = getattr(department, 'base')
 
@@ -7810,17 +7978,6 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 levelbase = getattr(level, 'base')
 
             gender = getattr(instance, 'gender')
-            examnumber = getattr(instance, 'examnumber')
-
-    # - create examnumber if it does not yet exist
-            if examnumber is None:
-                # get highest examnumber + 1
-                examnumber = stud_fnc.get_next_examnumber(school, department)
-                setattr(instance, 'examnumber', examnumber)
-                save_changes = True
-                updated_fields.append('examnumber')
-                if logging_on:
-                    logger.debug('setattr(instance, examnumber, examnumber: ' + str(examnumber))
 
     # - calc_regnumber
             bis_exam = getattr(instance, 'bis_exam') or False

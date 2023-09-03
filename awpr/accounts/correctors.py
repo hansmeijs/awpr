@@ -224,9 +224,9 @@ class UserAllowedClusterUploadView(View):
                                 update_wrap['updated_corrector_rows'] = updated_corrector_rows
 
 # - addd msg_html to update_wrap
-
         if msg_list:
             update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
+
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - ens of UserAllowedClusterUploadView

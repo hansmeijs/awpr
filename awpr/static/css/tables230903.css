@@ -1014,7 +1014,6 @@ aXX:hover{
     width: 100%;
 }
 
-
 .display_hide {
   display: none;
 }
@@ -1024,8 +1023,7 @@ aXX:hover{
 }
 
 .test_color {
-   background-color: orange;
-
+   background-color: #fbd8ec !important; /* #fbd8ec; pinkish  */
 }
 .pointer_show {
     cursor: pointer;

@@ -580,7 +580,7 @@ def get_dateiso_from_excel_ordinal(date_ordinal, error_list):
 
     date_iso = None
     if date_ordinal:
-        # PR2021-08-23 debug: JPD entered '20020823' as a numeber. accept that too
+        # PR2021-08-23 debug: JPD entered '20020823' as a number. accept that too
         if isinstance(date_ordinal, int):
             if date_ordinal > 19000000:
                 bd = str(date_ordinal)

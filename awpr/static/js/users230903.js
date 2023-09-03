@@ -636,8 +636,8 @@ console.log("user_dicts",user_dicts)
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-04-04
     function CreateTblRow(tblName, field_setting, data_dict) {
-        //console.log("=========  CreateTblRow =========", tblName);
-    //console.log("    data_dict", data_dict);
+        console.log("=========  CreateTblRow =========", tblName);
+    console.log("    data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -656,8 +656,9 @@ console.log("user_dicts",user_dicts)
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
-        tblRow.id = map_id
+        tblRow.id = map_id;
 
+    console.log("    tblRow", tblRow);
 // --- add data attributes to tblRow
         tblRow.setAttribute("data-pk", data_dict.id);
         if (!data_dict.is_active){
@@ -1121,10 +1122,10 @@ console.log( "upload_dict", upload_dict);
                     if ("msg_html" in response) {
                         b_show_mod_message_html(response.msg_html)
                     };
-
-                    if("msg_dictlist" in response){
-                        b_show_mod_message_dictlist(response.msg_dictlist);
-                    }
+                    // PR2023-09-03 mot in use
+                    //if("msg_dictlist" in response){
+                    //    b_show_mod_message_dictlist(response.msg_dictlist);
+                    //}
                    // only used in MUPS allowes schools
                     if("msg_html" in response){
                         b_show_mod_message_html(response.msg_html, null, MUPS_MessageClose);

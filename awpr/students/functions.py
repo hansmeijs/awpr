@@ -53,9 +53,8 @@ def convert_idnumber_withdots_no_char(id_number):
 
 
 
-def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
+def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11 PR2023-09-02
     # function gets max exnr of this school and dep and adds 1 to it
-
     max_exnr = 0
 
 # - loop through students of this school and department
@@ -75,8 +74,9 @@ def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
                 if exnr_int and exnr_int > max_exnr:
                     max_exnr = exnr_int
     max_exnr += 1
-    max_exnr_str = str(max_exnr)
-    return max_exnr_str
+    # PR2023-09-02 return int, not str
+    # was: max_exnr_str = str(max_exnr)
+    return max_exnr
 # - end of get_next_examnumber
 
 

@@ -1687,7 +1687,7 @@ function RefreshDataRowsAfterUpload(response) {
                 el_MGL_link.click();
                 $("#id_mod_gradelist").modal("hide");
             } else {
-                el_MGL_msg_error.innerText = (mod_dict.mode === "pok") ? loc.mgl_error_noauth_pok : mgl_error_noauth;
+                el_MGL_msg_error.innerText = (mod_dict.mode === "pok") ? loc.mgl_error_noauth_pok : loc.mgl_error_noauth;
                 add_or_remove_class(el_MGL_msg_error, cls_hide, false);
                 el_MGL_btn_save.disabled = true;
             };
