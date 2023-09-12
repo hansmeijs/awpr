@@ -1046,12 +1046,17 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary
+        dict['Second_corrector'] = _('Second corrector')
+        dict['Examiner'] = TXT_Examiner
 
         dict['Function'] = TXT_Function
         dict['at_'] = pgettext_lazy('at_date', 'at ')
         dict['_of_'] = TXT__of_
         dict['_or_'] = TXT__or_
         dict['_for_'] = TXT__for_
+        dict['_and_'] = TXT__and_
+        dict['You_have_functions_of'] = _('You have the functions of ')
+        dict['Only_1_allowed'] = _('Only 1 function is allowed. ')
 
         dict['Approve_subjects'] = _('Approve subjects')
         dict['Approve_reex'] = _('Approve re-examinations')
@@ -1743,7 +1748,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['exemption_approved_01'] = _("This exemption is imported from a previous exam year.")
         dict['exemption_approved_02'] = _("The chairperson and secretary don't have to approve it.")
 
-        dict['and'] = TXT__and_
+        dict['_and_'] = TXT__and_
 
         dict['grade_err_list'] = {
             'examyear_locked': _('The exam year is locked.'),
@@ -1835,8 +1840,8 @@ def get_locale_dict(table_dict, user_lang, request):
                    'school_must_link_score_to_exam': _("The school must link this score to an exam first."),
         }
 
-        dict['No_cluster_unlock_permission'] =  _("You don't have permission to unlock grades of this cluster.")
-        dict['No_cluster_remove_unlocking_permission'] =  _("You don't have permission to remove unlocking of grades of this cluster.")
+        dict['No_cluster_unlock_permission'] = _("You don't have permission to unlock grades of this cluster.")
+        dict['No_cluster_remove_unlocking_permission'] = _("You don't have permission to remove unlocking of grades of this cluster.")
 
 
 # ====== PAGE RESULTS ========================= PR2021-11-15

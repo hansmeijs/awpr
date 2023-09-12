@@ -1803,8 +1803,6 @@ function RefreshDataRowsAfterUpload(response) {
                     const url_str = urls.url_result_download_overview;
                     el_modconfirm_link.setAttribute("href", url_str);
                 };
-
-                caption_save = loc.Yes_change;
                 add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
             };
 

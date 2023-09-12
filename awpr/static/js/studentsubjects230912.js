@@ -5910,8 +5910,7 @@ console.log( "......filter_dict", filter_dict);
         // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // auth_index 1 = auth1, 2 = auth2
-        const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
-    console.log("auth_index", auth_index);
+        const auth_index = b_get_auth_index_of_requsr(loc, permit_dict, true);  // true = auth12_only
 
         if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject) {
             if(auth_index){

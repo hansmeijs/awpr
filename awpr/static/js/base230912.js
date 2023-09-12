@@ -1728,9 +1728,9 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 // skip if user has no auth usergroup
         if (is_auth_1 && is_auth_2){
 // show msg error if user has multiple auth usergroups
-            const functions = loc.Chairperson + loc.and + loc.Secretary;
+            const functions = loc.Chairperson + loc._and_ + loc.Secretary;
             const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
-                        loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
+                        loc.approve_err_list.Only_1_allowed;
             b_show_mod_message_html(msg_html);
         } else if (is_auth_1){
             auth_index = 1;
@@ -1740,8 +1740,8 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         return auth_index;
     };  // b_get_auth_index_pres_secr_of_requsr
 
-//========= b_get_auth_index_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18 PR2023-05-16
-    function b_get_auth_index_of_requsr(loc, permit_dict){
+//========= b_get_auth_index_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18 PR2023-05-16 PR2023-09-11
+    function b_get_auth_index_of_requsr(loc, permit_dict, auth12_only){
         // function returns auth_index of auth user, returns 0 when user has none or multiple auth usergroups
         //
         // gives err messages when multiple found.
@@ -1759,18 +1759,27 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
                     auth_index = i;
                     permit_auth[i] = 1;
         }}};
-        //console.log( "permit_auth", permit_auth);
+        console.log( "permit_auth", permit_auth);
+        const is_chairperson_and_secretary = (permit_auth[1] === 1 && permit_auth[2] === 1);
+        const is_examiner_and_corrector =  (permit_auth[3] === 1 && permit_auth[4] === 1);
+        console.log( "is_chairperson_and_secretary[3]", is_chairperson_and_secretary, typeof is_chairperson_and_secretary);
+        console.log( "is_examiner_and_corrector[3]", is_examiner_and_corrector, typeof is_examiner_and_corrector);
 
 // skip if user has no auth usergroup
-        if ( (permit_auth[1] && permit_auth[2]) || (permit_auth[3] && permit_auth[4]) ){
-            auth_index = 0;
-// show msg error if user has multiple auth usergroups
-            const functions = (permit_auth[1] && permit_auth[2]) ? loc.Chairperson + loc.and + loc.Secretary :
-                              (permit_auth[3] && permit_auth[4]) ? loc.Corrector + loc.and + loc.Examiner : "";
 
-            const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
-                        loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
-            b_show_mod_message_html(msg_html);
+        if (auth_index){
+    // if user has multiple auth usergroups: show msg error and set auth_index = 0
+            if ( is_chairperson_and_secretary || (!auth12_only && is_examiner_and_corrector)  ){
+                auth_index = 0;
+
+    // show msg error if user has multiple auth usergroups
+                const functions = (is_chairperson_and_secretary) ? loc.Chairperson + loc._and_ + loc.Secretary :
+                                  (is_examiner_and_corrector) ? loc.Second_corrector + loc._and_ + loc.Examiner : "";
+
+                const msg_html = ["<p class='p-2 border_bg_invalid'>", loc.You_have_functions_of,functions, ".<br>",
+                                    loc.Only_1_allowed, "</p>"].join('');
+                b_show_mod_message_html(msg_html);
+            };
         };
         return auth_index;
     };  // b_get_auth_index_of_requsr

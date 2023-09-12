@@ -144,7 +144,7 @@ class OrderlistsListView(View): # PR2021-07-04
 def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, append_dict, show_deleted=False, student_pk_list=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15  PR2023-01-11
     # - show only students that are not tobedeleted
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_student_rows -----')
@@ -257,9 +257,18 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
     #)
 
     # - get selected sctbase_pk of req_usr
+    #PR2023-09-06 debug: Dorothee Inspection: had selected sector = n&G, but that is a Havo Vwo sector.
+    # when Vsbo selected 'all sectors' are showing in sbr, but sel_sectorbase_pk has value 9.
+    # therefore no students are showing.
+    # solution: add check if sel_debbase is in field depbases
     saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
     if saved_sctbase_pk and saved_sctbase_pk != -9:
-        sql_clause_arr.append(''.join(("(sct.base_id = ", str(saved_sctbase_pk), "::INT)")))
+        sel_sector = subj_mod.Sector.objects.get_or_none(pk=saved_sctbase_pk)
+        if sel_sector and sel_sector.depbases:
+            db_wrapped = ";" + sel_sector.depbases + ";"
+            db_lookup = ";" + str(sel_depbase.pk) + ";"
+            if db_lookup in db_wrapped:
+                sql_clause_arr.append(''.join(("(sct.base_id = ", str(saved_sctbase_pk), "::INT)")))
 
     sql_clause = 'AND ' + ' AND '.join(sql_clause_arr) if sql_clause_arr else ''
 
