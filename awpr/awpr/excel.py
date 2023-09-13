@@ -1249,7 +1249,7 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
 
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-        "WHERE NOT studsubj.deleted"
+        "WHERE NOT studsubj.deleted"  # don't filter on studsubj.tobedeleted, they will be included in Ex1 / Ex4
     ))
 
     if examperiod in (2, 3):
@@ -1503,9 +1503,9 @@ def create_ex1_Ex4_mapped_subject_rows(examyear, examperiod, sel_school, sel_dep
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
-        "AND NOT st.deleted AND NOT studsubj.deleted",
+        "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+        "WHERE stud.school_id = %(sch_id)s::INT AND stud.department_id = %(dep_id)s::INT",
+        "AND NOT stud.deleted AND NOT studsubj.deleted", # don't filter on studsubj.tobedeleted, they will be included in Ex1 / Ex4
         is_reex_clause,
         "GROUP BY subj.id, subjbase.code",
         "ORDER BY LOWER(subjbase.code)"
@@ -5824,8 +5824,9 @@ def create_student_xlsx(sel_examyear, sel_school, sel_department, user_lang):  #
                     #PR2022-06-13 to filter students with birthcountry Curacao, born before 10-10-10
                     #"AND (POSITION('" + "ura" + "' IN stud.birthcountry) > 0)",
                     #"AND stud.birthdate < '2010-10-10'",
-                    
-                    "AND NOT stud.deleted",
+
+                    #PR2023-09-13 also filter out tobedeleted studenst
+                    "AND NOT stud.deleted AND NOT stud.tobedeleted",
                     "ORDER BY LOWER(schoolbase.code), dep.sequence, lvl.sequence, LOWER(stud.lastname), LOWER(stud.firstname);"
                     ]
 

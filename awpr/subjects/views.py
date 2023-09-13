@@ -6392,11 +6392,36 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, re
                     #if field == 'is_combi' and new_value:
                     #    setattr(instance,  'weight_ce', 0)
 
+                    # PR2023-09-06 TODO
+                    """
+                    PR2023-09-06 debug email from Pien vaDijk ETE:
+                    Bij de kruiscontrole van de Ex.1-formulieren en de bestellijsten is het volgende opgevallen:
+                    Wanneer er een nieuw Ex.-1 formulier ingediend wordt, die de oude moet vervangen, 
+                    dan worden de aantallen die veranderd zijn op het nieuwe ex.1-formulier niet aangepast op de bestellijst. 
+                    Op de bestellijsten blijven de oude getallen staan:
+                    Enkele voorbeelden:
+                    •	Skaih op Ex1 staan 11 leerlingen voor Spaans, op de bestellijst staan 4 leerlingen voor Spaans. 
+                    
+                    answer:                    
+                    Ik denk dat er het volgende aan de hand is:
+                    De keuze of een vak een ETE of CVTE examen heeft wordt bepaald in het vakschema. 
+                    Voor elke afdeling / leerweg / sector / karakter is er een regel.
+                    Zoals je ziet in onderstaande afbeelding staat er bij de regels met karakter ‘Overig vak’ geen vinkje bij ETE examen.
+                    De kandidaten die Spaans hebben met karakter ‘Overig vak’ komen daarom in de bestellijst bij de CVTE examens terecht.
+                    Ik neem aan dat het nooit zal voorkomen dat er binnen een afdeling/leerweg/sector combinatie zowel ETE als CVTEexamens worden afgenomen.
+                    Als dat het geval is zou ik een functie kunnen toevoegen die de gekozen optie ETE of CVTE 
+                    automatisch bij alle karakters invult of weghaalt.
+                    """
+                    if field == 'ete_exam':
+                        #update_eteexam_in_other_sectors(instance)
+                        pass
+
                     # PR 2022-09-25 TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
                     # when changing otherlang in schemeitem, also change otherlang in other sectors
                     if field == 'otherlang':
                         #update_otherlang_in_other_sectors(instance)
                         pass
+
                     if logging_on:
                         logger.debug('save_changes: ' + str(save_changes))
 # --- end of for loop ---

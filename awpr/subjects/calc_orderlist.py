@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
                                schoolbase_pk_list=None, subjbase_pk_list=None):
-    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25 PR2022-10-14 PR2022-10-31
+    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25 PR2022-10-14 PR2022-10-31 PR2023-09-13
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj_count_dict ----- ')
@@ -469,7 +469,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 # - create subquery with count of subjects per school / dep / lvl / subject
     # was: add number of exams ["WITH counts AS (" + count_sql + ")",
     sql_studsubj_agg_list = [
-        "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id,",
+        "SELECT stud.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id,",
         "sch.otherlang AS sch_otherlang,",
 
         # PR2022-10-10 was:
@@ -497,19 +497,22 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-        "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+        "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+        "INNER JOIN schools_school AS sch ON (sch.id = stud.school_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-        "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
         "INNER JOIN  schools_departmentbase AS depbase ON (depbase.id = dep.base_id)", # for testing only, depbase can be deleted
 
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
 
         # was: "LEFT JOIN counts ON (counts.dep_id = dep.id AND counts.lvl_id = COALESCE(lvl.id, 0) AND",
         #       "counts.subj_id = subj.id AND counts.examperiod = %(ep)s::INT)",
 
 # - show only exams that are not deleted
-        "WHERE NOT studsubj.tobedeleted",
+        # PR2023-09-13 Pien v Dijk ETE: deleted studsubj are still counted. Forgot to filter on deleted
+        # was "WHERE NOT studsubj.tobedeleted",
+        "WHERE NOT stud.deleted AND NOT stud.tobedeleted",
+        "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
 # - show only submitted studsubjects
         "AND studsubj.subj_published_id IS NOT NULL",
 # - show only subjects that have a central exam
@@ -519,7 +522,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 # - filter subjects if subjbase_pk_list has value
         filter_subjbase,
 
-        "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id,",
+        "GROUP BY stud.school_id, ey.country_id, dep.base_id, lvl.base_id,",
         "dep.sequence, lvl.sequence,"
         # was: "counts.exam_count,"
         "depbase.code, lvl.abbrev, subj.name_nl, subjbase.code,", # for testing only, must also delete from group_by

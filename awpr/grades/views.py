@@ -1054,11 +1054,17 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
             #PR2022-04-22 Kevin Weert JPD error: cannot submit Ex2 because subjects are not approved
             # turned out to be deleted grade. Forgot to add 'NOT tobedeleted' filter
 
-            #"AND NOT stud.tobedeleted AND NOT stud.deleted ",
-            #"AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
-            #"AND NOT grd.tobedeleted AND NOT grd.deleted",
+            # PR2023-09-13 this was not used, but I don/t now why:
+            #   #"AND NOT stud.tobedeleted AND NOT stud.deleted ",
+            #   #"AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
+            #   #"AND NOT grd.tobedeleted AND NOT grd.deleted",
+            # instead this one was used:
+            #   AND NOT stud.deleted AND NOT studsubj.deleted",
+            # going back to the first one, except for the  grd.tobedeleted / grd.deleted". grd.deleted is filtered further in this function
 
-            "AND NOT stud.deleted AND NOT studsubj.deleted",
+            "AND NOT stud.tobedeleted AND NOT stud.deleted ",
+            "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
+
         ))
         # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
         if sel_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_EXEMPTION):
