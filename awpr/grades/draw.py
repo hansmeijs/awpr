@@ -992,15 +992,14 @@ def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, prin
 
 def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, auth1_name, auth2_name, printdate, sel_examyear,
                        request):
-    # PR2023-07-05 PR2023-08-18
-    logging_on = s.LOGGING_ON
+    # PR2023-07-05 PR2023-08-18  PR2023-12-04
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_gradelist_sxm +++++++++++++')
         logger.debug('     student_dict: ' + str(student_dict))
         logger.debug('     is_prelim: ' + str(is_prelim))
         logger.debug('     sel_examyear: ' + str(sel_examyear))
-
 
     is_lexschool = student_dict.get('islexschool', False)
 
@@ -1932,7 +1931,7 @@ def draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_di
     'PR2020-05-08 Corona: voetnoot toegevoegd, overleg Esther, Rubya Nancy 2020-005-08
     'PR2020-07-10 verzoek Esther: geen Vrst weergeven op LEX cijferlijst als het officieel geen vrst is.
     """
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug((' ----- draw_gradelist_footnote_row -----'))
         # logger.debug(('student_dict: ' + str(student_dict)))
@@ -1967,7 +1966,7 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_pok
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
     """
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug((' ----- draw_gradelist_signature_row_sxm -----'))
         # logger.debug(('student_dict: ' + str(student_dict)))
@@ -2058,8 +2057,23 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_pok
 # - regnumber and idnumber are just above lower line of rectangle
     # PR2023-06-20 label added
     id_number = student_dict.get('idnumber') or '---'
-    regnumber_with_lbl = ' '.join((library.get('reg_nr'), reg_number))
-    idnumber_with_lbl = ' '.join((library.get('id_nr'), id_number))
+
+    # PR2023-12-04 debug: Jacqueline Duggins-Horsford Milton Peters: cannot print gradelist 2022.
+    # Error: sequence item 0: expected str instance, NoneType found
+    # because library 2022 has no key 'reg_nr'
+    # solved by adding if regnumber_lbl and if idnumber_lbl
+    regnumber_lbl = library.get('reg_nr')
+    idnumber_lbl = library.get('id_nr')
+
+    if logging_on:
+        logger.debug('    regnumber_lbl: ' + str(regnumber_lbl))
+
+    regnumber_with_lbl = ' '.join((regnumber_lbl, reg_number)) if regnumber_lbl else reg_number
+    idnumber_with_lbl = ' '.join((idnumber_lbl, id_number)) if idnumber_lbl else id_number
+
+    if logging_on:
+        logger.debug('    regnumber_with_lbl: ' + str(regnumber_with_lbl))
+
     if is_pok:
         txt_list = [
             {'txt': idnumber_with_lbl, 'font': 'Times-Roman', 'size': 8, 'padding': 4,

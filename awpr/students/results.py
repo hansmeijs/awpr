@@ -455,6 +455,8 @@ class DownloadGradelistDiplomaView(View):
 
 # - get list of used regnumbers, to check unique regnumbers
                 used_regnumber_list = self.get_used_regnumber_list(sel_school, sel_department)
+                if logging_on:
+                    logger.debug('     used_regnumber_list: ' + str(used_regnumber_list))
 
 # +++ get grade_dictlist / diploma_dictlist
                 if is_diploma:
@@ -465,7 +467,8 @@ class DownloadGradelistDiplomaView(View):
                     student_list = get_gradelist_dictlist(sel_examyear, sel_school,
                                                           sel_department, sel_lvlbase_pk, sel_sctbase_pk, is_prelim,
                                                   student_pk_list, used_regnumber_list)
-
+                if logging_on:
+                    logger.debug('     student_list: ' + str(student_list))
  # +++ get name of chairperson and secretary
                 # auth_dict = get_pres_secr_dict(request)
 
@@ -477,6 +480,9 @@ class DownloadGradelistDiplomaView(View):
                 auth1_name = acc_prm.get_auth_name(auth1_pk, c.USERGROUP_AUTH1_PRES, sel_examyear, request)
                 auth2_name = acc_prm.get_auth_name(auth2_pk, c.USERGROUP_AUTH2_SECR, sel_examyear, request)
 
+                if logging_on:
+                    logger.debug('     auth1_name: ' + str(auth1_name))
+                    logger.debug('     auth2_name: ' + str(auth2_name))
 
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
@@ -507,6 +513,9 @@ class DownloadGradelistDiplomaView(View):
                             grd_draw.draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_name, auth2_name, printdate, sel_examyear, request)
 
                     canvas.showPage()
+
+                    if logging_on:
+                        logger.debug('save_to_disk: ' + str(save_to_disk))
 
         # +++  print and save pdf for each sudent separately
                     if save_to_disk:
@@ -561,6 +570,8 @@ class DownloadGradelistDiplomaView(View):
 
                         else:
                             if is_sxm:
+                                if logging_on:
+                                    logger.debug('    draw_gradelist_sxm: ' + str(is_sxm))
                                 grd_draw.draw_gradelist_sxm(canvas_tobesaved, library, student_dict, is_prelim,
                                                             print_reex, auth1_name, auth2_name, printdate, sel_examyear, request)
                             else:
@@ -603,7 +614,7 @@ class DownloadGradelistDiplomaView(View):
                 file_name += '.pdf'
 
                 if logging_on:
-                    logger.debug('    buffer: ' + str(buffer))
+                    logger.debug('    file_name: ' + str(file_name))
 
                 # seek(0) sets the pointer position at 0.
                 buffer.seek(0)
@@ -612,17 +623,11 @@ class DownloadGradelistDiplomaView(View):
 
                 pdf = buffer.getvalue()
 
-                if logging_on:
-                    logger.debug('    pdf: ' + str(pdf))
-
                 response = HttpResponse(content_type='application/pdf')
                 # PR2023-06-22 try attachment instead of inline > doesnt tsolve the problem
                 # response['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
 
                 response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
-
-                if logging_on:
-                    logger.debug('    response: ' + str(response))
 
                 response.write(pdf)
                 if logging_on:
@@ -799,7 +804,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
     # PR2023-06-20 when not prelim: filter on gl_status = 1, i.e. approved by Inspectorate
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_gradelist_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
@@ -948,6 +953,12 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                         bis_exam=row.get('bis_exam'),
                         used_regnumber_list=used_regnumber_list
                     )
+
+                if logging_on:
+                    logger.debug('    use_saved_regnumber: ' + str(use_saved_regnumber))
+                    logger.debug('    reg_number: ' + str(reg_number))
+
+
 
                 grade_dict[stud_id] = {
                     'country': row.get('country'),

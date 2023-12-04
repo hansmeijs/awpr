@@ -2815,12 +2815,13 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                     modified_at = af.get_datetime_from_arr(now_arr)
                                     if logging_on:
                                         logger.debug('    modified_at: ' + str(modified_at))
-
+                # PR2023-10-18 Sentry error Enveloporderlist() got an unexpected keyword argument 'modified_at'
+                # PR2023-12-04 solved. fieldname was 'modifiedat', not 'modified_at'
                                     if enveloporderlist is None:
                                         enveloporderlist = subj_mod.Enveloporderlist(
                                             examyear=sel_examyear_instance,
                                             orderdict=receipt_json,
-                                            modified_at=modified_at
+                                            modifiedat=modified_at
                                         )
                                     else:
                     # or replace existing enveloporderlist

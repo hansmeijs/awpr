@@ -205,7 +205,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
@@ -240,7 +240,6 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
     sql_student_list = []
 
 # loop through student_dictlist - ordered list of students with grades
-
     for student_dict in student_dictlist:
         calc_student_result(sel_examyear, sel_department, student_dict, scheme_dict, schemeitems_dict, log_list,
                             sql_studsubj_list, sql_student_list)
@@ -260,6 +259,9 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 
     single_student_name = student_dictlist[0].get('fullname') if len(student_dictlist) == 1 else None
 
+    if logging_on:
+        logger.debug('single_student_name: ' + str(single_student_name))
+        logger.debug('log_list: ' + str(log_list))
     return log_list, single_student_name
 # - end of calc_batch_student_result
 
@@ -393,7 +395,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 
         if logging_on:
             logger.debug('    end of loop through studsubjects')
-            logger.debug('    sql_studsubj_list: ' + str(sql_studsubj_list))
+            # logger.debug('    sql_studsubj_list: ' + str(sql_studsubj_list))
 
 # - end of loop through studsubjects
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++

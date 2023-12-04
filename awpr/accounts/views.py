@@ -21,7 +21,6 @@ from django.core.mail import EmailMultiAlternatives
 
 import unicodedata
 from django.contrib.auth import get_user_model, authenticate
-UserModel = get_user_model()
 
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
@@ -35,7 +34,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext, gettext_lazy as _
-from django.views.generic import ListView, View, UpdateView, DeleteView, FormView
+from django.views.generic import ListView, View, UpdateView, FormView
 
 from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
 
@@ -49,7 +48,6 @@ from django.contrib.auth import (
     logout as auth_logout, update_session_auth_hash,
 )
 
-INTERNAL_RESET_SESSION_TOKEN = '_password_reset_token'
 
 
 import xlsxwriter
@@ -76,6 +74,11 @@ from datetime import datetime
 import pytz
 import json
 import logging
+
+INTERNAL_RESET_SESSION_TOKEN = '_password_reset_token'
+
+UserModel = get_user_model()
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,7 +89,6 @@ def _unicode_ci_compare(s1, s2):
     2.11.2(B)(2).
     """
     return unicodedata.normalize('NFKC', s1).casefold() == unicodedata.normalize('NFKC', s2).casefold()
-
 
 
 @method_decorator([login_required], name='dispatch')
@@ -1562,6 +1564,8 @@ def UserActivate(request, uidb64, token):
         user = User.objects.get(pk=uid)
         #logger.debug('UserActivate def activate try user: ' + str(user))
 
+    # PR2023-11-08 you can ignore the 'User.DoesNotExist' error message. Code is correct.
+    # see https://stackoverflow.com/questions/851628/django-user-doesnotexist-does-not-exist
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         # logger.debug('UserActivate def activate except TypeError: ' + str(TypeError))
         # logger.debug('UserActivate def activate except ValueError: ' + str(ValueError))
@@ -1764,8 +1768,11 @@ class AwpPasswordResetForm(forms.Form):
        #     'schoolbase_id': schoolbase_id,
         #    'is_active': True,
        # })
+
+        # PR2023-11-09 email__iexact added instead of email
+        # was: email=email,
         active_users = acc_mod.User.objects.filter(
-            email=email,
+            email__iexact=email,
             schoolbase_id=schoolbase_id,
             is_active=True
         )

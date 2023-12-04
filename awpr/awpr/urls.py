@@ -45,11 +45,11 @@ from accounts.forms import SchoolbaseAuthenticationForm
 def trigger_error(request):
     division_by_zero = 1 / 0
 
-
 urlpatterns = [
 
 # PR2022-04-26
     path('sentry-debug/', trigger_error),
+
 # PR2018-03-20
     #url(r'^login/$', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
 # PR2020-09-25 redirects to schools/views/Loggedin
@@ -110,13 +110,14 @@ urlpatterns = [
     url(r'^settings/password/done/$', auth_views.PasswordChangeDoneView.as_view(template_name='password_change_done.html'),
         name='password_change_done'),
 
-    url(r'^users/set-password$',
-        account_views.AwpPasswordResetView.as_view(
-            template_name='password_setpassword.html',
-            email_template_name='password_reset_email.html',
-            subject_template_name='password_reset_subject.txt'
-        ),
-        name='password_setpassword'),
+    # PR2023-11-09 not in use, I think:
+    #url(r'^users/set-password$',
+    #    account_views.AwpPasswordResetView.as_view(
+    #        template_name='password_setpassword.html',
+    #        email_template_name='password_reset_email.html',
+    #        subject_template_name='password_reset_subject.txt'
+    #    ),
+    #    name='password_setpassword'),
 
 
 # ++++ SIGN UP +++++++++++++++++++++++++++++++++++++++ PR2020-09-25
