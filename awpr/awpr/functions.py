@@ -1374,7 +1374,7 @@ def set_students_tobedeleted_falseONCEONLY(request):
     if logging_on:
         logger.debug(' ------- set_students_tobedeleted_falseONCEONLY -------')
 
-    name = 'set_studennts_deleted'
+    name = 'set_students_deleted'
     exists = sch_mod.Systemupdate.objects.filter(
         name=name
     ).exists()
