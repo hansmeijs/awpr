@@ -367,7 +367,11 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
 
 @method_decorator([login_required], name='dispatch')
 class DownloadGradelistDiplomaView(View):
-    # PR2021-11-15
+    # PR2021-11-15 PR2023-12-04
+
+    # PR2023-12-04 TODO cannor print final gradelist / diploma when result is not approved by Inspectorate
+    # the gradelist / diploma stays then blank
+    # mustt create a message to inform that the result must be approved by the Inspectorate
 
     def get(self, request, lst):
         logging_on = s.LOGGING_ON

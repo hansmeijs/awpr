@@ -62,7 +62,8 @@ class LazyEncoder(DjangoJSONEncoder):
 @method_decorator([login_required], name='dispatch')
 class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25 PR2023-04-05
 
-    def get(self, request):
+    @staticmethod
+    def get(request):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  StudentListView  =====")
@@ -86,8 +87,8 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25 PR2023-04
 # ========  StudentsubjectListView  =======
 @method_decorator([login_required], name='dispatch')
 class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25 PR2022-07-05
-
-    def get(self, request):
+    @staticmethod
+    def get(request):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  StudentsubjectListView  =====")
@@ -123,8 +124,8 @@ class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25 PR2022-07-05
 # ========  OrderlistsListView  =======
 @method_decorator([login_required], name='dispatch')
 class OrderlistsListView(View): # PR2021-07-04
-
-    def get(self, request):
+    @staticmethod
+    def get(request):
         #logger.debug(" =====  OrderlistsListView  =====")
 
 # -  get user_lang
@@ -144,7 +145,7 @@ class OrderlistsListView(View): # PR2021-07-04
 def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, append_dict, show_deleted=False, student_pk_list=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15  PR2023-01-11
     # - show only students that are not tobedeleted
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_student_rows -----')
@@ -360,8 +361,8 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
                 cursor.execute(sql, sql_keys)
                 student_rows = af.dictfetchall(cursor)
 
-            if logging_on:
-                logger.debug('    sql: ' + str(sql))
+            #if logging_on:
+                #logger.debug('    sql: ' + str(sql))
                 # logger.debug('    student_rows: ' + str(student_rows))
                 # logger.debug('connection.queries: ' + str(connection.queries))
 
@@ -508,7 +509,7 @@ def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
     msg_dict = {}
     is_sxm = sel_examyear.country.abbrev == 'Sxm'
     birthcountry_regex = '%maarten%' if is_sxm else 'cura%'
-    country = 'Sint Maarten' if is_sxm else 'Curaçao'
+    #country = 'Sint Maarten' if is_sxm else 'Curaçao'
 
     # PR2023-06-02 change requested by Pien van DIjk email 31-05-23
     #   Het lijkt me het beste dat we aanhouden wat Kranchi zegt.
@@ -565,7 +566,7 @@ def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
             sql = ' '.join(sql_list)
             if logging_on:
                 logger.debug('sql: ' + str(sql))
-            record_count = 0
+            # record_count = 0
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
                 rows = cursor.fetchall()
@@ -596,7 +597,7 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
     if logging_on:
         logger.debug(' ----- create_results_per_school_rows -----')
 
-    result_dict = {}
+    # result_dict = {}
     result_rows = []
     error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
 
@@ -758,7 +759,8 @@ def create_result_dict_per_school(request, sel_examyear, sel_schoolbase):
 @method_decorator([login_required], name='dispatch')
 class ValidateCompositionView(View):  # PR2022-08-25
 
-    def post(self, request):
+    @staticmethod
+    def post(request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
@@ -898,7 +900,8 @@ class ValidateCompositionView(View):  # PR2022-08-25
 @method_decorator([login_required], name='dispatch')
 class ClusterUploadView(View):  # PR2022-01-06 PR2023-05-31
 
-    def post(self, request):
+    @staticmethod
+    def post(request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
@@ -970,7 +973,7 @@ class ClusterUploadView(View):  # PR2022-01-06 PR2023-05-31
             msg_html = None
             this_txt = _("Cluster '%(val)s' ") % {'val': cluster_instance.name}
 
-            updated_studsubj_pk_list = []
+            updated_studsubj_pk_lst = []
 
     # - create list of studsubj_pk with thos cluster, to update the stdsubj rows in client
             if cluster_instance:
@@ -985,7 +988,7 @@ class ClusterUploadView(View):  # PR2022-01-06 PR2023-05-31
                     with connection.cursor() as cursor:
                         cursor.execute(sql)
                         for row in cursor.fetchall():
-                            updated_studsubj_pk_list.append(row[0])
+                            updated_studsubj_pk_lst.append(row[0])
 
                 except Exception as e:
                     if logging_on:
@@ -1004,7 +1007,7 @@ class ClusterUploadView(View):  # PR2022-01-06 PR2023-05-31
                 logger.debug('    deleted_row: ' + str(deleted_row))
                 logger.debug('    msg_html: ' + str(msg_html))
 
-            return deleted_row, updated_studsubj_pk_list, msg_html
+            return deleted_row, updated_studsubj_pk_lst, msg_html
         # - end of delete_cluster_instance
 
         def update_cluster_instance(cluster_instance, cluster_dict):
@@ -1739,7 +1742,7 @@ class StudentCreateExamnumbersView(View):  # PR2023-09-02
 
 
         def add_new_examnumbers():
-            updated_student_pk_list = []
+            updated_student_pk_lst = []
             err_list = None
             try:
                 new_examnumber = stud_fnc.get_next_examnumber(sel_school, sel_department)
@@ -1769,7 +1772,7 @@ class StudentCreateExamnumbersView(View):  # PR2023-09-02
 
                     if logging_on:
                         logger.debug('    save student: ' + str(student))
-                    updated_student_pk_list.append(student.pk)
+                    updated_student_pk_lst.append(student.pk)
 
                     new_examnumber += 1
 
@@ -1778,7 +1781,7 @@ class StudentCreateExamnumbersView(View):  # PR2023-09-02
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 err_list = acc_prm.errlist_error_occurred(e, acc_prm.err_txt_changes_not_saved())
-            return updated_student_pk_list, err_list
+            return updated_student_pk_lst, err_list
 ###############
 
         msg_list = []
@@ -3314,7 +3317,6 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             logger.debug(' ')
             logger.debug(' ============= StudentsubjectApproveOrSubmitEx1Ex4View ============= ')
 
-    ################################
         def get_studsubject_rows(sel_examperiod, sel_school, sel_department, sel_level, is_submit):
             logging_on = False  # s.LOGGING_ON
             if logging_on:
@@ -3457,7 +3459,8 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                    err_txt = acc_prm.errhtml_error_occurred_no_border(e)
 
             return studsubject_rows, err_txt
-    ################################
+
+        # - end of set_deleted_in_student
 
         # function sets auth and publish of studentsubject records of current department / level # PR2021-07-25
         update_wrap = {}
@@ -3552,7 +3555,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                         logger.debug('    prefix:     ' + str(prefix))
                         logger.debug('    form_name:  ' + str(form_name))
 
-# - when mode = submit_submit: check verificationcode.
+# - when mode = submit_save: check verificationcode.
                     verification_is_ok = True
                     if is_submit and not is_test:
                         upload_dict['form'] = form_name
@@ -3594,9 +3597,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 # +++ create new published_instance. Only save it when it is not a test
                             # file_name will be added after creating Ex-form
                             published_instance = None
-                            published_instance_pk = None
                             published_instance_filename = '---'
                             published_instance_file_url = '#'
+
                             if is_submit and not is_test:
                                 now_arr = upload_dict.get('now_arr')
 
@@ -3607,8 +3610,8 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                     examperiod=examperiod,
                                     now_arr=now_arr,
                                     request=request)
+
                                 if published_instance:
-                                    published_instance_pk = published_instance.pk
                                     published_instance_filename = published_instance.filename
                                     if published_instance.file:
                                         published_instance_file_url = published_instance.file.url
@@ -3616,7 +3619,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                             studsubj_rows = []
 
                             row_count = 0
-                            student_pk_list, student_committed_list, student_saved_list= [],[], []
+                            student_pk_list, student_committed_list, student_saved_list= [], [], []
                             student_composition_error_list, student_composition_error_namelist, student_saved_error_list = [],[], []
 
                             # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
@@ -3637,29 +3640,25 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
                                 row_count += 1
 
-                                is_committed = False
-                                is_saved = False
+                                # approve_or_submit_studsubj checks is_committed (when test), is_saved (when not test)
+                                # adds 1 to count_dict keys:
+                                #   'studsubj_tobedeleted', 'already_published',
+                                #   'committed' (when test), 'saved' (when not test),
+                                # when approve:  adds 1 to count_dict keys: 'already_approved','reset','
+                                # when submit: adds 1 to count_dict keys: 'double_approved', 'auth_missing'
 
-                                if is_approve:
-                                    is_committed, is_saved = approve_studsubj(
-                                        studsubj=studsubj,
-                                        requsr_auth=requsr_auth,
-                                        prefix=prefix,
-                                        is_test=is_test,
-                                        is_reset=is_reset,
-                                        count_dict=count_dict,
-                                        request=request
-                                    )
+                                tobe_committed, tobe_saved = check_approve_or_submit_studsubj(
+                                    studsubj=studsubj,
+                                    requsr_auth=requsr_auth,
+                                    prefix=prefix,
+                                    is_approve=is_approve,
+                                    is_test=is_test,
+                                    is_reset=is_reset,
+                                    count_dict=count_dict,
+                                    request=request
+                                )
 
-                                elif is_submit:
-                                    is_published, is_committed, is_saved = submit_studsubj(
-                                        studsubj=studsubj,
-                                        prefix=prefix,
-                                        is_test=is_test,
-                                        count_dict=count_dict
-                                    )
-
-                                if is_saved:
+                                if tobe_saved:
                                     studsubj_pk = studsubj.get('studsubj_id')
                                     if studsubj_pk:
                                         tobesaved_studsubj_pk_list.append(studsubj_pk)
@@ -3669,29 +3668,27 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                 # after the loop the totals are added to count_dict['student_count'] etc
                                 # PR2022-08-25 submit not allowed when subject composition not correct and no dispensation
                                 student_pk = studsubj.get('stud_id')
-                                if logging_on and False:
-                                    logger.debug('    student_pk: ' + str(student_pk))
-
-                                if student_pk not in student_composition_error_list:
-                                    if studsubj.get('composition_error'):
-                                        student_composition_error_list.append(student_pk)
-                                        student_composition_error_namelist.append(', '.join((studsubj.get('ln', '-'), studsubj.get('fn', '-'))))
 
                                 if student_pk not in student_pk_list:
                                     student_pk_list.append(student_pk)
 
-                                    # PR2023-05-02 debug: email Pien van Dijk ETE: student gets deleted,
-                                    # apparently after deleting subject.
-                                    # was:
-                                    # if studsubj.get('studsubj_tobedeleted') and student_pk not in tobedeleted_student_pk_list:
-                                    #    tobedeleted_student_pk_list.append(student_pk)
-
-                                if is_committed:
+                                if tobe_committed:
                                     if student_pk not in student_committed_list:
                                         student_committed_list.append(student_pk)
-                                if is_saved:
+                                if tobe_saved:
                                     if student_pk not in student_saved_list:
                                         student_saved_list.append(student_pk)
+
+                                if studsubj.get('composition_error'):
+                                    if student_pk not in student_composition_error_list:
+                                        student_composition_error_list.append(student_pk)
+                                        student_composition_error_namelist.append(', '.join((studsubj.get('ln', '-'), studsubj.get('fn', '-'))))
+
+                                # PR2023-05-02 MAJOR ERROR: email Pien van Dijk ETE: student gets deleted,
+                                # apparently after deleting subject.
+                                # was:
+                                # if studsubj.get('studsubj_tobedeleted') and student_pk not in tobedeleted_student_pk_list:
+                                #    tobedeleted_student_pk_list.append(student_pk)
 
 # +++++  end of loop through  studsubjects
 
@@ -3707,7 +3704,6 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                             test_has_failed = False
                             if not row_count:
                                 test_has_failed = True
-
                             elif is_submit and auth_missing_count:
                                 test_has_failed = True
                             elif is_submit and double_approved_count:
@@ -3764,11 +3760,15 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                         if is_approve:
                                             saved_studsubj_pk_list, err_html = self.save_approved_in_studsubj(tobesaved_studsubj_pk_list, is_reset, prefix, requsr_auth, request.user)
                                         elif is_submit:
-                                            saved_studsubj_pk_list, err_html = self.save_published_in_studsubj(tobesaved_studsubj_pk_list, prefix, published_instance.pk)
+                                            saved_studsubj_pk_list, saved_student_pk_list, err_html = self.save_published_in_studsubj(tobesaved_studsubj_pk_list, prefix, published_instance.pk)
+
+                                            # alse set deleted=True in students when tobedeleted=True
+                                            if saved_student_pk_list:
+                                                self.set_deleted_in_student(saved_student_pk_list)
 
                                         if err_html:
                                             msg_html = "<div class='p-2 border_bg_invalid'>" + err_html + "</div>"
-
+                                            #PR 2024-02-2 TODO retrun error message when error
                                         if logging_on:
                                             logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
 
@@ -3796,7 +3796,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                     logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
 
             # - add rows to studsubj_rows, to be sent back to page
-                                # to increase speed, dont create return rows but refresh page after finishing this request
+                                # to increase speed, don't create return rows but refresh page after finishing this request
                                 if saved_studsubj_pk_list:
                                     studsubj_rows = create_studentsubject_rows(
                                         sel_examyear=sel_examyear,
@@ -3818,19 +3818,21 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                             # > end of if row_count
 
 # - create msg_html with info of rows
-                            msg_html = self.create_ex1_ex4_msg_list(
-                                sel_department=sel_department,
-                                sel_level=sel_level,
-                                count_dict=count_dict,
-                                requsr_auth=requsr_auth,
-                                is_approve=is_approve,
-                                is_test=is_test,
-                                is_saved_to_disk=is_saved_to_disk,
-                                examperiod=examperiod,
-                                published_instance_filename=published_instance_filename,
-                                published_instance_file_url=published_instance_file_url,
-                                student_composition_error_namelist=student_composition_error_namelist
-                            )
+                            #PR 2024-02-25 when error msg_html has value with error descroption
+                            if msg_html is None:
+                                msg_html = self.create_ex1_ex4_msg_list(
+                                    sel_department=sel_department,
+                                    sel_level=sel_level,
+                                    count_dict=count_dict,
+                                    requsr_auth=requsr_auth,
+                                    is_approve=is_approve,
+                                    is_test=is_test,
+                                    is_saved_to_disk=is_saved_to_disk,
+                                    examperiod=examperiod,
+                                    published_instance_filename=published_instance_filename,
+                                    published_instance_file_url=published_instance_file_url,
+                                    student_composition_error_namelist=student_composition_error_namelist
+                                )
 
                         # > end of if studsubjects
                     # > end of if verification_is_ok
@@ -3844,7 +3846,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
 
     def save_approved_in_studsubj(self, studsubj_pk_list, is_reset, prefix, requsr_auth, req_user):
-        # PR2023-01-10
+        # PR2023-01-10 PR2024-02-25
 
         logging_on = s.LOGGING_ON
         if logging_on:
@@ -3861,13 +3863,13 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             # - remove authby when is_reset
             requsr_authby_value = "NULL" if is_reset else str(req_user.pk)
 
-            sql_list = ["UPDATE students_studentsubject",
-                        " SET", requsr_authby_field, "=", requsr_authby_value,
-                        " WHERE id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[]))",
-                        " AND NOT deleted",
-                        " RETURNING id, ", requsr_authby_field]
-
-            sql = ' '.join(sql_list)
+            sql = ''.join((
+                "UPDATE students_studentsubject",
+                " SET ", requsr_authby_field, "=", requsr_authby_value,
+                " WHERE id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[]))",
+                " AND NOT deleted",
+                " RETURNING id, ", requsr_authby_field
+            ))
 
             if logging_on:
                 logger.debug('    sql: ' + str(sql))
@@ -3899,100 +3901,54 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         return saved_studsubj_pk_list, err_html
 # - end of save_approved_in_studsubj
 
-    def set_student_deletedNIU(self, student_pk_list, request):
-        # PR2023-01-12
+    def save_published_in_studsubj(self, studsubj_pk_list, prefix, published_pk):
+        # PR2022-12-31 PR2023-01-10 PR2024-02-25
+        # in studsubj of studsubj_pk_list (not deleted):
+        #   set published_field=published_pk,
+        #   reset prev_auth~ fields and prev_published field
+        #   if tobedeleted: sets deleted=True, resets tobedeleted
 
         logging_on = s.LOGGING_ON
-        if logging_on:
-            logger.debug(' ')
-            logger.debug('----- set_student_deleted -----')
-            logger.debug('    student_pk_list: ' + str(student_pk_list))
-
-        deleted_student_pk_list = []
-        err_html = None
-
-        try:
-
-            modifiedby_pk_str = str(request.user.pk)
-            modifiedat_str = str(timezone.now())
-
-            sql_keys = {'st_arr': student_pk_list}
-
-            sql_list = ["UPDATE students_student",
-                "SET deleted = TRUE, tobedeleted=FALSE,",
-
-                "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "'",
-                "WHERE id IN (SELECT UNNEST(%(st_arr)s::INT[]))",
-
-                "RETURNING id;"]
-
-            sql = ' '.join(sql_list)
-
-            with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
-                rows = cursor.fetchall()
-                if rows:
-                    for row in rows:
-                        deleted_student_pk_list.append(row[0])
-
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-
-            err_html = ''.join((
-                str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
-                str(_('The subjects could not be approved.'))
-            ))
-
-        if logging_on:
-            logger.debug('    deleted_student_pk_list: ' + str(deleted_student_pk_list))
-
-        return deleted_student_pk_list, err_html
-# - end of set_student_deleted
-
-    def save_published_in_studsubj(self, studsubj_pk_list, prefix, published_pk):
-        # PR2022-12-31 PR2023-01-10
-
-        """
-        # when is_approve:
-        #   requsr_authby_field = prefix + requsr_auth + 'by'
-        #   # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, req_user)
-
-        # submit:
-            published = getattr(studsubj, prefix + 'published')
-            put published_id in field subj_published:
-        #    setattr(studsubj, prefix + 'published', published_instance)
-        # -
-        """
-
-        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug('----- save_published_in_studsubj -----')
 
         saved_studsubj_pk_list = []
+        saved_student_pk_list = []
+
         err_html = None
 
         try:
             published_field = prefix + 'published_id'
-            sql_keys = {'publ_pk': published_pk, 'sb_arr': studsubj_pk_list}
+            # PR2025-02-25 was:
+            # sql_keys = {'publ_pk': published_pk, 'sb_arr': studsubj_pk_list}
+            # sql_list = ["UPDATE students_studentsubject AS studsubj",
+            #            "SET", published_field, "= %(publ_pk)s::INT,",
+            #            "deleted=tobedeleted, tobedeleted=FALSE, tobechanged=FALSE,",
+            #            "prev_auth1by_id=NULL, prev_auth2by_id=NULL, prev_published_id=NULL",
+            #            "WHERE studsubj.id IN (SELECT UNNEST(%(sb_arr)s::INT[]))",
+            #            "AND studsubj.deleted = FALSE",
+            #           "RETURNING id;"]
+            # sql = ' '.join(sql_list)
 
-            sql_list = ["UPDATE students_studentsubject AS studsubj",
-                        "SET", published_field, "= %(publ_pk)s::INT,",
-                        "deleted=tobedeleted, tobedeleted=FALSE, tobechanged=FALSE,",
-                        "prev_auth1by_id=NULL, prev_auth2by_id=NULL, prev_published_id=NULL",
-                        "WHERE studsubj.id IN (SELECT UNNEST(%(sb_arr)s::INT[]))",
-                        "AND studsubj.deleted = FALSE",
-
-                        "RETURNING id;"]
-
-            sql = ' '.join(sql_list)
+            sql = ' '.join((
+                "UPDATE students_studentsubject",
+                " SET", published_field, "=", str(published_pk), "::INT,",
+                "deleted=tobedeleted, tobedeleted=FALSE, tobechanged=FALSE,",
+                "prev_auth1by_id=NULL, prev_auth2by_id=NULL, prev_published_id=NULL",
+                "WHERE NOT deleted ",
+                "AND id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[])) "
+                "RETURNING id, student_id;"))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 rows = cursor.fetchall()
                 if rows:
                     for row in rows:
                         saved_studsubj_pk_list.append(row[0])
+
+                        if row[1] not in saved_student_pk_list:
+                            saved_student_pk_list.append(row[1])
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -4004,32 +3960,48 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
         if logging_on:
             logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
+            logger.debug('    saved_student_pk_list: ' + str(saved_student_pk_list))
 
-        return saved_studsubj_pk_list, err_html
+        return saved_studsubj_pk_list, saved_student_pk_list, err_html
     # - end of save_published_in_studsubj
 
-    def delete_tobedeleted_from_studsubj(self, published_instance, sel_examyear, sel_school, sel_department, request):
-        # PR2021-09-30
+    @staticmethod
+    def set_deleted_in_student(student_pk_list):
+        # PR2024-02-25
+        # function sets deleted=True and tobedeleted=False
+        # in student of student_pk_list (tobedeleted=True and deleted=False):
+
         logging_on = s.LOGGING_ON
         if logging_on:
-            logger.debug('  ----- delete_tobedeleted_from_studsubj -----')
+            logger.debug(' ')
+            logger.debug('----- set_deleted_in_student -----')
 
-        studentsubjects = stud_mod.Studentsubject.objects.filter(
-            subj_published=published_instance,
-            student__school__examyear=sel_examyear,
-            student__school=sel_school,
-            student__department=sel_department,
-            tobedeleted=True
-        )
-        if logging_on:
-            logger.debug('studentsubjects: ' + str(studentsubjects))
+        err_html = None
+        if student_pk_list:
+            try:
+                sql = ''.join((
+                    "UPDATE students_student ",
+                    "SET deleted=TRUE, tobedeleted=FALSE ",
+                    "WHERE tobedeleted AND NOT deleted ",
+                    "AND id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[])) "
+                                                                            "RETURNING id, lastname, firstname;"
+                ))
 
-        if studentsubjects:
-            for studsubj in studentsubjects:
-                studsubj.delete(request=request)
-                if logging_on:
-                    logger.debug('deleted _studsubj: ' + str(studsubj))
-# - end of  delete_tobedeleted_from_studsubj
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    rows = cursor.fetchall()
+                    if logging_on:
+                        logger.debug('    updated rows: ' + str(rows))
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+                err_html = ''.join((
+                    str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                    str(_('The subjects could not be approved.'))
+                ))
+
+        return err_html
 
     def create_ex1_ex4_msg_list(self, sel_department, sel_level, count_dict, requsr_auth, is_approve, is_test, is_saved_to_disk,
                                 examperiod, published_instance_filename, published_instance_file_url, student_composition_error_namelist):
@@ -4683,123 +4655,152 @@ def get_subjects_willbe_text(examperiod, count):
     ))
 
 
-def approve_studsubj(studsubj, requsr_auth, prefix, is_test, is_reset, count_dict, request):
-    # PR2021-07-26 PR2022-05-30 PR2022-12-30 PR2023-02-12
+def check_approve_or_submit_studsubj(studsubj, requsr_auth, prefix, is_approve, is_test, is_reset, count_dict, request):
+    # PR2021-07-26 PR2022-05-30 PR2022-12-30 PR2023-02-12 PR2024-02-24
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
     #  prefix = 'reex3_'  'reex_'  'subj_'
 
     # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
-    # list is created outside this function, when is_saved = True
+    # list is created outside this function, when tobe_saved = True
 
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----- approve_studsubj -----')
+        logger.debug('----- check_approve_or_submit_studsubj -----')
         logger.debug('    requsr_auth:  ' + str(requsr_auth))
         logger.debug('    prefix:  ' + str(prefix))
         logger.debug('    is_reset:     ' + str(is_reset))
         logger.debug('    studsubj:     ' + str(studsubj))
 
-    is_committed = False
-    is_saved = False
+    tobe_committed = False
+    tobe_saved = False
 
     if studsubj:
         req_user = request.user
-
-# - skip when this studsubj is already published
-        # PR2023-02-12 was: published = getattr(studsubj, prefix + 'published')
-        published = True if studsubj.get('published_id') else False
-        if logging_on:
-            logger.debug('    published:    ' + str(published))
 
         if studsubj.get('studsubj_tobedeleted'):
             af.add_one_to_count_dict(count_dict, 'studsubj_tobedeleted')
             if logging_on:
                 logger.debug('    studsubj_tobedeleted:    ')
 
-        if published:
+        # PR2023-02-12 was: published = getattr(studsubj, prefix + 'published')
+        is_published = True if studsubj.get('published_id') else False
+        if is_published:
             af.add_one_to_count_dict(count_dict, 'already_published')
-        else:
 
-# - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
+        if logging_on:
+            logger.debug('    is_published:    ' + str(is_published))
 
-            # PR2023-02-12 use sql instead of model:
-            # field auth1by_id, auth2by_id, published_id contains the value are of
-            #   - when axamperiod = 2: studsubj.reex_auth1by_id
-            #   - when axamperiod = 3: studsubj.reex3_auth1by_id
-            #   - else:                 studsubj.subj_auth1by_id
-
-            # was: requsr_authby_field = prefix + requsr_auth + 'by'
-            #   auth1by = getattr(studsubj, prefix +'auth1by')
-            #   auth2by = getattr(studsubj, prefix +'auth2by')
-
-            auth1by_id = studsubj.get('auth1by_id')
-            auth2by_id = studsubj.get('auth2by_id')
-            if logging_on:
-                logger.debug('    auth1by_id:      ' + str(auth1by_id))
-                logger.debug('    auth2by_id:      ' + str(auth2by_id))
+        # - skip when this studsubj is already published
+        if not is_published:
 
             save_changes = False
+            if is_approve:
 
-# - remove authby when is_reset
-            if is_reset:
-                # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, None)
-                af.add_one_to_count_dict(count_dict, 'reset')
-                save_changes = True
-            else:
+    # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
 
-# - skip if this studsubj is already approved
-                # requsr_authby_value = getattr(studsubj, requsr_authby_field)
-                requsr_authby_value = auth1by_id if requsr_auth == 'auth1' else auth2by_id if requsr_auth == 'auth2' else None
-                requsr_authby_field_already_approved = True if requsr_authby_value else False
+                # PR2023-02-12 use sql instead of model:
+                # field auth1by_id, auth2by_id, published_id contains the value are of
+                #   - when axamperiod = 2: studsubj.reex_auth1by_id
+                #   - when axamperiod = 3: studsubj.reex3_auth1by_id
+                #   - else:                 studsubj.subj_auth1by_id
+
+                # was: requsr_authby_field = prefix + requsr_auth + 'by'
+                #   auth1by = getattr(studsubj, prefix +'auth1by')
+                #   auth2by = getattr(studsubj, prefix +'auth2by')
+
+                auth1by_id = studsubj.get('auth1by_id')
+                auth2by_id = studsubj.get('auth2by_id')
                 if logging_on:
-                    logger.debug('    requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+                    logger.debug('    auth1by_id:      ' + str(auth1by_id))
+                    logger.debug('    auth2by_id:      ' + str(auth2by_id))
 
-                if requsr_authby_field_already_approved:
-                    af.add_one_to_count_dict(count_dict, 'already_approved')
+    # - remove authby when is_reset
+                if is_reset:
+                    # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, None)
+                    af.add_one_to_count_dict(count_dict, 'reset')
+                    save_changes = True
                 else:
 
-# - skip if this author (like 'chairperson') has already approved this studsubj
-        # under a different permit (like 'secretary' or 'corrector')
-
+    # - skip if this studsubj is already approved
+                    # requsr_authby_value = getattr(studsubj, requsr_authby_field)
+                    requsr_authby_value = auth1by_id if requsr_auth == 'auth1' else auth2by_id if requsr_auth == 'auth2' else None
+                    requsr_authby_field_already_approved = True if requsr_authby_value else False
                     if logging_on:
-                        logger.debug('    > requsr_auth: ' + str(requsr_auth))
-                        logger.debug('    > req_user:    ' + str(req_user))
-                        logger.debug('    > auth1by_id:     ' + str(auth1by_id))
-                        logger.debug('    > auth2by_id:     ' + str(auth2by_id))
+                        logger.debug('    requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
 
-                    double_approved = False
-                    if requsr_auth == 'auth1':
-                        double_approved = True if auth2by_id and auth2by_id == req_user.pk else False
-                    elif requsr_auth == 'auth2':
-                        double_approved = True if auth1by_id and auth1by_id == req_user.pk else False
+                    if requsr_authby_field_already_approved:
+                        af.add_one_to_count_dict(count_dict, 'already_approved')
+                    else:
 
+    # - skip if this author (like 'chairperson') has already approved this studsubj
+            # under a different permit (like 'secretary' or 'corrector')
+
+                        if logging_on:
+                            logger.debug('    > requsr_auth: ' + str(requsr_auth))
+                            logger.debug('    > req_user:    ' + str(req_user))
+                            logger.debug('    > auth1by_id:     ' + str(auth1by_id))
+                            logger.debug('    > auth2by_id:     ' + str(auth2by_id))
+
+                        double_approved = False
+                        if requsr_auth == 'auth1':
+                            double_approved = True if auth2by_id and auth2by_id == req_user.pk else False
+                        elif requsr_auth == 'auth2':
+                            double_approved = True if auth1by_id and auth1by_id == req_user.pk else False
+
+                        if logging_on:
+                            logger.debug('    double_approved: ' + str(double_approved))
+
+                        if double_approved:
+                            af.add_one_to_count_dict(count_dict, 'double_approved')
+                        else:
+                            # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, req_user)
+                            save_changes = True
+
+            else:
+# is_submit
+                # - check if this studsubj / examtype is approved by all auth
+                # auth1by = getattr(studsubj, prefix + 'auth1by')
+                # auth2by = getattr(studsubj, prefix + 'auth2by')
+
+                auth1by_id = studsubj.get('auth1by_id')
+                auth2by_id = studsubj.get('auth2by_id')
+                auth_missing = auth1by_id is None or auth2by_id is None
+                if logging_on:
+                    logger.debug('    auth1by_id:      ' + str(auth1by_id))
+                    logger.debug('    auth2by_id:      ' + str(auth2by_id))
+                    logger.debug('    auth_missing: ' + str(auth_missing))
+
+                if auth_missing:
+                    af.add_one_to_count_dict(count_dict, 'auth_missing')
+                else:
+                    # - check if all auth are different
+                    double_approved = auth1by_id == auth2by_id
                     if logging_on:
                         logger.debug('    double_approved: ' + str(double_approved))
 
-                    if double_approved:
+                    if double_approved and not auth_missing:
                         af.add_one_to_count_dict(count_dict, 'double_approved')
                     else:
-                        # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, req_user)
                         save_changes = True
-                        if logging_on:
-                            logger.debug('    save_changes: ' + str(save_changes))
 
-# - set value of requsr_authby_field
+            if logging_on:
+                logger.debug('    save_changes: ' + str(save_changes))
+
             if save_changes:
+            # - set value of published_instance and exatmtype_status field
                 if is_test:
                     af.add_one_to_count_dict(count_dict, 'committed')
-                    is_committed = True
+                    tobe_committed = True
                 else:
-
-# - save changes
                     af.add_one_to_count_dict(count_dict, 'saved')
-                    is_saved = True
-    if logging_on:
-        logger.debug('    is_committed: ' + str(is_committed))
-        logger.debug('    is_saved: ' + str(is_saved))
+                    tobe_saved = True
 
-    return is_committed, is_saved
-# - end of approve_studsubj
+    if logging_on:
+        logger.debug('    tobe_committed: ' + str(tobe_committed))
+        logger.debug('    tobe_saved: ' + str(tobe_saved))
+
+    return tobe_committed, tobe_saved
+# - end of check_approve_or_submit_studsubj
 
 
 def submit_studsubj(studsubj, prefix, is_test, count_dict):
@@ -4820,7 +4821,7 @@ def submit_studsubj(studsubj, prefix, is_test, count_dict):
     if studsubj:
 
 # - check if this studsubj is already published
-        #published = getattr(studsubj, prefix + 'published')
+        # published = getattr(studsubj, prefix + 'published')
         is_published = True if studsubj.get('published_id') else False
         if logging_on:
             logger.debug('     is_published: ' + str(is_published))
@@ -4833,8 +4834,8 @@ def submit_studsubj(studsubj, prefix, is_test, count_dict):
         else:
 
 # - check if this studsubj / examtype is approved by all auth
-            #auth1by = getattr(studsubj, prefix + 'auth1by')
-            #auth2by = getattr(studsubj, prefix + 'auth2by')
+            # auth1by = getattr(studsubj, prefix + 'auth1by')
+            # auth2by = getattr(studsubj, prefix + 'auth2by')
 
             auth1by_id = studsubj.get('auth1by_id')
             auth2by_id = studsubj.get('auth2by_id')
@@ -4855,6 +4856,7 @@ def submit_studsubj(studsubj, prefix, is_test, count_dict):
                 if double_approved and not auth_missing:
                     af.add_one_to_count_dict(count_dict, 'double_approved')
                 else:
+
 # - set value of published_instance and exatmtype_status field
                     if is_test:
                         af.add_one_to_count_dict(count_dict, 'committed')
@@ -5349,6 +5351,7 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                         append_dict = {}
                         deleted_rows = []
 
+                        studsubj = None
 # +++ delete studsubj ++++++++++++
                         if mode == 'delete':
                             if studsubj_instance:
@@ -7042,7 +7045,6 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
 
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def set_student_instance_tobedeleted(student_instance, request):
     # --- delete student # PR2021-07-18 PR2022-02-16 PR2022-08-05 PR2022-12-27 PR2023-01-16
     # dont delete student when student has submitted subjects, but set tobedeleted
@@ -8309,7 +8311,7 @@ def set_studsubjects_tobedeleted(request, student_pk, set_deleted=False, studsub
     # called by  update_scheme_in_studsubj 3 times
 
     # PR2022-05-18 CAL, Omega: all subjects disappear.
-    # Cause: tobedeleted is set True. Dont know why yet
+    # Cause: tobedeleted is set True. Don't know why yet
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -8327,13 +8329,13 @@ def set_studsubjects_tobedeleted(request, student_pk, set_deleted=False, studsub
 
             # store subj_auth and subj_published info in prev_auth and prev_published fields
             # set subj_auth and subj_published to NULL
-            # set tobedeleted= True, update modified
+            # set tobedeleted = True, update modified
 
             # when set_deleted = True: set deleted, otherwise: set tobedeleted
             set_deleted_str = "deleted=TRUE, tobedeleted=False, " if set_deleted else "tobedeleted=TRUE, "
             deleted_clause_str = "AND NOT deleted " if set_deleted else "AND NOT tobedeleted AND NOT deleted "
 
-            sql_keys = {'stud_id': student_pk}
+            #PR2024-02-25 was: sql_keys = {'stud_id': student_pk}
             sql_list = ["UPDATE students_studentsubject AS studsubj ",
                         "SET prev_auth1by_id=subj_auth1by_id, ",
                             "prev_auth2by_id=subj_auth2by_id, ",
@@ -8341,20 +8343,24 @@ def set_studsubjects_tobedeleted(request, student_pk, set_deleted=False, studsub
                             "subj_auth1by_id=NULL, subj_auth2by_id=NULL, subj_published_id=NULL, ",
                             set_deleted_str,
                             "modifiedby_id=", modifiedby_pk_str, ", modifiedat='", modifiedat_str, "' ",
-                        "WHERE studsubj.student_id = %(stud_id)s::INT ",
+                        #PR2024-02-25 was: "WHERE studsubj.student_id = %(stud_id)s::INT ",
+                        "WHERE studsubj.student_id =", str(student_pk), "::INT ",
+
                         deleted_clause_str,
                         ]
 
             if studsubj_pk:
-                sql_keys['studsubj_id'] = studsubj_pk
-                sql_list.append("AND id = %(studsubj_id)s::INT ")
+                #PR2024-02-25 was:
+                # sql_keys['studsubj_id'] = studsubj_pk
+                # sql_list.append("AND id = %(studsubj_id)s::INT ")
+                sql_list.extend(("AND id =", str(studsubj_pk), "::INT "))
 
             sql_list.append("RETURNING studsubj.id;")
 
             sql = ''.join(sql_list)
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 updated_rows = cursor.fetchall()
                 if updated_rows:
                     for row in updated_rows:
@@ -8366,6 +8372,10 @@ def set_studsubjects_tobedeleted(request, student_pk, set_deleted=False, studsub
             msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
                                 str(_("%(cpt)s could not be restored.") % {'cpt': _('This candidate')})))
 
+
+    if logging_on:
+        logger.debug('    updated_studsubj_pk_list: ' + str(updated_studsubj_pk_list))
+        logger.debug('    msg_html: ' + str(msg_html))
     return updated_studsubj_pk_list, msg_html
 # - end of set_studsubjects_tobedeleted
 

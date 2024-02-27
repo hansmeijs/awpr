@@ -173,13 +173,13 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
 
-    # PR2023-06-09 TODO replace resap_status etc by gl_status etc
-    # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
-    # status 1 = accepted, 2 = declined
+    # PR2023-06-09 TODO remove resap_fields, have been replaced by gl_status etc
     resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     resap_status = DateTimeField(null=True)
     resap_modifiedat = DateTimeField(null=True)
 
+    # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
+    # status 1 = accepted, 2 = declined
     gl_status = PositiveSmallIntegerField(default=0)
     gl_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     gl_modifiedat = DateTimeField(null=True)
@@ -334,7 +334,7 @@ class Studentlog(sch_mod.AwpBaseModel): # PR203-08-11
     result_status = CharField(null=True, max_length=c.MAX_LENGTH_KEY)
     result_info = CharField(null=True, max_length=2048)
 
-    # PR2023-06-09 TODO replace resap_status etc by gl_status etc
+    # PR2023-06-09 resap_fields have been removed, are replaced by gl_status etc
     # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
     # status 1 = accepted, 2 = declined
     #resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -433,13 +433,13 @@ class Student_log(sch_mod.AwpBaseModel):
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
 
-    # PR2023-06-09 TODO replace resap_status etc by gl_status etc
-    # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
-    # status 1 = accepted, 2 = declined
+    # PR2023-06-09 TODO remove resap_fields, have been replaced by gl_status etc
     resap_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     resap_status = DateTimeField(null=True)
     resap_modifiedat = DateTimeField(null=True)
 
+    # only when result is approved by Inspectorate, gradelist and diploma can be printed PR2023-04-08
+    # status 0 = not set, 1 = accepted, 2 = declined
     gl_status = PositiveSmallIntegerField(default=0)
     gl_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     gl_modifiedat = DateTimeField(null=True)
@@ -625,6 +625,10 @@ class Studentsubjectlog(sch_mod.AwpBaseModel):
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     subj_published = ForeignKey(sch_mod.Published, null=True, related_name='+', on_delete=SET_NULL)
 
+    #PR2024-02-27 TODO add fields:
+    # sr_published reex_published reex3_published pok_published
+    # gradelist_sesrgrade gradelist_pecegrade gradelist_finalgrade gradelist_use_exem  gl_examperiod
+
     # 'tobechanged' is set True when schemeitem (=subjecttype) changes, it must be submitted again
     tobechanged = BooleanField(null=True)
     tobedeleted = BooleanField(null=True)
@@ -778,8 +782,8 @@ class Grade(sch_mod.AwpBaseModel):
 
     studentsubject = ForeignKey(Studentsubject, related_name='+', on_delete=CASCADE)
 
-    # TODO deprecated, use pe_exam and ce_exam
-    # exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    # deprecated, use pe_exam and ce_exam
+    # was: exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
@@ -898,6 +902,12 @@ class Gradelog(sch_mod.AwpBaseModel): # PR2023-08-11
     cegrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
     pecegrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
     finalgrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
+
+    # PR2024-02-27 TODO add:
+    # 'se_published_id', 'se_blocked' ,
+    # 'sr_published_id', 'sr_blocked'
+    # 'pe_published_id', 'pe_blocked'
+    # 'ce_published_id', 'ce_blocked'
 
     # PR2023-01-24 added, to skip approval when imported
     exemption_imported = BooleanField(null=True)

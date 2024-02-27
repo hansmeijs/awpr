@@ -1125,7 +1125,7 @@ def get_saved_sel_depbase_instance(request):  # PR2020-12-24 PR2021-09-04
     return sel_depbase_instance
 
 
-def get_depbase_list_field_sorted_zerostripped(depbase_list):  # PR2018-08-23
+def get_depbase_list_field_sorted_zerostrippedNIU(depbase_list):  # PR2018-08-23
     # sort depbase_list. List ['16', '15', '0', '18'] becomes ['0', '15', '16', '18'].
     # Sorted list is necessary, otherwise data_has_changed will not work properly (same values in different order gives modified=True)
     # PR2018-08-27 debug. Also remove value '0'
@@ -1201,6 +1201,8 @@ def system_updates(examyear, request):
 # PR2021-03-26 run this to update text in ex-forms, when necessary
     update_library_in_awpr_lib(examyear, request)
 
+# PR2024-02-26 set tobedeleted False in table students
+    set_students_tobedeleted_falseONCEONLY(request)
 
 # PR2023-07-18 fill banklist in examyearsetting of examyear 2023
     #fillBanklistONCEONLY(request)
@@ -1362,6 +1364,57 @@ def update_library_in_awpr_lib(examyear, request):
 # -end of reset_show_msg
 
 ##########################
+
+
+# set tobedeleted False in table students PR2024-02-26
+def set_students_tobedeleted_falseONCEONLY(request):
+    # PR2024-02-25 one time function to correct bug: tobedeleted students were not made deleted when Ex1 is submitted
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- set_students_tobedeleted_falseONCEONLY -------')
+
+    name = 'set_studennts_deleted'
+    exists = sch_mod.Systemupdate.objects.filter(
+        name=name
+    ).exists()
+    if logging_on:
+        logger.debug('exists: ' + str(exists))
+
+    if not exists:
+        try:
+            # only students that are 'tobedeleted' and have no studsubjects and no not-published studsubjects
+            # (skip students with studsubjects that are not published
+
+            sql = ' '.join((
+                "UPDATE students_student AS stud",
+                "SET deleted=TRUE, tobedeleted=FALSE",
+                "WHERE stud.tobedeleted",
+                "AND NOT EXISTS ("
+                    "SELECT FROM students_studentsubject studsubj ",
+                    "WHERE studsubj.student_id=stud.id ",
+                    "AND NOT studsubj.deleted ",
+                    "AND studsubj.subj_published_id IS NULL",
+                ") RETURNING stud.lastname, stud.firstname;"
+            ))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                if logging_on:
+                    logger.debug('    rows: ' + str(cursor.fetchall()))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+
+   # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+# -end of set_students_tobedeleted_falseONCEONLY
 
 
 # add banks to examyearsetting PR2023-07-18

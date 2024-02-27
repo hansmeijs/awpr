@@ -5570,8 +5570,10 @@ def create_userdata_xlsx(sel_examyear, req_usr_school, req_usr_role, mapped_depc
         # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+        # PR2024-02-27 debug: special charactes in schoolname gibve gunicorn error. use abbrev instead of schoolname
+        # was: requsr_school_name = ' '.join((req_usr_school.base.code, req_usr_school.name))
+        requsr_school_name = ' '.join((req_usr_school.base.code, req_usr_school.abbrev))
 
-        requsr_school_name = ' '.join((req_usr_school.base.code, req_usr_school.name))
         title = ' '.join((str(_('Users')), str(requsr_school_name), str(sel_examyear), 'dd', today_dte.isoformat()))
         file_name = title + ".xlsx"
         worksheet_name = str(_('Users'))
@@ -5873,11 +5875,28 @@ def create_student_xlsx(sel_examyear, sel_school, sel_department, user_lang):  #
     student_rows = get_student_rows()
 
     if student_rows:
+        # PR2023-12-05 TODO Sentry debug:
+        # UnicodeEncodeError: 'ascii' codec can't encode character '\xe7' in position 254: ordinal not in range(128)
+        # character '\xe7' is cedille
+        # culprit is ç in filename=Kandidaten CUR21 Landsexamen Curaçao 2024 dd 2023-11-24.xlsx
+        # PR2024-02-27 also:  '\xe1' á in Kandidaten CUR02 Skol Avansá Amador Nita 2024 dd 2024-02-27.xlsx
+        # see https://stackoverflow.com/questions/9942594/unicodeencodeerror-ascii-codec-cant-encode-character-u-xa0-in-position-20
+        # Do not use str() to convert from unicode to encoded text / bytes.
+        # Instead, use .encode() to encode the string:
+        # p.agent_info = u' '.join((agent_contact, agent_telno)).encode('utf-8').strip()
+        # to be implemented and tested
+        # for now: leave out schoolname
 
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
-        today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-        school_name = ' '.join((sel_school.base.code, sel_school.name))
+        # NIU: today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+        # PR2023-12-05 was:  school_name = ' '.join((sel_school.base.code, sel_school.name))
+        # change temporary to: school_name = sel_school.base.code
+
+        # PR2024-02-27 debug: special charactes in schoolname give gunicorn error. use abbrev instead of schoolname
+        school_name = ' '.join((sel_school.base.code, sel_school.abbrev))
+
         title = ' '.join((str(_('Candidates')), str(school_name), str(sel_examyear), 'dd', today_dte.isoformat()))
         file_name = title + ".xlsx"
         worksheet_name = str(_('Candidates'))
@@ -6462,7 +6481,10 @@ def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, l
 
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
-        school_name = ' '.join((sel_school.base.code, sel_school.name))
+        # PR2024-02-27 debug: special charactes in schoolname give gunicorn error. use abbrev instead of schoolname
+        # was: school_name = ' '.join((sel_school.base.code, sel_school.name))
+        school_name = ' '.join((sel_school.base.code, sel_school.abbrev))
+
         title = ' '.join((str(_('Results')), str(school_name), str(sel_examyear), 'dd', today_dte.isoformat()))
         file_name = title + ".xlsx"
         worksheet_name = str(_('Results'))

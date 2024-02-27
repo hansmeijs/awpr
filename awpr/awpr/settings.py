@@ -142,6 +142,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # PR2018-04-22
 AUTH_USER_MODEL = 'accounts.User'
 
+# PR2024-02-23 from django 3.2 see https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
+# To avoid unwanted migrations in the future, explicitly set DEFAULT_AUTO_FIELD to AutoField:
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 

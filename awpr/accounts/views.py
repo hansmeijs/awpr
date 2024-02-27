@@ -1,12 +1,16 @@
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required  # PR2018-04-01
-from django.contrib.auth.mixins import UserPassesTestMixin  # PR2018-11-03
+from django.contrib.auth.views import PasswordContextMixin
+#from django.contrib.auth.mixins import UserPassesTestMixin  # PR2018-11-03
 from django.contrib.sites.shortcuts import get_current_site
 
 from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.forms import (
-    AuthenticationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm,
-)
+#from django.contrib.auth.forms import (
+#    AuthenticationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm,
+#)
+
+
+from django.contrib.auth import views as auth_views
 
 from django.core.mail import send_mail
 
@@ -22,7 +26,7 @@ from django.core.mail import EmailMultiAlternatives
 import unicodedata
 from django.contrib.auth import get_user_model, authenticate
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, resolve_url
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -30,13 +34,13 @@ from django.utils.decorators import method_decorator
 
 # PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_bytes, force_text
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode, url_has_allowed_host_and_scheme
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext, gettext_lazy as _
 from django.views.generic import ListView, View, UpdateView, FormView
 
-from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
+from django.contrib.auth.forms import SetPasswordForm, AuthenticationForm  # PR2018-10-14
 
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
@@ -393,6 +397,15 @@ class UserUploadView(View):
                                                         if logging_on:
                                                             logger.debug('usersetting delete: ' + str(usersetting))
                                                         usersetting.delete()
+
+                                                    # PR2023-12-19 Sentry debug:
+                                                    #   Cannot delete some instances of model 'User' because they are referenced
+                                                    #   through protected foreign keys: 'Grade.ce_auth3by', 'Grade.ce_exam_auth3by'.",
+                                                    #   {<Grade: Grade object (61701)>,
+                                                    #   <Grade: Grade object (61831)>, ...
+                                                    # most likely when Skaih tried to delete user
+                                                    # I assume ' the 'try' function has trapped this error
+
                                                     user_instance.delete()
                                                     updated_dict['deleted'] = True
 
@@ -1849,18 +1862,6 @@ class AwpPasswordResetForm(forms.Form):
                 user_email, html_email_template_name=html_email_template_name,
             )
 # === end of class AwpPasswordResetForm =====================================
-
-
-class PasswordContextMixin:
-    extra_context = None
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'title': self.title,
-            **(self.extra_context or {})
-        })
-        return context
 
 
 class AwpPasswordResetView(PasswordContextMixin, FormView):
@@ -4867,7 +4868,7 @@ def get_settings_levelbase(request, request_item_setting, sel_examyear_instance,
         if sel_lvlbase_instance:
             selected_pk_dict[c.KEY_SEL_LVLBASE_PK] = sel_lvlbase_instance.pk
         else:
-            # romeove key when 'all' is selected
+            # remove key when 'all' is selected
             if selected_pk_dict and c.KEY_SEL_LVLBASE_PK in selected_pk_dict:
                 selected_pk_dict.pop(c.KEY_SEL_LVLBASE_PK)
 
@@ -5361,7 +5362,6 @@ def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08 
     return sel_examyear, sel_examperiod
 
 
-
 def get_selected_ey_ep_dep_lvl_subj_from_usersetting(request, selected_pk_dict):  # PR2023-05-18
     # - get selected examyear, examperiod and department from usersettings, only examyear from request.user.country
     # used in ExamDownloadExamJsonView
@@ -5414,7 +5414,6 @@ def get_selected_examyear_examperiod_dep_school_from_usersetting(request):  # PR
 
     return sel_examyear, sel_department, sel_school, sel_examperiod
 # - end of get_selected_examyear_examperiod_dep_school_from_usersetting
-
 
 
 def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
@@ -6150,7 +6149,7 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
     # PR2023-01-11 only called by get_settings_levelbase
     # ThisCodeIsOK
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_lvlbase_instance  -----')
         logger.debug('    sel_department: ' + str(sel_department))

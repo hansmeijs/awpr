@@ -6911,7 +6911,7 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
 
-                awpr_logs.save_to_log(instance, 'u', request)
+                # awpr_logs.save_to_log(instance, 'u', request)
 
 # - end of update_subjecttype_instance
 

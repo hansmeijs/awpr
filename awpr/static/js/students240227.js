@@ -620,6 +620,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_rows && data_rows.length){
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
 
+        //console.log( "    data_dict", data_dict);
         // --- set SBR_filter
         // Note: filter of filterrow is done by Filter_TableRows
                 let show_row = true;
@@ -633,6 +634,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     show_row = (setting_dict.sel_student_pk === data_dict.id)
                 };
 
+        //console.log( "    setting_dict.sel_lvlbase_pk", setting_dict.sel_lvlbase_pk)
+        //console.log( "    data_dict.lvlbase_id", data_dict.lvlbase_id)
+        //console.log( "    setting_dict.sel_sctbase_pk", setting_dict.sel_sctbase_pk)
+        //console.log( "    data_dict.sctbase_id", data_dict.sctbase_id)
+        //console.log( "    setting_dict.sel_student_pk", setting_dict.sel_student_pk)
+        //console.log( "    data_dict.id", data_dict.id)
+        //console.log( "    show_row", show_row);
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);
                 };
@@ -798,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- add EventListener to td
                 if (["examnumber", "regnumber", "lastname", "firstname", "prefix", "gender",
                             "birthdate", "birthcountry", "birthcity",
-                "idnumber", "db_code", "lvl_abbrev", "sct_abbrev", "classname",
+                            "idnumber", "db_code", "lvl_abbrev", "sct_abbrev", "classname",
                             "fullname", "subj_code", "subj_name", "sjtp_abbrev"].includes(field_name)){
                     td.addEventListener("click", function() {MSTUD_Open(el)}, false)
                     td.classList.add("pointer_show");
@@ -818,6 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } ; // for (let j = 0; j < 8; j++)
 
     // --- make deleted row red (they only exist when SBR 'Show all' is clicked PR2023-01-14
+        console.log("  data_dict ", data_dict);
         if (data_dict.deleted){
             tblRow.classList.add("tsa_tr_error");
             const title_txt = loc.This_candidate_is_deleted + "\n" + loc.Click_restore_to_restore_candidate;

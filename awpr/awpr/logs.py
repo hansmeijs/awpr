@@ -60,9 +60,11 @@ def save_to_log(instance, req_mode, request):
         pk_int = instance.pk
 
         if model_name == 'User':
-            copy_user_to_log(instance, mode, request)
+            pass
+            #copy_user_to_log(instance, mode, request)
         elif model_name == 'Examyear':
-            copy_examyear_to_log(mode, instance, modby_id, mod_at)
+            pass
+            #copy_examyear_to_log(mode, instance, modby_id, mod_at)
         elif model_name == 'ExfilesText':
             pass
         elif model_name == 'Department':
@@ -537,13 +539,13 @@ def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_field
 
 
 def savetolog_grade(grade_pk, req_mode, request, updated_fields):
-    # PR2023-08-15
+    # PR2023-08-15 PR2024-02-24
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('  ----- savetolog_grade -----')
         logger.debug('    req_mode: ' + str(req_mode))
-       #logger.debug('    updated_fields: ' + str(updated_fields))
+        logger.debug('    updated_fields: ' + str(updated_fields))
 
     """
     id                 | integer                  |           | not null | nextval('students_gradelog_id_seq'::regclass)
@@ -571,15 +573,22 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
         try:
             mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
             field_list = (
-                'studentsubject_id', 'examperiod',
+                'studentsubject_id',
                 'pescore', 'cescore', 'segrade', 'srgrade', 'sesrgrade',
                 'pegrade', 'cegrade', 'pecegrade', 'finalgrade', 'exemption_imported',
                 'deleted', 'status',
+
+                # PR2024-02-27 TODO add:
+                # 'se_published_id', 'se_blocked' ,
+                # 'sr_published_id', 'sr_blocked'
+                # 'pe_published_id', 'pe_blocked'
+                # 'ce_published_id', 'ce_blocked'
+
                 'modifiedby_id', 'modifiedat'
             )
 
-            # these fields are always included: 'modifiedby_id', 'modifiedat'
-            tobe_copied_field_list = ['status', 'modifiedby_id', 'modifiedat']
+            # these fields are always included:
+            tobe_copied_field_list = ['examperiod', 'status', 'modifiedby_id', 'modifiedat']
 
             for field in field_list:
                 # - when mode is 'update': copy only updated fields
@@ -602,7 +611,7 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
                 "grade_id, mode,", tobe_copied_field_str,
                 ") SELECT",
                 "id,", mode, ",", tobe_copied_field_str,
-                "FROM students_gradelog AS grade",
+                "FROM students_grade AS grade",
                 "WHERE grade.id=", str(grade_pk), "::INT",
                 "RETURNING id;"
             ))
@@ -617,7 +626,7 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-# - end of savetolog_studentsubject
+# - end of savetolog_grade
 ##################
 
 def copy_department_to_log(mode, instance, modby_id, mod_at):  # PR2021-04-25 PR2021-06-28

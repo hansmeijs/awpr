@@ -623,7 +623,7 @@ def copy_schemes_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels
             logger.debug('prev_scheme: ' + str(prev_scheme))
             logger.debug('prev_scheme.modifiedby_id: ' + str(prev_scheme.modifiedby_id))
             logger.debug('prev_scheme.modifiedat: ' + str(prev_scheme.modifiedat))
-        new_scheme = None
+
         try:
 # get mapped values of dep. lvl and sct
             new_dep_pk = mapped_deps.get(prev_scheme.department_id)
@@ -901,8 +901,6 @@ def copy_envelopsubjects_from_prev_examyear(prev_examyear_pk,
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_envelopsubjects_from_prev_examyear -------')
-
-    row_count = 0
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:

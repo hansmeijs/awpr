@@ -1,5 +1,5 @@
 # PR2021-01-18
-#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+# PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import gettext_lazy as _, gettext
 
 from django.db import connection
@@ -135,17 +135,16 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, a
 # - end of validate_grade_is_allowed
 
 
-def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of_sel_school, schoolbase_pk, depbase_pk, lvlbase_pk,
+def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of_sel_school, sel_examyear, schoolbase_pk, depbase_pk, lvlbase_pk,
                                        subjbase_pk, cluster_pk):
-    # PR2022-04-07
+    # PR2022-04-07 PR2023-12-12
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_multiple_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
                                'lvlbase_pk:', str(lvlbase_pk), 'subjbase_pk:', str(subjbase_pk),
                                'cluster_pk:', str(cluster_pk))))
-    not_allowed = False
-
+    is_allowed = True
     # PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
     # must be able to approve all subjects as chairperson.
     # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
@@ -154,27 +153,54 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of
         if allowed_clusters_of_sel_school:
             # also not allowed when allowed_clusters_of_sel_school is not empty and studsubj does not belong to cluster
             if not cluster_pk or cluster_pk not in allowed_clusters_of_sel_school:
-                not_allowed = True
+                is_allowed = False
 
-    if not not_allowed and request.user.allowed_subjectbases:
-        if not subjbase_pk or str(subjbase_pk) not in request.user.allowed_subjectbases.split(';'):
-            not_allowed = True
+    if is_allowed:
+        # PR2923-12-12 Sentry debug: 'User' object has no attribute 'allowed_subjectbases'
+        # TODO switched to new allowed_subjectbases etc, must be tested
+        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
 
-    if not not_allowed is None and request.user.allowed_schoolbases:
-        if not schoolbase_pk or str(schoolbase_pk) not in request.user.allowed_schoolbases.split(';'):
-            not_allowed = True
+# - check if schoolbase_is_allowed
+        if is_allowed:
+            if not schoolbase_pk:
+                is_allowed = False
+            else:
+                schoolbase_is_allowed = acc_prm.validate_userallowed_school(userallowed_sections_dict, schoolbase_pk)
+                if not schoolbase_is_allowed:
+                    is_allowed = False
 
-    if not not_allowed is None and request.user.allowed_levelbases:
-        if not lvlbase_pk or str(lvlbase_pk) not in request.user.allowed_levelbases.split(';'):
-            not_allowed = True
+# - check if depbase_is_allowed
+        if is_allowed:
+            if not depbase_pk:
+                is_allowed = False
+            else:
+                depbase_is_allowed = acc_prm.validate_userallowed_depbase(userallowed_sections_dict, schoolbase_pk, depbase_pk)
+                if not depbase_is_allowed:
+                    is_allowed = False
 
-    if not not_allowed is None and request.user.allowed_depbases:
-        if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
-            not_allowed = True
+# - check if lvlbase_is_allowed
+        if is_allowed:
+            if not lvlbase_pk:
+                is_allowed = False
+            else:
+                lvlbase_is_allowed = acc_prm.validate_userallowed_lvlbase(userallowed_sections_dict, schoolbase_pk,
+                                                                          depbase_pk, lvlbase_pk)
+                if not lvlbase_is_allowed:
+                    is_allowed = False
+
+# - check if subjectbase_is_allowed
+        if is_allowed:
+            if not subjbase_pk:
+                is_allowed = False
+            else:
+                subjectbase_is_allowed = acc_prm.validate_userallowed_subjbase(
+                    userallowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk)
+                if not subjectbase_is_allowed:
+                    is_allowed = False
 
     if logging_on:
-        logger.debug('    not_allowed: ' + str(not_allowed))
-    return not not_allowed
+        logger.debug('    is_allowed: ' + str(is_allowed))
+    return is_allowed
 # - end of validate_grade_multiple_is_allowed
 
 

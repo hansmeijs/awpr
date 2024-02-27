@@ -694,6 +694,7 @@ def get_allowed_clusters_of_sel_school(sel_schoolbase_pk, allowed_cluster_pk_lis
     return allowed_clusters_of_sel_school
 # - end of get_allowed_clusters_of_sel_school
 
+
 def allowedsections_has_subjbases(userallowed_sections_dict):
     # check if there any allowed subjects PR2023-02-16
     has_subjbases = False
@@ -1019,7 +1020,7 @@ def validate_userallowed_school(userallowed_sections_dict, schoolbase_pk):
 
 
 def validate_userallowed_depbase(userallowed_sections_dict, sel_schoolbase_pk, sel_depbase_pk):
-    # This function checks if een given depbase is allowed, based on allowedsections # PR2023-02-16
+    # This function checks if een given depbase is allowed, based on allowedsections # PR2023-02-16 PR2023-12-12
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_userallowed_depbase -----')
@@ -1027,12 +1028,15 @@ def validate_userallowed_depbase(userallowed_sections_dict, sel_schoolbase_pk, s
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk) + ' ' + str(type(sel_schoolbase_pk)))
         logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
 
-    is_allowed = True if sel_schoolbase_pk and sel_depbase_pk else False
+    is_allowed = False
 
-    if userallowed_sections_dict:
-        is_allowed = False
-        has_depbase_pk = False
-        if sel_schoolbase_pk and sel_depbase_pk:
+# - sel_schoolbase_pk and sel_depbase_pk must have value
+    if sel_schoolbase_pk and sel_depbase_pk:
+        if not userallowed_sections_dict:
+# - is_allowed = True when userallowed_sections_dict is empty
+            is_allowed = True
+        else:
+            has_depbase_pk = False
             for sb_pk_str in ('-9', str(sel_schoolbase_pk)):
                 if sb_pk_str in userallowed_sections_dict:
                     schoolbase_dict = userallowed_sections_dict[sb_pk_str]
@@ -1053,9 +1057,9 @@ def validate_userallowed_depbase(userallowed_sections_dict, sel_schoolbase_pk, s
 
                 if is_allowed:
                     break
-        # set is_allowed = True when there are no depbases in schooldicts
-        if not has_depbase_pk:
-            is_allowed = True
+# - set is_allowed = True when there are no depbases in schooldicts
+            if not has_depbase_pk:
+                is_allowed = True
 
     if logging_on:
         logger.debug(' >> is_allowed: ' + str(is_allowed))

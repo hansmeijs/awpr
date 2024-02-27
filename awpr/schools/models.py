@@ -1,10 +1,10 @@
 # PR2018-04-13
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
 
 # PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
 # instead use: django.db.models import JSONField (is added in Django 3)
 # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
-from django.contrib.postgres.fields import ArrayField #, JSONField
+# from django.contrib.postgres.fields import ArrayField #, JSONField
 
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField, FileField

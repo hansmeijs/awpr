@@ -593,7 +593,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ')
@@ -872,9 +872,19 @@ def download_setting(request_item_setting, user_lang, request):
             logger.debug('     saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
             logger.debug('     request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
 
+# - remove key when 'all' is selected
+        # PR2-24-02- 07 email Frits Sundial: candidates not showing.
+        # Cause:  setting_dict.sel_sctbase_pk had value -9, was filtered out in page Students  FillTblRows
+        # Solved by removing value -9
+        # remove key when 'all' is selected in saved_pk_int and in request_item_pk_int
+        if saved_pk_int == -9:
+            saved_pk_int = None
+
 # - if key_str exists in request_item_setting: get new request_item_pk_int from request_item_setting
         if key_str in request_item_setting:
             request_item_pk_int = request_item_setting.get(key_str)
+            if request_item_pk_int == -9:
+                request_item_pk_int = None
             if logging_on:
                 logger.debug('     request_item_pk_int: ' + str(request_item_pk_int) + ' ' + str(type(request_item_pk_int)))
 

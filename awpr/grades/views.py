@@ -571,6 +571,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02 PR2023-0
                                                         request=request,
                                                         requsr_auth=requsr_auth,
                                                         allowed_clusters_of_sel_school=allowed_clusters_of_sel_school,
+                                                        sel_examyear=sel_examyear,
                                                         schoolbase_pk=grade_row.get('schoolbase_id'),
                                                         depbase_pk=grade_row.get('depbase_id'),
                                                         lvlbase_pk=grade_row.get('lvlbase_id'),
@@ -1170,7 +1171,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 # --- end of create_grade_approve_rows
 
 
-def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk):
+def check_ex5_grade_approved_rows(sel_examyear_pk, sel_examperiod, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk):
     # PR2022-06-12 PR2022-07-12  PR2023-06-20
     # only called by GradeSubmitEx5View
     logging_on = s.LOGGING_ON
@@ -1180,15 +1181,19 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
 
     log_list = []
     try:
-        sql_keys = {'ey_id': sel_examyear_pk, 'schoolbase_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk}
+
 
         # PR2022-05-11 Sentry debug: syntax error at or near "FROM"
         # in: grd.pecegrade, grd.finalgrade, FROM students_grade AS grd
         # because sel_examtype had no or wrong value and therefor auth_line etc were ''
         # put schoolbase_id field at the end, to make sure there is never a comma in front of FROM
 
-        # PR2023-007-10 Sentry debug: %(experiod)s not in sql_keys
-        # TODO must add experiod, otherwise E5 ep01 cannot be submitted when there are reex candidates
+        # must add experiod, otherwise E5 ep01 cannot be submitted when there are reex candidates
+        # PR2023-07-10 Sentry debug: %(experiod)s not in sql_keys
+        # PR2023-12-12 Sentry debug: same issue - solved by adding sel_examperiod
+
+        sql_keys = {'ey_id': sel_examyear_pk, 'experiod': sel_examperiod,
+                    'schoolbase_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk}
 
         sql_list = [
             "SELECT grd.id, grd.examperiod, studsubj.id AS studsubj_id, ",
@@ -1707,6 +1712,7 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
 # - check ex5_grade_approved_rows
                                 log_list = check_ex5_grade_approved_rows(
                                     sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
+                                    sel_examperiod=sel_examperiod,
                                     sel_schoolbase_pk=sel_school.base_id if sel_school else None,
                                     sel_depbase_pk=sel_department.base_id if sel_department else None,
                                     sel_lvlbase_pk=sel_level.base_id if sel_level else None
