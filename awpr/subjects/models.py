@@ -26,6 +26,8 @@ class AwpModelManager(Manager):
             return self.get(**kwargs)
         except:
             return None
+# - end of AwpModelManager
+
 
 # === Level =====================================
 class Levelbase(Model):  # PR2018-10-17
@@ -35,7 +37,7 @@ class Levelbase(Model):  # PR2018-10-17
 
     def __str__(self):
         return str(self.code)
-
+# - end of Levelbase
 
 class Level(sch_mod.AwpBaseModel): # PR2018-08-12
     # AwpModelManager adds function get_or_none to prevent DoesNotExist exception
@@ -135,6 +137,7 @@ class Level(sch_mod.AwpBaseModel): # PR2018-08-12
                         depbase_list__contains=depbase_id_delim,
                         abbrev__iexact=abbrev).first()
         return lvl
+# - end of Level
 
 
 # PR2018-08-12
@@ -156,6 +159,7 @@ class Level_log(sch_mod.AwpBaseModel):
     color = CharField(max_length=c.MAX_LENGTH_10, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of Level_log
 
 
 # === Sector =====================================
@@ -166,6 +170,7 @@ class Sectorbase(Model):  # PR2018-10-17
 
     def __str__(self):
         return str(self.code)
+# - end of Sectorbase
 
 
 class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
@@ -203,7 +208,6 @@ class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
                         abbrev__iexact=abbrev).first()
         return sct
 
-
     @classmethod
     def get_caption(cls, request_user):  #  # PR2019-01-01
         # caption Sector/Profiel depends on department
@@ -215,6 +219,7 @@ class Sector(sch_mod.AwpBaseModel):  # PR2018-06-06
             else:
                 caption = "Profiel"
         return caption
+# - end of Sector
 
 
 # PR2018-06-06
@@ -233,6 +238,7 @@ class Sector_log(sch_mod.AwpBaseModel):
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of Sector_log
 
 
 # PR2018-06-06 There is one Scheme per department/level/sector per year per country
@@ -299,7 +305,7 @@ class Scheme(sch_mod.AwpBaseModel):
                 else:
                     scheme = Scheme.objects.filter(department=department).first()
         return scheme
-
+# - end of Scheme
 
 class Scheme_log(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
@@ -337,6 +343,7 @@ class Scheme_log(sch_mod.AwpBaseModel):
     @property
     def mode_str(self):
         return c.MODE_DICT.get(str(self.mode),'-')
+# - end of Scheme_log
 
 
 # === Subjecttype =====================================
@@ -351,6 +358,7 @@ class Subjecttypebase(Model):  # PR2018-10-17 PR2021-07-11
 
     def __str__(self):
         return self.name
+# - end of Subjecttypebase
 
 
 # PR2018-06-06
@@ -380,6 +388,7 @@ class Subjecttype(sch_mod.AwpBaseModel):
 
     def __str__(self):
         return self.name
+# - end of Subjecttype
 
 
 class Subjecttype_log(sch_mod.AwpBaseModel):
@@ -408,6 +417,8 @@ class Subjecttype_log(sch_mod.AwpBaseModel):
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
+# - end of Subjecttype_log
+
 
 # =============  Subject Model  =====================================
 class Subjectbase(Model):
@@ -415,6 +426,7 @@ class Subjectbase(Model):
 
     # PR2021-08-09 removed: country = ForeignKey(sch_mod.Country, related_name='+', on_delete=PROTECT)
     code = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
+# - end of Subjectbase
 
 
 class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
@@ -446,6 +458,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
 
     def __str__(self):
         return self.name_nl
+# - end of Subject
 
 
 # PR2018-06-05 Subject is the base Model of all subjects
@@ -472,7 +485,7 @@ class Subject_log(sch_mod.AwpBaseModel):
     notatdayschool = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
-
+# - end of Subject_log
 ######################################
 # Module exam envelops PR2022-08-03 PR2022-10-09
 
@@ -484,10 +497,12 @@ class Enveloporderlist(sch_mod.AwpBaseModel):  # PR2022-10-12
     examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
 
     orderdict = TextField()
+# - end of Enveloporderlist
 
 
 class Envelopbundlebase(Model):  # PR2022-08-03
     objects = AwpModelManager()
+# - end of Envelopbundlebase
 
 
 class Envelopbundle(sch_mod.AwpBaseModel):  # PR2022-08-03
@@ -498,7 +513,7 @@ class Envelopbundle(sch_mod.AwpBaseModel):  # PR2022-08-03
     examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=c.MAX_LENGTH_NAME)
-
+# - end of Envelopbundle
 
 class Envelopsubject(sch_mod.AwpBaseModel):  # PR2022-10-09
     # contains Envelopbundle of each subject / dep / level combination
@@ -521,10 +536,12 @@ class Envelopsubject(sch_mod.AwpBaseModel):  # PR2022-10-09
     has_errata = BooleanField(default=False)
     # PR2023-08-10 todo: to be removesremove, use secret_exam in Exam instead
     secret_exam = BooleanField(default=False)  # PR2023-03-31 added
+# - end of Envelopsubject
 
 
 class Enveloplabelbase(Model):  # PR2022-08-03
     objects = AwpModelManager()
+# - end of Enveloplabelbase
 
 
 class Enveloplabel(sch_mod.AwpBaseModel):  # PR2022-08-03
@@ -543,6 +560,7 @@ class Enveloplabel(sch_mod.AwpBaseModel):  # PR2022-08-03
     # when is_variablenumber: numberinenvelop is the maximum number of exams in the envelop
     numberinenvelop = PositiveSmallIntegerField(null=True)
     numberofenvelops = PositiveSmallIntegerField(null=True)
+# - end of Enveloplabel
 
 
 class Envelopbundlelabel(sch_mod.AwpBaseModel):  # PR2022-08-03
@@ -553,10 +571,12 @@ class Envelopbundlelabel(sch_mod.AwpBaseModel):  # PR2022-08-03
     enveloplabel = ForeignKey(Enveloplabel, related_name='+', on_delete=CASCADE)
 
     sequence = PositiveSmallIntegerField(default=1)
+# - end of Envelopbundlelabel
 
 
 class Envelopitembase(Model):  # PR2022-08-03
     objects = AwpModelManager()
+# - end of Envelopitembase
 
 
 class Envelopitem(sch_mod.AwpBaseModel):  # PR2022-08-03 PR2022-09-27 PR2022-10-19
@@ -581,6 +601,7 @@ class Envelopitem(sch_mod.AwpBaseModel):  # PR2022-08-03 PR2022-09-27 PR2022-10-
     # PR2022-10-19
     content_font = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     instruction_font = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+# - end of Envelopitem
 
 
 class Enveloplabelitem(sch_mod.AwpBaseModel):  # PR2022-08-03
@@ -591,6 +612,7 @@ class Enveloplabelitem(sch_mod.AwpBaseModel):  # PR2022-08-03
     envelopitem = ForeignKey(Envelopitem, related_name='+', on_delete=CASCADE)
 
     sequence = PositiveSmallIntegerField(default=1)
+# - end of Enveloplabelitem
 
 
 # PR2022-02-28
@@ -617,6 +639,7 @@ class Ntermentable(sch_mod.AwpBaseModel):
     datum = DateField(null=True)
     begintijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
     eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+# - end of Ntermentable
 
 
 # PR2022-02-28
@@ -646,6 +669,7 @@ class Ntermentable_log(sch_mod.AwpBaseModel):
     eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of Ntermentable_log
 
 
 class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
@@ -707,6 +731,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
 
     evl_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     evl_modifiedat = DateTimeField(default=timezone.now, null=True)
+# - end of Exam
 
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
@@ -768,6 +793,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     evl_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     evl_modifiedat = DateTimeField(default=timezone.now, null=True)
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of Exam_log
 
 
 #######################################
@@ -919,7 +945,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
 
         return schemeitem_list
-
+# - end of Schemeitem
 
 # PR2018-06-08
 class Schemeitem_log(sch_mod.AwpBaseModel):
@@ -980,6 +1006,7 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     notatdayschool = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of Schemeitem_log
 
 
 # PR2018-06-06 # PR2019-02-17
@@ -995,7 +1022,7 @@ class Package(sch_mod.AwpBaseModel):
 
     def __str__(self):
         return self.name
-
+# - end of Package
 
 # PR2018-06-06
 class Package_log(sch_mod.AwpBaseModel):
@@ -1012,7 +1039,7 @@ class Package_log(sch_mod.AwpBaseModel):
     @property
     def mode_str(self):
         return c.MODE_DICT.get(str(self.mode),'-')
-
+# - end of Package_log
 
 # PR2018-06-06
 class Packageitem(sch_mod.AwpBaseModel):
@@ -1020,6 +1047,7 @@ class Packageitem(sch_mod.AwpBaseModel):
 
     package = ForeignKey(Package, related_name='packageschemes', on_delete=CASCADE)
     schemeitem = ForeignKey(Schemeitem, related_name='packageschemes', on_delete=CASCADE)
+# - end of Packageitem
 
 
 # PR2018-06-06
@@ -1034,6 +1062,8 @@ class Cluster(sch_mod.AwpBaseModel):
 
     def __str__(self):
         return self.name
+# - end of Cluster
+
 
 # PR2018-06-06
 class Cluster_log(sch_mod.AwpBaseModel):
@@ -1053,10 +1083,13 @@ class Cluster_log(sch_mod.AwpBaseModel):
 
     def __str__(self):
         return self.abbrev
+# - end of Cluster_log
 
+"""
 # +++++++++++++++++++++   Functions Department, Level, Sector, Subject  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-def get_list_str(list, model):
+# PR2024-03-02 not in use
+def get_list_strNIU(list, model):
     # PR2018-08-16 get_list_str displays string of depbase_list, level_list or sector_list. e.g.: Vsbo, Havo, Vwo'
     _list_str = '-'
     # logger.debug('def get_list_str list: <' + str(list) + '> type: <' + str(type(list)) + '>')
@@ -1090,3 +1123,4 @@ def get_list_str(list, model):
                 _list_str = _list_str[2:]
     # logger.debug('def get_list_str _list_str: <' + str(_list_str) + '>')
     return _list_str
+"""

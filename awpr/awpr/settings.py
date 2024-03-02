@@ -220,9 +220,12 @@ LOGOUT_REDIRECT_URL = 'home_url'
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='')
 ANYMAIL = {
     'MAILGUN_API_KEY': config('MAILGUN_API_KEY', default=''),
+    # PR2024-03-01 added:
+    'MAILGUN_API_URL': config('MAILGUN_API_URL', default=''),  # "https://api.mailgun.net/v3",
     'MAILGUN_SENDER_DOMAIN': config('MAILGUN_SENDER_DOMAIN', default=''),
 }
-DEFAULT_FROM_EMAIL = 'AWP online <noreply@awponline.net>'
+# PR2024-03-02
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='')
 
 
 # Internationalization

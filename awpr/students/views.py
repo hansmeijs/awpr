@@ -3221,7 +3221,7 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
 
 
                         subject = str(_('AWP-online verificationcode'))
-                        from_email = 'AWP-online <noreply@awponline.net>'
+                        from_email = s.DEFAULT_FROM_EMAIL # PR2024-03-02 'AWP-online <noreply@awponline.net>'
 
                         if mode == 'publish_exam':
                             template_str = 'email_send_verifcode_exam.html'

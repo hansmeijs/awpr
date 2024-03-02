@@ -724,72 +724,6 @@ def copy_scheme_to_log(mode, instance, modby_id, mod_at):  # PR2021-06-28
 # - end of copy_scheme_to_log
 
 
-def copy_grade_to_log(mode, instance, modby_id, mod_at):  # PR2021-12-13
-    # ISN
-    # fields updated PR2021-12-13
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- copy_grade_to_log  -----')  # PR2021-06-28
-        logger.debug('mode: ' + str(mode))
-        logger.debug('instance: ' + str(instance) + ' ' + str(type(instance)))
-        logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)))
-        logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)))
-
-    # get most recent studentsubject_log, exam_log (with highest id)
-    studentsubject_log_pk = get_studentsubject_log_pk(instance.studentsubject_id)
-    exam_log_pk = get_exam_log_pk(instance.exam_id)
-    if studentsubject_log_pk:
-        try:
-            grade_log = stud_mod.Grade_log(
-                grade_id=instance.id,
-
-                studentsubject_log_id=studentsubject_log_pk,
-                exam_log_id=exam_log_pk,
-
-                examperiod=instance.examperiod,
-                pescore=instance.pescore,
-                cescore=instance.cescore,
-                segrade=instance.segrade,
-                srgrade=instance.srgrade,
-                sesrgrade=instance.sesrgrade,
-                pegrade=instance.pegrade,
-                cegrade=instance.cegrade,
-                pecegrade=instance.pecegrade,
-                finalgrade=instance.finalgrade,
-                
-                fields=instance.fields,
-
-                min_subjects=instance.min_subjects,
-                max_subjects=instance.max_subjects,
-
-                min_mvt=instance.min_mvt,
-                max_mvt=instance.max_mvt,
-
-                min_wisk=instance.min_wisk,
-                max_wisk=instance.max_wisk,
-
-                min_combi=instance.min_combi,
-                max_combi=instance.max_combi,
-
-                rule_avg_pece_sufficient=instance.rule_avg_pece_sufficient,
-                rule_avg_pece_notatevlex=instance.rule_avg_pece_notatevlex,
-                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
-                rule_core_sufficient=instance.rule_core_sufficient,
-                rule_core_notatevlex=instance.rule_core_notatevlex,
-                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
-
-                modifiedby_id=modby_id,
-                modifiedat=mod_at,
-                mode=mode
-            )
-            grade_log.save()
-
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-
-# - end of copy_grade_to_log
-
-
 def get_examyear_log(examyear_id):
     # get most recent examyear_log (with highest id)  PR20201-06-28
     log = None
@@ -834,25 +768,6 @@ def get_sector_log(sector_id): # PR20201-06-28
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
     return log
-
-
-def get_studentsubject_log_pk(studentsubject_id): # PR2021-12-13
-    log_pk = None
-    try:
-        log = stud_mod.Studentsubject_log.objects.filter(
-            studentsubject_id=studentsubject_id
-        ).order_by('-pk').first().values('pk')
-
-    # add Studentsubject_log if it does not exist yet
-        # TODO create Studentsubject_log if it does not exist yet
-        if log is None:
-            pass
-
-        if log:
-            log_pk = getattr(log, 'pk')
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-    return log_pk
 
 
 def get_exam_log_pk(exam_id): # PR2021-12-13
@@ -937,7 +852,98 @@ elif model_name == 'Grade':
             #logger.debug('row: ' + str(row))
 
 
+# PR2018-06-08 
+# PR2024-03-02 not in use
+def get_studentsubject_log_pkNIU(studentsubject_id): # PR2021-12-13
+    log_pk = None
+    try:
+        log = stud_mod.Studentsubject_log.objects.filter(
+            studentsubject_id=studentsubject_id
+        ).order_by('-pk').first().values('pk')
+
+    # add Studentsubject_log if it does not exist yet
+        # TODO create Studentsubject_log if it does not exist yet
+        if log is None:
+            pass
+
+        if log:
+            log_pk = getattr(log, 'pk')
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+    return log_pk
+
+# PR2018-06-08 
+# PR2024-03-02not in use
+def copy_grade_to_logNIU(mode, instance, modby_id, mod_at):  # PR2021-12-13
+    # ISN
+    # fields updated PR2021-12-13
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- copy_grade_to_log  -----')  # PR2021-06-28
+        logger.debug('mode: ' + str(mode))
+        logger.debug('instance: ' + str(instance) + ' ' + str(type(instance)))
+        logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)))
+        logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)))
+
+    # get most recent studentsubject_log, exam_log (with highest id)
+    # studentsubject_log_pk = get_studentsubject_log_pk(instance.studentsubject_id)
+    exam_log_pk = get_exam_log_pk(instance.exam_id)
+    if studentsubject_log_pk:
+        try:
+            grade_log = stud_mod.Grade_log(
+                grade_id=instance.id,
+
+                studentsubject_log_id=studentsubject_log_pk,
+                exam_log_id=exam_log_pk,
+
+                examperiod=instance.examperiod,
+                pescore=instance.pescore,
+                cescore=instance.cescore,
+                segrade=instance.segrade,
+                srgrade=instance.srgrade,
+                sesrgrade=instance.sesrgrade,
+                pegrade=instance.pegrade,
+                cegrade=instance.cegrade,
+                pecegrade=instance.pecegrade,
+                finalgrade=instance.finalgrade,
+                
+                fields=instance.fields,
+
+                min_subjects=instance.min_subjects,
+                max_subjects=instance.max_subjects,
+
+                min_mvt=instance.min_mvt,
+                max_mvt=instance.max_mvt,
+
+                min_wisk=instance.min_wisk,
+                max_wisk=instance.max_wisk,
+
+                min_combi=instance.min_combi,
+                max_combi=instance.max_combi,
+
+                rule_avg_pece_sufficient=instance.rule_avg_pece_sufficient,
+                rule_avg_pece_notatevlex=instance.rule_avg_pece_notatevlex,
+                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
+                rule_core_sufficient=instance.rule_core_sufficient,
+                rule_core_notatevlex=instance.rule_core_notatevlex,
+                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
+
+                modifiedby_id=modby_id,
+                modifiedat=mod_at,
+                mode=mode
+            )
+            grade_log.save()
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+# - end of copy_grade_to_log
+
+
+
 """
+
+
 
 
 

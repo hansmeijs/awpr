@@ -38,7 +38,7 @@ class CustomUserManager(UserManager):
             return self.get(**kwargs)
         except:
             return None
-
+# - end of CustomUserManager
 
 class User(AbstractUser):
     # PR2018-05-22 added to create a case-insensitive username
@@ -197,7 +197,7 @@ class User(AbstractUser):
                 if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_032_INSP:
                     _has_permit = True
         return _has_permit
-
+# - end of User
 
 # +++++++++++++++++++  END OF FORM PERMITS  +++++++++++++++++++++++
 
@@ -248,7 +248,7 @@ class User_log(Model):
         if self.mode is not None:
             mode_str = c.MODE_DICT.get(str(self.mode))
         return mode_str
-
+# - end of User_log
 
 class Userpermit(sch_mod.AwpBaseModel):  # PR2021-03-18 PR2021-04-20
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
@@ -265,7 +265,7 @@ class Userpermit(sch_mod.AwpBaseModel):  # PR2021-03-18 PR2021-04-20
 
     # removed: roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     # removed: pages = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-
+# - end of Userpermit
 
 class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19
     # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
@@ -276,6 +276,7 @@ class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19
     name = CharField(max_length=c.USERNAME_SLICED_MAX_LENGTH, null=True)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+# - end of Usergroup
 
 
 # PR2018-05-06
@@ -288,6 +289,7 @@ class Usersetting(Model):
     setting = CharField(db_index=True, max_length=2048)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     # jsonsetting = JSONField(null=True)
+# - end of Usersetting
 
 
 # PR2022-12-04 this table contains the usergroup and allowed settings per examyear
@@ -305,6 +307,7 @@ class UserAllowed(sch_mod.AwpBaseModel):
 
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     # jsonsetting = JSONField(null=True)
+# - end of UserAllowed
 
 
 # PR2023-02-19 this table contains the info for paying compensation to correctors
@@ -333,6 +336,7 @@ class UserCompensation(sch_mod.AwpBaseModel):
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     void = BooleanField(default=False)
+# - end of UserCompensation
 
 
 # PR2023-02-19
@@ -365,6 +369,7 @@ class UserCompensation_log(sch_mod.AwpBaseModel):
     void = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of UserCompensation_log
 
 
 # PR2023-07-18 this table stores the personal dat for paying compensation to correctors.
@@ -380,4 +385,4 @@ class Userdata(sch_mod.AwpBaseModel):
     bankname = CharField(null=True, blank=True, max_length=c.USER_LASTNAME_MAX_LENGTH)
     bankaccount = CharField( null=True, blank=True, max_length=c.USERNAME_SLICED_MAX_LENGTH)
     beneficiary = CharField( null=True, blank=True, max_length=c.MAX_LENGTH_NAME)
-
+# - end of Userdata

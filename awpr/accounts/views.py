@@ -1649,7 +1649,7 @@ def send_activation_email(user_pk, request):
         if not has_error:
             try:
                 subject = _('Activate your AWP-online account')
-                from_email = 'AWP-online <noreply@awponline.net>'
+                from_email = s.DEFAULT_FROM_EMAIL # PR2024-03-02 'AWP-online <noreply@awponline.net>'
                 message = render_to_string('signup_activation_email.html', {
                     'user': user,
                     'domain': current_site.domain,
@@ -2806,7 +2806,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
     # -  send email 'Activate your account'
                 subject = _('Activate your AWP-online account')
-                from_email = 'AWP-online <noreply@awponline.net>'
+                from_email = s.DEFAULT_FROM_EMAIL # PR2024-03-02 'AWP-online <noreply@awponline.net>'
                 message = render_to_string('signup_activation_email.html', {
                     'user': new_user,
                     'usr_schoolname': usr_schoolname_with_article,

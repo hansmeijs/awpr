@@ -87,7 +87,7 @@ def send_email_verifcode(formname, email_template, request, sel_examyear, sel_sc
             logger.debug('verification_dict: ' + str(verification_dict))
 
         subject = str(_('AWP-online verificationcode'))
-        from_email = 'AWP-online <noreply@awponline.net>'
+        from_email = s.DEFAULT_FROM_EMAIL # PR2024-03-02 'AWP-online <noreply@awponline.net>'
         msg_dict = {
             'user': req_usr,
             'examyear': sel_examyear,

@@ -43,6 +43,7 @@ class AwpModelManager(Manager):
             return self.get(**kwargs)
         except:
             return None
+# - end of AwpModelManager
 
 
 # PR2019-03-12 from https://godjango.com/blog/django-abstract-base-class-model-inheritance/
@@ -110,6 +111,8 @@ class AwpBaseModel(Model):
 
         super(AwpBaseModel, self).delete(*args, **kwargs)
 
+# - end of AwpBaseModel
+
 
 class Systemupdate(AwpBaseModel):
     # PR2021-10-12 stores name of the systemupdate once it has run, to prevent running multiple times
@@ -117,9 +120,9 @@ class Systemupdate(AwpBaseModel):
 
     name = CharField(db_index=True, max_length=c.MAX_LENGTH_NAME)
 
-
     def __str__(self):
         return self.name
+# - end of Systemupdate
 
 
 class Country(Model):
@@ -140,6 +143,7 @@ class Country(Model):
 
     def __str__(self):
         return self.name
+# - end of Country
 
 
 # PR2018-05-05
@@ -172,6 +176,7 @@ class Country_log(AwpBaseModel):
         if self.mode is not None:
             mode_str = c.MODE_DICT.get(str(self.mode))
         return mode_str
+# - end of Country_log
 
 
 # ===  Examyear Model =====================================
@@ -231,7 +236,6 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
             schoolyear = str(last_year) + '-' + str(self.code)
         return schoolyear
 
-
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
     def get_examyearsetting_dict(cls, key_str):
         # PR2023-07-18 function retrieves the string value of the setting row that match the filter and converts it to a dict
@@ -286,6 +290,7 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
             logger.error(getattr(e, 'message', str(e)))
             logger.error('key_str: ', str(key_str))
             logger.error('setting_dict: ', str(setting_dict))
+# - end of Examyear
 
 
 # PR2018-06-06
@@ -331,6 +336,7 @@ class Examyear_log(AwpBaseModel):
     order_admin_max = PositiveSmallIntegerField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of Examyear_log
 
 
 # PR2023-02-19 to store compensation per approved subject
@@ -343,6 +349,7 @@ class Examyearsetting(AwpBaseModel):
     setting = CharField(db_index=True, max_length=2048)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     # jsonsetting = JSONField(null=True)
+# - end of Examyearsetting
 
 
 # PR2023-02-19
@@ -360,6 +367,7 @@ class Examyearsetting_log(AwpBaseModel):
     # jsonsetting = JSONField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of Examyearsetting_log
 
 
 class ExfilesText(AwpBaseModel):  # PR2021-01-
@@ -403,6 +411,7 @@ class ExfilesText(AwpBaseModel):  # PR2021-01-
             row.save()
             if logging_on:
                 logger.debug('row.setting: ' + str(row.setting))
+# - end of ExfilesText
 
 
 # PR2021-04-25
@@ -418,6 +427,7 @@ class ExfilesText_log(AwpBaseModel):
     setting = CharField(max_length=2048, null=True, blank=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of ExfilesText_log
 
 
 # === Department Model =====================================
@@ -429,7 +439,7 @@ class Departmentbase(Model): # PR2018-10-17 PR2021-07-11
 
     def __str__(self):
         return str(self.code)
-
+# - end of Departmentbase
 
 class Department(AwpBaseModel):# PR2018-08-10
     objects = AwpModelManager()
@@ -458,6 +468,7 @@ class Department(AwpBaseModel):# PR2018-08-10
 
         # for k, v in vars(self).items():
         #     #logger.debug('class Department(Model) __init__ for k, v in vars(self).items(): k: ' + str(k) + '_v: ' + str(v))
+# - end of Department
 
 
 # PR2018-06-06
@@ -483,6 +494,7 @@ class Department_log(AwpBaseModel):
 
     def __str__(self):
         return self.name
+# - end of Department_log
 
 
 class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
@@ -554,6 +566,7 @@ class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
             logger.error(getattr(e, 'message', str(e)))
             logger.error('key_str: ', str(key_str))
             logger.error('setting_dict: ', str(setting_dict))
+# - end of Schoolbase
 
 
 # ===  School Model =====================================
@@ -603,6 +616,7 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
             if request_user.schoolbase and request_user.examyear:
                 school = cls.objects.get_or_none(base=request_user.schoolbase, examyear=request_user.examyear)
         return school
+# - end of School
 
 
 class School_log(AwpBaseModel):
@@ -637,6 +651,7 @@ class School_log(AwpBaseModel):
     lockedat = DateTimeField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+# - end of School_log
 
 
 class Published(AwpBaseModel): # PR2020-12-02
@@ -658,24 +673,8 @@ class Published(AwpBaseModel): # PR2020-12-02
     def __str__(self):
         return self.name
     # published has no published_log because its data don't change
+# - end of Published
 
-
-# PR2018-06-07
-class Entrylist(AwpBaseModel):
-    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
-    key_id = IntegerField(db_index=True, default=0)
-    char01 = CharField(max_length=255, null=True)
-    char02 = CharField(max_length=255, null=True)
-    int01 = IntegerField(null=True)
-    int02 = IntegerField(null=True)
-    bool01 = BooleanField(default=False)
-    bool02 = BooleanField(default=False)
-    date01 = DateTimeField(null=True)
-    date02 = DateTimeField(null=True)
-
-    # field to be excluded from AwpBaseModel
-    modifiedby = None
-    modifiedat = None
 
 
 class Schoolsetting(Model):  # PR2020-10-20
@@ -724,10 +723,10 @@ class Schoolsetting(Model):  # PR2020-10-20
             elif new_datetime:
                 row = cls(schoolbase=schoolbase, key=key_str, datetimesetting2=new_datetime)
             row.save()
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# - end of Schoolsetting
+
 
 # +++++++++++++++++++++   Messaging Service  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 class Mailmessage(AwpBaseModel):
     objects = AwpModelManager()
 
@@ -741,7 +740,7 @@ class Mailmessage(AwpBaseModel):
 
     # when a mailmessage is sent, sentdate IS NOT NULL
     sentdate = DateTimeField(null=True)
-
+# - end of Mailmessage
 
 # PR2021-03-08 from https://simpleisbetterthancomplex.com/tutorial/2017/08/01/how-to-setup-amazon-s3-in-a-django-project.html
 class Mailattachment(AwpBaseModel):
@@ -752,7 +751,7 @@ class Mailattachment(AwpBaseModel):
     file = FileField(storage=PrivateMediaStorage())
     filename = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
     filesize = IntegerField(null=True)
-
+# - end of Mailattachment
 
 class Mailbox(AwpBaseModel):
     objects = AwpModelManager()
@@ -761,7 +760,7 @@ class Mailbox(AwpBaseModel):
     mailmessage = ForeignKey(Mailmessage, related_name='+', on_delete=CASCADE)
     read = BooleanField(default=False)
     deleted = BooleanField(default=False)
-
+# - end of Mailbox
 
 class Mailinglist(AwpBaseModel):
     objects = AwpModelManager()
@@ -774,6 +773,7 @@ class Mailinglist(AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME)
 
     recipients = CharField(max_length=2048, null=True, blank=True)
+# - end of Mailinglist
 
 
 def delete_instance(table, instance, request, this_txt=None):
@@ -860,5 +860,28 @@ def delete_instance(table, instance, request, this_txt=None):
         logger.debug('    err_html: ' + str(err_html))
 
     return deleted_row, err_html
+# - end of delete_instance
 
+"""
+# PR2024-03-02 not in use:
+# PR2018-06-07
+class Entrylist(AwpBaseModel):
+    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
+    key_id = IntegerField(db_index=True, default=0)
+    char01 = CharField(max_length=255, null=True)
+    char02 = CharField(max_length=255, null=True)
+    int01 = IntegerField(null=True)
+    int02 = IntegerField(null=True)
+    bool01 = BooleanField(default=False)
+    bool02 = BooleanField(default=False)
+    date01 = DateTimeField(null=True)
+    date02 = DateTimeField(null=True)
+
+    # field to be excluded from AwpBaseModel
+    modifiedby = None
+    modifiedat = None
+# - end of Entrylist
+
+
+"""
 

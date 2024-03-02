@@ -1519,7 +1519,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, body_txt, requ
             sender_organization = requsr_school.name if requsr_school.name else ''
             sender_name = req_usr.last_name
 
-            from_email = 'AWP-online <noreply@awponline.net>'
+            from_email = s.DEFAULT_FROM_EMAIL # PR2024-03-02 'AWP-online <noreply@awponline.net>'
             email_template_name = 'send_message_email.html',
 
             """
@@ -3164,7 +3164,7 @@ def send_email_orderlist(examyear, school, is_total_orderlist,
             subject_str = ' '.join((str(_('Orderlist')), str(_('Exams')).lower(), str(examyear.code), school.base.code, school.name))
             school_article = school.article if school.article else ''
             school_attn = ' '.join(( str(_('To')), school_article, school.name ))
-            from_email = 'AWP-online <noreply@awponline.net>'
+            from_email = s.DEFAULT_FROM_EMAIL # PR2024-03-02 'AWP-online <noreply@awponline.net>'
 
             requsr_school = sch_mod.School.objects.get_or_none(
                 base=req_usr.schoolbase,
