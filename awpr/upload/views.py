@@ -1467,7 +1467,7 @@ def ImportStudentsubject(ws_name, row_data, logfile, mapped, examyear_instance, 
                     studentsubject.has_reex03 = True if row_data.get('has_reex03') == 1 else False
                     if row_data.get('has_pok') == 1 or row_data.get('has_pex') == 1:
                         years_valid = 10 if student.iseveningstudent or student.islexstudent else 1
-                        studentsubject.pok_validthru = examyear_instance.code + years_valid
+                        studentsubject.pok_validthru = examyear_instance.code + years_valid  # ImportStudentsubject
 
                     # TODO check if these max fields are used
                     studentsubject.ex_max_segrade = row_data.get('ex_max_segrade')

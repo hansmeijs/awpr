@@ -236,21 +236,24 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 
 # - create log_list with header
     log_list = log_list_header(sel_school, sel_department, sel_examyear, user_lang)
-    sql_studsubj_list = []
-    sql_student_list = []
+
+    # PR2024-04-02 sql_studsubj_value_list contains list of valu strings for batch upddate studsubj:
+    # sql_studsubj_value_str: 76004,'8.1',NULL,'8',FALSE,FALSE,FALSE,FALSE,FALSE,1,FALSE,FALSE,FALSE,'8.1',NULL,'8'
+    sql_studsubj_value_list = []
+    sql_student_value_list = []
 
 # loop through student_dictlist - ordered list of students with grades
     for student_dict in student_dictlist:
         calc_student_result(sel_examyear, sel_department, student_dict, scheme_dict, schemeitems_dict, log_list,
-                            sql_studsubj_list, sql_student_list)
+                            sql_studsubj_value_list, sql_student_value_list)
 
 # - save calculated fields in studsubj
-    if sql_studsubj_list:
-        save_studsubj_batch(sql_studsubj_list)
+    if sql_studsubj_value_list:
+        save_studsubj_batch(sql_studsubj_value_list)
 
 # - save calculated fields in student
-    if sql_student_list:
-        save_student_batch(sql_student_list)
+    if sql_student_value_list:
+        save_student_batch(sql_student_value_list)
 
     if not student_dictlist:
         log_list.append(''.join((c.STRING_SPACE_05, str(_('There are no candidates.')))))
@@ -267,7 +270,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 
 
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict,
-                        log_list, sql_studsubj_list, sql_student_list):
+                        log_list, sql_studsubj_value_list, sql_student_value_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -387,7 +390,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 
 # - calc studsubj result
                 calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, no_centralexam,
-                                     studsubj_pk, studsubj_dict, si_dict, ep_list, log_list, sql_studsubj_list)
+                                     studsubj_pk, studsubj_dict, si_dict, ep_list, log_list, sql_studsubj_value_list)
 
                 # - put the max values that will appear on the gradelist back in studsubj, also max_use_exem
                 #   done in calc_studsubj_result
@@ -395,7 +398,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 
         if logging_on:
             logger.debug('    end of loop through studsubjects')
-            # logger.debug('    sql_studsubj_list: ' + str(sql_studsubj_list))
+            logger.debug('    sql_studsubj_value_list: ' + str(sql_studsubj_value_list))
 
 # - end of loop through studsubjects
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -406,10 +409,10 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         # - puts calculated result of the last examperiod in log_list
 
         calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, rule_core_sufficient,
-                                  withdrawn, partial_exam, has_subjects, depbase_is_vsbo, log_list, sql_student_list)
+                                  withdrawn, partial_exam, has_subjects, depbase_is_vsbo, log_list, sql_student_value_list)
 
         if logging_on:
-            logger.debug('     sql_student_list: ' + str(sql_student_list))
+            logger.debug('     sql_student_value_list: ' + str(sql_student_value_list))
 
         if not has_subjects and log_list is not None:
             log_list.append(''.join((c.STRING_SPACE_05, str(_('This candidate has no subjects.')))))
@@ -417,7 +420,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 
 
 def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, no_centralexam, studsubj_pk, studsubj_dict,
-                         si_dict, ep_list, log_list, sql_studsubj_list):
+                         si_dict, ep_list, log_list, sql_studsubj_value_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
     logging_on = False  # s.LOGGING_ON
@@ -635,6 +638,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                 max_final = use_studsubj_ep_dict.get('max_final')
                 max_ni = use_studsubj_ep_dict.get('max_ni')
                 max_noin = use_studsubj_ep_dict.get('max_noin')
+
                 max_pok = use_studsubj_ep_dict.get('max_pok')
                 max_pok_sesr = use_studsubj_ep_dict.get('max_pok_sesr')
                 max_pok_pece = use_studsubj_ep_dict.get('max_pok_pece')
@@ -704,7 +708,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
         'max_use_exem': True}
     """
 
-    sql_studsubj_values = get_sql_studsubj_values(
+    sql_studsubj_value_str = get_sql_studsubj_values(
         studsubj_pk=studsubj_pk,
         gl_sesr=max_examperiod_dict.get('sesr'),
         gl_pece=max_examperiod_dict.get('pece'),
@@ -720,8 +724,8 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
         pok_final=max_examperiod_dict.get('max_pok_final')
     )
 
-    if sql_studsubj_values:
-        sql_studsubj_list.append(sql_studsubj_values)
+    if sql_studsubj_value_str:
+        sql_studsubj_value_list.append(sql_studsubj_value_str)
 # - end of calc_studsubj_result
 
 
@@ -1272,9 +1276,10 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
 
 def get_sql_studsubj_values(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem, gl_max_ni, gl_examperiod,
             has_exemption, has_reex, has_reex03, pok_sesr, pok_pece, pok_final):
-    # PR2021-12-30 PR2022-01-03 PR2022-06-10 PR2022-07-09
+    # PR2021-12-30 PR2022-01-03 PR2022-06-10 PR2022-07-09 PR2024-04-02
     # only called by calc_studsubj_result
-    logging_on = False  # s.LOGGING_ON
+
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sql_studsubj_values -----')
 
@@ -1304,14 +1309,22 @@ def get_sql_studsubj_values(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem
 
             get_sql_value_bool(has_exemption),
             get_sql_value_bool(has_reex),
-            get_sql_value_bool(has_reex03)
-            #TODO add pok_sesr, pok_pece, pok_final
+            get_sql_value_bool(has_reex03),
+
+            # PR2024-04-02 added: pok_sesr, pok_pece, pok_final
+            get_sql_value_str(pok_sesr),
+            get_sql_value_str(pok_pece),
+            get_sql_value_str(pok_final)
         ]
+        sql_studsubj_value_str = ','.join(sql_studsubj_values)
+
+        if logging_on:
+            logger.debug('    sql_studsubj_value_str: ' + str(sql_studsubj_value_str))
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 
-    return sql_studsubj_values
+    return sql_studsubj_value_str
 # - end of get_sql_studsubj_values
 
 
@@ -2003,7 +2016,7 @@ def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent
 
 
 def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, rule_core_sufficient, withdrawn, partial_exam,
-                              has_subjects, depbase_is_vsbo, log_list, sql_student_list):
+                              has_subjects, depbase_is_vsbo, log_list, sql_student_value_list):
     # PR2021-12-31 PR2022-06-04
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
@@ -2194,7 +2207,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
         sql_student_values = get_sql_student_values(student_dict, last_student_ep_dict, result_info_list)
 
         if sql_student_values:
-            sql_student_list.append(sql_student_values)
+            sql_student_value_list.append(sql_student_values)
 # - calc_student_passedfailed
 
 
@@ -2796,17 +2809,41 @@ def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_suffi
 # - end of calc_add_result_to_log
 
 
-def save_studsubj_batch(sql_studsubj_list):  # PR2022-01-03 PR2022-06-10
+def save_studsubj_batch(sql_studsubj_value_list):  # PR2022-01-03 PR2022-06-10 PR2024-04-02
     # this function saves calculated fields in studentsubject
     # also has_exemption, has_sr , has_reex, has_reex03
     # TODO: add pok_sesr, pok_pece, pok_final
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- save_studsubj_batch  --------------------')
-        logger.debug('sql_studsubj_list: ' + str(sql_studsubj_list))
+        logger.debug('sql_studsubj_value_list: ' + str(sql_studsubj_value_list))
+        """
+        sql_studsubj_value_list is list of values strings  for batch update. It is filled in get_sql_studsubj_values
+s       sql_studsubj_value_str: 76004,'8.1',NULL,'8',FALSE,FALSE,FALSE,FALSE,FALSE,1,FALSE,FALSE,FALSE,'8.1',NULL,'8'
+            sql_studsubj_values = [
+                str(studsubj_pk),
+                get_sql_value_str(gl_sesr),
+                get_sql_value_str(gl_pece),
+                get_sql_value_str(gl_final),
+                get_sql_value_bool(gl_use_exem),
+    
+                get_sql_value_bool('se' in gl_max_ni),
+                get_sql_value_bool('sr' in gl_max_ni),
+                get_sql_value_bool('pe' in gl_max_ni),
+                get_sql_value_bool('ce' in gl_max_ni),
+                get_sql_value_int(gl_examperiod),
+    
+                get_sql_value_bool(has_exemption),
+                get_sql_value_bool(has_reex),
+                get_sql_value_bool(has_reex03)
 
-    if sql_studsubj_list:
-       # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
+                # PR2024-04-02 added: pok_sesr, pok_pece, pok_final
+                get_sql_value_str(pok_sesr),
+                get_sql_value_str(pok_pece),
+                get_sql_value_str(pok_final)
+        ]
+    """
+    if sql_studsubj_value_list:
 
         """
         # you can define the types by casting the values of the first row:
@@ -2817,16 +2854,18 @@ def save_studsubj_batch(sql_studsubj_list):  # PR2022-01-03 PR2022-06-10
         """
 
         sql_list = ["DROP TABLE IF EXISTS tmp; CREATE TEMP TABLE tmp (",
-                    "ss_id, sesr, pece, final, use_exem, nise, nisr, nipe, nice,",
-                    "ep, h_exem, h_reex, h_reex3) AS",
-            "VALUES (0::INT, '-'::TEXT, '-'::TEXT, '-'::TEXT, ",
-                    "FALSE::BOOLEAN, FALSE::BOOLEAN, FALSE::BOOLEAN, FALSE::BOOLEAN, FALSE::BOOLEAN, 0::INT,",
-                    "FALSE::BOOLEAN, FALSE::BOOLEAN, FALSE::BOOLEAN)"]
+                    "ss_id, sesr, pece, final, use_exem,",
+                    "nise, nisr, nipe, nice,",
+                    "ep, h_exem, h_reex, h_reex3,",
+                    "pok_sesr, pok_pece, pok_final) AS",
+            "VALUES (0::INT, '-'::TEXT, '-'::TEXT, '-'::TEXT, FALSE::BOOLEAN,",
+                    "FALSE::BOOLEAN, FALSE::BOOLEAN, FALSE::BOOLEAN, FALSE::BOOLEAN,",
+                    "0::INT, FALSE::BOOLEAN, FALSE::BOOLEAN, FALSE::BOOLEAN,",
+                    "'-'::TEXT, '-'::TEXT, '-'::TEXT)"]
 
-        for row in sql_studsubj_list:
-            sql_item = ', '.join((row[0], row[1], row[2], row[3], row[4], row[5], row[6],
-                                  row[7], row[8], row[9], row[10], row[11], row[12]))
-            sql_list.append(''.join((", (", sql_item, ")")))
+        for value_str in sql_studsubj_value_list:
+            sql_list.append(''.join((", (", value_str, ")")))
+
         sql_list.extend((
             "; UPDATE students_studentsubject AS ss",
             "SET gradelist_sesrgrade = tmp.sesr, gradelist_pecegrade = tmp.pece, gradelist_finalgrade = tmp.final, gradelist_use_exem = tmp.use_exem,",
@@ -2851,12 +2890,12 @@ def save_studsubj_batch(sql_studsubj_list):  # PR2022-01-03 PR2022-06-10
 # - end of save_studsubj_batch
 
 
-def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
+def save_student_batch(sql_student_value_list):  # PR2022-01-03 PR2022-06-03 PR2024-04-02
     # this function saves calculated fields in student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- save_student_batch  --------------------')
-        logger.debug('QQQQQQQQQQQQQQQQQQQ sql_student_list: ' + str(sql_student_list))
+        logger.debug('QQQQQQQQQQQQQQQQQQQ sql_student_value_list: ' + str(sql_student_value_list))
     """
     sql_student_values = [str(student_id),
                         gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str, result_index_str,
@@ -2876,14 +2915,22 @@ def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
         '1', '0', 
         '1', '0', '0']
         ]
+        
+        value_str: 9186,NULL,NULL,NULL,0,'Geen uitslag','Uitslag: GEEN UITSLAG|Schoolexamen: asw,bi,entl,kv,lo,netl,pa,sk,wa niet ingevuld|Centraal examen: bi,entl,netl,pa,sk,wa niet ingevuld',NULL,NULL,NULL,0,NULL,NULL,NULL,0,0,0,0,0,0
+ 
+        
+        
+        
     """
 
 
 
-    if sql_student_list:
-       # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
+    if sql_student_value_list:
 
         """
+        PR2024-04-02 instead of list with values, the function get_sql_student_values creates now a string of values
+        value_str: "9186,NULL,NULL,NULL,0,'Geen uitslag','Uitslag: GEEN UITSLAG|Schoolexamen: asw,bi,entl,kv,lo,netl,pa,sk,wa niet ingevuld|Centraal examen: bi,entl,netl,pa,sk,wa niet ingevuld',NULL,NULL,NULL,0,NULL,NULL,NULL,0,0,0,0,0,0"
+
         sql_student_values = [ str(student_id),
             gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str, result_index_str, 
                 result_status_str,  result_info_str,
@@ -2909,34 +2956,29 @@ def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
                         "0::INT, 0::INT, 0::INT"
                     ")"]
 
-        for row in sql_student_list:
+        for value_str in sql_student_value_list:
 
             if logging_on:
-                logger.debug(' >>>>>>>>>>>>> row: ' + str(row))
+                logger.debug(' >>>>>>>>>>>>> value_str: ' + str(value_str))
             """
+            was:
             row: ['3957', 
                 'NULL', "'7'", 'NULL', '0', "'Geen uitslag'", "'Uitslag na herexamen: GEEN UITSLAG|Herexamen: en,ne,pa,wk niet ingevuld'", 
                 'NULL', "'7'", 'NULL', '0', 
                 'NULL', "'7'", 'NULL', '0']
 
-            row: ['4377', 
-                "'5.8'", "'7'", "'6.1'", '1', "'Geslaagd'", "'Uitslag na herexamen: GESLAAGD'", 
-                "'5.8'", "'7'", "'6.1'", '1', "'5.8'", "'7'", "'6.1'", '1']
-
-            
-
-            """
             sql_item = ', '.join((row[0],
                 row[1], row[2], row[3], row[4], row[5], row[6],
                 row[7], row[8], row[9], row[10],
                 row[11], row[12], row[13], row[14],
                 row[15], row[16], row[17], row[18], row[19]
             ))
-            sql_list.append(''.join((", (", sql_item, ")")))
+            """
+
+            sql_list.append(''.join((", (", value_str, ")")))
 
         if logging_on:
             logger.debug(' >>>>>>>>>>>>> sql_list: ' + str(sql_list))
-
 
         sql_list.extend((
             "; UPDATE students_student AS st",
@@ -2970,6 +3012,8 @@ def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
             logger.debug('............................................')
             for row in rows:
                 logger.debug('row: ' + str(row))
+                # row: (9188, 'Uitslag: GEEN UITSLAG|Schoolexamen: lo,asw,bec,netl,ec,wa,entl,pa,kv niet ingevuld|Centraal examen: bec,netl,ec,wa,entl,pa niet ingevuld')
+
         """
          {'fullname': 'Ahoua, Ahoua Bryan Blanchard', 'stud_id': 3747, 'country': 'Curaçao', 'examyear_txt': '2022', 
          'school_name': 'Juan Pablo Duarte Vsbo', 'school_code': 'CUR03', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
@@ -3631,14 +3675,14 @@ def get_sql_student_values(student_dict, last_student_ep_dict, result_info_list)
     
         """
 
-        sql_student_values = [str(student_id),
+        sql_student_values = ','.join((str(student_id),
                                 gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str, result_index_str,
                                 result_status_str, result_info_str,
                                 e1_ce_avg_str, e1_combi_avg_str, e1_final_avg_str, e1_result_index_str,
                                 e2_ce_avg_str, e2_combi_avg_str, e2_final_avg_str, e2_result_index_str,
                                 exemption_count_str, sr_count_str,
                                 reex_count_str, reex03_count_str, thumbrule_count_str
-                              ]
+                                       ))
 
         if logging_on:
             logger.debug('     sql_student_values: ' + str(sql_student_values))
@@ -4040,9 +4084,14 @@ def calc_proof_of_knowledge(subj_code, examperiod, this_examperiod_dict, no_cent
 
 def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
               subj_code, use_exemp, no_input, sesr_grade, pece_grade, final_grade):
-    # PR2022-07-01
+    # PR2022-07-01 PR2024-05-03
     # function calculates proof of knowledge
-    # called by get_proof_of_knowledge_dict (to be deprecated) and calc_studsubj_result.calc_proof_of_knowledge
+    # PR2024-05-03 called by:
+    # - create_ex6_rows_dict-
+    # - calcPok2022AndSaveInStudsubjONCEONLY
+    # - get_proof_of_knowledge_dict  (to be deprecated)
+    # - calc_proof_of_knowledge (only called by calc_studsubj_result)
+
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -4090,10 +4139,16 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
     # - therefore calculating max_pok is not enough, because it looks at the exemption and gives pok = False
     # - solution: add pok_sesr, pok_pece and pok_final to studsubject
 
-# 1. geen BvK als het cijfer gebaseerd is op vrijstelling
-    if not use_exemp:
-# 2. geen BvK als het eindcijfer niet is ingevuld
-        if not no_input:
+# 1. geen BvK als het eindcijfer niet is ingevuld
+    if not no_input:
+
+# 2a. bereken BvK als het eindcijfer gebaseerd is op vrijstelling
+        if use_exemp:
+            # TODO
+            pass
+# 2b. bereken BvK als het cijfer niiet is gebaseerd is op vrijstelling
+        else:
+
 # 3. als cijferType is VoldoendeOnvoldoende
             if gradetype == c.GRADETYPE_02_CHARACTER:
     # a. Eindcijfer moet een "v" of "g" zijn.

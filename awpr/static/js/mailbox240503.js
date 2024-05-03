@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
+                setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
         }
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
@@ -1460,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // MSED_Response
 //###########################################################################
 //=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
-    function MSSSS_Response(tblName, selected_dict, selected_pk) {
+    function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
         //console.log( "===== MSSSS_Response ========= ");
 
         // Note: when tblName = school: pk_int = schoolbase_pk

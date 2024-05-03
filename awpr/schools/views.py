@@ -98,13 +98,15 @@ def Loggedin(request):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ==========  Loggedin ==========')
-    # redirect to saved_href of last selected menubutton # PR2018-12-25 # PR2020-10-22 PR2021-01-25
+    # redirect to saved_href of last selected menubutton # PR2018-12-25 # PR2020-10-22 PR2021-01-25 PR2024-05-03
+
+    # PR2024-05-03 Sentry error: 'AnonymousUser' object is not iterable
+    # solved by adding request.user.is_authenticated
 
 # retrieve last opened page from, so at next login this page will open. Uses in LoggedIn
     sel_page = None
-    if request and request.user:
-        req_usr = request.user
-        #logger.debug('req_usr: ' + str(req_usr))
+    if request and request.user and request.user.is_authenticated:
+
         sel_page_dict = acc_prm.get_usersetting_dict(c.KEY_SEL_PAGE, request)
 
         if logging_on:
@@ -2248,6 +2250,8 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
         log_list = []
 
         has_error, is_created, is_delete, is_check = False, False, False, False
+        # PR2024-03-29 is_unlock added, used in js to put msg in ModConfirm
+        is_undo_or_delete_checked = False
 
 # - reset language
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -2342,7 +2346,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
 
 # +++ delete last_examyear_instance
                     elif is_delete:
-
+                        is_undo_or_delete_checked = True
                         deleted_row, tobedeleted_row, err_html = delete_examyear_instance(last_examyear_instance, is_check, request)
 
                         if is_check:
@@ -2384,6 +2388,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
                             if is_check:
                                 # upload_dict: {'mode': 'update', 'check': True, 'examyear_pk': 1, 'published': False}
                                 if 'published' in upload_dict:
+                                    is_undo_or_delete_checked = True
                                     # - check if last_examyear_instance is closed or schools have activated or locked it
                                     msg_err = av.validate_undo_published_examyear(current_examyear_instance)
 
@@ -2397,6 +2402,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
 
                                 # upload_dict: {'mode': 'update', 'check': True, 'examyear_pk': 1, 'published': False}
                                 elif 'locked' in upload_dict:
+                                    is_undo_or_delete_checked = True
                                     # upload_dict: {'mode': 'update', 'check': True, 'examyear_pk': 65, 'locked': False}
                                     # - check if last_examyear_instance is already locked
                                     msg_err = av.validate_undo_locked_examyear(current_examyear_instance)
@@ -2452,8 +2458,11 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02 PR2023
             return_dict['border_class'] = border_class
 
         if return_dict:
-            if is_delete:
-                update_wrap['checked_examyear_delete'] = return_dict
+            #if is_delete:
+            #    update_wrap['checked_examyear_delete'] = return_dict
+            if is_undo_or_delete_checked:
+                # PR2024-03-29 is_unlock added, used in js to put msg in ModConfirm
+                update_wrap['checked_undo_or_delete'] = return_dict
             else:
                 update_wrap['checked_examyear'] = return_dict
 
@@ -3649,7 +3658,7 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int, request):
                       'modifiedat', 'modifiedby_id'))
 
             createdat_str = str(timezone.now())
-
+            # PR2024-03-04 debug Pien van Dijk: has practex default =True, must be False > no_practexam default must be True
             sql_list = [
                 "INSERT INTO schools_examyear(",
                     "country_id, code, createdat, ",
@@ -3659,7 +3668,7 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int, request):
                     field_list,
                 ") SELECT ",
                     "country_id, ", str(new_examyear_code_int) + "::INT, '" + createdat_str + "', ",
-                    "FALSE, FALSE, FALSE, ",
+                    "FALSE, FALSE, TRUE, ",  # PR2024-03-04 was: "FALSE, FALSE, FALSE, ",
                     "FALSE, FALSE, FALSE, ",
                     "FALSE, FALSE, FALSE, ",
                     field_list,

@@ -1643,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // function ResetFilterRows
 
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-07-26
-    function MSSSS_Response(tblName, selected_dict, selected_pk) {
+    function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
         console.log( "tblName", tblName);
         console.log( "selected_pk", selected_pk);

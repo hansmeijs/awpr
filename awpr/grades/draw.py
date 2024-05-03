@@ -1778,7 +1778,7 @@ def draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, subj_dict,
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug((' ----- draw_gradelist_werkstuk_row -----'))
+        logger.debug(' ----- draw_gradelist_werkstuk_row -----')
 
     x = coord[0]
 
@@ -1806,23 +1806,22 @@ def draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, subj_dict,
 
         pws_title = pws_title.strip()
         #if logging_on:
-            # PR2023-06-08 debug Marisela Cijntje Radulphus College : shows square instead of special caharcters
+            # PR2023-06-08 debug Marisela Cijntje Radulphus College : shows square instead of special characters
             # pws_title contains Cyrillic script ASC '1195' for ç instead of 135
             #pws_title = pws_title.encode('latin-1')
             #pws_title = pws_title.encode("utf-8")
+
+            # PR2024-04-29 Hans Vlinkerveugel KAP. Zelfde probleem, nu met een i met trema, dat had ASCII code 7989
+            # Oplossen door het juiste teken vanuit Word te kopieren.
 
             #logger.debug('   ???? pws_title  ' + str(pws_title))
             #logger.debug('   ???? len  ' + str(len(pws_title)))
             #logger.debug('   ???? pws_title  ' + str(pws_title))
 
-            #char_list = []
             #acsii_list = []
             #for char in pws_title:
-            #    char_list.append(str(char))
             #    acsii_list.append(str(ord(char)))
-
-            #logger.debug('    ascii  ' + str(acsii_list))
-            #logger.debug('    char  ' + str(char_list))
+            #logger.debug('    acsii_list  ' + str(acsii_list))
 
     pws_subjects = subj_dict.get('pws_subjects') or ''
     if pws_subjects:

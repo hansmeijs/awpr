@@ -480,7 +480,11 @@ def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_field
     subj_auth2by_id   | integer                  |           |          |
     subj_published_id | integer                  |           |          |
     subject_id        | integer                  |           |          |
+   
     """
+
+    #  PR2024-04-02 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
+    #   cause: forgot to add non-null field gradelist_use_exem to field_list
     if studentsubject_pk and request and request.user:
         try:
             mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
@@ -493,6 +497,11 @@ def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_field
                 'pok_validthru', 'pok_sesr', 'pok_pece', 'pok_final',
                 'subj_auth1by_id', 'subj_auth2by_id', 'subj_published_id',
                 'tobechanged', 'tobedeleted', 'deleted',
+
+                #  PR2024-04-02 fields added:
+                'sr_published_id', 'reex_published_id', 'reex3_published_id', 'pok_published_id',
+                'gradelist_sesrgrade', 'gradelist_pecegrade', 'gradelist_finalgrade', 'gradelist_use_exem',
+
                 'modifiedby_id', 'modifiedat'
             )
 
@@ -548,27 +557,49 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
         logger.debug('    updated_fields: ' + str(updated_fields))
 
     """
-    id                 | integer                  |           | not null | nextval('students_gradelog_id_seq'::regclass)
-    grade_id           | integer                  |           | not null |
-    mode               | character varying(1)     |           |          |
-    studentsubject_id  | integer                  |           |          |
-    examperiod         | smallint                 |           |          |
-    pescore            | smallint                 |           |          |
-    cescore            | smallint                 |           |          |
-    segrade            | character varying(4)     |           |          |
-    srgrade            | character varying(4)     |           |          |
-    sesrgrade          | character varying(4)     |           |          |
-    pegrade            | character varying(4)     |           |          |
-    cegrade            | character varying(4)     |           |          |
-    pecegrade          | character varying(4)     |           |          |
-    finalgrade         | character varying(4)     |           |          |
-    exemption_imported | boolean                  |           |          |
-    deleted            | boolean                  |           |          |
-    status             | smallint                 |           |          |
-    modifiedby_id      | integer                  |           |          |
-    modifiedat         | timestamp with time zone |           | not null |
-    
+ 
+     id                   | integer                  |           | not null | nextval('students_studentsubjectlog_id_seq'::regclass)
+     studentsubject_id    | integer                  |           | not null |
+     mode                 | character varying(1)     |           |          |
+     is_extra_nocount     | boolean                  |           |          |
+     is_extra_counts      | boolean                  |           |          |
+     is_thumbrule         | boolean                  |           |          |
+     pws_title            | character varying(80)    |           |          |
+     pws_subjects         | character varying(80)    |           |          |
+     has_exemption        | boolean                  |           |          |
+     has_sr               | boolean                  |           |          |
+     has_reex             | boolean                  |           |          |
+     has_reex03           | boolean                  |           |          |
+     exemption_year       | smallint                 |           |          |
+     pok_validthru        | smallint                 |           |          |
+     pok_sesr             | character varying(4)     |           |          |
+     pok_pece             | character varying(4)     |           |          |
+     pok_final            | character varying(4)     |           |          |
+     tobechanged          | boolean                  |           |          |
+     tobedeleted          | boolean                  |           |          |
+     deleted              | boolean                  |           |          |
+     cluster_id           | integer                  |           |          |
+     ete_cluster_id       | integer                  |           |          |
+     modifiedby_id        | integer                  |           |          |
+     schemeitem_id        | integer                  |           |          |
+     student_id           | integer                  |           |          |
+     subj_auth1by_id      | integer                  |           |          |
+     subj_auth2by_id      | integer                  |           |          |
+     subj_published_id    | integer                  |           |          |
+     subject_id           | integer                  |           |          |
+     gradelist_finalgrade | character varying(4)     |           |          |
+     gradelist_pecegrade  | character varying(4)     |           |          |
+     gradelist_sesrgrade  | character varying(4)     |           |          |
+     gradelist_use_exem   | boolean                  |           | not null |
+     pok_published_id     | integer                  |           |          |
+     reex3_published_id   | integer                  |           |          |
+     reex_published_id    | integer                  |           |          |
+     sr_published_id      | integer                  |           |          |
+     modifiedat           | timestamp with time zone |           | not null |
+     
     """
+    # PR2024-05-03 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
+    # solved by adding 'gradelist_use_exem' to tobe_copied_field_list
     if grade_pk and request and request.user:
         try:
             mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
@@ -588,19 +619,19 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
             )
 
             # these fields are always included:
-            tobe_copied_field_list = ['examperiod', 'status', 'modifiedby_id', 'modifiedat']
+            tobe_copied_field_list = ['examperiod', 'status', 'modifiedby_id', 'modifiedat', 'gradelist_use_exem']
 
             for field in field_list:
-                # - when mode is 'update': copy only updated fields
-                # - always copy field 'country_id','code', 'modifiedby_id', ''modifiedat'
+                # - when mode is 'update': copy only updated fields and required fields
 
                 if field not in tobe_copied_field_list:
-                    # copy all fields when mode = 'create' or 'import'
                     is_create_or_import = mode in ("'c'", "'i'")
 
+            # copy all fields when mode = 'create' or 'import'
                     if is_create_or_import:
                         tobe_copied_field_list.append(field)
-                    # otherwise: copy fields in tobe_copied_field_list
+
+            # otherwise: copy updated_fields in tobe_copied_field_list
                     elif field in updated_fields:
                         tobe_copied_field_list.append(field)
 

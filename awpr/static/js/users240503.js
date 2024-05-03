@@ -2657,7 +2657,8 @@ console.log( "upload_dict", upload_dict);
         const unselected_subject_list = MUPS_get_unselected_subject_list(schoolbase_pk, depbase_pk, lvlbase_pk);
 
         //console.log("    unselected_subject_list", unselected_subject_list);
-        t_MSSSS_Open(loc, "subject", unselected_subject_list, false, false, {}, permit_dict, MUPS_SelectSubject_Response);
+        // PR2024-05-02 was: t_MSSSS_Open(loc, "subject", unselected_subject_list, false, false, {}, permit_dict, MUPS_SelectSubject_Response);
+        t_MSSSS_Open_NEW("mups", "subject", unselected_subject_list, MUPS_SelectSubject_Response, false, false, true); // false = not is_MEX
 
     };  // MUPS_SelectSubject
 
@@ -2895,8 +2896,8 @@ console.log( "upload_dict", upload_dict);
         };
     }  // MUPS_SelectSchool_Response
 
-//=========  MUPS_SelectSubject_Response  ================ PR2022-10-26 PR2022-11-21
-    function MUPS_SelectSubject_Response(tblName, selected_dict, selected_pk) {
+//=========  MUPS_SelectSubject_Response  ================ PR2022-10-26 PR2022-11-21 PR2024-05-02
+    function MUPS_SelectSubject_Response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== MUPS_SelectSubject_Response ========= ");
         console.log( "    tblName", tblName);
         console.log( "    selected_dict", selected_dict);
@@ -4508,7 +4509,7 @@ console.log( "new_value", new_value);
 
 //###########################################################################
 //=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
-    function MSSSS_Response(tblName, selected_dict, selected_pk) {
+    function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
         //console.log( "===== MSSSS_Response ========= ");
 
         // Note: when tblName = school: pk_int = schoolbase_pk

@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if (el_SBR_select_student) {
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, SBR_response_select_student)}, false);
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open_NEW("sbr", "student", student_rows, MSSSS_student_response)}, false);
         };
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if (el_SBR_select_showall) {
@@ -204,6 +204,14 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MCOL_btn_save.addEventListener("click", function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
+
+// ---  MSSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
+        const el_MSSSS_input = document.getElementById("id_MSSSS_input");
+        el_MSSSS_input.addEventListener("keyup", function(event){
+            setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
+
+        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
+        el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(MSSSS_student_response)}, false);
 
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
@@ -471,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
                 }
-                t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
+                t_MSSSS_display_in_sbr_NEW("student");
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
@@ -2544,9 +2552,9 @@ function RefreshDataRowsAfterUpload(response) {
 
 //###########################################################################
 
-//=========  SBR_response_select_student  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
-    function SBR_response_select_student(mode, selected_dict, sel_pk_int) {
-        console.log( "===== SBR_response_select_student ========= ");
+//=========  MSSSS_student_response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
+    function MSSSS_student_response(mode, selected_dict, sel_pk_int) {
+        console.log( "===== MSSSS_student_response ========= ");
         console.log( "    mode", mode);
         console.log( "    selected_dict", selected_dict);
         console.log( "    sel_pk_int", sel_pk_int, typeof sel_pk_int);
@@ -2573,10 +2581,10 @@ function RefreshDataRowsAfterUpload(response) {
         // not necessary, filer will be reset
         //  Filter_TableRows();
 
-    };  // SBR_response_select_student
+    };  // MSSSS_student_response
 
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
-    function MSSSS_Response(tblName, selected_dict, selected_pk) {
+    function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
         //console.log( "selected_pk", selected_pk);
         //console.log( "selected_code", selected_code);
@@ -2700,7 +2708,7 @@ function RefreshDataRowsAfterUpload(response) {
         el_SBR_select_level.value = null;
         el_SBR_select_sector.value = null;
 
-        t_MSSSS_display_in_sbr("student", "0");
+        t_MSSSS_display_in_sbr_NEW("student");
 
 // --- reset table
         tblHead_datatable.innerText = null;

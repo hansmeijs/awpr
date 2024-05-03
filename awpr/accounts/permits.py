@@ -820,7 +820,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
     sch_dep_lvl_subjbase_clause_joined = None
 
     if userallowed_sections_dict:
-# - check if there any allowed subjects
+# - check if there are any allowed subjects
         has_subjbases = False
         for userallowed_schoolbase_dict in userallowed_sections_dict.values():
             for userallowed_depbase_dict in userallowed_schoolbase_dict.values():

@@ -69,16 +69,19 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['There_is_no__'] = _('There is no ')
     dict['__selected'] = _(' selected.')
 
-    dict['No_examyear_selected'] = _('No exam year selected')
-    dict['No_school'] = _('No school')
-    dict['No_department_selected'] = _('No department selected')
+    dict['No_examyear_selected'] = _('There is no exam year selected.')
+    dict['No_school'] = _('There is no school selected.')
+    dict['No_department_selected'] = _('There is no department selected.')
 
-    dict['No_examyears'] = _('No exam years')
-    dict['No_schools'] = _('No schools')
-    dict['No_departments'] = _('No departments')
-    dict['School_has_no_departments'] = _('School has no departments')
-    dict['School_notfound_thisexamyear'] = _('School not found in this exam year')
-    dict['Department_notfound_thisexamyear'] = _('Department not found in this exam year')
+    dict['No_examyears'] = _('There are no exam years.')
+    dict['No_schools'] = _('There are no schools.')
+    dict['No_departments'] = _('There are no departments.')
+
+    dict['No_candidates'] = _('There are no candidates.')
+
+    dict['School_has_no_departments'] = _('School has no departments.')
+    dict['School_notfound_thisexamyear'] = _('School not found in this exam year.')
+    dict['Department_notfound_thisexamyear'] = _('Department not found in this exam year.')
 
     dict['This_examyear'] = _('This exam year')
     dict['This_school'] = _('This school')
@@ -1173,9 +1176,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Ex3_form'] = TXT_Ex3_form
         dict['Ex3_backpage'] = TXT_Ex3_backpage
         dict['Proces_verbaal_van_Toezicht'] = _('Proces-verbaal van Toezicht')
-        dict['No_studenst_with_subjects'] = _('There are no candidates with subjects.')
-        dict['No_studenst_examperiod_02'] = _('There are no re-examination candidates.')
-        dict['No_studenst_examperiod_03'] = _('There are no re-examination candidates in the third exam period.')
+        dict['No_students_with_subjects'] = _('There are no candidates with subjects.')
+        dict['No_students_examperiod_02'] = _('There are no re-examination candidates.')
+        dict['No_students_examperiod_03'] = _('There are no re-examination candidates in the third exam period.')
         dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
         dict['from_available_list'] = _('from the list of available subjects.')
 
@@ -1973,7 +1976,6 @@ def get_locale_dict(table_dict, user_lang, request):
             'all_1': _("Select a learning path in the vertical gray bar on the left to download one learning path."),
         }
 
-        dict['No_candidates'] = _('There are no candidates.')
         dict['not_entered'] = _('not entered')
 
         dict['Please_select_one_or_more_classes'] = _('Please select one or more classes')
@@ -2165,6 +2167,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['No_labels'] = _('There are no labels.')
         dict['No_label_items'] = _('There are no label texts.')
+        dict['No_bundles'] = _('There are no label bundles.')
 
         dict['Bundle'] = _('Label bundle')
         dict['Bundle_name'] = _('Label bundle name')

@@ -2457,6 +2457,9 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
                                 deleted=False,
                                 tobedeleted=False
                             )
+
+                            if logging_on:
+                                logger.debug('    linked_students:   ' + str(linked_students))
                             if linked_students:
                                 append_dict = {}
                                 for cur_stud in linked_students:
@@ -2486,6 +2489,9 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
 
                 # ++++++ loop through other_students
                                         for other_student_pk in linked_arr:
+                                            if logging_on:
+                                                logger.debug('    other_student_pk:   ' + str(other_student_pk))
+
                                             other_stud = stud_mod.Student.objects.get_or_none(
                                                 pk=other_student_pk,
                                                 deleted=False,
@@ -2493,6 +2499,9 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
                                                 partial_exam=False,
                                                 result=c.RESULT_FAILED
                                             )
+                                            if logging_on:
+                                                logger.debug('    other_stud:   ' + str(other_stud))
+
                                             if other_stud:
                                                 other_examyear_code = other_stud.school.examyear.code
                                                 other_depbase = other_stud.department.base
@@ -2506,7 +2515,6 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
                                                 other_sctbase_code = other_sctbase.code if other_sctbase else ''
 
                                                 if logging_on:
-                                                    logger.debug('    other_stud:   ' + str(other_stud))
                                                     logger.debug('    other_examyear_code:   ' + str(other_examyear_code))
                                                     logger.debug('    other_depbase:   ' + str(other_depbase))
                                                     logger.debug('    other_lvlbase:   ' + str(other_lvlbase))
@@ -2515,14 +2523,13 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
                 # is exam year correct?
                                                 valid_years = 10 if is_evelex else 1
                                                 examyear_is_correct = (other_examyear_code < cur_examyear_code and
-                                                                    other_examyear_code >= cur_examyear_code - valid_years)
+                                                        other_examyear_code >= cur_examyear_code - valid_years)
                                                 if logging_on:
                                                     logger.debug('    examyear_is_correct:   ' + str(examyear_is_correct))
 
                                                 if examyear_is_correct:
                 # dep and level correct?
                                                     if other_depbase == cur_depbase and other_lvlbase == cur_lvlbase:
-
                                                         if logging_on:
                                                             logger.debug('    BINGO:   ')
 
@@ -2560,18 +2567,24 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
                                                                                      )))
 
                             # - get subjects with pok of other student
+                                                        #PR2024-04-23 debug: pok_validthru has no value
                                                         other_studsubjects = stud_mod.Studentsubject.objects.filter(
                                                             student=other_stud,
                                                             tobedeleted=False,
                                                             deleted=False,
-                                                            pok_validthru__isnull=False
+                                                            #pok_validthru__isnull=False
                                                         )
+
                                                         if other_studsubjects is None:
+                                                            if logging_on:
+                                                                logger.debug('    other_studsubjects is None')
                                                             log_list.append(''.join((c.STRING_SPACE_10,
                                                                                      str(_('This candidate has no Proofs of Knowledge.'))
                                                                                      )))
                                                         else:
                                                             for other_studsubj in other_studsubjects:
+                                                                if logging_on:
+                                                                    logger.debug('    other_studsubj:   ' + str(other_studsubj))
 
                                                                 subj_code = other_studsubj.schemeitem.subject.base.code if other_studsubj.schemeitem.subject.base.code else '---'
                                                                 pok_sesr = other_studsubj.pok_sesr.replace('.', ',') if other_studsubj.pok_sesr else '-'
@@ -2809,7 +2822,7 @@ def set_student_bisexam_and_exemptions(cur_student, other_stud_pk_str, request):
 
 # end of set_student_bisexam_and_exemptions
 
-def make_student_biscandidate(cur_student, other_student, request):
+def make_student_biscandidateNIU(cur_student, other_student, request):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ============= make_student_biscandidate ============= ')
@@ -2856,7 +2869,7 @@ def make_student_biscandidate(cur_student, other_student, request):
         # get proof of knowledge subjects from other_student
                 other_studsubjects = stud_mod.Studentsubject.objects.filter(
                     student=other_student,
-                    pok_validthru__isnull=False
+                    pok_validthru__isnull=False #NIU
                 )
         # loop through list of proof of knowledge subjects of other_student
                 for other_studsubj in other_studsubjects:
@@ -2908,8 +2921,8 @@ def make_student_biscandidate(cur_student, other_student, request):
                                 if logging_on:
                                     logger.debug('cur_exem_grade.saved ' + str(cur_exem_grade))
 
-            # set pok_validthru = examyear_int + 1
-                            pok_validthru = other_student_examyear_int + 1
+            # set pok_validthru = examyear_int + 1 NIU
+                            pok_validthru = other_student_examyear_int + 1 #NIU
                             setattr(cur_studsubj, 'pok_validthru', pok_validthru)
                             cur_studsubj.save(request=request)
 
@@ -6363,35 +6376,35 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         # when first examperiod: also update and save grades in reex, reex03, if exist
                         grd_view.recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
 
-                sql_studsubj_list, sql_student_list = [], []
+                sql_studsubj_value_list, sql_student_value_list = [], []
                 try:
                     student = studsubj_instance.student
                     if logging_on:
                         logger.debug('student: ' + str(student))
 
-                    sql_studsubj_list, sql_student_list = grd_view.update_studsubj_and_recalc_student_result(
+                    sql_studsubj_value_list, sql_student_value_list = grd_view.update_studsubj_and_recalc_student_result(
                             sel_examyear=sel_examyear,
                             sel_school=sel_school,
                             sel_department=sel_department,
                             student=studsubj_instance.student
                         )
                     if logging_on:
-                        logger.debug('sql_studsubj_list: ' + str(sql_studsubj_list))
-                        logger.debug('sql_student_list: ' + str(sql_student_list))
+                        logger.debug('sql_studsubj_value_list: ' + str(sql_studsubj_value_list))
+                        logger.debug('sql_student_value_list: ' + str(sql_student_value_list))
 
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
 
                 try:
-                    if sql_studsubj_list:
-                        calc_res.save_studsubj_batch(sql_studsubj_list)
+                    if sql_studsubj_value_list:
+                        calc_res.save_studsubj_batch(sql_studsubj_value_list)
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
 
                 try:
                     # save calculated fields in student
-                    if sql_student_list:
-                        calc_res.save_student_batch(sql_student_list)
+                    if sql_student_value_list:
+                        calc_res.save_student_batch(sql_student_value_list)
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
 

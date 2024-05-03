@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let mod_dict = {};
     const mod_MAG_dict = {};
     const mod_MEX3_dict = {};
-    const mod_MCL_dict = {};
+    // const mod_MCL_dict = {}; is declared in table.js PR2024-04-02
 
     let mod_status_dict = {};
     let mod_note_dict = {};
@@ -254,7 +254,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
+                setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
         };
 
 // ---  MOD APPROVE GRADE ------------------------------------
@@ -2312,9 +2312,9 @@ document.addEventListener("DOMContentLoaded", function() {
         };
 
         if (!has_subject_rows){
-            const no_students_txt = (mod_MEX3_dict.sel_examperiod === 3) ? loc.No_studenst_examperiod_03 :
-                                    (mod_MEX3_dict.sel_examperiod === 2) ? loc.No_studenst_examperiod_02 :
-                                    loc.No_studenst_with_subjects;
+            const no_students_txt = (mod_MEX3_dict.sel_examperiod === 3) ? loc.No_students_examperiod_03 :
+                                    (mod_MEX3_dict.sel_examperiod === 2) ? loc.No_students_examperiod_02 :
+                                    loc.No_students_with_subjects;
             el_MEX3_tblBody_available.innerHTML = [
                 "<p class='text-muted px-2 pt-2'>", no_students_txt, "</p>"
             ].join("");
@@ -2472,7 +2472,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
             selected.subject_pk = setting_dict.sel_subject_pk; // used in mod MCL
-            MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
+            t_MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
 
             MCL_FillClusterList();
             MCL_FillTableClusters();
@@ -2585,6 +2585,7 @@ document.addEventListener("DOMContentLoaded", function() {
             setting_dict.sel_subject_pk = selected_pk;
             setting_dict.sel_subject_name = (selected_dict && selected_dict.name_nl) ? selected_dict.name_nl : null;
 
+
             selected.subject_pk = setting_dict.sel_subject_pk;
             selected.subject_name = setting_dict.sel_subject_name;
 
@@ -2594,8 +2595,8 @@ document.addEventListener("DOMContentLoaded", function() {
             const modal_MCL_is_open = (!!el_modal && el_modal.classList.contains("show"));
         console.log( "    modal_MCL_is_open", modal_MCL_is_open);
             if(modal_MCL_is_open){
-                MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
-                MCL_SaveSubject_in_MCL_dict(setting_dict.sel_subject_pk);
+                t_MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
+                t_MCL_SaveSubject_in_MCL_dict(setting_dict.sel_subject_pk);
 
                 MCL_FillClusterList();
                 MCL_FillTableClusters();
@@ -2814,9 +2815,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     };  // MCL_ShowClusterName
 
-//=========  MCL_SaveSubject_in_MCL_dict  ================ PR2022-01-07
-    function MCL_SaveSubject_in_MCL_dict(sel_subject_pk) {
-        //console.log("===== MCL_SaveSubject_in_MCL_dict =====");
+//=========  t_MCL_SaveSubject_in_MCL_dict  ================ PR2022-01-07
+    function t_MCL_SaveSubject_in_MCL_dict(sel_subject_pk) {
+        //console.log("===== t_MCL_SaveSubject_in_MCL_dict =====");
         //console.log("sel_subject_pk", sel_subject_pk);
 
         //note: cluster_upload uses subject_pk, not subjbase_pk
@@ -2856,7 +2857,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                             mod_MCL_dict.subject_name : loc.Click_here_to_select_subject;
 
         //console.log("mod_MCL_dict", mod_MCL_dict);
-    };  // MCL_SaveSubject_in_MCL_dict
+    };  // t_MCL_SaveSubject_in_MCL_dict
 
 //=========  MCL_FillTableClusters  ================ PR2022-01-07
     function MCL_FillTableClusters() {
@@ -3479,8 +3480,8 @@ document.addEventListener("DOMContentLoaded", function() {
     function SBR_display_subject_student() {
         //console.log("===== SBR_display_subject_student =====");
 
-        t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
-        t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
+        t_MSSSS_display_in_sbr_NEW("subject");
+        t_MSSSS_display_in_sbr_NEW("student");
 
         // hide itemcount
         t_set_sbr_itemcount_txt(loc, 0)
@@ -5883,7 +5884,7 @@ console.log( "......filter_value", filter_value);
         console.log( "tblName", tblName);
         console.log( "sel_schoolbase_pk", sel_schoolbase_pk, typeof sel_schoolbase_pk);
         console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
 
 // reset text dep and school in headerbar
         el_hdrbar_department.innerText = null;
@@ -5912,7 +5913,7 @@ console.log( "......filter_value", filter_value);
         console.log( "   tblName", tblName);
         console.log( "    sel_subject_pk", sel_subject_pk, typeof sel_subject_pk);
         console.log( "    selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing subject, only update settings, dont use DatalistDownload but filter on page
 
         // 'all subjects' has value -1
@@ -5922,7 +5923,7 @@ console.log( "......filter_value", filter_value);
         setting_dict.sel_subject_name = (selected_dict && selected_dict.name_nl) ? selected_dict.name_nl : null;
 
         setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_name = null;
+        //setting_dict.sel_cluster_name = null;
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;
 
@@ -5946,14 +5947,14 @@ console.log( "......filter_value", filter_value);
         console.log( "tblName", tblName);
         console.log( "sel_cluster_pk", sel_cluster_pk, typeof sel_cluster_pk);
         console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing cluster, only update settings, dont use DatalistDownload but filter on page
 
         // 'all clusters' has value -1
         if(sel_cluster_pk === -1) { sel_cluster_pk = null};
 
         setting_dict.sel_cluster_pk = sel_cluster_pk;
-        setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
+        //setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
 
 // when selecting cluster: also set subject to the subject of this cluster
         // dont reset subject when subject of selected cluster is the same as selected subject PR2023-03-30
@@ -5984,7 +5985,7 @@ console.log( "......filter_value", filter_value);
         console.log( "tblName", tblName);
         console.log( "sel_student_pk", sel_student_pk, typeof sel_student_pk);
         console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing student, only update settings, dont use DatalistDownload but filter on page
 
         // 'all clusters' has value -1
@@ -5997,7 +5998,7 @@ console.log( "......filter_value", filter_value);
         setting_dict.sel_subject_pk = null;
         setting_dict.sel_subject_name = null;
         setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_name = null;
+        //setting_dict.sel_cluster_name = null;
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {

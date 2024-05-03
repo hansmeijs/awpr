@@ -190,7 +190,8 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     locked = BooleanField(default=False)
 
     # also in schemitemsPR2021-04-24
-    no_practexam = BooleanField(default=False)
+    #PR2024-03-04 debug Pien van Dijk: has practex default =True, must be False > no_practexam default must be True
+    no_practexam = BooleanField(default=False)  # PR2024-03-04TODO set defuult to True
     sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
     # deleted: reex_combi_allowed = BooleanField(default=False)
     no_centralexam = BooleanField(default=False)

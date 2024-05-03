@@ -518,8 +518,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
                     const mode = get_dict_value(response, ["mode"]);
 
-                    if ("checked_examyear_delete" in response) {
-                        ModConfirmUndoOrDelete_Checked(response.checked_examyear_delete)
+                    // PR2024-03-29
+                    //if ("checked_examyear_delete" in response) {
+                    //    ModConfirmUndoOrDelete_Checked(response.checked_examyear_delete);
+                    if  ("checked_undo_or_delete" in response) {
+                        ModConfirmUndoOrDelete_Checked(response.checked_undo_or_delete);
                     };
 
                     if ("checked_examyear" in response) {
@@ -704,6 +707,10 @@ document.addEventListener('DOMContentLoaded', function() {
         PR2023-08-09 after deleting examyear:
         updated_examyear_rows: [ {id: 20, mapid: 'examyear_20', deleted: true} ]
 
+        PR2024-03-29: after check unlock examyear
+        checked_examyear: Object { msg_html: "<div class='p-2'>De afsluiting van examenjaar 2023 wordt ongedaan gemaakt.<br>Wil je doorgaan?</div>", border_class: "border_bg_message" }
+
+
         */
 
         let msg_html_created = null;
@@ -712,6 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!isEmpty(checked_examyear_dict)){
 
                 if ("msg_html" in checked_examyear_dict) {
+        console.log( "    checked_examyear_dict.msg_html: ", checked_examyear_dict.msg_html);
                     el_MCREY_msg_container.innerHTML = checked_examyear_dict.msg_html;
                 };
                 const border_class = (checked_examyear_dict.border_class) ? checked_examyear_dict.border_class : "border_bg_message";

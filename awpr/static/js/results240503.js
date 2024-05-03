@@ -3015,7 +3015,7 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
 
 
 //=========  SBR_MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26 PR2022-12-07
-    function SBR_MSSSS_Response(tblName, selected_dict, selected_pk) {
+    function SBR_MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== SBR_MSSSS_Response ========= ");
         console.log( "    selected_pk", selected_pk);
         console.log( "    selected_dict", selected_dict);
@@ -3046,7 +3046,7 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
         console.log( "    tblName", tblName);
         console.log( "    sel_student_pk", sel_student_pk, typeof sel_student_pk);
         console.log( "    selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing student, only update settings, dont use DatalistDownload but filter on page
 
         // 'all clusters' has value -1
@@ -3062,7 +3062,7 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
         setting_dict.sel_subject_pk = null;
         setting_dict.sel_subject_name = null;
         setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_name = null;
+        //setting_dict.sel_cluster_name = null;
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {
@@ -3106,7 +3106,8 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
         el_SBR_select_level.value = null;
         el_SBR_select_sector.value = null;
 
-        t_MSSSS_display_in_sbr("student", "0");
+        t_MSSSS_display_in_sbr_NEW("student");
+
 // show sbr student only in tab result
         add_or_remove_class(el_SBR_select_student.parentNode, cls_hide, selected_btn !== "btn_result")
 
@@ -3124,7 +3125,7 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
 //=========  SBR_display_student  ================ PR2023-06-16
     function SBR_display_student() {
         //console.log("===== SBR_display_student =====");
-        t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
+        t_MSSSS_display_in_sbr_NEW("student");
     // hide itemcount
         //t_set_sbr_itemcount_txt(loc, 0)
     };  // SBR_display_student

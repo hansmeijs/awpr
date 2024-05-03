@@ -32,7 +32,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 
-# PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
+# PR2022-02-13 From Django 4 we don't have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode, url_has_allowed_host_and_scheme
 
@@ -3272,7 +3272,7 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
     # logger.debug('upload_dict: ' + str(upload_dict))
 
     # PR2020-07-12 debug. creates multiple rows when key does not exist and new dict has multiple subkeys
-    # PR2020-10-04 not any more, don't know why
+    # PR2020-10-04 not anymore, don't know why
     # - loop through keys of upload_dict
     for key, new_setting_dict in upload_dict.items():
         if logging_on:
@@ -3295,12 +3295,12 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
 
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
-    # PR2020-10-04 not any more, don't know why
+    # PR2020-10-04 not anymore, don't know why
     # - loop through keys of upload_dict
 
     # keys are: 'sel_page'  = {'page': 'page_student'},
-    #           'selected_pk' = {'sel_depbase_pk': 23'}
-    #           'page_student' = {'sel_btn': 'btn_subject', 'cols_hidden': {'subject': ['name', ...]}
+    #           'selected_pk' = {'sel_depbase_pk': 23}
+    #           'page_student' = {'sel_btn': 'btn_subject', 'cols_hidden': {'subject': ['name', ...]}}
     # new_setting_dict = 'page_examyear', dict = {'sel_btn': 'examyears'}
     # get saved_settings_dict. new settings will be put in saved_settings_dict,  saved_settings_dict will be saved
     saved_settings_dict = acc_prm.get_usersetting_dict(key_str, request)
@@ -4435,7 +4435,7 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
     if logging_on:
         logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
 
-    reset_examperiod = False
+    reset_examperiod_and_selclusterpk = False
 
 # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_examyear_tobesaved:
@@ -4444,7 +4444,11 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
 
         # PR2022-08-23 Roland Guribadi Lauffer: cannot find upload subject btn. Reason: tab was not set to first exam period
         # to prevent this: reset examperiod to 1st when changing examyear
-        reset_examperiod = True
+
+        # PR2024-03-31 debug: when sel_cluster_pk has value and user changes examyear,
+        # studsubj are not shown because sel_cluster_pk is examyear specific
+        # solved by resetting sel_cluster_pk when changing examyear
+        reset_examperiod_and_selclusterpk = True
 
 # - add info to setting_dict, will be sent back to client
     if sel_examyear_instance:
@@ -4493,7 +4497,7 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
         if message:
             msg_list.append(message)
 
-    return sel_examyear_instance, sel_examyear_tobesaved, reset_examperiod
+    return sel_examyear_instance, sel_examyear_tobesaved, reset_examperiod_and_selclusterpk
 # - end of get_settings_examyear
 
 
@@ -4893,14 +4897,124 @@ def get_settings_levelbase(request, request_item_setting, sel_examyear_instance,
 
 
 # ===== SUBJECTBASE ======================= PR2022-12-11 PR2023-05-18
-def get_settings_subjectbase(request_item_setting, sel_examyear_instance,
+def get_settings_subjbase(request_item_setting, sel_examyear_instance,
                              allowed_subjbases_arr, permit_dict, setting_dict, selected_pk_dict):
     # PR2022-12-11 PR2023-05-18
     # only called by download_setting
-    logging_on = False  # s.LOGGING_ON
+    # PR2024-03-29 TODO deprecate subject_pk, use only subjbase_pk instead
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ------- get_settings_subjectbase -------')
+        logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    allowed_subjbases_arr: ' + str(allowed_subjbases_arr))
+        logger.debug('    ----------')
+
+    if allowed_subjbases_arr:
+        permit_dict['allowed_subjbases'] = allowed_subjbases_arr
+
+# - get sel_subject_instance from request_item_subject_pk
+    request_item_subjbase_pk = request_item_setting.get(c.KEY_SEL_SUBJBASE_PK)
+    if logging_on:
+        logger.debug('    request_item_subjbase_pk: ' + str(request_item_subjbase_pk) + ' ' + str(type(request_item_subjbase_pk)))
+
+    sel_subjbase_pk = None
+    sel_subjbase_tobesaved = False
+
+# - get saved_subjbase_pk from Usersetting
+    saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK) if selected_pk_dict else None
+    if logging_on:
+        logger.debug('    saved_subjbase_pk: ' + str(saved_subjbase_pk) + ' ' + str(type(saved_subjbase_pk)))
+
+# - when request_item is 'All subjects': remove: remove existing sel_subjbase_pk, happens later in this function
+    if request_item_subjbase_pk == -9:
+        sel_subjbase_tobesaved = True
+    else:
+
+# - check if request_item_subject_pk exists and is allowed
+        if request_item_subjbase_pk:
+            # get subjbase_id from subject if allowed
+            request_item_subjbase = subj_mod.Subjectbase.objects.get_or_none(pk=request_item_subjbase_pk)
+            if request_item_subjbase:
+                if (not allowed_subjbases_arr) or (request_item_subjbase_pk in allowed_subjbases_arr):
+                    sel_subjbase_pk = request_item_subjbase.pk
+                    sel_subjbase_tobesaved = sel_subjbase_pk != saved_subjbase_pk
+        else:
+
+    # - if request_item_subject_pk isNone: get saved_subject_pk, check if is allowed
+            if saved_subjbase_pk:
+                # get subjbase_id from subject if allowed
+                saved_subjbase = subj_mod.Subjectbase.objects.get_or_none(pk=saved_subjbase_pk)
+                if saved_subjbase:
+                    if (not allowed_subjbases_arr) or (saved_subjbase_pk in allowed_subjbases_arr):
+                        sel_subjbase_pk = saved_subjbase.pk
+
+        if logging_on:
+            logger.debug(' .. sel_subjbase_pk: ' + str(sel_subjbase_pk))
+            logger.debug(' .. sel_subjbase_tobesaved: ' + str(sel_subjbase_tobesaved))
+
+# - if sel_subjbase_pk is None and there is only 1 allowed subjbase_pk : get allowed subjbase_pk
+        if sel_subjbase_pk is None:
+            if len(allowed_subjbases_arr) == 1:
+                saved_subjbase = subj_mod.Subjectbase.objects.get_or_none(
+                    pk=allowed_subjbases_arr[0]
+                )
+                if saved_subjbase:
+                    sel_subjbase_pk = saved_subjbase.pk
+                    sel_subjbase_tobesaved = True
+
+# - get sel_subject_instance
+    sel_subject_instance = None
+    if sel_subjbase_pk:
+        sel_subject_instance = subj_mod.Subject.objects.get_or_none(
+            base_id=sel_subjbase_pk,
+            examyear=sel_examyear_instance
+        )
+        if sel_subject_instance:
+            setting_dict['sel_subjbase_pk'] = sel_subject_instance.base_id
+            setting_dict['sel_subject_pk'] = sel_subject_instance.pk
+            setting_dict['sel_subjbase_code'] = sel_subject_instance.base.code
+            setting_dict['sel_subject_name'] = sel_subject_instance.name_nl
+
+    if logging_on:
+        logger.debug('....sel_subject_instance: ' + str(sel_subject_instance))
+        logger.debug('....sel_subjbase_tobesaved: ' + str(sel_subjbase_tobesaved))
+
+# - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
+    if sel_subjbase_tobesaved:
+        # remove sel_subject_pk, also when sel_subjbase_pk has value, otherwise no subject will be shown when chngingexamyear
+        # selected_pk_dict.pop(c.KEY_SEL_SUBJECT_PK)
+
+        # save subject_pk when sel_subject_instance exists
+        if sel_subject_instance:
+            selected_pk_dict[c.KEY_SEL_SUBJBASE_PK] = sel_subject_instance.base_id
+            selected_pk_dict[c.KEY_SEL_SUBJECT_PK] = sel_subject_instance.pk
+
+        else:
+            # remove key when 'all' is selected
+            # PR2023-07-04 was: if selected_pk_dict and c.KEY_SEL_SUBJECT_PK in selected_pk_dict:
+            if saved_subjbase_pk:
+                selected_pk_dict.pop(c.KEY_SEL_SUBJBASE_PK)
+                selected_pk_dict.pop(c.KEY_SEL_SUBJECT_PK)
+    if logging_on:
+        logger.debug(' __ sel_subject_instance: ' + str(sel_subject_instance))
+        logger.debug(' __ sel_subjbase_tobesaved: ' + str(sel_subjbase_tobesaved))
+        logger.debug(' __ selected_pk_dict: ' + str(selected_pk_dict))
+
+    return sel_subject_instance, sel_subjbase_tobesaved
+# --- end of get_settings_subjbase
+
+def get_settings_subjectNIU(request_item_setting, sel_examyear_instance,
+                             allowed_subjbases_arr, permit_dict, setting_dict, selected_pk_dict):
+    # PR2022-12-11 PR2023-05-18
+    # only called by download_setting
+    # PR2024-03-30 function is deprecated, use get_settings_subjbase instead
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ------- get_settings_subjectbase -------')
+        logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
         logger.debug('    request_item_setting: ' + str(request_item_setting))
         logger.debug('    allowed_subjbases_arr: ' + str(allowed_subjbases_arr))
         logger.debug('    ----------')
@@ -4982,11 +5096,15 @@ def get_settings_subjectbase(request_item_setting, sel_examyear_instance,
         # save subject_pk when sel_subject_instance exists
         if sel_subject_instance:
             selected_pk_dict[c.KEY_SEL_SUBJECT_PK] = sel_subject_instance.pk
+            # PR2024-03-29 added:
+            selected_pk_dict[c.KEY_SEL_SUBJBASE_PK] = sel_subject_instance.base_id
         else:
             # remove key when 'all' is selected
             # PR2023-07-04 was: if selected_pk_dict and c.KEY_SEL_SUBJECT_PK in selected_pk_dict:
             if saved_subject_pk:
                 selected_pk_dict.pop(c.KEY_SEL_SUBJECT_PK)
+            # PR2024-03-29 added:
+                selected_pk_dict.pop(c.KEY_SEL_SUBJBASE_PK)
 
     if logging_on:
         logger.debug(' __ sel_subject_instance: ' + str(sel_subject_instance))
@@ -4994,11 +5112,11 @@ def get_settings_subjectbase(request_item_setting, sel_examyear_instance,
         logger.debug(' __ selected_pk_dict: ' + str(selected_pk_dict))
 
     return sel_subject_instance, sel_subject_tobesaved
-# --- end of get_sel_subject_instance
+# --- end of get_settings_subject
 
 
 # ===== EXAMPERIOD ======================= PR2022-12-11
-def get_settings_examperiod(request, request_item_setting, setting_dict, selected_pk_dict, reset_examperiod):
+def get_settings_examperiod(request, request_item_setting, setting_dict, selected_pk_dict, reset_examperiod_and_selclusterpk):
     # every user can change exam period
     # PR2022-12-11
     logging_on = False  # s.LOGGING_ON
@@ -5007,14 +5125,25 @@ def get_settings_examperiod(request, request_item_setting, setting_dict, selecte
 
 # - get selected examperiod from request_item_setting, from Usersetting if request_item is None
     request_item_examperiod = request_item_setting.get(c.KEY_SEL_EXAMPERIOD)
-    sel_examperiod, sel_examperiod_save = get_sel_examperiod(selected_pk_dict, request_item_examperiod)
+    sel_examperiod, sel_examperiod_haschanged = get_sel_examperiod(selected_pk_dict, request_item_examperiod)
 
     # PR2022-08-23 Roland Guribadi Lauffer: cannot find upload subject btn. Reason: tab was not set to first exam period
     # to prevent this: reset examperiod to 1st when changing examyear
-    if reset_examperiod:
+
+    # PR2024-03-31 debug: when sel_cluster_pk has value and user changes examyear,
+    # studsubj are not shown because sel_cluster_pk is examyear specific
+    # solved by resetting sel_cluster_pk when changing examyear
+
+    sel_pk_dict_has_changed = False
+    if reset_examperiod_and_selclusterpk:
+        # remove key 'sel_cluster_pk'
+        if selected_pk_dict and c.KEY_SEL_CLUSTER_PK in selected_pk_dict:
+            selected_pk_dict.pop(c.KEY_SEL_CLUSTER_PK)
+            sel_pk_dict_has_changed = True
+
         if sel_examperiod != c.EXAMPERIOD_FIRST:
             sel_examperiod = c.EXAMPERIOD_FIRST
-            sel_examperiod_save = True
+            sel_examperiod_haschanged = True
             # not working, must set sel_btn in page_studsubj and page_grade
 
             set_usersetting_from_uploaddict({'page_studsubj': {'sel_btn': 'btn_ep_01'}}, request)
@@ -5025,19 +5154,19 @@ def get_settings_examperiod(request, request_item_setting, setting_dict, selecte
         logger.debug('..... EXAM PERIOD .....')
         logger.debug('    request_item_examperiod: ' + str(request_item_examperiod))
         logger.debug('    sel_examperiod: ' + str(sel_examperiod))
-        logger.debug('    sel_examperiod_save: ' + str(sel_examperiod_save))
+        logger.debug('    sel_examperiod_haschanged: ' + str(sel_examperiod_haschanged))
 
     # - add info to setting_dict, will be sent back to client
     setting_dict[c.KEY_SEL_EXAMPERIOD] = sel_examperiod
 
-# - update selected_pk_dict when sel_examperiod_tobesaved, will be saved at end of def
-    sel_examperiod_tobesaved = False
-    if sel_examperiod_save:
+# - update selected_pk_dict when sel_pk_dict_has_changed, will be saved at end of def
+
+    if sel_examperiod_haschanged:
         # sel_depbase_instance has always value when sel_depbase_save = True
         selected_pk_dict[c.KEY_SEL_EXAMPERIOD] = sel_examperiod
-        sel_examperiod_tobesaved = True
+        sel_pk_dict_has_changed = True
 
-    return sel_examperiod, sel_examperiod_tobesaved
+    return sel_examperiod, sel_pk_dict_has_changed
 # - end of get_settings_examperiod
 
 

@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class UserAllowedClusterUploadView(View):
     # used in page correctors when schools set allowedcluster in user with role corrector
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserAllowedClusterUploadView ===============')

@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
+                setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
         };
 
 // ---  SIDEBAR ------------------------------------
@@ -276,17 +276,25 @@ document.addEventListener("DOMContentLoaded", function() {
         const add_all = true;
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if (el_SBR_select_subject){
-            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, add_all, false, setting_dict, permit_dict, MSSSS_subject_response)}, false);
+             el_SBR_select_subject.addEventListener("click", function() {
+                // PR204-03-28 was: t_MSSSS_Open(loc, "subject", subject_rows, add_all, false, setting_dict, permit_dict, MSSSS_subject_response)
+                t_MSSSS_Open_NEW("sbr", "subject", subject_rows, MSSSS_subject_response, add_all)
+            }, false);
         };
 
         const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         if (el_SBR_select_cluster){
-            el_SBR_select_cluster.addEventListener("click", function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, add_all, false, setting_dict, permit_dict, MSSSS_cluster_response)}, false);
+            el_SBR_select_cluster.addEventListener("click", function() {
+                t_MSSSS_Open_NEW("sbr", "cluster", cluster_dictsNEW, MSSSS_cluster_response, add_all);
+            }, false);
         };
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if (el_SBR_select_student){
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, add_all, false, setting_dict, permit_dict, MSSSS_student_response)}, false);
+            el_SBR_select_student.addEventListener("click", function() {
+               // PR2024-05-02 was:  t_MSSSS_Open(loc, "student", student_rows, add_all, false, setting_dict, permit_dict, MSSSS_student_response)
+                t_MSSSS_Open_NEW ("sbr", "student", student_rows, MSSSS_student_response, add_all);
+            }, false);
         };
 
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
@@ -558,7 +566,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     // if sel_subject_pk has value, set sel_student_pk null
                     if (setting_dict.sel_subject_pk) {setting_dict.sel_student_pk = null;}
 
-
         // ---  fill cols_hidden
                     if("cols_hidden" in setting_dict){
                         b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
@@ -578,6 +585,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     isloaded_permits = true;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
+
+        console.log("permit_dict", permit_dict);
                 };
 
                 if ("schoolsetting_dict" in response) {
@@ -646,7 +655,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     all_exam_rows = response.all_exam_rows;
                 };
 
-                SBR_display_subject_cluster_student();
+                t_SBR_display_subject_cluster_student();
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
                 // also calls: FillTblRows(), UpdateHeader()ect
@@ -968,16 +977,19 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= FillTblRows  ====================================
     function FillTblRows() {
         //console.log( "===== FillTblRows  === ");
-        //console.log( "field_settings", field_settings);
-        //console.log( "selected_btn", selected_btn);
+        //console.log( "    field_settings", field_settings);
+        //console.log( "    selected_btn", selected_btn);
 
         const tblName = get_tblName_from_selectedBtn()
         const field_setting = field_settings[selected_btn];
         const data_rows = grade_dicts;
-    //console.log( "data_rows", data_rows);
+    //console.log( "    field_setting", field_setting);
+    //console.log( "    tblName", tblName);
+    //console.log( "    data_rows", data_rows);
 
 // ---  get list of hidden columns
         const col_hidden = get_column_is_hidden();
+    //console.log( "    col_hidden", col_hidden);
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -998,7 +1010,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 const show_row = //(!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
                                 //(!setting_dict.sel_sctbase_pk || data_dict.sctbase_id === setting_dict.sel_sctbase_pk) &&
                                 (!setting_dict.sel_student_pk || data_dict.student_id === setting_dict.sel_student_pk) &&
-                                (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk) &&
+                                // PR2024-03-29 deprecated, use sel_subjbase_pk instead
+                                //(!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk) &&
+                                // PR2024-03-29 filtering takes place on server side, TODO change like in page studsubjects
+                                //(!setting_dict.sel_subjbase_pk || data_dict.subject_id === setting_dict.sel_subject_pk) &&
                                 (!setting_dict.sel_cluster_pk || data_dict.cluster_id === setting_dict.sel_cluster_pk) &&
                                 (setting_dict.sel_examtype !== "pe" || data_dict.has_practexam);
 
@@ -1008,9 +1023,12 @@ document.addEventListener("DOMContentLoaded", function() {
           };
         };
 
+// - filter tableRows when table is not empty
         if (tblBody_datatable.rows.length){
             t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
         } else if (["btn_reex", "btn_reex03"].includes(selected_btn)) {
+
+// - when table is empty and examperiod = 2 or 3: show msg 'Only the re-examination subjects will be shown'
             let tblRow = tblBody_datatable.insertRow(-1);
             let td = tblRow.insertCell(-1);
             td = tblRow.insertCell(-1);
@@ -1021,7 +1039,8 @@ document.addEventListener("DOMContentLoaded", function() {
                                 loc.reex03_msg_01 + "<br>" + loc.reex03_msg_02 + "<br>" + loc.reex03_msg_03 :
                                 loc.reex_msg_01 + "<br>" + loc.reex_msg_02 + "<br>" + loc.reex_msg_03;
             td.appendChild(el);
-            // when user is corector and no grades showing: give msg that
+
+// when user is corector and no grades showing: give msg 'You don't have any allowed subjects'
         } else if ( permit_dict.requsr_role_corr && selected_btn === "btn_ep_01") {
             if (!permit_dict.allowed_subjbases || !permit_dict.allowed_subjbases.length) {
                 let tblRow = tblBody_datatable.insertRow(-1);
@@ -2453,21 +2472,6 @@ const is_allowed_cluster = true;
             DatalistDownload({page: "page_grade"});
     };  // SBR_show_all_response
 
-//=========  SBR_display_subject_cluster_student  ================ PR2022-03-03 PR2023-01-25
-    function SBR_display_subject_cluster_student() {
-        //console.log("===== SBR_display_subject_cluster_student =====");
-
-        t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
-        t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
-
-        // PR2023-01-25 t_MSSSS_display_in_sbr_NEW uses dict instead of dictlist
-        t_MSSSS_display_in_sbr_NEW("cluster", setting_dict.sel_cluster_pk);
-
-        // hide itemcount
-        t_set_sbr_itemcount_txt(loc, 0)
-
-    };  // SBR_display_subject_cluster_student
-
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2022-02-17 PR2022-04-17
     function ModConfirmOpen(mode, el_input) {
@@ -2815,12 +2819,15 @@ const is_allowed_cluster = true;
                     add_or_remove_class(el_MAG_subject.parentNode, cls_hide, !mod_MAG_dict.is_approve_mode);
 
                     add_or_remove_class(el_MAG_cluster.parentNode, cls_hide, !mod_MAG_dict.is_approve_mode || mod_MAG_dict.is_examperiod_exemption);
-
+    // - hide lvlbase when Havo Vwo PR2024-05-02
                     const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_code : "<" + loc.All_levels + ">";
                     el_MAG_lvlbase.innerText = level_abbrev;
 
+                    add_or_remove_class(el_MAG_lvlbase.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
+
     // - set subject_text and cluster_text
-                    MAG_set_subject_cluster_txt();
+                    MAG_set_subject_txt();
+                    MAG_set_cluster_txt();
 
     // --- get approved_by
                     if (el_MAG_approved_by_label){
@@ -2917,6 +2924,8 @@ const is_allowed_cluster = true;
             UploadChanges(upload_dict, url_str);
 
             MAG_SetInfoboxesAndBtns();
+            MAG_set_cluster_txt();
+            MAG_set_subject_txt();
 
         };  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
     };  // MAG_Save
@@ -2929,6 +2938,8 @@ const is_allowed_cluster = true;
             mod_MAG_dict.step += 1;
         };
         MAG_SetInfoboxesAndBtns(response);
+        MAG_set_cluster_txt();
+        MAG_set_subject_txt();
     };  // MAG_UpdateFromResponse
 
 //=========  MAG_SetInfoboxesAndBtns  ================ PR2023-02-23 PR2023-04-10
@@ -3370,155 +3381,148 @@ const is_allowed_cluster = true;
         MAG_Save("save");
 
         //MAG_SetInfoboxesAndBtns() is in MAG_Save;
-
+        //MAG_set_cluster_txt() is in MAG_Save;
+        //MAG_set_subject_txt() is in MAG_Save;
     }; // MAG_UploadAuthIndex
 
-    function MAG_set_subject_cluster_txt() { // PR2023-02-11
-        //console.log("----- MAG_set_subject_cluster_txt -----") ;
-        //console.log("    setting_dict.sel_subject_pk", setting_dict.sel_subject_pk) ;
+    function MAG_set_cluster_txt() { // PR2024-05-02
+        //console.log("----- MAG_set_cluster_txt -----") ;
+        //console.log("    setting_dict", setting_dict) ;
+        //console.log("    permit_dict", permit_dict) ;
+       // console.log("    cluster_dictsNEW", cluster_dictsNEW) ;
 
         const allowed_subjectname_nl_arr = [];
         const allowed_clustername_arr = [];
+        let cluster_txt = "", title_txt = "";
+        let count_clusters = 0
 
-    // loop through allowed_subjbases - contains allowed subjects of this department
+// - leave text blank when the school has no clusters
+        if (!isEmpty(cluster_dictsNEW)) {
+            // PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
+            // must be able to approve all subjects as chairperson.
+            // therefore: don't filter on allowed subjects / clusters when selected auth_index is chairperson or secretary
 
-// +++++++++ if there is a sel_subject_pk +++++++++++++++++++++
-        if(setting_dict.sel_subject_pk){
+            console.log("  ??????????   setting_dict.sel_auth_index", setting_dict.sel_auth_index);
+            const user_is_auth1_or_auth2 = ( [1, 2].includes(setting_dict.sel_auth_index) &&
+                                            (permit_dict.usergroup_list.includes("auth1") ||
+                                            permit_dict.usergroup_list.includes("auth2") ) );
+            console.log("    user_is_auth1_or_auth2", user_is_auth1_or_auth2);
 
-    // - get sel_subjbase_pk from subject_rows
-            // TODO: change setting_dict.sel_subject_pk to setting_dict.sel_subjbase_pk
-            let sel_subjbase_pk = null, sel_subject_name_nl = null;
-            const [middle_index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", setting_dict.sel_subject_pk);
 
-            if (found_dict){
-                sel_subjbase_pk = found_dict.base_id;
-                sel_subject_name_nl = (found_dict.name_nl) ? found_dict.name_nl : "---";
+        //console.log("    user_is_auth1_or_auth2", user_is_auth1_or_auth2) ;
+// --- loop through cluster_dictsNEW
+            for (const cluster_dict of Object.values(cluster_dictsNEW)) {
+        //console.log("    permit_dict.allowed_subjbases", permit_dict.allowed_subjbases) ;
+// - check if cluster is in allowed subjbases  (skip when auth1 auth2)
+                if (user_is_auth1_or_auth2 ||
+                    !permit_dict.allowed_subjbases ||
+                    !permit_dict.allowed_subjbases.length ||
+                    permit_dict.allowed_subjbases.includes(cluster_dict.subjbase_id)) {
 
-    // - check if sel_subjbase_pk is in allowed_subjbases
-                const is_allowed_subjbase_pk = (permit_dict.allowed_subjbases && permit_dict.allowed_subjbases.length) ?
-                    (permit_dict.allowed_subjbases.includes(sel_subjbase_pk)) ? true : false : true;
-                if (is_allowed_subjbase_pk ){
-        //console.log("    setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk) ;
+        //console.log("    cluster_dict", cluster_dict) ;
+        //console.log("    cluster is in allowed subjbases") ;
+// - check if cluster_subjbase is selected subjbase (or no selected subjbase)
+                    if (!setting_dict.sel_subjbase_pk || setting_dict.sel_subjbase_pk === cluster_dict.subjbase_id){
+                        count_clusters += 1;
+        //console.log("    cluster_subjbase is selected subjbase (or no selected subjbase") ;
+// - check if cluster is in allowed clusters (skip when auth1 auth2)
+                        if (user_is_auth1_or_auth2 ||
+                            !permit_dict.allowed_clusters ||
+                            !permit_dict.allowed_clusters.length ||
+                            permit_dict.allowed_clusters.includes(cluster_dict.id)) {
 
-    // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
-                    if(setting_dict.sel_cluster_pk){
-                        const cluster = cluster_dictsNEW["cluster_" + setting_dict.sel_cluster_pk];
-                        if (cluster && cluster.subjbase_id === setting_dict.sel_cluster_pk) {
-                   // check if sel_subsel_cluster_pkjbase_pk is in allowed_clusters
-                            const is_allowed_cluster = (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) ?
-                                (permit_dict.allowed_clusters.includes(setting_dict.sel_cluster_pk)) ? true : false : true;
-                            if (is_allowed_cluster){
-                                has_allowed_cluster = true;
-                                allowed_subjectname_nl_arr.push(cluster.name)
-                                allowed_clustername_arr.push(sel_subject_name_nl)
+        //console.log("    cluster is in allowed clusters") ;
+// - check if cluster is selected (or there is no selected cluster)
+                            if (!setting_dict.sel_cluster_pk || setting_dict.sel_cluster_pk === cluster_dict.id) {
+        //console.log("    cluster is selected (or there is no selected cluster") ;
+                                allowed_clustername_arr.push(cluster_dict.name);
                             };
                         };
-
-    // +++++++++ if there are allowed_clusters +++++++++++++++++++++++++++
-                    } else if (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) {
-
-                        for (let i = 0, cluster_pk; cluster_pk = permit_dict.allowed_clusters[i]; i++) {
-                            const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
-        //console.log("   > cluster", cluster) ;
-
-                            if (cluster && cluster.subjbase_id === sel_subjbase_pk) {
-
-                                allowed_subjectname_nl_arr.push(sel_subject_name_nl);
-                                allowed_clustername_arr.push(cluster.name);
-                                break;
-                            };
-                        };
-    // +++++++++ if there is no selected cluster and no allowed_clusters +++++++++++++++++++++++++++
-                    } else {
-        //console.log(" +++   sel_subject_name_nl", sel_subject_name_nl);
-                        allowed_subjectname_nl_arr.push(sel_subject_name_nl);
                     };
                 };
             };
-// +++ end of if there is a sel_subject_pk
 
-    //console.log("    allowed_subjectname_nl_arr", allowed_subjectname_nl_arr) ;
+    //console.log("    count_clusters", count_clusters) ;
     //console.log("    allowed_clustername_arr", allowed_clustername_arr) ;
+                //cluster_txt = loc.All_clusters;
+        };
 
-// +++++++++ if there are allowed_subjbases +++++++++++++++++++++
-        } else if (permit_dict.allowed_subjbases && permit_dict.allowed_subjbases.length){
-
-    //console.log("  >>>>>>>>>>>>>>> +++  permit_dict.allowed_subjbases", permit_dict.allowed_subjbases);
-            for (let i = 0, subjbase_pk; subjbase_pk = permit_dict.allowed_subjbases[i]; i++) {
-                let sel_subjbase_pk = null, sel_subject_name_nl = null;
-                for (let j = 0, subject_dict; subject_dict = subject_rows[j]; j++) {
-                    if (subject_dict.base_id === subjbase_pk){
-                        sel_subjbase_pk = subject_dict.base_id;
-                        sel_subject_name_nl = subject_dict.name_nl;
-                        break;
-                    };
-                };
-
-                if (sel_subjbase_pk){
-
-    // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
-                    if(setting_dict.sel_cluster_pk){
-    //console.log(" +++ setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
-                        const cluster = cluster_dictsNEW["cluster_" + setting_dict.sel_cluster_pk];
-    //console.log("    cluster", cluster);
-                        if (cluster && cluster.subjbase_id === setting_dict.sel_cluster_pk) {
-                // check if sel_subsel_cluster_pkjbase_pk is in allowed_clusters
-                            const is_allowed_cluster = (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) ?
-                                (permit_dict.allowed_clusters.includes(setting_dict.sel_cluster_pk)) ? true : false : true;
-                            if (is_allowed_cluster){
-                                has_allowed_cluster = true;
-                                allowed_subjectname_nl_arr.push(cluster.name)
-                                allowed_clustername_arr.push(sel_subject_name_nl)
-    //console.log("    has_allowed_cluster", has_allowed_cluster);
-                            };
-                        };
-
-    // +++++++++ if there are allowed_clusters +++++++++++++++++++++++++++
-                    } else if (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) {
-    //console.log("  +++  permit_dict.allowed_clusters", permit_dict.allowed_clusters);
-                        for (let i = 0, cluster_pk; cluster_pk = permit_dict.allowed_clusters[i]; i++) {
-                            const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
-    //console.log("    cluster", cluster);
-                            if (cluster && cluster.subjbase_id === sel_subjbase_pk) {
-    //console.log("    sel_subject_name_nl", sel_subject_name_nl);
-                                allowed_subjectname_nl_arr.push(sel_subject_name_nl);
-                                allowed_clustername_arr.push(cluster.name);
-                                break;
-                            };
-                        };
-
-    // +++++++++ if there is no selected cluster and no allowed_clusters +++++++++++++++++++++++++++
-                    } else {
-    //console.log(" +++   sel_subject_name_nl", sel_subject_name_nl);
-                        if (!allowed_subjectname_nl_arr.includes(sel_subject_name_nl)){
-                            allowed_subjectname_nl_arr.push(sel_subject_name_nl);
-                        };
-                    };
-                };
-            };
-
-// +++ end of if there are allowed_subjbases
-
-// +++++++++ if there is no selected subject and no allowed_subjbasess +++++++++++++++++++++++++++
-        } else {
-
-    // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
-            if(setting_dict.sel_cluster_pk){
-    //console.log(" +++ setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
-
-    // +++++++++ if there are allowed_clusters +++++++++++++++++++++++++++
-            } else if (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) {
-
-    // +++++++++ if there is no selected cluster and no allowed_clusters +++++++++++++++++++++++++++
+        if (allowed_clustername_arr.length) {
+            if (allowed_clustername_arr.length === count_clusters){
+                cluster_txt = loc.All_clusters;
             } else {
-                allowed_subjectname_nl_arr.push(["<", loc.All_subjects, ">"].join(""));
+                allowed_clustername_arr.sort();
+                cluster_txt = allowed_clustername_arr.join(", ");
+                title_txt = allowed_clustername_arr.join("\n");
+            };
+        } else {
+            cluster_txt = loc.All_clusters;
+        };
+
+        el_MAG_cluster.innerText = cluster_txt;
+        el_MAG_cluster.title = title_txt;
+    }; // MAG_set_cluster_txt
+
+    function MAG_set_subject_txt() { // PR2023-02-11 PR2024-05-02
+        console.log("----- MAG_set_subject_txt -----") ;
+        //console.log("    setting_dict", setting_dict) ;
+        //console.log("    permit_dict", permit_dict) ;
+        console.log("    subject_rows", subject_rows) ;
+
+        const allowed_subjectname_nl_arr = [];
+        let subjectname_nl_txt = "", title_txt = "";
+        let count_subjects = subject_rows.length;
+
+// - leave text blank when the school has no clusters
+        // PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
+        // must be able to approve all subjects as chairperson.
+        // therefore: don't filter on allowed subjects / clusters when selected auth_index is chairperson or secretary
+        console.log("  ??????????   setting_dict.sel_auth_index", setting_dict.sel_auth_index);
+        const user_is_auth1_or_auth2 = ( [1, 2].includes(setting_dict.sel_auth_index) &&
+                                        (permit_dict.usergroup_list.includes("auth1") ||
+                                        permit_dict.usergroup_list.includes("auth2") ) );
+        console.log("    user_is_auth1_or_auth2", user_is_auth1_or_auth2);
+
+// --- loop through subjects
+
+        for (let i = 0, subject_dict; subject_dict = subject_rows[i]; i++) {
+    console.log("    subject_dict", subject_dict) ;
+// - check if cluster is in allowed subjbases  (skip when auth1 auth2)
+            if (user_is_auth1_or_auth2 ||
+                !permit_dict.allowed_subjbases ||
+                !permit_dict.allowed_subjbases.length ||
+                permit_dict.allowed_subjbases.includes(subject_dict.base_id)) {
+
+    console.log("    subject_dict is in allowed subjbases") ;
+    console.log("    setting_dict.sel_subjbase_pk", setting_dict.sel_subjbase_pk) ;
+    console.log("    subject_dict.base_id", subject_dict.base_id) ;
+// - check if cluster_subjbase is selected subjbase (or no selected subjbase)
+                if (!setting_dict.sel_subjbase_pk || setting_dict.sel_subjbase_pk === subject_dict.base_id){
+    console.log("    cluster is selected (or there is no selected cluster", subject_dict.name_nl) ;
+                    allowed_subjectname_nl_arr.push(subject_dict.name_nl);
+                };
             };
         };
 
-        el_MAG_cluster.innerText = (allowed_clustername_arr.length) ? allowed_clustername_arr.join(", ") : null;
+    console.log("    count_subjects", count_subjects) ;
+    console.log("    allowed_subjectname_nl_arr", allowed_subjectname_nl_arr) ;
+            //subjectname_nl_txt = loc.All_subjects;
 
-        el_MAG_subject.innerText = (allowed_subjectname_nl_arr.length) ? allowed_subjectname_nl_arr.join(", ") : "---";
-    };  // MAG_set_subject_cluster_txt
+        if (allowed_subjectname_nl_arr.length) {
+            if (allowed_subjectname_nl_arr.length === count_subjects){
+                subjectname_nl_txt = loc.All_subjects;
+            } else {
+                allowed_subjectname_nl_arr.sort();
+                subjectname_nl_txt = allowed_subjectname_nl_arr.join(", ");
+                title_txt = allowed_subjectname_nl_arr.join("\n");
+            };
+        } else {
+            subjectname_nl_txt = loc.All_subjects;
+        };
+
+        el_MAG_subject.innerText = subjectname_nl_txt;
+        el_MAG_subject.title = title_txt;
+    };  // MAG_set_subject_txt
 
 /////////////////////////////////////////////
 
@@ -4309,22 +4313,26 @@ console.log( "......filter_value", filter_value);
     }  // MSED_Response
 
 //=========  MSSSS_school_response  ================ PR2023-03-29
-    function MSSSS_school_response(tblName, selected_dict, sel_schoolbase_pk) {
+    function MSSSS_school_response(modalName, tblName, selected_dict, sel_schoolbase_pk) {
         console.log( "===== MSSSS_school_response ========= ");
+        console.log( "   modalName", modalName);
         console.log( "tblName", tblName);
         console.log( "sel_schoolbase_pk", sel_schoolbase_pk, typeof sel_schoolbase_pk);
         console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
 
 // reset text dep and school in headerbar
         el_hdrbar_department.innerText = null;
         el_hdrbar_school.innerText = null;
 
+
 // reset cluster and student
         setting_dict.sel_cluster_pk = null;
         setting_dict.sel_student_pk = null;
 
-        SBR_display_subject_cluster_student();
+        t_SBR_display_subject_cluster_student();
+        // hide itemcount
+        t_set_sbr_itemcount_txt(loc, 0)
 
 // ---  upload new setting and refresh page
         const request_item_setting = {page: "page_grade",
@@ -4336,50 +4344,55 @@ console.log( "......filter_value", filter_value);
 
     };  // MSSSS_school_response
 
-//=========  MSSSS_subject_response  ================ PR2023-03-30
-    function MSSSS_subject_response(tblName, selected_dict, sel_subject_pk) {
+//=========  MSSSS_subject_response  ================ PR2023-03-30 PR2024-03-28
+    function MSSSS_subject_response(modalName, tblName, selected_dict, sel_subjbase_pk) {
         console.log( "===== MSSSS_subject_response ========= ");
-        console.log( "tblName", tblName);
-        console.log( "sel_subject_pk", sel_subject_pk, typeof sel_subject_pk);
-        console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        console.log( "   modalName", modalName);
+        console.log( "    tblName", tblName);
+        console.log( "    sel_subjbase_pk", sel_subjbase_pk, typeof sel_subjbase_pk);
+        console.log( "    selected_dict", selected_dict);
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing subject, only update settings, dont use DatalistDownload but filter on page
 
         // 'all subjects' has value -1
-        if(sel_subject_pk === -1) { sel_subject_pk = null};
+        if(sel_subjbase_pk === -1) { sel_subjbase_pk = null};
 
-        setting_dict.sel_subject_pk = sel_subject_pk;
+        setting_dict.sel_subjbase_pk = sel_subjbase_pk;
+        setting_dict.sel_subject_pk = (selected_dict && selected_dict.id) ? selected_dict.id : null;
         setting_dict.sel_subject_name = (selected_dict && selected_dict.name_nl) ? selected_dict.name_nl : null;
 
+        console.log( "    setting_dict.sel_subject_pk", setting_dict.sel_subject_pk);
         setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_name = null;
+        //setting_dict.sel_cluster_name = null;
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;
 
 // ---  upload new setting and refresh page
         const request_item_setting = {
             page: "page_grade",
-            sel_subject_pk: sel_subject_pk,
+            sel_subjbase_pk: sel_subjbase_pk,
+            sel_subject_pk: setting_dict.sel_subject_pk,
             sel_cluster_pk: null,
             sel_student_pk: null
         };
         DatalistDownload(request_item_setting);
     };  // MSSSS_subject_response
 
-//=========  MSSSS_cluster_response  ================ PR2023-03-30
-    function MSSSS_cluster_response(tblName, selected_dict, sel_cluster_pk) {
+//=========  MSSSS_cluster_response  ================ PR2023-03-30 PR2024-05-02
+    function MSSSS_cluster_response(modalName, tblName, selected_dict, sel_cluster_pk) {
         console.log( "===== MSSSS_cluster_response ========= ");
-        console.log( "tblName", tblName);
-        console.log( "sel_cluster_pk", sel_cluster_pk, typeof sel_cluster_pk);
-        console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        console.log( "   modalName", modalName);
+        console.log( "   tblName", tblName);
+        console.log( "    sel_cluster_pk", sel_cluster_pk, typeof sel_cluster_pk);
+        console.log( "    selected_dict", selected_dict);
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing cluster, only update settings, dont use DatalistDownload but filter on page
 
         // 'all clusters' has value -1
         if(sel_cluster_pk === -1) { sel_cluster_pk = null};
 
         setting_dict.sel_cluster_pk = sel_cluster_pk;
-        setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
+        //setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
 
 // when selecting cluster: also set subject to the subject of this cluster
         // dont reset subject when subject of selected cluster is the same as selected subject PR2023-03-30
@@ -4398,19 +4411,20 @@ console.log( "......filter_value", filter_value);
                             }};
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
-        SBR_display_subject_cluster_student();
+        t_SBR_display_subject_cluster_student();
 
         FillTblRows();
 
     };  // MSSSS_cluster_response
 
 //=========  MSSSS_student_response  ================ PR2023-03-30
-    function MSSSS_student_response(tblName, selected_dict, sel_student_pk) {
+    function MSSSS_student_response(modalName, tblName, selected_dict, sel_student_pk) {
         console.log( "===== MSSSS_student_response ========= ");
+        console.log( "   modalName", modalName);
         console.log( "tblName", tblName);
         console.log( "sel_student_pk", sel_student_pk, typeof sel_student_pk);
         console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing student, only update settings, dont use DatalistDownload but filter on page
 
         // 'all clusters' has value -1
@@ -4423,7 +4437,7 @@ console.log( "......filter_value", filter_value);
         setting_dict.sel_subject_pk = null;
         setting_dict.sel_subject_name = null;
         setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_name = null;
+        //setting_dict.sel_cluster_name = null;
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {
@@ -4433,7 +4447,7 @@ console.log( "......filter_value", filter_value);
                             }};
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
-        SBR_display_subject_cluster_student();
+        t_SBR_display_subject_cluster_student();
 
         FillTblRows();
 
@@ -4629,9 +4643,9 @@ console.log( "......filter_value", filter_value);
         };
 
         if (!has_subject_rows){
-            const no_students_txt = (mod_MEX3_dict.sel_examperiod === 3) ? loc.No_studenst_examperiod_03 :
-                                    (mod_MEX3_dict.sel_examperiod === 2) ? loc.No_studenst_examperiod_02 :
-                                    loc.No_studenst_with_subjects;
+            const no_students_txt = (mod_MEX3_dict.sel_examperiod === 3) ? loc.No_students_examperiod_03 :
+                                    (mod_MEX3_dict.sel_examperiod === 2) ? loc.No_students_examperiod_02 :
+                                    loc.No_students_with_subjects;
             el_MEX3_tblBody_available.innerHTML = [
                 "<p class='text-muted px-2 pt-2'>", no_students_txt, "</p>"
             ].join("");

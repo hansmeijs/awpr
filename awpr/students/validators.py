@@ -1371,6 +1371,10 @@ def get_scheme_si_sjtp_dict(scheme):
         logger.debug('  -----  get_scheme_si_sjtp_dict  -----')
         logger.debug('scheme: ' + str(scheme))
 
+    # PR2024-05-03 Sentry error: SystemExit
+    # probably because it is taking too long,
+    # TODO: use sql instead of model
+
 # - get min max subjects and mvt from scheme
     schemename = getattr(scheme, 'name')
     min_subj = getattr(scheme, 'min_subjects')

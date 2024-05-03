@@ -44,7 +44,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -649,6 +649,13 @@ def download_setting(request_item_setting, user_lang, request):
     # creates permit_dict and adds keys 'requsr_pk', 'requsr_name', 'requsr_role' and  'requsr_role_school', 'requsr_role_corr' etc
     permit_dict = create_permit_dict(request)
 
+    """
+    userallowed tabel:
+      id  |          modifiedat           |                 usergroups                 |     allowed_sections     | allowed_clusters | examyear_id | modifiedby_id | user_id
+    ------+-------------------------------+--------------------------------------------+--------------------------+------------------+-------------+---------------+---------
+     2361 | 2023-03-06 06:21:01.833729-04 | ["admin", "auth2", "edit", "read", "wolf"] | {"2": {"1": {"-9": []}}} |                  |           6 |               |     904
+    """
+
     sel_examyear_instance = acc_prm.get_sel_examyear_from_user_instance(request.user)
     requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear_instance)
     requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
@@ -663,7 +670,7 @@ def download_setting(request_item_setting, user_lang, request):
     permit_list = acc_prm.get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroup_list)
     if permit_list:
         for prm in permit_list:
-            # PR2023-04-05 'write_message' is not in use any more, use usergroup msgsend instead
+            # PR2023-04-05 'write_message' is not in use anymore, use usergroup msgsend instead
             if prm:
                 permit_dict[prm] = True
 
@@ -702,7 +709,7 @@ def download_setting(request_item_setting, user_lang, request):
 # ===== EXAMYEAR =======================
     # every user can change examyear, within examyears of  userallowed records PR2023-01-08
     # may_select_examyear is False when there is only 1 allowed examyear PR2023-01-08
-    sel_examyear_instance, sel_examyear_tobesaved, reset_examperiod = \
+    sel_examyear_instance, sel_examyear_tobesaved, reset_examperiod_and_selclusterpk = \
         acc_view.get_settings_examyear(
             request=request,
             request_item_setting=request_item_setting,
@@ -806,7 +813,13 @@ def download_setting(request_item_setting, user_lang, request):
     sel_lvlbase_instance_pk = sel_lvlbase_instance.pk if sel_lvlbase_instance else -9
     allowed_subjbases_arr = acc_prm.get_userallowed_subjbase_arr(allowed_depbase_dict, allowed_lvlbase_pk_arr, sel_lvlbase_instance_pk)
 
-    sel_subject_instance, sel_subject_tobesaved = acc_view.get_settings_subjectbase(
+    if logging_on:
+        logger.debug('===== SUBJECTBASE =====')
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    setting_dict: ' + str(setting_dict))
+        logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
+
+    sel_subject_instance, sel_subjbase_tobesaved = acc_view.get_settings_subjbase(
         request_item_setting=request_item_setting,
         sel_examyear_instance=sel_examyear_instance,
         allowed_subjbases_arr=allowed_subjbases_arr,
@@ -814,18 +827,34 @@ def download_setting(request_item_setting, user_lang, request):
         setting_dict=setting_dict,
         selected_pk_dict=selected_pk_dict
     )
-    if sel_subject_tobesaved:
+    if sel_subjbase_tobesaved:
         selected_pk_dict_has_changed = True
+    if logging_on:
+        logger.debug('    sel_subjbase_tobesaved: ' + str(sel_subjbase_tobesaved))
+        logger.debug('    sel_subject_instance: ' + str(sel_subject_instance))
+
+
+    # PR2024-03-3 deprecated: get_settings_subject
+    #    sel_subject_instance, sel_subject_tobesaved = acc_view.get_settings_subject(
+    #       request_item_setting=request_item_setting,
+    #        sel_examyear_instance=sel_examyear_instance,
+    #        allowed_subjbases_arr=allowed_subjbases_arr,
+    #        permit_dict=permit_dict,
+    #        setting_dict=setting_dict,
+    #        selected_pk_dict=selected_pk_dict
+    #    )
+    #    if sel_subject_tobesaved:
+    #        selected_pk_dict_has_changed = True
 
 # ===== EXAM PERIOD =======================
-    sel_examperiod, sel_examperiod_tobesaved = acc_view.get_settings_examperiod(
+    sel_examperiod, sel_pk_dict_has_changed = acc_view.get_settings_examperiod(
         request=request,
         request_item_setting=request_item_setting,
         setting_dict=setting_dict,
         selected_pk_dict=selected_pk_dict,
-        reset_examperiod=reset_examperiod
+        reset_examperiod_and_selclusterpk=reset_examperiod_and_selclusterpk
     )
-    if sel_examperiod_tobesaved:
+    if sel_pk_dict_has_changed:
         selected_pk_dict_has_changed = True
 
 # ===== EXAM TYPE =======================
@@ -854,9 +883,11 @@ def download_setting(request_item_setting, user_lang, request):
     # PR2021-01-23 PR2021-03-14 PR2021-08-13 PR2022-03-06
 
     if logging_on:
+        logger.debug(' ')
         logger.debug('++++++++++++  SECTORBASE, SCHEME, STUDENT, CLUSTER ++++++++++++++++++++++++')
         logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
-    # PR2022-05-29 dont save sel_student_pk, but only filter locally. Was: , c.KEY_SEL_STUDENT_PK):
+
+    # PR2022-05-29 don't save sel_student_pk, but only filter locally. Was: , c.KEY_SEL_STUDENT_PK):
     for key_str in (c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,
                     c.KEY_SEL_STUDENT_PK, c.KEY_SEL_CLUSTER_PK):
 
@@ -867,7 +898,10 @@ def download_setting(request_item_setting, user_lang, request):
         saved_pk_int = None
         saved_pk_str = selected_pk_dict.get(key_str)
         if saved_pk_str:
-            saved_pk_int = int(saved_pk_str)
+            # PR2024-05-02 saved_pk_str was saved as dict, add isinstance to prevent error
+            if isinstance(saved_pk_str, str):
+                saved_pk_int = int(saved_pk_str)
+
         if logging_on:
             logger.debug('     saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
             logger.debug('     request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))

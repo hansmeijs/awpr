@@ -1,7 +1,10 @@
 
+// ---  dictionaries to store info of modal forms
     let mod_MSESD_dict = {};
     let mod_MUPS_dict = {};  // PR2022-10-23
     const mod_MSSSS_dict = {};  // PR2023-03-20
+    const mod_MCL_dict = {};  // modal cluster  PR2024-04-02 moved to table.js
+
 // ++++++++++++  TABLE  +++++++++++++++++++++++++++++++++++++++
     "use strict";
 
@@ -76,7 +79,6 @@
 //=========  t_MSED_SaveDepFromRows  ================ PR2022-11-05
     function t_MSED_SaveDepFromRows(MSED_Response, tblRow, schoolbase_pk, depbase_pk) {
         //console.log("===  t_MSED_SaveDepFromRows =========");
-
     // --- put selected_pk_int in MSED_Response,
         const sel_pk_int = get_attr_from_el_int(tblRow, "data-pk");
         MSED_Response(sel_pk_int, schoolbase_pk, depbase_pk);
@@ -167,6 +169,9 @@
 //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
         console.log("===  t_MSED_Save =========");
+
+        // PR2024-03-31 only called by t_MSED_CreateSelectRowNew and t_MSED_CreateSelectRow_NIU
+
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const tblName = get_attr_from_el(tblRow, "data-table");
@@ -344,9 +349,9 @@
         }
     }  // t_MSED_CreateSelectRowNew
 
-//=========  t_MSED_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24
-    function t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, country, all_countries, activated, locked, MSED_Response, selected_pk) {
-        //console.log( "===== t_MSED_CreateSelectRow ========= ");
+//=========  t_MSED_CreateSelectRow_NIU  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24
+    function t_MSED_CreateSelectRow_NIU(loc, tblName, tblBody_select, pk_int, code_value, country, all_countries, activated, locked, MSED_Response, selected_pk) {
+        //console.log( "===== t_MSED_CreateSelectRow_NIU ========= ");
 
         const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
 
@@ -393,65 +398,98 @@
                 el_div.title = (locked) ? loc.This_school + loc.is_locked : (activated) ? loc.This_school + loc.is_activated : "";
             td.appendChild(el_div);
         }
-    }  // t_MSED_CreateSelectRow
+    }  // t_MSED_CreateSelectRow_NIU
 
 // ++++++++++++  END OF MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
-// +++++++++++++++++ MODAL SELECT CLUSTER ++++++++++++++++++++++++++++++++
+// +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT CLUSTR STUDENT CLUSTER ++++++++++++++++++++++++++++++++
 //PR2023-01-05 new approach: use data_dicts instead of data_rows
 
 //========= t_MSSSS_Open_NEW ====================================
-    function t_MSSSS_Open_NEW (loc, tblName, data_dicts, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
-//PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13 PR2023-01-05 PR2023-03-20
-        //console.log(" ===  t_MSSSS_Open_NEW  =====", tblName) ;
-        //console.log( "setting_dict", setting_dict);
-        //console.log( "permit_dict", permit_dict);
+    function t_MSSSS_Open_NEW (modalName, tblName, data_dicts, MSSSS_Response, add_all, show_delete_btn) {
+        //PR2022-08-13 PR2023-01-05 PR2023-03-20 PR2024-03-28
+        //console.log(" ===  t_MSSSS_Open_NEW  =====") ;
+    //console.log( "    permit_dict", permit_dict);
+    //console.log( "    setting_dict", setting_dict);
+    //console.log( "modalName", modalName );
     //console.log( "tblName", tblName );
     //console.log( "data_dicts", data_dicts, typeof data_dicts );
-        // tblNames are: 'cluster", "school", "subject", "student", "envelopbundle
+
+        // tblNames are: 'cluster', 'subject',  // tobe added:  "school", "student", "envelopbundle
         // table "school", "student" use base_id as selected_pk
+
+        // PR2024-03-28 use 'sel_subjbase_pk ' instead of 'sel_subject_pk
+         // note: tblName = 'subject', not 'subjbase''used in grades el_SBR_select_subject
+
+        // PR2024-03-27 called in page / function:
+        // - exams.js:  MDEC_BtnSelectSubjectClick and MEXQ_BtnSelectSubjectClick(el)
+        // - wolf, grades, studentsubject:  el_SBR_select_cluster.addEventListener
+
+        // PR2024-03-26 debug: Ancilla Domini Yolande van Erven: teacher cannot see grades
+        // becasue subject filter was still pointed at subject_pk of previous year
+        // solve by using sel_subjbase_pk instead
+
+        // PR2024-03-27 debug:  instead of using sel_subject_pk, must use sel_subjbase_pk
+        //
 
         // PR2023-03-20 mod_MSSSS_dict added to store data_dicts, to return selected data_dict on save
         b_clear_dict(mod_MSSSS_dict);
+
+        // PR024-04-02 modalName is used in exams.js, to make difference between MSSS and MEX response
+        mod_MSSSS_dict.modalName = modalName;
+        mod_MSSSS_dict.tblName = tblName;
         mod_MSSSS_dict.data_dicts = data_dicts;
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
         // allow opening only when loc has value
         if(!isEmpty(permit_dict)){
-            const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
+            const may_select = (tblName === "school") ? permit_dict.may_select_school : true;
     //console.log( "may_select", may_select);
             if (may_select){
-                const selected_pk = (tblName === "cluster") ? setting_dict.sel_cluster_pk :
-                                    (tblName === "school") ? setting_dict.sel_school_pk :
-                                    (tblName === "subject") ? setting_dict.sel_subject_pk :
-                                    (tblName === "student") ? setting_dict.sel_studbase_pk :
-                                    (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
-    //console.log( "setting_dict", setting_dict );
-    //console.log( "selected_pk", selected_pk, typeof selected_pk );
-                const el_MSSSS_input = document.getElementById("id_MSSSS_input")
-                el_MSSSS_input.setAttribute("data-table", tblName);
+                mod_MSSSS_dict.selected_pk = (tblName === "school") ? setting_dict.sel_school_pk :
+                    (tblName === "subject") ? setting_dict.sel_subjbase_pk : // PR2024-03-28 added
+                    (tblName === "cluster") ? setting_dict.sel_cluster_pk :
+                    (tblName === "student") ? setting_dict.sel_student_pk :
+                    (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
+
+                //PR2024-04-01 added, to keep or remove cluster when subjbase changes
+                mod_MSSSS_dict.sel_subjbase_pk = setting_dict.sel_subjbase_pk;
+                mod_MSSSS_dict.sel_cluster_pk = setting_dict.sel_cluster_pk;
+                mod_MSSSS_dict.sel_student_pk = setting_dict.sel_student_pk;
 
                 // PR2022-05-01 dont open modal when only 1 item in data_rows
                 // PR2022-05-25 is confusing when modal doesn't open, > 1 removed
                 //if (data_rows && data_rows.length > 1){
 
                 if (isEmpty(data_dicts)){
-                    const msg_html = ["<p>", loc.No_clusters, "</p><p>", loc.Goto_subjects_to_create, "</p>"].join("");
+                    const msg_html = (tblName === "school") ? loc.No_schools :
+                        (tblName === "subject") ? loc.No_subjects_found :
+                        (tblName === "student") ? loc.No_candidates :
+                        (tblName === "envelopbundle") ? loc.No_bundles :
+                        (tblName === "cluster") ? ["<p>", loc.No_clusters, "</p><p>", loc.Goto_subjects_to_create, "</p>"].join("")
+                            : null;
                     b_show_mod_message_html(msg_html);
                 } else {
         // --- fill select table
     //console.log( "    fill select table" );
-                    t_MSSSS_Fill_SelectTable_NEW(loc, tblName, data_dicts, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
+                    t_MSSSS_Fill_SelectTable_NEW(loc, modalName, tblName, data_dicts, MSSSS_Response, add_all)
+
+                    const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                     el_MSSSS_input.value = null;
+
             // ---  set focus to input element
                     set_focus_on_el_with_timeout(el_MSSSS_input, 50);
 
             // ---  show delete btn, only in page orderlist when select bundle
-                    const show_btn = show_delete_btn && selected_pk;
+                    const show_btn = show_delete_btn && mod_MSSSS_dict.selected_pk;
                     const el_MSSSS_btn_delete = document.getElementById("id_MSSSS_btn_delete");
                     const caption = (tblName === "envelopbundle") ? loc.Remove_bundle : loc.Delete;
                     el_MSSSS_btn_delete.innerText = caption;
                     add_or_remove_class(el_MSSSS_btn_delete, cls_hide, !show_btn )
+
+            // ---  disable save button when no item selected
+                    const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
+                    el_MSSSS_btn_save.disabled = !mod_MSSSS_dict.selected_pk;
 
             // ---  show modal
                      $("#id_mod_select_school_subject_student").modal({backdrop: true});
@@ -460,82 +498,169 @@
          };
     }; // t_MSSSS_Open_NEW
 
-//=========  t_MSSSS_Save_NEW  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26 PR2023-01-05
-    function t_MSSSS_Save_NEW(el_input, MSSSS_Response) {
-        //console.log("===  t_MSSSS_Save_NEW =========");
-        //console.log("el_input", el_input);
+//=========  t_MSSSS_Save_NEW  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26 PR2023-01-05 PR2024-05-02
+    function t_MSSSS_Save_NEW(MSSSS_Response) {
+        //console.log("=====  t_MSSSS_Save_NEW =========");
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
-        const tblName = get_attr_from_el(el_input, "data-table");
+        const tblName = mod_MSSSS_dict.tblName;
+        const modalName = mod_MSSSS_dict.modalName;
 
         // Note: when tblName = school: pk_int = schoolbase_pk
-        // Note: when tblName = subject: pk_int = subject_pk
-        const selected_pk_int = get_attr_from_el_int(el_input, "data-pk");
-        const selected_code = get_attr_from_el(el_input, "data-code");
-        const selected_name = get_attr_from_el(el_input, "data-name");
-
-        const map_id = tblName + "_" + selected_pk_int;
-
-    //console.log("    map_id", map_id);
-    //console.log("    selected_code", selected_code);
-    //console.log("    selected_name", selected_name);
-
+        // PR2024-03-28: when tblName = subjbase: pk_int = subjbase_pk
+        const selected_pk_int = mod_MSSSS_dict.selected_pk;
+        const selected_code = mod_MSSSS_dict.data_code;
+        const selected_name = mod_MSSSS_dict.data_name;
+/*
+    console.log( "   modalName", modalName );
+    console.log("    tblName", tblName)
+    console.log("    mod_MSSSS_dict", mod_MSSSS_dict)
+    console.log("    selected_pk_int", selected_pk_int, typeof selected_pk_int);
+    console.log("    selected_code", selected_code);
+    console.log("    selected_name", selected_name);
+*/
 // +++ get existing map_dict from data_rows
         // when tblName = school: pk_int = base_pk, therefore can't use b_recursive_integer_lookup PR2022-10-26
         let selected_dict = {};
-        if (tblName === "school") {
-            for (let i = 0, data_dict; data_dict = school_rows[i]; i++) {
-                if(data_dict.base_id === selected_pk_int){
+
+        if (["school", "subject", "student"].includes(tblName)) {
+            const data_rows = (tblName === "school") ? school_rows :
+                              (tblName === "subject") ? subject_rows :
+                              (tblName === "student") ? student_rows : [];
+            const pk_key = (tblName === "student") ? "id" : "base_id";
+
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                if(data_dict[pk_key] === selected_pk_int){
                     selected_dict = data_dict;
                     break;
             }};
         } else {
+            const map_id = tblName + "_" + selected_pk_int;
             selected_dict = (!isEmpty(mod_MSSSS_dict.data_dicts) && map_id in mod_MSSSS_dict.data_dicts ) ? mod_MSSSS_dict.data_dicts[map_id] : null;
         };
 
-        t_MSSSS_display_in_sbr_NEW(tblName, selected_pk_int);
+    //console.log("    student_rows", student_rows);
+    //console.log("    selected_dict", selected_dict);
 
         // reset other select elements
         if (tblName === "subject") {
-            t_MSSSS_display_in_sbr_NEW("cluster", null);
-            t_MSSSS_display_in_sbr("student", null);
+    //console.log("    setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
+
+    // update mod_MSSSS_dict
+            mod_MSSSS_dict.sel_subjbase_pk = selected_pk_int;
+
+    // update setting_dict and sidebar, only when modal = sbr
+            if (modalName == "sbr"){
+                setting_dict.sel_subjbase_pk = selected_pk_int;
+                t_MSSSS_display_in_sbr_NEW(tblName);
+            };
+
+    // if sel_cluster has value: check if it has the same subject
+            if (!isEmpty(selected_dict) && setting_dict.sel_cluster_pk != null) {
+                // lookup subjbase_id of selected cluster
+                let sel_cluster_subjbase_id = null;
+                for (const cluster_dict of Object.values(cluster_dictsNEW)) {
+                    if(cluster_dict.id === setting_dict.sel_cluster_pk){
+                       sel_cluster_subjbase_id = cluster_dict.subjbase_id;
+                       break; // break works with for ... of
+                    };
+                };
+                // if cluster_subjbase different from selected subjbase: reset sel_cluster_pk
+                if (sel_cluster_subjbase_id && sel_cluster_subjbase_id !== selected_pk_int){
+                    mod_MSSSS_dict.sel_cluster_pk = null;
+                    setting_dict.sel_cluster_pk = null;
+
+                    t_MSSSS_display_in_sbr_NEW("cluster");
+                };
+            };
+
+    // if sel_student_pk has value: check if it has the same subject
+            if (!isEmpty(selected_dict) && setting_dict.sel_student_pk != null) {
+                // loop through studsubj to check if student has selected subject
+                let student_has_this_subject = false;
+                for (const studsubj_dict of Object.values(studsubj_dictsNEW)) {
+                    if( studsubj_dict.stud_id === setting_dict.sel_student_pk &&
+                        studsubj_dict.subjbase_id === selected_pk_int ){
+                       student_has_this_subject = true;
+                       break; // break works with for ... of
+                    };
+                };
+                // if cluster_subjbase different from selected subjbase: reset sel_cluster_pk
+                if (!student_has_this_subject){
+                    mod_MSSSS_dict.sel_student_pk = null;
+                    setting_dict.sel_student_pk = null;
+                    t_MSSSS_display_in_sbr_NEW("student");
+                };
+            };
+
         } else if (tblName === "cluster") {
-            t_MSSSS_display_in_sbr("subject", null);
-            t_MSSSS_display_in_sbr("student", null);
+            // PR2024-04-01 don't remove selected subject, slected cluster is always of selected subject
+
+            // update setting_dict and mod_MSSSS_dict
+            mod_MSSSS_dict.sel_cluster_pk = selected_pk_int;
+            setting_dict.sel_cluster_pk = selected_pk_int;
+
+            t_MSSSS_display_in_sbr_NEW(tblName);
+
+    //if selected student: check if it beongs to sleected cluster, if not: remove selected
+
+    // if sel_student_pk has value: check if itbelongs to this cluster
+            if (!isEmpty(selected_dict) && setting_dict.sel_student_pk != null) {
+                // loop through studsubj to check if student has selected cluster
+                let student_has_this_cluster = false;
+                for (const studsubj_dict of Object.values(studsubj_dictsNEW)) {
+                    if( studsubj_dict.stud_id === setting_dict.sel_student_pk &&
+                        studsubj_dict.cluster_id === selected_pk_int ){
+                       student_has_this_cluster = true;
+                       break; // break works with for ... of
+                    };
+                };
+                if (!student_has_this_cluster){
+                    mod_MSSSS_dict.sel_student_pk = null;
+                    setting_dict.sel_student_pk = null;
+                    t_MSSSS_display_in_sbr_NEW("student");
+                };
+            };
+
         } else if (tblName === "student") {
-            t_MSSSS_display_in_sbr("subject", null);
-            t_MSSSS_display_in_sbr_NEW("cluster", null);
+            // update setting_dict and mod_MSSSS_dict
+            mod_MSSSS_dict.sel_student_pk = selected_pk_int;
+            setting_dict.sel_student_pk = selected_pk_int;
+            t_MSSSS_display_in_sbr_NEW(tblName);
+
+            mod_MSSSS_dict.sel_subjbase_pk = null;
+            setting_dict.sel_subjbase_pk = null;
+            t_MSSSS_display_in_sbr_NEW("subject");
+
+            mod_MSSSS_dict.sel_cluster_pk = null;
+            setting_dict.sel_cluster_pk = null;
+            t_MSSSS_display_in_sbr_NEW("cluster");
         };
 
-        MSSSS_Response(tblName, selected_dict, selected_pk_int);
+        MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int);
+
 // hide modal
         $("#id_mod_select_school_subject_student").modal("hide");
     }  // t_MSSSS_Save_NEW
 
 //========= t_MSSSS_Fill_SelectTable_NEW  ============= PR2021-01-23  PR2021-07-23 PR2022-08-12 PR2023-01-05
-    function t_MSSSS_Fill_SelectTable_NEW(loc, tblName, data_dicts, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
+    function t_MSSSS_Fill_SelectTable_NEW(loc, modalName, tblName, data_dicts, MSSSS_Response, add_all) {
         //console.log("===== t_MSSSS_Fill_SelectTable_NEW ===== ", tblName);
-        //console.log("    data_dicts", data_dicts, typeof data_dicts);
-        //console.log("    tblName", tblName, typeof tblName);
-        // this function iterates over dicts dictionary instead of over a dictlist
-// set header text
-        const label_text = loc.Select + ((tblName === "cluster") ?  loc.a_cluster :
-                                    (tblName === "school") ?  loc.a_school :
-                                    (tblName === "student") ?  loc.a_candidate :
-                                    (tblName === "subject") ?  loc.a_subject :
-                                    (tblName === "envelopbundle") ?  loc.a_label_bundle : ""
-                                  );
+    //console.log("    data_dicts", data_dicts, typeof data_dicts);
+    //console.log("    tblName", tblName, typeof tblName);
 
-        const item = (tblName === "cluster") ?  loc.a_cluster :
+        const item_txt = (tblName === "cluster") ?  loc.a_cluster :
+                     (tblName === "subject") ? loc.a_subject :
                      (tblName === "school") ? loc.a_school :
                      (tblName === "student") ? loc.a_candidate :
-                     (tblName === "subject") ? loc.a_subject :
                      (tblName === "cluster") ?  loc.a_cluster :
                      (tblName === "envelopbundle") ? loc.a_label_bundle : "";
-        const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list;
 
-        document.getElementById("id_MSSSS_header").innerText = label_text;
-        document.getElementById("id_MSSSS_input_label").innerText = label_text;
+// set header text and placeholder
+        const header_txt = loc.Select + item_txt;
+        const placeholder = loc.Type_few_letters_and_select + item_txt + loc.in_the_list;
+        document.getElementById("id_MSSSS_header").innerText = header_txt;
+        document.getElementById("id_MSSSS_input_label").innerText = header_txt;
         document.getElementById("id_MSSSS_msg_input").innerText = placeholder;
 
         const tblBody_select = document.getElementById("id_MSSSS_tblBody_select");
@@ -544,7 +669,7 @@
 // ---  add All to list when multiple subject / students exist
         if(!isEmpty(data_dicts) && add_all){
             const add_all_dict = t_MSSSS_AddAll_dict(tblName);
-            t_MSSSS_Create_SelectRow_NEW(loc, tblName, tblBody_select, add_all_dict, selected_pk, el_input, MSSSS_Response)
+            t_MSSSS_Create_SelectRow_NEW(loc, modalName, tblName, tblBody_select, add_all_dict, MSSSS_Response)
         };
 
 // ---  loop through data_dicts
@@ -553,46 +678,57 @@
         for (const data_dict of Object.values(data_dicts)) {
             // when filling clusters and a subject is selected: only show clusters of this subject;: PR2023-03-30
             let add_to_list = true;
-            if (tblName === "cluster" && setting_dict.sel_subject_pk){
-                add_to_list = (data_dict.subject_id === setting_dict.sel_subject_pk);
+            // PR2024-03-30 was:
+            // if (tblName === "cluster" && setting_dict.sel_subject_pk){
+            //    add_to_list = (data_dict.subject_id === setting_dict.sel_subject_pk);
+            //};
+            if (tblName === "cluster" && setting_dict.sel_subjbase_pk){
+                add_to_list = (data_dict.subjbase_id === setting_dict.sel_subjbase_pk);
             };
             if (add_to_list){
-                t_MSSSS_Create_SelectRow_NEW(loc, tblName, tblBody_select, data_dict, selected_pk, el_input, MSSSS_Response);
+                t_MSSSS_Create_SelectRow_NEW(loc, modalName, tblName, tblBody_select, data_dict, MSSSS_Response);
             };
         };
-    } // t_MSSSS_Fill_SelectTable_NEW
+    }; // t_MSSSS_Fill_SelectTable_NEW
 
-//========= t_MSSSS_Create_SelectRow_NEW  ============= PR2020-12-18 PR2020-07-14 PR2023-01-04
-    function t_MSSSS_Create_SelectRow_NEW(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
+//========= t_MSSSS_Create_SelectRow_NEW  ============= PR2020-12-18 PR2020-07-14 PR2023-01-04 PR2024-03-28
+    function t_MSSSS_Create_SelectRow_NEW(loc, modalName, tblName, tblBody_select, data_dict, MSSSS_Response) {
          //console.log("===== t_MSSSS_Create_SelectRow_NEW ===== ");
-    //console.log("    ..........tblName", tblName);
-    //console.log("    map_dict", map_dict);
-    //console.log("    map_dict.name_nl", map_dict.name_nl);
+    //console.log("    modalName", modalName);
+    //console.log("    tblName", tblName);
+    //console.log("    data_dict", data_dict);
+    //console.log("    mod_MSSSS_dict", mod_MSSSS_dict);
 
-//--- get info from map_dict
+//--- get info from data_dict
         // when tblName = school: pk_int = schoolbase_pk
-        const pk_int = (tblName === "school") ? map_dict.base_id : map_dict.id;
+        // PR2024-03-28 added: subjbase:  pk_int = subjbase_pk
+        const subjbase_key = (["mex", "mdec"].includes(modalName)) ? "subjbase_id" : "base_id";
+        const pk_int = (tblName === "school") ? data_dict.base_id :
+                    (tblName === "subject") ? data_dict[subjbase_key] :
+                    (tblName === "cluster") ? data_dict.id :
+                    (tblName === "student") ? data_dict.id : null;
+    //console.log("    pk_int", pk_int);
 
-        const code = (tblName === "school") ? map_dict.sb_code :
-                    (tblName === "subject") ? map_dict.code :
-                    (tblName === "cluster") ? map_dict.subj_code :
-                    (tblName === "student") ? map_dict.name_first_init : "";
+        const code = (tblName === "school") ? data_dict.sb_code :
+                    (tblName === "subject") ? data_dict.code :
+                    (tblName === "cluster") ? data_dict.subj_code :
+                    (tblName === "student") ? data_dict.name_first_init : "";
 
-        const name =  (tblName === "school") ? map_dict.name : // map_dict.abbrev
-                    (tblName === "subject") ? map_dict.name_nl :
-                    (tblName === "cluster") ? map_dict.name :
-                    (tblName === "student") ? map_dict.fullname  :
-                    (tblName === "envelopbundle") ? map_dict.name : "";
+        const name =  (tblName === "school") ? data_dict.name : // data_dict.abbrev
+                    (tblName === "subject") ? data_dict.name_nl :
+                    (tblName === "cluster") ? data_dict.name :
+                    (tblName === "student") ? data_dict.fullname  :
+                    (tblName === "envelopbundle") ? data_dict.name : "";
 
-        const is_selected_row = (!!pk_int && pk_int === selected_pk);
+        const is_selected_row = (!!pk_int && pk_int === mod_MSSSS_dict.selected_pk);
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", row_index = -1;
         if (tblName === "student"){
-            if (map_dict.lastname) { ob1 = map_dict.lastname.toLowerCase()};
-            if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase()};
+            if (data_dict.lastname) { ob1 = data_dict.lastname.toLowerCase()};
+            if (data_dict.firstname) { ob2 = data_dict.firstname.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
-        } else if (tblName === "subject"){
+        } else if(tblName === "subject"){
             if (code) { ob1 = code.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
         } else if(tblName === "cluster"){
@@ -615,7 +751,6 @@
         tblRow.setAttribute("data-pk", pk_int);
         tblRow.setAttribute("data-code", code);
         tblRow.setAttribute("data-name", name);
-        tblRow.setAttribute("data-table", tblName);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
@@ -628,7 +763,7 @@
 //- add hover to select row
         add_hover(tblRow)
 
-// --- add td to tblRow.
+// --- add column with 'code'
         let td = null, el_div = null;
         if (["school", "subject", "cluster"].includes(tblName)) {
             td = tblRow.insertCell(-1);
@@ -640,7 +775,7 @@
             td.classList.add(cls_bc_transparent);
         };
 
-// --- add td to tblRow.
+// --- add column with 'name'
         td = tblRow.insertCell(-1);
         el_div = document.createElement("div");
             el_div.classList.add("pointer_show")
@@ -652,8 +787,8 @@
 
 // --- add second td to tblRow with icon locked, published or activated.
         if (tblName === "school") {
-            const locked = (map_dict.locked) ? map_dict.locked : false;
-            const activated = (map_dict.activated) ? map_dict.activated : false;
+            const locked = (data_dict.locked) ? data_dict.locked : false;
+            const activated = (data_dict.activated) ? data_dict.activated : false;
             td = tblRow.insertCell(-1);
             el_div = document.createElement("div");
                 const class_locked = (locked) ? "appr_2_6" : (activated) ? "appr_0_1" : "appr_0_0";
@@ -662,96 +797,174 @@
             td.appendChild(el_div);
         };
 //--------- add addEventListener
-        tblRow.addEventListener("click", function() {t_MSSSS_SelectItem_NEW(MSSSS_Response, tblRow, el_input)}, false);
+        tblRow.addEventListener("click", function() {t_MSSSS_SelectItem_NEW(tblRow, MSSSS_Response)}, false);
     }; // t_MSSSS_Create_SelectRow_NEW
 
-//=========  t_MSSSS_SelectItem_NEW  ================ PR2020-12-17 PR2023-01-05
-    function t_MSSSS_SelectItem_NEW(MSSSS_Response, tblRow, el_input) {
-        //console.log( "===== t_MSSSS_SelectItem ========= ");
-    //console.log( tblRow);
+//=========  t_MSSSS_SelectItem_NEW  ================ PR2020-12-17 PR2023-01-05 PR2024-03-30
+    function t_MSSSS_SelectItem_NEW(tblRow, MSSSS_Response) {
+        //console.log( "===== t_MSSSS_SelectItem_NEW ========= ");
+
         // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
-        // after selecting row, values are stored in input box
+        // after selecting row, values are stored in mod_MSSSS_dict
 
 // ---  get clicked tablerow
         if(tblRow) {
+
 // ---  deselect all highlighted rows
             DeselectHighlightedRows(tblRow, cls_selected)
 // ---  highlight clicked row
             tblRow.classList.add(cls_selected)
-// ---  get pk code and value from tblRow, put values in input box
-            const data_pk = get_attr_from_el_int(tblRow, "data-pk")
-            const data_code = get_attr_from_el(tblRow, "data-code")
-            const data_name = get_attr_from_el(tblRow, "data-name")
 
-            el_input.setAttribute("data-pk", data_pk);
-            el_input.setAttribute("data-code", data_code);
-            el_input.setAttribute("data-name", data_name);
+// ---  get pk code and value from tblRow, put values in mod_MSSSS_dict
+            // PR2024-03-30 don't use get_attr_from_el_int(tblRow, "data-pk"), it converts null to 0
+            mod_MSSSS_dict.selected_pk = (tblRow.dataset.pk) ? parseInt(tblRow.dataset.pk, 10) : null;
 
-// ---  save and close
-            t_MSSSS_Save_NEW(el_input, MSSSS_Response);
-        }
-    }  // t_MSSSS_SelectItem_NEW
+            mod_MSSSS_dict.data_code = get_attr_from_el(tblRow, "data-code")
+            mod_MSSSS_dict.data_name = get_attr_from_el(tblRow, "data-name")
+
+// enable and set focus to save button
+            t_MSSSS_Save_NEW(MSSSS_Response) ;
+            //const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
+            //el_MSSSS_btn_save.disabled = false;
+            //set_focus_on_el_with_timeout(el_MSSSS_btn_save, 150);
+        };
+    };  // t_MSSSS_SelectItem_NEW
+
+    //=========  t_MSSSS_InputKeyup_NEW  ================ PR2020-09-19  PR2021-07-14 PR2024-03-30
+    function t_MSSSS_InputKeyup_NEW(el_input) {
+        //console.log( "===== t_MSSSS_InputKeyup  ========= ");
+
+// ---  get value of new_filter
+        let new_filter = el_input.value
+
+        const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tblBody_select");
+        let tblBody = el_MSSSS_tblBody;
+        const len = tblBody.rows.length;
+    //console.log( "    len", len);
+        if (len){
+// ---  filter rows in table select_employee
+            const filter_dict = t_Filter_SelectRows(tblBody, new_filter);
+    //console.log( "    filter_dict", filter_dict);
+
+// ---  if filter results have only one item: put selected item in el_input
+            /*
+            filter_dict =
+                row_count: 1,
+                selected_code: "bi",
+                selected_innertext: ["Biologie"],
+                selected_name: "Biologie",
+                selected_pk: "123",
+                selected_rowid: "sel_subjbase_123"
+            */
+            const selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
+    //console.log( "    filter_dict.selected_pk", filter_dict.selected_pk);
+            if (filter_dict.selected_pk) {
+                mod_MSSSS_dict.selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
+// ---  get pk code and value from filter_dict, put values in input box
+                mod_MSSSS_dict.data_code = (filter_dict.selected_code) ? filter_dict.selected_code : null;
+                mod_MSSSS_dict.data_name = (filter_dict.selected_name) ? filter_dict.selected_name : null;
+
+    //console.log( "    mod_MSSSS_dict.selected_pk", mod_MSSSS_dict.selected_pk);
+    //console.log( "    mod_MSSSS_dict", mod_MSSSS_dict);
+                el_input.value = mod_MSSSS_dict.data_name;
+
+                const selected_row = document.getElementById(filter_dict.selected_rowid);
+// ---  deselect all highlighted rows
+                DeselectHighlightedRows(selected_row, cls_selected)
+// ---  highlight clicked row
+                selected_row.classList.add(cls_selected)
+
+// enable and set focus to save button
+                const el_btn_save = document.getElementById("id_MSSSS_btn_save");
+                el_btn_save.disabled = false;
+                set_focus_on_el_with_timeout(el_btn_save, 150);
+            };
+        };
+    }; // t_MSSSS_InputKeyup_NEW
 
 //========= t_MSSSS_display_in_sbr_NEW  ====================================
-    function t_MSSSS_display_in_sbr_NEW(tblName, selected_pk) {
+    function t_MSSSS_display_in_sbr_NEW(tblName) {
+        // PR2024-04-01
         //console.log( "===== t_MSSSS_display_in_sbr_NEW  ========= ");
-        //console.log( "    tblName", tblName);
-        //console.log( "    selected_pk", selected_pk);
+    //console.log( "    tblName", tblName);
 
-        if (tblName === "school") {
+        // Note: there is no select school element in sidebar
+        const el_SBR_select_id = (tblName === "student") ? "id_SBR_select_student" :
+                                 (tblName === "subject") ? "id_SBR_select_subject" :
+                                 (tblName === "cluster") ? "id_SBR_select_cluster" : "xxxxx";
+        const el_SBR_select = document.getElementById(el_SBR_select_id);
 
-        } else if (["subject", "student", "cluster"].includes(tblName)) {
-            // PR2022-01-11 debug: skip when el_SBR not defined
-            const el_SBR_select_id = (tblName === "student") ? "id_SBR_select_student" :
-                                     (tblName === "subject") ? "id_SBR_select_subject" :
-                                     (tblName === "cluster") ? "id_SBR_select_cluster" : "xxxxx";
-            const el_SBR_select = document.getElementById(el_SBR_select_id);
+        // PR2022-01-11 debug: skip when el_SBR not defined
+        if (el_SBR_select) {
 
-            if(el_SBR_select){
-                const data_dicts = //(tblName === "student") ? student_rows :
-                                  //(tblName === "subject") ? subject_rows :
-                                  (tblName === "cluster") ? cluster_dictsNEW : [];
-                let display_txt = null, data_dict = null;
-        //console.log( "    data_dicts", data_dicts);
+        // Note: there is no select school element in sidebar
+            const selected_pk_int = (tblName === "subject") ? setting_dict.sel_subjbase_pk :
+                                    (tblName === "cluster") ? setting_dict.sel_cluster_pk :
+                                    (tblName === "student") ? setting_dict.sel_student_pk : null;
 
-                // selected_pk = -1 when clicked on All
-                if(selected_pk > 0){
-                    const map_id = tblName + "_" + selected_pk;
-                    data_dict = (data_dicts[map_id]) ? data_dicts[map_id] : null;
-        //console.log( "    data_dict", data_dict);
-                    display_txt = t_MSSSS_get_display_text(tblName, data_dict);
+    //console.log( "    selected_pk_int", selected_pk_int);
+            const data_rows = (tblName === "subject") ? subject_rows :
+                              (tblName === "cluster") ? cluster_dictsNEW :
+                              (tblName === "student") ? student_rows :
+                              null;
+            // PR2024-0-01 Object.keys.length works with lists and dictionaries
+            const data_rows_length = (data_rows) ? Object.keys(data_rows).length : 0;
+    //console.log( "    data_rows", data_rows);
+    //console.log( "    data_rows_length", data_rows_length);
+            let display_txt = null;
+            const is_disabled = !data_rows_length;
+            if (is_disabled) {
+                display_txt = t_MSSSS_NoItems_txt(tblName);
+            } else {
+                // selected_pk_int = -1 when clicked on All
+                if(selected_pk_int > 0){
+                    // display selected item
+                    const lookup_key = (tblName === "subject") ? "base_id" : "id";
+                    let selected_dict = null;
+                    // ---  loop through data_rows
+                    for (const data_dict of Object.values(data_rows)) {
+                        if(data_dict[lookup_key] === selected_pk_int){
+                            selected_dict = data_dict;
+                            break;
+                        };
+                    };
+    //console.log( "    selected_dict", selected_dict);
+                    display_txt = t_MSSSS_get_display_text(tblName, selected_dict);
 
                 } else {
-                    if (data_dicts){
-                        // PR2022-12-23 debug: when table = cluster, 'all' must always be shown, even when there is only 1 cluster,
-                        // because there may be students without cluster
-
-                        if (Object.keys(data_dicts).length === 1 && tblName !== 'cluster'){
-                            //display_txt = t_MSSSS_get_display_text(tblName, data_rows[0]);
-                            for (const data_dict of Object.values(filter_dict)) {
-                                display_txt = t_MSSSS_get_display_text(tblName, data_dict);
-                                break;
-                            };
-
-                        } else {
-                            display_txt = t_MSSSS_AddAll_txt(tblName);
-                        }
-                    } else {
-                        display_txt = t_MSSSS_NoItems_txt(tblName);
-                    };
+                    // display 'All' when no item selected
+                    //PR20254-04-01 was: display item when there is only one. Don't, to show if any selected
+                    display_txt = t_MSSSS_AddAll_txt(tblName);
                 };
-        //console.log( "    display_txt", display_txt);
-                el_SBR_select.value = display_txt;
-                add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
             };
+
+    //console.log( "    display_txt", display_txt);
+    //console.log( " ?????????   is_disabled", is_disabled);
+            el_SBR_select.value = display_txt;
+            add_or_remove_class(el_SBR_select.parentNode, cls_hide, false);
+
+            el_SBR_select.disabled = is_disabled;
+
             const el_SBR_container_showall = document.getElementById("id_SBR_container_showall");
-            add_or_remove_class(el_SBR_container_showall, cls_hide, false)
+            add_or_remove_class(el_SBR_container_showall, cls_hide, false);
         };
     }; // t_MSSSS_display_in_sbr_NEW
 
+    function t_SBR_display_subject_cluster_student() {
+        //console.log("===== t_SBR_display_subject_cluster_student =====");
+        t_MSSSS_display_in_sbr_NEW("subject");
+        t_MSSSS_display_in_sbr_NEW("cluster");
+        t_MSSSS_display_in_sbr_NEW("student");
+
+        // hide itemcount, will be shwon after filling table
+        t_set_sbr_itemcount_txt(loc, 0)
+
+    };  // t_SBR_display_subject_cluster_student
+
+
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13
-    function t_MSSSS_Open (loc, tblName, data_rows, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
+    function t_MSSSS_OpenNIU(loc, tblName, data_rows, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
         //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
     //console.log( "    permit_dict", permit_dict);
     //console.log( "tblName", tblName );
@@ -768,7 +981,7 @@
             if (may_select){
                 const selected_pk = (tblName === "school") ? setting_dict.sel_school_pk :
                                    (tblName === "subject") ? setting_dict.sel_subject_pk :
-                                   (tblName === "student") ? setting_dict.sel_studbase_pk :
+                                   (tblName === "student") ? setting_dict.sel_student_pk :
                                    (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
     //console.log( "setting_dict", setting_dict );
     //console.log( "selected_pk", selected_pk, typeof selected_pk );
@@ -794,7 +1007,7 @@
                     const el_MSSSS_btn_delete = document.getElementById("id_MSSSS_btn_delete");
                     const caption = (tblName === "envelopbundle") ? loc.Remove_bundle : loc.Delete;
                     el_MSSSS_btn_delete.innerText = caption;
-                    add_or_remove_class(el_MSSSS_btn_delete, cls_hide, !show_btn )
+                    add_or_remove_class(el_MSSSS_btn_delete, cls_hide, !show_btn);
 
             // ---  show modal
                      $("#id_mod_select_school_subject_student").modal({backdrop: true});
@@ -804,18 +1017,22 @@
     }; // t_MSSSS_Open
 
 //=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26
-    function t_MSSSS_Save(el_input, MSSSS_Response) {
-        //console.log("=====  t_MSSSS_Save =========");
+    function t_MSSSS_SaveNIU(el_input, MSSSS_Response) {
+        console.log("=====  t_MSSSS_Save =========");
         //console.log("    el_input", el_input);
         //console.log("    MSSSS_Response", MSSSS_Response);
 
-        // PR2023-03-29 function is only called by t_MSSSS_SelectItem
         // argument MSSS_Response gets value in - for instance - addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, add_all, false, setting_dict, permit_dict, MSSSubjStud_Response)}, false);
+
+        // PR2024-04-01 TODO function to be deprecated
+
+        // function is only called by el_MSSSS_input.addEventListener in page correctros, mailbox , users
 
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
     // function
 
         const tblName = get_attr_from_el(el_input, "data-table");
+        console.log("    tblName", tblName);
 
         // Note: when tblName = school: pk_int = schoolbase_pk
         // Note: when tblName = subject: pk_int = subject_pk
@@ -823,9 +1040,10 @@
         const selected_code = get_attr_from_el(el_input, "data-code");
         const selected_name = get_attr_from_el(el_input, "data-name");
 
-    //console.log("    selected_pk_int", selected_pk_int);
-    //console.log("    selected_code", selected_code);
-    //console.log("    selected_name", selected_name);
+    console.log("    tblName", tblName);
+    console.log("    selected_pk_int", selected_pk_int);
+    console.log("    selected_code", selected_code);
+    console.log("    selected_name", selected_name);
 
 // +++ get existing map_dict from data_rows
         // when tblName = school: pk_int = base_pk, therefore can't use b_recursive_integer_lookup PR2022-10-26
@@ -854,27 +1072,44 @@
     //console.log( "    selected_dict", selected_dict);
     //console.log( "    tblName", tblName);
 
-        t_MSSSS_display_in_sbr(tblName, selected_pk_int);
+        t_MSSSS_display_in_sbr_NEW(tblName, selected_pk_int);
 
         // reset other select elements
         if (tblName === "subject") {
-            t_MSSSS_display_in_sbr_NEW("cluster", null);
-            t_MSSSS_display_in_sbr("student", null);
+            mod_MSSSS_dict.sel_cluster_pk = null;
+            setting_dict.sel_cluster_pk = null;
+            t_MSSSS_display_in_sbr_NEW("cluster");
+
+            mod_MSSSS_dict.sel_student_pk = null;
+            setting_dict.sel_student_pk = null;
+            t_MSSSS_display_in_sbr_NEW("student");
+
         } else if (tblName === "cluster") {
-            t_MSSSS_display_in_sbr("subject", null);
-            t_MSSSS_display_in_sbr("student", null);
+            mod_MSSSS_dict.sel_subjbase_pk = null;
+            setting_dict.sel_subjbase_pk = null;
+            t_MSSSS_display_in_sbr_NEW("subject");
+
+            mod_MSSSS_dict.sel_student_pk = null;
+            setting_dict.sel_student_pk = null;
+            t_MSSSS_display_in_sbr_NEW("student");
+
         } else if (tblName === "student") {
-            t_MSSSS_display_in_sbr("subject", null);
-            t_MSSSS_display_in_sbr_NEW("cluster", null);
+            mod_MSSSS_dict.sel_subjbase_pk = null;
+            setting_dict.sel_subjbase_pk = null;
+            t_MSSSS_display_in_sbr_NEW("subject");
+
+            mod_MSSSS_dict.sel_cluster_pk = null;
+            setting_dict.sel_cluster_pk = null;
+            t_MSSSS_display_in_sbr_NEW("cluster");
         };
 
-        MSSSS_Response(tblName, selected_dict, selected_pk_int);
+        MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int);
 // hide modal
         $("#id_mod_select_school_subject_student").modal("hide");
     }  // t_MSSSS_Save
 
 //========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23  PR2021-07-23 PR2022-08-12
-    function t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
+    function t_MSSSS_Fill_SelectTableNIU(loc, tblName, data_rows, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
         //console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
         //console.log("    data_rows", data_rows, typeof data_rows);
         //console.log("    tblName", tblName, typeof tblName);
@@ -919,11 +1154,13 @@
         //PR2022-06-27 Sentry debug: undefined is not an object (evaluating 'loc.Subjects.toLowerCase')
         // added : (loc.Subjects) ? ...  instead of: (tblName === "subject") ? loc.Subjects.toLowerCase() :
         const caption = (tblName === "student") ? (loc.Candidates) ? loc.Candidates.toLowerCase() : "" :
+                        // PR2024-03-28 subjbase added
                         (tblName === "subject") ? (loc.Subjects) ? loc.Subjects.toLowerCase() : "" :
                         (tblName === "cluster") ? (loc.Clusters) ? loc.Clusters.toLowerCase() : "" :
                         (tblName === "school") ? (loc.Schools) ? loc.Schools.toLowerCase() : "" : "";
         return "<" + loc.All_ + caption + ">";
     }
+
     function t_MSSSS_NoItems_txt(tblName){
         // PR2022-05-01
         const caption = (tblName === "student") ? (loc.Candidates) ? loc.Candidates.toLowerCase() : "" :
@@ -937,17 +1174,17 @@
     function t_MSSSS_AddAll_dict(tblName){
         const add_all_text = t_MSSSS_AddAll_txt(tblName);
         return (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :
-               (tblName === "subject") ? {id: -1,  code: "", name_nl: add_all_text} :
+                (tblName === "subject") ? {base_id: -1, code: "", name_nl: add_all_text} :
                (tblName === "cluster") ? {id: -1,  subj_code: "", name: add_all_text} :
-               (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
+               (tblName === "school") ? {base_id: -1,  code: "", name: add_all_text} : {};
     };
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
-    function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
+    function t_MSSSS_Create_SelectRowNIU(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
         //console.log("===== t_MSSSS_Create_SelectRow ===== ");
-        //console.log("    ..........tblName", tblName);
-        //console.log("    map_dict", map_dict);
-        //console.log("    map_dict.name_nl", map_dict.name_nl);
+    //console.log("    tblName", tblName);
+    //console.log("    map_dict", map_dict);
+    //console.log("    map_dict.name_nl", map_dict.name_nl);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
@@ -1072,9 +1309,9 @@
         }
     }  // t_MSSSS_SelectItem
 
-//=========  t_MSSSS_InputKeyup  ================ PR2020-09-19  PR2021-07-14
-    function t_MSSSS_InputKeyup(el_input) {
-        //console.log( "===== t_MSSSS_InputKeyup  ========= ");
+//=========  t_MSSSS_InputKeyupNIU  ================ PR2020-09-19  PR2021-07-14
+    function t_MSSSS_InputKeyupNIU(el_input) {
+        //console.log( "===== t_MSSSS_InputKeyupNIU  ========= ");
 
 // ---  get value of new_filter
         let new_filter = el_input.value
@@ -1088,6 +1325,15 @@
     //console.log( "filter_dict", filter_dict);
 
 // ---  if filter results have only one item: put selected item in el_input
+            /*
+            filter_dict =
+                row_count: 1,
+                selected_code: "bi",
+                selected_innertext: ["Biologie"],
+                selected_name: "Biologie",
+                selected_pk: "123",
+                selected_rowid: "sel_subjbase_123"
+            */
             const selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
             if (selected_pk) {
 // ---  get pk code and value from filter_dict, put values in input box
@@ -1100,71 +1346,22 @@
                 el_input.setAttribute("data-name", data_name);
             };  //  if (!!selected_pk) {
         };
-    }; // t_MSSSS_InputKeyup
+    }; // t_MSSSS_InputKeyupNIU
 
-//========= t_MSSSS_display_in_sbr  ====================================
-    function t_MSSSS_display_in_sbr(tblName, selected_pk) {  // PR2-23-04-30
-        //console.log( "===== t_MSSSS_display_in_sbr  ========= ");
-        //console.log( "tblName", tblName);
-        //console.log( "selected_pk", selected_pk);
-
-        // Cluster uses t_MSSSS_display_in_sbr_NEW PR2023-01-25
-
-        if (tblName === "school") {
-
-        } else if (["subject", "student", "cluster"].includes(tblName)) {
-            // PR2022-01-11 debug: skip when el_SBR not defined
-            const el_SBR_select_id = (tblName === "student") ? "id_SBR_select_student" :
-                                     (tblName === "subject") ? "id_SBR_select_subject" :
-                                     //(tblName === "cluster") ? "id_SBR_select_cluster" :
-                                     "xxxxx";
-            const el_SBR_select = document.getElementById(el_SBR_select_id);
-
-            if(el_SBR_select){
-                const data_rows = (tblName === "student") ? student_rows :
-                                  (tblName === "subject") ? subject_rows :
-                                  //(tblName === "cluster") ? cluster_rows :
-                                  [];
-    // console.log( "data_rows", data_rows);
-                let display_txt = null, data_dict = null;
-
-                const enabled = (data_rows && data_rows.length > 1);
-    //console.log( "enabled", enabled);
-                if (!data_rows){
-                    display_txt = t_MSSSS_NoItems_txt(tblName);
-                } else {
-                    // selected_pk = -1 when clicked on All
-                    if(selected_pk > 0){
-                        data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
-                        display_txt = t_MSSSS_get_display_text(tblName, data_dict);
-
-                    } else {
-                        // PR2022-12-23 debug: when table = cluster, 'all' must always be shown, even when there is only 1 cluster, beacuse there may be students without cluster
-                        if (data_rows.length === 1 && tblName !== 'cluster'){
-                            display_txt = t_MSSSS_get_display_text(tblName, data_rows[0]);
-                        } else {
-                            display_txt = t_MSSSS_AddAll_txt(tblName);
-                        };
-                    };
-                };
-                el_SBR_select.value = display_txt;
-                add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
-                el_SBR_select.disabled = !enabled;
-            }
-            const el_SBR_container_showall = document.getElementById("id_SBR_container_showall");
-            add_or_remove_class(el_SBR_container_showall, cls_hide, false)
-        };
-    }; // t_MSSSS_display_in_sbr
 
     function t_MSSSS_get_display_text(tblName, data_dict) {
         // PR2022-05-01 PR2022-08-29
-        const name_field = (tblName === "student") ? "name_first_init" : (tblName === "subject") ? "name_nl" : "name";
-        const code_field = (tblName === "student") ? "name_first_init" : "code";
+        const name_field = (tblName === "student") ? "name_first_init" :
+                            (tblName === "subject") ? "name_nl" :
+                            "name";
+        const code_field = (tblName === "student") ? "name_first_init" :
+                            "code";
         const display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 30) ? data_dict[name_field] :
                             (data_dict && code_field in data_dict) ? data_dict[code_field] : "---";
         return display_txt;
     };
 // +++++++++++++++++ END OF MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
+
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1384,6 +1581,20 @@
     };
 
     //////////////////////////////////
+
+    function t_lookup_row_in_array(data_rows, lookup_field, lookup_value){
+        // PR2022-03-29  lookup datarow the oldfashioned way
+        // PR2024-05-02 from tsa
+        if(lookup_value && data_rows && data_rows.length){
+            for (let i = 0, row; row = data_rows[i]; i++) {
+                if (row[lookup_field] === lookup_value){
+                    return row;
+                    break;
+                };
+            };
+        };
+        return null;
+    };  // t_lookup_row_in_array
 
 //========= t_get_rowindex_by_sortby  ================= PR2020-06-30
     function t_get_rowindex_by_sortby(tblBody, search_sortby) {
@@ -2179,10 +2390,10 @@
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
 //========= t_Filter_SelectRows  ==================================== PR2020-01-17 PR2021-01-23
     function t_Filter_SelectRows(tblBody_select, filter_text, filter_show_inactive, has_ppk_filter, selected_ppk, col_index_list) {
-        console.log( "===== t_Filter_SelectRows  ========= ");
-        console.log( "filter_text: <" + filter_text + ">");
-        console.log( "has_ppk_filter: " + has_ppk_filter);
-        console.log( "selected_ppk: " + selected_ppk, typeof selected_ppk);
+        //console.log( "===== t_Filter_SelectRows  ========= ");
+    //console.log( "filter_text: <" + filter_text + ">");
+    //console.log( "has_ppk_filter: " + has_ppk_filter);
+    //console.log( "selected_ppk: " + selected_ppk, typeof selected_ppk);
 
         const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
         if(!col_index_list){col_index_list = []};
@@ -2233,8 +2444,13 @@
                     row_count += 1;
 // ---  put values from first row that is shown in select_value etc
                     if(!has_selection ) {
-                        sel_pk = tblRow.dataset.pk;
-                        sel_ppk = tblRow.dataset.ppk;
+                        sel_pk = get_attr_from_el_int(tblRow, "data-pk")
+                        sel_ppk = get_attr_from_el_int(tblRow, "data-ppk")
+
+                        // PR2024-03-30 don't use get_attr_from_el_int(tblRow, "data-pk"), it converts null to 0
+                        sel_pk = (tblRow.dataset.pk) ? parseInt(tblRow.dataset.pk, 10) : null;
+                        sel_ppk = (tblRow.dataset.ppk) ? parseInt(tblRow.dataset.ppk, 10) : null;
+
                         sel_code = tblRow.dataset.code;
                         sel_name = tblRow.dataset.name;
                         sel_value = tblRow.dataset.value;
@@ -2270,7 +2486,7 @@
         if(sel_display != null) {filter_dict.selected_display = sel_display};
         if(sel_pk != null) {filter_dict.selected_rowid = sel_rowid};
         if(sel_innertext != null) {filter_dict.selected_innertext = sel_innertext};
-      console.log(">>> filter_dict", filter_dict);
+    //console.log(">>> filter_dict", filter_dict);
         return filter_dict
     }; // t_Filter_SelectRows
 
@@ -2512,7 +2728,7 @@
 //========= t_Filter_TableRows  ==================================== PR2020-08-17  PR2021-08-10
     function t_Filter_TableRows(tblBody_datatable, filter_dict, selected, count_unit_sing, count_unit_plur ) {
         //console.log( "===== t_Filter_TableRows  ========= ");
-        //console.log( "filter_dict", filter_dict);
+        //console.log( "    filter_dict", filter_dict);
 
         selected.item_count = 0
 // ---  loop through tblBody.rows
@@ -2522,6 +2738,7 @@
             add_or_remove_class(tblRow, cls_hide, !show_row);
             if (show_row) {selected.item_count += 1};
         }
+
 // ---  show total in sidebar
         t_set_sbr_itemcount_txt(loc, selected.item_count, count_unit_sing, count_unit_plur, setting_dict.user_lang);
     }; // t_Filter_TableRows
@@ -2602,7 +2819,6 @@
         // PR223-04-22 --- in userpage: put filter of column 1 (username in filterrow, because filter stays when tab btn changes PR223-04-22
         // doesnt work because index refers to diferent columns in different tabs. filter_dict must use fieldname instead of index
        // TODO use fieldnames in filterdict instead of index. Check if that is much slower, because you must get fieldname from attribute data-field
-
 
         let hide_row = false;
 
@@ -3182,12 +3398,13 @@ const mod_MCOL_dict = {
         setting_dict.sel_sctbase_pk = null;
         setting_dict.sel_sctbase_code = null;
 
-        setting_dict.sel_subject_pk = null;
+        // PR22024-03-29 added:
+        setting_dict.sel_subjbase_pk = null;
+        setting_dict.sel_subject_pk = null;  // to be deprecated
         setting_dict.sel_subjbase_code = null;
         setting_dict.sel_subject_name = null;
 
         setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_name = null;
 
         setting_dict.sel_classname = null;
 
@@ -3208,12 +3425,10 @@ const mod_MCOL_dict = {
         //if (el_SBR_select_department){ el_SBR_select_department.value = null};
         if (el_SBR_select_level){ el_SBR_select_level.value = -9}; // -9 is value of 'all levels'
         if (el_SBR_select_sector){ el_SBR_select_sector.value = -9}; // -9 is value of 'all levels'
-        if (el_SBR_select_subject){ t_MSSSS_display_in_sbr("subject", null)};
-        if (el_SBR_select_cluster){ t_MSSSS_display_in_sbr_NEW("cluster", null) };
-        if (el_SBR_select_class){ el_SBR_select_class.value = "0"};
-        if (el_SBR_select_student){t_MSSSS_display_in_sbr("student", null)};
 
-        t_set_sbr_itemcount_txt();
+        if (el_SBR_select_class){ el_SBR_select_class.value = "0"};
+
+        t_SBR_display_subject_cluster_student();
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {
@@ -3221,7 +3436,9 @@ const mod_MCOL_dict = {
             sel_lvlbase_pk: null,
             sel_sctbase_pk: null,
             sel_classname: null,
-            sel_subject_pk: null,
+
+            sel_subjbase_pk: null, // PR2024-03-29 added
+            sel_subject_pk: null, //  PR2024-03-29to be deprecated
             sel_cluster_pk: null,
             sel_student_pk: null
             }};

@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
-                setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
+                setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
         };
         const el_MSSSS_btn_delete = document.getElementById("id_MSSSS_btn_delete");
         if (el_MSSSS_btn_delete){
@@ -713,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_SBR_select_department.value = -1;
                 el_SBR_select_level.value = -1;
 
-                t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
+                t_MSSSS_display_in_sbr_NEW("subject");
             };
     // ---  upload new setting
             if (!isEmpty(upload_selected_dict)){
@@ -1370,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  SBR_display_subject  ================ PR2022-10-20
     function SBR_display_subject() {
         console.log("===== SBR_display_subject =====");
-        t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
+        t_MSSSS_display_in_sbr_NEW("subject");
     };  // SBR_display_subject
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++

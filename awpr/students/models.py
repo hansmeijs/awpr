@@ -460,10 +460,6 @@ class Studentsubjectlog(sch_mod.AwpBaseModel):
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     subj_published = ForeignKey(sch_mod.Published, null=True, related_name='+', on_delete=SET_NULL)
 
-    #PR2024-02-27 TODO add fields:
-    # sr_published reex_published reex3_published pok_published
-    # gradelist_sesrgrade gradelist_pecegrade gradelist_finalgrade gradelist_use_exem  gl_examperiod
-
     # 'tobechanged' is set True when schemeitem (=subjecttype) changes, it must be submitted again
     tobechanged = BooleanField(null=True)
     tobedeleted = BooleanField(null=True)

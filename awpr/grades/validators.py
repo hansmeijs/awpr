@@ -138,12 +138,14 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, a
 def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of_sel_school, sel_examyear, schoolbase_pk, depbase_pk, lvlbase_pk,
                                        subjbase_pk, cluster_pk):
     # PR2022-04-07 PR2023-12-12
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_multiple_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
                                'lvlbase_pk:', str(lvlbase_pk), 'subjbase_pk:', str(subjbase_pk),
                                'cluster_pk:', str(cluster_pk))))
+        logger.debug('    allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
+
     is_allowed = True
     # PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
     # must be able to approve all subjects as chairperson.
@@ -180,13 +182,23 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of
 
 # - check if lvlbase_is_allowed
         if is_allowed:
-            if not lvlbase_pk:
+            # PR2024-045-02 debug: Jacqueline Duggins-Horsford MPC / Sundial
+            # cannot approve Havo / Vwo SE grades, it says: no records
+            # cause:  if not lvlbase_pk :
+            #                 is_allowed = False
+            # removed, null check is done in validate_userallowed_lvlbase
+
+            # was:  if not lvlbase_pk :
+            #           is_allowed = False
+            #       else:
+
+            lvlbase_is_allowed = acc_prm.validate_userallowed_lvlbase(userallowed_sections_dict, schoolbase_pk,
+                                                                      depbase_pk, lvlbase_pk)
+            if not lvlbase_is_allowed:
                 is_allowed = False
-            else:
-                lvlbase_is_allowed = acc_prm.validate_userallowed_lvlbase(userallowed_sections_dict, schoolbase_pk,
-                                                                          depbase_pk, lvlbase_pk)
-                if not lvlbase_is_allowed:
-                    is_allowed = False
+
+            if logging_on:
+                logger.debug('     lvlbase_is_allowed:     ' + str(lvlbase_is_allowed))
 
 # - check if subjectbase_is_allowed
         if is_allowed:

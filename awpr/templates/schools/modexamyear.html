@@ -3,7 +3,7 @@
 
  <!-- =================== MODAL EDIT EXAMYEAR  =================== -->
     <div class="modal" id="id_mod_edit_examyear" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
+        <div class="modal-dialog modal-dialog-centered modal-xl " role="document">
             <div class="modal-content">
                 <div class="modal-header tsa_bc_lightlightgrey">
                     <div class="flex_container">
@@ -18,39 +18,18 @@
                 <div id="id_MODEY_form_controls" class="modal-body py-2">
                     <div class="m-2 p-2 border_bg_transparent">
                         <div class="flex_container">
-                            <div class="flex_1 mx-1">
-                                <label class="label_margin_top_m2">{% trans 'Practical exams' %}:</label>
-                                <select data-field="no_practexam" class="form-control awp_input_select">
-                                    <option value="0">{% trans 'This exam year has practical exams' %}</option>
-                                    <option value="1">{% trans 'This exam year has no practical exams' %}</option>
-                                </select>
-                                <div id="id_MODEY_msg_no_practexam" class="mx-2">
-                                    <small class="text-muted">
-                                        {% trans "Go to page 'Subjects' to set the subjects that have a practical exams." %}
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="flex_1 mx-1">
-                                <label class="label_margin_top_m2">{% trans 'Herkansing school exam' %}:</label>
-                                <select data-field="sr_allowed" class="form-control awp_input_select">
-                                    <option value="0">{% trans 'This exam year has no herkansing SE' %}</option>
-                                    <option value="1">{% trans 'This exam year has herkansing SE' %}</option>
-                                </select>
-                                <div id="id_MODEY_msg_sr_allowed" class="mx-2">
-                                    <small class="text-muted">
-                                        {% trans "Go to page 'Subjects' to set the subjects that can have a herkansing." %}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="flex_container">
                             <div class="flex_1 mx-1">
-                                <label class="label_margin_top_m3">{% trans 'Thumb rule' %}:</label>
-                                <select data-field="thumbrule_allowed" class="form-control awp_input_select">
-                                    <option value="0">{% trans 'Thumb rule is not allowed' %}</option>
-                                    <option value="1">{% trans 'Thumb rule is allowed' %}</option>
+                                <label class="label_margin_top_m3">{% trans 'Central exam' %}:</label>
+                                <select data-field="no_centralexam" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has central exams' %}</option>
+                                    <option value="1">{% trans 'This exam year has no central exams' %}</option>
                                 </select>
+                                <div id="id_MODEY_msg_no_centralexam" class="mx-2">
+                                    <small class="text-muted">
+                                        {% trans "Go to page 'Subjects schemes', tab 'Subjects of subject scheme',"%}<br>{% trans "to set the CE weighing." %}
+                                    </small>
+                                </div>
                             </div>
                             <div class="flex_1 mx-1">
                                 <label class="label_margin_top_m3">{% trans 'Third exam period' %}:</label>
@@ -61,19 +40,48 @@
                             </div>
 
                         </div>
+
                         <div class="flex_container">
                             <div class="flex_1 mx-1">
-                                <label class="label_margin_top_m3">{% trans 'Central exam' %}:</label>
-                                <select data-field="no_centralexam" class="form-control awp_input_select">
-                                    <option value="0">{% trans 'This exam year has central exams' %}</option>
-                                    <option value="1">{% trans 'This exam year has no central exams' %}</option>
+                                <label class="label_margin_top_m3">{% trans 'Practical exams old style' %}:</label>
+                                <select data-field="no_practexam" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has practical exams old style' %}</option>
+                                    <option value="1">{% trans 'This exam year has no practical exams old style' %}</option>
                                 </select>
-                                <div id="id_MODEY_msg_no_centralexam" class="mx-2">
+                                <div class="mx-2">
                                     <small class="text-muted">
-                                        {% trans "Go to page 'Subjects' to set the CE weighing." %}
+                                        {% trans "Go to page 'Subjects schemes', tab 'Subjects of subject scheme',"%}<br>{% trans "to set the subjects that can have a practical exam." %}
                                     </small>
                                 </div>
                             </div>
+
+                            <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m3">{% trans 'Thumb rule' %}:</label>
+                                <select data-field="thumbrule_allowed" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'Thumb rule is not allowed' %}</option>
+                                    <option value="1">{% trans 'Thumb rule is allowed' %}</option>
+                                </select>
+                                <div id="id_MODEY_msg_thumbrule_allowed" class="mx-2">
+                                    <small class="text-muted">
+                                        {% trans "Go to page 'Subjects schemes', tab 'Subjects of subject scheme',"%}<br>{% trans "to set 'thumbrule allowed' for each subject." %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex_container">
+                                                        <div class="flex_1 mx-1">
+                                <label class="label_margin_top_m2">{% trans 'Herkansing school exam' %}:</label>
+                                <select data-field="sr_allowed" class="form-control awp_input_select">
+                                    <option value="0">{% trans 'This exam year has no herkansing SE' %}</option>
+                                    <option value="1">{% trans 'This exam year has herkansing SE' %}</option>
+                                </select>
+                                <div id="id_MODEY_msg_sr_allowed" class="mx-2">
+                                    <small class="text-muted">
+                                        {% trans "Go to page 'Subjects schemes', tab 'Subjects of subject scheme',"%}<br>{% trans "to set the subjects that can have a herkansing." %}
+                                    </small>
+                                </div>
+                            </div>
+
                             <div class="flex_1 mx-1">
 
                             </div>

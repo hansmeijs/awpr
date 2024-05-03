@@ -1224,16 +1224,16 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
     function b_get_datadict_by_integer_from_datarows(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
         // studsubj order by: 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int);
-        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
-        return selected_dict;
+        const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        return data_dict;
     };
 
 //========= b_get_mapdict_from_datarows  ================== PR2021-06-21
     // NOT IN USE PR2021-09-18
     function b_get_mapdict_from_datarows(data_rows, map_id, user_lang){
         const [middle_index, found_dict, compare] = b_recursive_lookup(data_rows, map_id, user_lang);
-        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
-        return selected_dict;
+        const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        return data_dict;
     };
 
 //========= b_recursive_integer_lookup  ========== PR2020-07-14 PR2020-07-25

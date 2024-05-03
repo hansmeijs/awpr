@@ -2717,12 +2717,13 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                             update_wrap['verification_is_ok'] = True
 
                     if verification_is_ok:
-                        # also filter on sel_lvlbase_pk, sel_subject_pk when is_submit
-                        sel_lvlbase_pk, sel_subject_pk = None, None
+                        # also filter on sel_lvlbase_pk, sel_subjbase_pk when is_submit
+                        sel_lvlbase_pk, sel_subjbase_pk = None, None
                         selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                         if selected_dict:
                             sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
-                            sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
+                            # PR2024-03-31 deprecated: sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
+                            sel_subjbase_pk = selected_dict.get(c.KEY_SEL_SUBJBASE_PK)
                         if logging_on:
                             logger.debug('selected_dict: ' + str(selected_dict))
 
@@ -2746,8 +2747,8 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                         # was: if sel_lvlbase_pk:
                         if requsr_department.level_req and sel_lvlbase_pk:
                             crit.add(Q(level__base_id=sel_lvlbase_pk), crit.connector)
-                        if sel_subject_pk:
-                            crit.add(Q(subject_id=sel_subject_pk), crit.connector)
+                        if sel_subjbase_pk:
+                            crit.add(Q(subject__base_id=sel_subjbase_pk), crit.connector)
 
                         exams = subj_mod.Exam.objects.filter(crit).order_by('subject__base__code')
 
@@ -2755,7 +2756,7 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                             logger.debug('sel_examperiod:  ' + str(sel_examperiod))
                             logger.debug('requsr_department:  ' + str(requsr_department))
                             logger.debug('sel_lvlbase_pk:   ' + str(sel_lvlbase_pk))
-                            logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
+                            logger.debug('sel_subjbase_pk: ' + str(sel_subjbase_pk))
 
                             row_count = subj_mod.Exam.objects.filter(crit).count()
                             logger.debug('row_count:      ' + str(row_count))
@@ -4744,7 +4745,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
 # override linked exams allowed
                     # "AND grd.ce_exam_id IS NULL",
 
-# PR2023-05-26 debug: must filter on weight_ce>0 becasue of sptl without CE
+# PR2023-05-26 debug: must filter on weight_ce>0 because of sptl without CE
                     #TODO test
                     # "AND si.weight_ce > 0",
 

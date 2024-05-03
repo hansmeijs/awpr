@@ -27,7 +27,7 @@ from accounts import views as acc_view
 from  accounts import  permits as acc_prm
 
 from grades import views as grade_view
-from grades import calc_results as grade_calc
+from grades import calc_results as calc_res
 
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -1715,8 +1715,9 @@ def calcPok2022AndSaveInStudsubjONCEONLY(request):
                         logger.debug('student: ' + str(student))
 
                     is_evelex = student.iseveningstudent or student.islexstudent
+
                     valid_years = 10 if is_evelex else 1
-                    pok_validthru = exam_year.code + valid_years
+                    pok_validthru = exam_year.code + valid_years  # ONCEONLY
 
                     studsubjects = stud_mod.Studentsubject.objects.filter(
                         student=student,
@@ -1739,7 +1740,7 @@ def calcPok2022AndSaveInStudsubjONCEONLY(request):
                             logger.debug('   final_grade : ' + str(final_grade))
 
             # calc if this subject has pok
-                        has_pok = grade_calc.calc_pok(
+                        has_pok = calc_res.calc_pok(
                             no_centralexam=no_centralexam,
                             gradetype=si.gradetype,
                             is_combi=si.is_combi,
@@ -1757,12 +1758,12 @@ def calcPok2022AndSaveInStudsubjONCEONLY(request):
 
                         if has_pok:
                             # has proof of knowledge = True when pok_validthru has value PR2021-09-07
-                            studsubj.pok_validthru = pok_validthru
+                            studsubj.pok_validthru = pok_validthru # ONCEONLY
 
                             # PR2022-07-30 pok_sesr etc added, to store proof of knowledge / proof of exemption
                             studsubj.pok_sesr = sesr_grade
                             studsubj.pok_pece = pece_grade
-                            studsubj.pok_final = final_grade
+                            studsubj.pok_final = final_grade # ONCEONLY
                             studsubj.save()
                             if logging_on:
                                 logger.debug('   >> studsubj.pok_final : ' + str(studsubj.pok_final))

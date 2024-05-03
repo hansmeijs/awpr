@@ -3789,12 +3789,13 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
                 saved_value_nz = (saved_value.replace('.', ',') if saved_value else blank_str) + c.STRING_SPACE_10
 
                 has_changed_txt = gettext('has changed') if value_has_changed else gettext('unchanged')
-                log_list.append(''.join((caption_txt, output_spaces, str(_('was')), ': ', saved_value_nz[:8], has_changed_txt)))
+                log_list.append(''.join((caption_txt, output_spaces, str(_('was')), ': ', saved_value_nz[:10], has_changed_txt)))
 
     if logging_on:
         logger.debug(' ----- end ----- ')
     return subject_not_found, subject_has_error, grade_has_error, value_has_changed
 # --- end of import_studsubj_grade_from_datalist
+
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
