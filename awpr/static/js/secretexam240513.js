@@ -197,7 +197,10 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
-            el_hdrbar_school.addEventListener("click", function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_school_response)}, false );
+            el_hdrbar_school.addEventListener("click", function() {
+                // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_school_response);
+                t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_school_response);
+            }, false );
         };
 
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
@@ -5878,13 +5881,14 @@ console.log( "......filter_value", filter_value);
         DatalistDownload(new_setting);
     }  // MSED_Response
 
-//=========  MSSSS_school_response  ================ PR2023-03-29
-    function MSSSS_school_response(tblName, selected_dict, sel_schoolbase_pk) {
+//=========  MSSSS_school_response  ================ PR2023-03-29 PR2024-05-13
+    function MSSSS_school_response(modalName, tblName, selected_dict, sel_schoolbase_pk) {
         console.log( "===== MSSSS_school_response ========= ");
+        console.log( "modalName", modalName);
         console.log( "tblName", tblName);
         console.log( "sel_schoolbase_pk", sel_schoolbase_pk, typeof sel_schoolbase_pk);
         console.log( "selected_dict", selected_dict);
-        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
 // reset text dep and school in headerbar
         el_hdrbar_department.innerText = null;

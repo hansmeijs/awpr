@@ -12,9 +12,9 @@
 
 //=========  t_MSED_OpenDepLvlFromDicts  ================ PR2023-06-27
     function t_MSED_OpenDepLvlFromDicts(tblName, data_dicts, schoolbase_pk, depbase_pk, MSED_Response) {
-        console.log( "===== t_MSED_OpenDepLvlFromDicts ========= ");
-        console.log( "tblName", tblName);
-        console.log( "data_dicts", data_dicts);
+        //console.log( "===== t_MSED_OpenDepLvlFromDicts ========= ");
+        //console.log( "tblName", tblName);
+        //console.log( "data_dicts", data_dicts);
         // only called by  page Home - for now
 
 // set header text
@@ -47,9 +47,9 @@
 
 //=========  t_MSED_OpenDepLvlFromRows  ================ PR2022-11-05
     function t_MSED_OpenDepLvlFromRows(tblName, data_rows, schoolbase_pk, depbase_pk, MSED_DepFromRows_Response) {
-        console.log( "===== t_MSED_OpenDepLvlFromRows ========= ");
-        console.log( "tblName", tblName);
-        console.log( "data_rows", data_rows);
+        //console.log( "===== t_MSED_OpenDepLvlFromRows ========= ");
+        //console.log( "tblName", tblName);
+        //console.log( "data_rows", data_rows);
         // only called by user page MOD USER PERMIT SUBJECTS - t_MUPS_SelectDepartment and t_MUPS_SelectLevel - for now
 
 // set header text
@@ -120,11 +120,11 @@
 //=========  t_MSED_Open  ================
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_departments) {
         //PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08 PR2023-01-08 PR2023-07-03
-        console.log( "===== t_MSED_Open ========= ", tblName);
-        console.log( "    setting_dict", setting_dict);
-        console.log( "    permit_dict", permit_dict);
-        console.log( "data_map", data_map);
-        console.log( "all_departments", all_departments);
+        //console.log( "===== t_MSED_Open ========= ", tblName);
+        //console.log( "    setting_dict", setting_dict);
+        //console.log( "    permit_dict", permit_dict);
+        //console.log( "data_map", data_map);
+        //console.log( "all_departments", all_departments);
         //console.log( "    tblName", tblName);
 
         const skip_allowed_filter = (setting_dict && ["page_subject", "page_orderlist", "page_exams", "page_secretexam"].includes(setting_dict.sel_page));
@@ -139,13 +139,13 @@
             // argument 'all_departments' is used to show all deps in page exam and secret_exam only when used by ETE (requsr_role_admin)
             const allowed_depbases_count = (all_departments && permit_dict.requsr_role_admin) ? data_map.size : (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
 
-    console.log( "allowed_depbases_count", allowed_depbases_count);
+    //console.log( "allowed_depbases_count", allowed_depbases_count);
             //PR2023-07-03 may_select_department gets value in get_settings_departmentbase, (allowed_depbases_count > 1) is part of that function
             // was: may_open_modal = (allowed_depbases_count > 1);
             may_open_modal = permit_dict.may_select_department;
             selected_pk = setting_dict.sel_depbase_pk;
          };
-    console.log( "    may_open_modal", may_open_modal);
+    //console.log( "    may_open_modal", may_open_modal);
 
         //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
         if (may_open_modal) {
@@ -168,7 +168,7 @@
 
 //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
-        console.log("===  t_MSED_Save =========");
+        //console.log("===  t_MSED_Save =========");
 
         // PR2024-03-31 only called by t_MSED_CreateSelectRowNew and t_MSED_CreateSelectRow_NIU
 
@@ -233,7 +233,7 @@
         setting_dict.sel_subjbase_code = null;
         setting_dict.sel_subject_name = null;
 
-        console.log("new_setting", new_setting);
+        //console.log("new_setting", new_setting);
         MSED_Response(new_setting)
 
 // hide modal
@@ -244,9 +244,9 @@
 //=========  t_MSED_FillSelectRows  ================
 //  PR2022-08-02 PR2023-01-08 PR2023-06-14
     function t_MSED_FillSelectRows(skip_allowed_filter, tblName, MSED_Response, selected_pk) {
-        console.log( "===== t_MSED_FillSelectRows ========= ");
-        console.log( "tblName", tblName);
-        console.log( "skip_allowed_filter", skip_allowed_filter);
+        //console.log( "===== t_MSED_FillSelectRows ========= ");
+        //console.log( "tblName", tblName);
+        //console.log( "skip_allowed_filter", skip_allowed_filter);
         //console.log( "permit_dict", permit_dict);
 
         const tblBody_select = document.getElementById("id_MSED_tblBody_select");
@@ -255,7 +255,7 @@
             tblBody_select.innerText = null;
             const data_rows = (tblName === "examyear") ? examyear_rows :
                               (tblName === "department") ? department_rows : null;
-    console.log( "    data_rows", data_rows);
+    //console.log( "    data_rows", data_rows);
 
     // --- loop through data_rows
             if(data_rows && data_rows.length){
@@ -512,12 +512,12 @@
         const selected_code = mod_MSSSS_dict.data_code;
         const selected_name = mod_MSSSS_dict.data_name;
 /*
-    console.log( "   modalName", modalName );
-    console.log("    tblName", tblName)
-    console.log("    mod_MSSSS_dict", mod_MSSSS_dict)
-    console.log("    selected_pk_int", selected_pk_int, typeof selected_pk_int);
-    console.log("    selected_code", selected_code);
-    console.log("    selected_name", selected_name);
+    //console.log( "   modalName", modalName );
+    //console.log("    tblName", tblName)
+    //console.log("    mod_MSSSS_dict", mod_MSSSS_dict)
+    //console.log("    selected_pk_int", selected_pk_int, typeof selected_pk_int);
+    //console.log("    selected_code", selected_code);
+    //console.log("    selected_name", selected_name);
 */
 // +++ get existing map_dict from data_rows
         // when tblName = school: pk_int = base_pk, therefore can't use b_recursive_integer_lookup PR2022-10-26
@@ -1018,7 +1018,7 @@
 
 //=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26
     function t_MSSSS_SaveNIU(el_input, MSSSS_Response) {
-        console.log("=====  t_MSSSS_Save =========");
+        //console.log("=====  t_MSSSS_Save =========");
         //console.log("    el_input", el_input);
         //console.log("    MSSSS_Response", MSSSS_Response);
 
@@ -1032,7 +1032,7 @@
     // function
 
         const tblName = get_attr_from_el(el_input, "data-table");
-        console.log("    tblName", tblName);
+        //console.log("    tblName", tblName);
 
         // Note: when tblName = school: pk_int = schoolbase_pk
         // Note: when tblName = subject: pk_int = subject_pk
@@ -1040,10 +1040,10 @@
         const selected_code = get_attr_from_el(el_input, "data-code");
         const selected_name = get_attr_from_el(el_input, "data-name");
 
-    console.log("    tblName", tblName);
-    console.log("    selected_pk_int", selected_pk_int);
-    console.log("    selected_code", selected_code);
-    console.log("    selected_name", selected_name);
+    //console.log("    tblName", tblName);
+    //console.log("    selected_pk_int", selected_pk_int);
+    //console.log("    selected_code", selected_code);
+    //console.log("    selected_name", selected_name);
 
 // +++ get existing map_dict from data_rows
         // when tblName = school: pk_int = base_pk, therefore can't use b_recursive_integer_lookup PR2022-10-26
@@ -1813,14 +1813,14 @@
         const has_one_item = (has_items && rows.length === 1);
         const has_profiel = setting_dict.sel_dep_has_profiel;
 /*
-    console.log("=== t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase");
-    console.log("    tblName", tblName);
-    console.log("    rows", rows);
-    console.log("    loc", loc);
-    console.log("    setting_dict", setting_dict);
-    console.log("    has_items", has_items);
-    console.log("    has_one_item", has_one_item);
-    console.log("    has_profiel", has_profiel);
+    //console.log("=== t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase");
+    //console.log("    tblName", tblName);
+    //console.log("    rows", rows);
+    //console.log("    loc", loc);
+    //console.log("    setting_dict", setting_dict);
+    //console.log("    has_items", has_items);
+    //console.log("    has_one_item", has_one_item);
+    //console.log("    has_profiel", has_profiel);
 */
         // when label has no id the text is Sector / Profiel, set in .html file
         const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label");
@@ -1859,12 +1859,12 @@
                              (tblName === "sctbase") ? row.name : row.abbrev
                 });
             };
-//    console.log("display_rows", display_rows);
+//    //console.log("display_rows", display_rows);
 
             const selected_pk = (tblName === "depbase") ? setting_dict.sel_depbase_pk : (tblName === "lvlbase") ? setting_dict.sel_lvlbase_pk : (tblName === "sctbase") ? setting_dict.sel_sctbase_pk : null;
 
-//    console.log("    tblName", tblName);
-//    console.log("    selected_pk", selected_pk);
+//    //console.log("    tblName", tblName);
+//    //console.log("    selected_pk", selected_pk);
 
             const id_SBR_select = (tblName === "depbase") ? "id_SBR_select_department" : (tblName === "lvlbase") ? "id_SBR_select_level" : (tblName === "sctbase") ? "id_SBR_select_sector" : null;
             const el_SBR_select = (id_SBR_select) ? document.getElementById(id_SBR_select) : null;
@@ -2038,12 +2038,12 @@
     function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
 /*
-        console.log( "=== t_FillOptionsFromList ");
-        console.log( "    data_list", data_list);
-        console.log( "    value_field", value_field);
-        console.log( "    selected_value", selected_value);
-        console.log( "    filter_field", filter_field);
-        console.log( "    filter_value", filter_value, typeof filter_value);
+        //console.log( "=== t_FillOptionsFromList ");
+        //console.log( "    data_list", data_list);
+        //console.log( "    value_field", value_field);
+        //console.log( "    selected_value", selected_value);
+        //console.log( "    filter_field", filter_field);
+        //console.log( "    filter_value", filter_value, typeof filter_value);
 */
 // ---  fill options of select box
         let option_text = "";
@@ -2056,9 +2056,9 @@
                 const item_value = (item_dict[value_field]) ? item_dict[value_field] : null;
                 const item_caption = (item_dict[caption_field]) ? item_dict[caption_field] : "---";
 /*
-        console.log( "    item_value", item_value);
-        console.log( "    item_caption", item_caption);
-        console.log( "    filter_field", filter_field);
+        //console.log( "    item_value", item_value);
+        //console.log( "    item_caption", item_caption);
+        //console.log( "    filter_field", filter_field);
 */
                 // if filter_field has no value: all items are shown,
                 // otherwise only items with matching filter_value are shown PR2021-04-21
@@ -2098,8 +2098,8 @@
 // disable element if it has none or one rows
         el_select.disabled = (row_count <= 1);
 
-//        console.log( "    option_text", option_text);
- //       console.log( "    el_select", el_select);
+//        //console.log( "    option_text", option_text);
+ //       //console.log( "    el_select", el_select);
     };  // t_FillOptionsFromList
 
 //========= t_FillOptionTextNew  ============= PR2020-12-11 from tsa
@@ -2117,16 +2117,16 @@
 
 //=========  t_Refresh_DataDicts  ================  PR2021-06-21 PR2023-01-05
     function t_Refresh_DataDicts(tblName, update_rows, data_dicts, CreateTblRow) {
-        console.log(" ===== t_Refresh_DataDicts  =====");
-        console.log("    tblName", tblName);
-        console.log("    field_settings", field_settings);
-        console.log("    update_rows", update_rows);
+        //console.log(" ===== t_Refresh_DataDicts  =====");
+        //console.log("    tblName", tblName);
+        //console.log("    field_settings", field_settings);
+        //console.log("    update_rows", update_rows);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[selected_btn];
-        console.log("    selected_btn", selected_btn);
-        console.log("    field_setting", field_setting);
+        //console.log("    selected_btn", selected_btn);
+        //console.log("    field_setting", field_setting);
             const pk_fldName = (tblName === "studsubj") ? "studsubj_id" :
                                 (tblName === "cluster") ?  "id" :  "";
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
@@ -2138,12 +2138,12 @@
 
 //=========  t_Refresh_DatadictItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-05
     function t_Refresh_DatadictItem(tblName, field_setting, update_dict, data_dicts, pk_fldName, CreateTblRow) {
-        console.log(" --- t_Refresh_DatadictItem  ---");
-        console.log("    tblName", tblName);
-        console.log("    pk_fldName", pk_fldName);
-        console.log("field_setting", field_setting);
-        console.log("    update_dict", update_dict);
-        console.log("    update_dict.err_fields", update_dict.err_fields);
+        //console.log(" --- t_Refresh_DatadictItem  ---");
+        //console.log("    tblName", tblName);
+        //console.log("    pk_fldName", pk_fldName);
+        //console.log("field_setting", field_setting);
+        //console.log("    update_dict", update_dict);
+        //console.log("    update_dict.err_fields", update_dict.err_fields);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -2156,10 +2156,10 @@
             const is_restored = (!!update_dict.restored);
             const is_changed = (!!update_dict.changed);
 
-        console.log("    pk_int", pk_int, typeof pk_int);
-        console.log("    is_deleted", is_deleted);
-        console.log("    is_created", is_created);
-        console.log("    is_restored", is_restored);
+        //console.log("    pk_int", pk_int, typeof pk_int);
+        //console.log("    is_deleted", is_deleted);
+        //console.log("    is_created", is_created);
+        //console.log("    is_restored", is_restored);
 
     // ---  get list of hidden columns
         const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
@@ -2242,7 +2242,7 @@
                     data_dict = get_datadict_by_studpk_studsubjpk (student_pk, studsubj_pk);
                 };
 
-        console.log("    data_dict", data_dict);
+        //console.log("    data_dict", data_dict);
 
 // ++++ deleted ++++
                 if(is_restored){
@@ -2288,7 +2288,7 @@
                 } else {
 
 // +++++++++++ updated row +++++++++++
-    console.log("updated row");
+    //console.log("updated row");
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
 
@@ -2336,8 +2336,8 @@
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
-    console.log("tblRow", tblRow);
-    console.log("updated_columns", updated_columns);
+    //console.log("tblRow", tblRow);
+    //console.log("updated_columns", updated_columns);
                             if(tblRow){
 
     // - to make it perfect: move row when first or last name have changed
@@ -2352,7 +2352,7 @@
                                 const tobedeleted = (update_dict.tobedeleted) ? update_dict.tobedeleted : false;
                                 const st_tobedeleted = (update_dict.st_tobedeleted) ? update_dict.st_tobedeleted : false;
 
-    console.log("tobedeleted", tobedeleted);
+    //console.log("tobedeleted", tobedeleted);
                                 for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
                                     el = td.children[0];
                                     if (el){
@@ -2859,9 +2859,9 @@
                             if (el){
                                 const cell_value = get_attr_from_el(el, "data-filter")
 /*
-    console.log("     filter_tag", filter_tag)
-    console.log("     filter_value", filter_value, typeof filter_value)
-    console.log("     cell_value", cell_value, typeof cell_value)
+    //console.log("     filter_tag", filter_tag)
+    //console.log("     filter_value", filter_value, typeof filter_value)
+    //console.log("     cell_value", cell_value, typeof cell_value)
 */
                                 if (filter_tag === "grade_status"){
 
@@ -2915,10 +2915,10 @@
                                          if (cell_value !== "1") { hide_row = true };
                                     };
 /*
-    console.log("filter_tag", filter_tag);
-    console.log("filter_value", filter_value, typeof filter_value);
-    console.log("cell_value", cell_value, typeof cell_value);
-    console.log("hide_row", hide_row);
+    //console.log("filter_tag", filter_tag);
+    //console.log("filter_value", filter_value, typeof filter_value);
+    //console.log("cell_value", cell_value, typeof cell_value);
+    //console.log("hide_row", hide_row);
 */
                                 } else if(filter_tag === "multitoggle"){  // PR2021-08-21
                                     if (filter_value){
@@ -2938,10 +2938,10 @@
                                 } else if( filter_tag === "number") {
                                     // numeric columns: make blank cells zero
 /*
-    console.log( "filter_value", filter_value, typeof filter_value);
-    console.log( "Number(filter_value)", Number(filter_value), typeof Number(filter_value));
-    console.log( "cell_value", cell_value, typeof cell_value);
-    console.log( "Number(cell_value)", Number(cell_value), typeof Number(cell_value));
+    //console.log( "filter_value", filter_value, typeof filter_value);
+    //console.log( "Number(filter_value)", Number(filter_value), typeof Number(filter_value));
+    //console.log( "cell_value", cell_value, typeof cell_value);
+    //console.log( "Number(cell_value)", Number(cell_value), typeof Number(cell_value));
 */
                                     if(!Number(filter_value)) {
                                         // hide all rows when filter is not numeric
@@ -3038,7 +3038,7 @@ const mod_MCOL_dict = {
 
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02 PR2022-05-15 PR2022-07-21 PR2023-01-12
     function t_MCOL_Open(page) {
-        console.log(" -----  t_MCOL_Open   ----")
+        //console.log(" -----  t_MCOL_Open   ----")
     //console.log("    mod_MCOL_dict", mod_MCOL_dict)
     //console.log("    mod_MCOL_dict.cols_skipped", mod_MCOL_dict.cols_skipped)
 
@@ -3100,7 +3100,7 @@ const mod_MCOL_dict = {
 
 //=========  t_MCOL_Save  ================ PR2021-08-02 PR2021-12-02 PR2022-07-21
     function t_MCOL_Save(url_usersetting_upload, HandleBtnSelect) {
-        console.log(" -----  t_MCOL_Save   ----")
+        //console.log(" -----  t_MCOL_Save   ----")
         const upload_dict = {};
         const upload_colhidden_list = []
         if (mod_MCOL_dict.columns_excl_skipped && mod_MCOL_dict.columns_excl_skipped.length){
@@ -3113,15 +3113,15 @@ const mod_MCOL_dict = {
         };
         upload_dict[mod_MCOL_dict.page] = {cols_hidden: upload_colhidden_list}
 
-    console.log("    upload_dict", upload_dict);
-    console.log("    url_usersetting_upload", url_usersetting_upload);
+    //console.log("    upload_dict", upload_dict);
+    //console.log("    url_usersetting_upload", url_usersetting_upload);
 
         b_UploadSettings (upload_dict, url_usersetting_upload);
 
     // update mod_MCOL_dict.cols_hidden
         b_copy_array_noduplicates(upload_colhidden_list, mod_MCOL_dict.cols_hidden);
 
-    console.log("   mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden);
+    //console.log("   mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden);
         HandleBtnSelect(mod_MCOL_dict.selected_btn, true)  // true = skip_upload
 // hide modal
         // in HTML: data-dismiss="modal"
@@ -3203,8 +3203,8 @@ const mod_MCOL_dict = {
 
 //=========  t_SBR_select_department  ================  PR2023-07-09
     function t_SBR_select_department(el_select, SBR_department_response, skip_upload) {
-        console.log("===== t_SBR_select_department =====");
-        console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
+        //console.log("===== t_SBR_select_department =====");
+        //console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
 
         // only used in correctors.js, for now,  to be implemented in subjects.js, exam.js, orderlist.js
         // selecting department in hdrbar uses t_MSED_Open, that saves depbase in selected_pk
@@ -3231,7 +3231,7 @@ const mod_MCOL_dict = {
                         selected_dict = data_dict;
                         break;
             }}};
-            console.log( "    selected_dict: ", selected_dict);
+            //console.log( "    selected_dict: ", selected_dict);
 
             const selected_pk_int = (selected_dict) ? selected_dict.base_id : null;
             const new_sel_code = (selected_dict && selected_dict[code_key_str]) ? selected_dict[code_key_str] : "---";
@@ -3246,17 +3246,17 @@ const mod_MCOL_dict = {
         // ---  upload new setting
                 b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             };
-    console.log("    selected_pk_int", selected_pk_int);
-    console.log("    selected_dict", selected_dict);
+    //console.log("    selected_pk_int", selected_pk_int);
+    //console.log("    selected_dict", selected_dict);
             SBR_department_response(tblName, selected_dict, selected_pk_int);
         };
     };  // t_SBR_select_department
 
 //=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-03-26
     function t_SBR_select_level_sector(tblName, el_select, SBR_lvl_sct_response, skip_upload) {
-        console.log("===== t_SBR_select_level_sector =====");
-        console.log( "    tblName: ", tblName) // tblName = "lvlbase" or "sctbase"
-        console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
+        //console.log("===== t_SBR_select_level_sector =====");
+        //console.log( "    tblName: ", tblName) // tblName = "lvlbase" or "sctbase"
+        //console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
         // PR2023-09-01 debug: must return -9 when el_select.value = -9, but returned null
         // solved by adding : const selected_pk_int = (sel_pk_int !== -9) ? -9 :
 
@@ -3270,7 +3270,7 @@ const mod_MCOL_dict = {
 // - get new value from el_select
             const sel_pk_int = (el_select.value && Number(el_select.value)) ? Number(el_select.value) : null;
             // all levels /sectors has value sel_pk_int =  -9 number
-    console.log("    sel_pk_int", sel_pk_int, typeof sel_pk_int);
+    //console.log("    sel_pk_int", sel_pk_int, typeof sel_pk_int);
 // - put new value in setting_dict
             const sel_pk_key_str = (is_sctbase) ? "sel_sctbase_pk" : "sel_lvlbase_pk";
             const code_key_str = (is_sctbase) ? "name" : "lvlbase_code";
@@ -3287,8 +3287,8 @@ const mod_MCOL_dict = {
 
             const selected_pk_int = (selected_dict) ? selected_dict.base_id : (sel_pk_int === -9) ? -9 : null;
             const new_sel_code = (selected_dict && selected_dict[code_key_str]) ? selected_dict[code_key_str] : "---";
-    console.log("    selected_pk_int", selected_pk_int);
-    console.log("    new_sel_code", new_sel_code);
+    //console.log("    selected_pk_int", selected_pk_int);
+    //console.log("    new_sel_code", new_sel_code);
 
             setting_dict[sel_pk_key_str] = selected_pk_int;
             if (is_sctbase) {

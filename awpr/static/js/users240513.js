@@ -143,26 +143,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
-        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
+        //const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+        //const el_hdrbar_department = document.getElementById("id_hdrbar_department");
 
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
                 function() {t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
+        // PR2024-05-13 not in use in page users
+        /*
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click",
                 function() {t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {
+                    t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)
+                }, false );
         };
-
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
             el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
         };
+*/
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
@@ -189,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MUPS_btn_cancel = document.getElementById("id_MUPS_btn_cancel");
 
 // ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
+/*
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
         if (el_MSSSS_input){
@@ -198,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
         };
-
+*/
 // ---  MODAL USER
         const el_MUA_schoolname = document.getElementById("id_MUA_schoolname");
         const el_MUA_username = document.getElementById("id_MUA_username");
@@ -319,8 +324,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(datalist_request, called_by) {
-        console.log( "=== DatalistDownload ", called_by)
-        console.log("request: ", datalist_request)
+       console.log( "=== DatalistDownload ", called_by)
+       console.log("request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -336,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data: param,
             dataType: 'json',
             success: function (response) {
-                console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
+               console.log("response - elapsed time:", (new Date().getTime() - startime) / 1000 )
                 console.log(response)
 
                 // hide loader
@@ -362,7 +367,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if(isloaded_loc && isloaded_permits){CreateSubmenu()};
-                if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
+                if(isloaded_settings || isloaded_permits){
+                    // PR2024-05-13 was: b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear);
+                };
                 if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
                 if ("examyear_rows" in response) {
@@ -484,12 +492,12 @@ console.log("user_dicts",user_dicts)
 
 // get data_dict from data_rows
         const data_dict = get_datadict_from_tblRow(tblRow);
-        console.log( "data_dict", data_dict);
+       //console.log( "data_dict", data_dict);
 
 // ---  update selected studsubj_dict / student_pk / subject pk
         selected.data_dict = (data_dict) ? data_dict : null;
 
-        console.log( "   selected", selected);
+       //console.log( "   selected", selected);
     };  // HandleTblRowClicked
 
 //========= FillTblRows  =================== PR2021-08-01 PR2022-02-28 PR2023-04-04
@@ -636,8 +644,8 @@ console.log("user_dicts",user_dicts)
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-04-04
     function CreateTblRow(tblName, field_setting, data_dict) {
-        console.log("=========  CreateTblRow =========", tblName);
-    console.log("    data_dict", data_dict);
+       //console.log("=========  CreateTblRow =========", tblName);
+   //console.log("    data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -658,7 +666,7 @@ console.log("user_dicts",user_dicts)
         const tblRow = tblBody_datatable.insertRow(row_index);
         tblRow.id = map_id;
 
-    console.log("    tblRow", tblRow);
+   //console.log("    tblRow", tblRow);
 // --- add data attributes to tblRow
         tblRow.setAttribute("data-pk", data_dict.id);
         if (!data_dict.is_active){
@@ -938,9 +946,9 @@ console.log("user_dicts",user_dicts)
 
 //========= UploadToggleMultiple  ============= PR2023-04-13
     function UploadToggleMultiple(el_input) {
-        console.log( " ==== UploadToggleMultiple ====");
+       //console.log( " ==== UploadToggleMultiple ====");
         //console.log( "el_input", el_input);
-        console.log( "  ??? permit_dict", permit_dict);
+       //console.log( "  ??? permit_dict", permit_dict);
         // only called by fields starting qith  "group"
 
 // ---  get  data_dict
@@ -1042,9 +1050,9 @@ console.log("user_dicts",user_dicts)
 
 //========= UploadToggleSingle  ============= PR2020-07-31 PR2023-04-13
     function UploadToggleSingle(el_input) {
-        console.log( " ==== UploadToggleSingle ====");
-        console.log( "el_input", el_input);
-        console.log( "permit_dict", permit_dict);
+       //console.log( " ==== UploadToggleSingle ====");
+       //console.log( "el_input", el_input);
+       //console.log( "permit_dict", permit_dict);
         // only called by fields starting qith  "group"
         mod_dict = {};
 
@@ -1101,9 +1109,9 @@ console.log( "upload_dict", upload_dict);
 
 //========= UploadChanges  ============= PR2020-08-03 PR2023-01-01
     function UploadChanges(upload_dict, url_str) {
-        console.log("=== UploadChanges");
-        console.log("    url_str: ", url_str);
-        console.log("    upload_dict: ", upload_dict);
+       console.log("=== UploadChanges");
+       console.log("    url_str: ", url_str);
+       console.log("    upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -1126,7 +1134,7 @@ console.log( "upload_dict", upload_dict);
                     //if("msg_dictlist" in response){
                     //    b_show_mod_message_dictlist(response.msg_dictlist);
                     //}
-                   // only used in MUPS allowes schools
+                   // only used in MUPS allowed schools
                     if("msg_html" in response){
                         b_show_mod_message_html(response.msg_html, null, MUPS_MessageClose);
                     };
@@ -1159,7 +1167,7 @@ console.log( "upload_dict", upload_dict);
 
 // +++++++++ MOD USER ADD ++++++++++++++++ PR2020-09-18
     function MUA_Open(mode, el_input){
-        console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
+       //console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
         //console.log("permit_dict: ", permit_dict)
         //console.log("permit_dict.permit_crud_sameschool: ", permit_dict.permit_crud_sameschool)
         //console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
@@ -1182,7 +1190,7 @@ console.log( "upload_dict", upload_dict);
             if(el_input){
                 const tblRow = t_get_tablerow_selected(el_input);
                 const data_dict = get_datadict_from_tblRow(tblRow);
-    console.log("    data_dict: ", data_dict)
+   //console.log("    data_dict: ", data_dict)
 
     //console.log("data_dict", data_dict)
                 if(!isEmpty(data_dict)){
@@ -1214,8 +1222,8 @@ console.log( "upload_dict", upload_dict);
                             break;
             }}}};
 
-    console.log("    user_schoolbase_code: ", user_schoolbase_code)
-    console.log("    user_schoolname: ", user_schoolname)
+   //console.log("    user_schoolbase_code: ", user_schoolbase_code)
+   //console.log("    user_schoolname: ", user_schoolname)
             mod_MUA_dict = {
                 mode: mode, // modes are: addnew, update
                 //skip_validate_username: is_addnew,
@@ -1237,7 +1245,7 @@ console.log( "upload_dict", upload_dict);
             //PR2023-05-17 was: let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "mua_addnew_may_select_school" : "mua_addnew_noschool" : "mua_update";
             const tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool || permit_dict.permit_addto_otherschool) ? "mua_addnew_may_select_school" : "mua_addnew_noschool" : "mua_update";
             b_show_hide_selected_elements_byClass("mua_show", tab_str, container_element)
-    console.log("    tab_str: ", tab_str)
+   //console.log("    tab_str: ", tab_str)
 
     // ---  set header text
             const header_text = (is_addnew) ? loc.Add_user : loc.User + ":  " + mod_MUA_dict.username;
@@ -1310,7 +1318,7 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30 PR2023-04-04
    function MUA_Save(mode) {
-        console.log("=== MUA_Save === ");
+       //console.log("=== MUA_Save === ");
         //console.log("mode: ", mode);
         //  mode = 'validate' when called by el_MUA_btn_submit
         //  mode = "save" after response OK
@@ -1367,7 +1375,7 @@ console.log( "upload_dict", upload_dict);
                                 email: el_MUA_email.value
                               };
             }
-            console.log("upload_dict: ", upload_dict);
+           //console.log("upload_dict: ", upload_dict);
 
             // must lose focus, otherwise green / red border won't show
             //el_input.blur();
@@ -1473,7 +1481,7 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
-        console.log("===== MUA_FillSelectTableSchool ===== ");
+       //console.log("===== MUA_FillSelectTableSchool ===== ");
 
         const data_rows = school_rows;
         const tblBody_select = document.getElementById("id_MUA_tbody_select");
@@ -1486,11 +1494,11 @@ console.log( "upload_dict", upload_dict);
             const tblName = "school";
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
 
-        console.log("    data_dict", data_dict);
+       //console.log("    data_dict", data_dict);
                 if (!isEmpty(data_dict)) {
                     const defaultrole = (data_dict.defaultrole) ? data_dict.defaultrole : 0;
-        console.log("    defaultrole", defaultrole);
-        console.log("    permit_dict.requsr_role", permit_dict.requsr_role);
+       //console.log("    defaultrole", defaultrole);
+       //console.log("    permit_dict.requsr_role", permit_dict.requsr_role);
     // only add schools to list whith sme or lower role
                     if (defaultrole <= permit_dict.requsr_role){
         // ---  get info from data_dict
@@ -1498,7 +1506,7 @@ console.log( "upload_dict", upload_dict);
                         const country_id = data_dict.country_id;
                         const code = (data_dict.sb_code) ? data_dict.sb_code : "";
                         const abbrev = (data_dict.abbrev) ? data_dict.abbrev : "";
-        console.log("    abbrev", abbrev);
+       //console.log("    abbrev", abbrev);
 
 // ---  lookup index where this row must be inserted
                         let ob1 = "", row_index = -1;
@@ -1584,7 +1592,7 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUA_SetMsgElements  ============= PR2020-08-02 PR2022-12-31
     function MUA_SetMsgElements(response){
-        console.log( "===== MUA_SetMsgElements  ========= ");
+       //console.log( "===== MUA_SetMsgElements  ========= ");
         // TODO switch to render msg box
         const err_dict = (response && "msg_err" in response) ? response.msg_err : {};
         // was const validation_ok = get_dict_value(response, ["validation_ok"], false);
@@ -1816,7 +1824,7 @@ console.log( "upload_dict", upload_dict);
 
 // +++++++++ MOD USER PERMIT SUBJECTS ++++++++++++++++ PR2022-10-23 PR2022-11-21 PR2022-12-04 PR2023-01-06
     function MUPS_Open(el_input){
-        console.log(" -----  MUPS_Open   ---- ")
+       //console.log(" -----  MUPS_Open   ---- ")
 
         let data_dict = {}, user_pk = null, user_role = null;
         let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
@@ -1841,7 +1849,7 @@ console.log( "upload_dict", upload_dict);
                 modby_name = data_dict.modby_name;
             };
 
-        console.log("  data_dict: ", data_dict);
+       //console.log("  data_dict: ", data_dict);
 
             let user_schoolname = null;
             if(user_schoolbase_pk){
@@ -1857,9 +1865,9 @@ console.log( "upload_dict", upload_dict);
             // only users of the same organization and permit_crud may edit
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_schoolbase_pk === user_schoolbase_pk);
 
-        console.log("  permit_dict.requsr_schoolbase_pk: ", permit_dict.requsr_schoolbase_pk);
-        console.log("  user_schoolbase_pk: ", user_schoolbase_pk);
-        console.log("  may_edit: ", may_edit);
+       //console.log("  permit_dict.requsr_schoolbase_pk: ", permit_dict.requsr_schoolbase_pk);
+       //console.log("  user_schoolbase_pk: ", user_schoolbase_pk);
+       //console.log("  may_edit: ", may_edit);
 
             add_or_remove_class(el_MUPS_btn_save, cls_hide, !may_edit);
             if (el_MUPS_btn_cancel){
@@ -1917,7 +1925,7 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUPS_Save  ============= PR2022-11-04
     function MUPS_Save(mode, el_input){
-        console.log(" ----- MUPS_Save ---- mode: ", mode);
+       //console.log(" ----- MUPS_Save ---- mode: ", mode);
 
     // --- get urls.url_user_allowedsections_upload
         const upload_dict = {
@@ -1926,7 +1934,7 @@ console.log( "upload_dict", upload_dict);
             allowed_sections: mod_MUPS_dict.allowed_sections
         }
         const url_str = urls.url_user_allowedsections_upload;
-        console.log("  url_str: ", url_str);
+       //console.log("  url_str: ", url_str);
 
         UploadChanges(upload_dict, url_str);
 
@@ -2197,7 +2205,7 @@ console.log( "upload_dict", upload_dict);
     };  // MUPS_CreateTblrowSchool
 
     function MUPS_CreateTableDepartment(school_dict) { // PR2022-11-04
-        console.log("===== MUPS_CreateTableDepartment ===== ");
+       //console.log("===== MUPS_CreateTableDepartment ===== ");
     //console.log("    school_dict", school_dict);
 
 // ---  get info from school_dict
@@ -2210,8 +2218,8 @@ console.log( "upload_dict", upload_dict);
 // -  get allowed_depbases from this school from mod_MUPS_dict.allowed_sections
         const allowed_depbases = (mod_MUPS_dict.allowed_sections && schoolbase_pk_str in mod_MUPS_dict.allowed_sections) ?  mod_MUPS_dict.allowed_sections[schoolbase_pk_str] : {};
 
-    console.log("    allowed_depbases", JSON.stringify(allowed_depbases));
-    console.log("    mod_MUPS_dict.may_edit", mod_MUPS_dict.may_edit);
+   //console.log("    allowed_depbases", JSON.stringify(allowed_depbases));
+   //console.log("    mod_MUPS_dict.may_edit", mod_MUPS_dict.may_edit);
 
 // -  add row 'Add_department' in first row if school has multipe deps and has unselected deps and may_edit
         if (mod_MUPS_dict.may_edit){
@@ -2235,16 +2243,16 @@ console.log( "upload_dict", upload_dict);
         };
 
 // add rows with department if there is only 1
-    console.log("  @@@   sb_depbases_arr", JSON.stringify(sb_depbases_arr));
-    console.log("    mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
+   //console.log("    sb_depbases_arr", JSON.stringify(sb_depbases_arr));
+   //console.log("    mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
 
         if (sb_depbases_arr.length === 1){
 // add rows with the only department of s to school
             for (let i = 0, dep_dict; dep_dict = mod_MUPS_dict.sorted_department_list[i]; i++) {
-    console.log("    dep_dict", dep_dict);
-    console.log("    dep_dict.base_id", dep_dict.base_id);
+   //console.log("    dep_dict", dep_dict);
+   //console.log("    dep_dict.base_id", dep_dict.base_id);
                 if (sb_depbases_arr.includes(dep_dict.base_id.toString())){
-    console.log("    MUPS_CreateTblrowDep");
+   //console.log("    MUPS_CreateTblrowDep");
                     MUPS_CreateTblrowDep(dep_dict, schoolbase_pk, sb_depbases, false); // allow_delete = false
                 };
             };
@@ -2574,10 +2582,11 @@ console.log( "upload_dict", upload_dict);
 
 // ---  get unselected_school_list
         const unselected_school_list = MUPS_get_unselected_school_list();
-        //console.log("    unselected_school_list", unselected_school_list);
+       //console.log("    unselected_school_list", unselected_school_list);
 
-        t_MSSSS_Open(loc, "school", unselected_school_list, false, false, setting_dict, permit_dict, MUPS_SelectSchool_Response);
-    };
+        // PR2024-05-13 was: t_MSSSS_Open(loc, "school", unselected_school_list, false, false, setting_dict, permit_dict, MUPS_SelectSchool_Response);
+        t_MSSSS_Open_NEW("mups", "school", unselected_school_list, MUPS_SelectSchool_Response);
+    };  // MUPS_SelectSchool
 
     function MUPS_SelectDepartment(tblRow ) {
         //console.log(" -----  MUPS_SelectDepartment   ----");
@@ -2669,7 +2678,7 @@ console.log( "upload_dict", upload_dict);
             for (let i = 0, sb_pk_str, data_dict; data_dict = mod_MUPS_dict.sorted_school_list[i]; i++) {
                 sb_pk_str = (data_dict.base_id) ? data_dict.base_id.toString() : "0";
                 if(mod_MUPS_dict.allowed_sections && sb_pk_str in mod_MUPS_dict.allowed_sections){
-                    console.log("    sb_pk_str in mod_MUPS_dict.allowed_sections", sb_pk_str);
+                   //console.log("    sb_pk_str in mod_MUPS_dict.allowed_sections", sb_pk_str);
                 } else {
                     unselected_school_list.push(data_dict);
                 };
@@ -2679,9 +2688,9 @@ console.log( "upload_dict", upload_dict);
     };
 
     function MUPS_get_unselected_subject_list(schoolbase_pk, depbase_pk, lvlbase_pk) { //PR2022-11-07 PR2023-03-27
-        console.log(" -----  MUPS_get_unselected_subject_list   ----");
-        console.log("    depbase_pk", depbase_pk);
-        console.log("    lvlbase_pk", lvlbase_pk);
+       //console.log(" -----  MUPS_get_unselected_subject_list   ----");
+       //console.log("    depbase_pk", depbase_pk);
+       //console.log("    lvlbase_pk", lvlbase_pk);
 
 // ---  get unselected_subject_list
         // only add subject with this depbase and lvlbase
@@ -2716,10 +2725,10 @@ console.log( "upload_dict", upload_dict);
     };
 
     function MUPS_DeleteTblrow(tblRow ) {
-        console.log(" ###########-----  MUPS_DeleteTblrow   ----");
-        console.log("    tblRow", tblRow);
+       //console.log(" -----  MUPS_DeleteTblrow   ----");
+       //console.log("    tblRow", tblRow);
         const tblName = get_attr_from_el(tblRow, "data-table");
-        console.log("    tblName", tblName);
+       //console.log("    tblName", tblName);
 
         const schoolbase_pk_str = get_attr_from_el_int(tblRow, "data-schoolbase_pk").toString();
         const depbase_pk_str = get_attr_from_el_int(tblRow, "data-depbase_pk").toString();
@@ -2729,9 +2738,9 @@ console.log( "upload_dict", upload_dict);
         const allowed_schoolbase = (schoolbase_pk_str in allowed_sections) ? allowed_sections[schoolbase_pk_str] : {};
         const allowed_depbase = (depbase_pk_str in allowed_schoolbase) ? allowed_schoolbase[depbase_pk_str] : {};
 
-        console.log("    allowed_sections", allowed_sections);
-        console.log("    allowed_schoolbase", allowed_schoolbase);
-        console.log("    allowed_depbase", allowed_depbase);
+       //console.log("    allowed_sections", allowed_sections);
+       //console.log("    allowed_schoolbase", allowed_schoolbase);
+       //console.log("    allowed_depbase", allowed_depbase);
 
         if (tblName === "school"){
             if (schoolbase_pk_str in mod_MUPS_dict.allowed_sections){
@@ -2759,10 +2768,10 @@ console.log( "upload_dict", upload_dict);
     };  // MUPS_DeleteTblrow
 
     function MUPS_LvlFromRows_Response(sel_lvlbase_pk, schoolbase_pk, depbase_pk) {
-        console.log(" -----  MUPS_LvlFromRows_Response   ----");
-        console.log("    sel_lvlbase_pk", sel_lvlbase_pk);
-        console.log("    schoolbase_pk", schoolbase_pk);
-        console.log("    depbase_pk", depbase_pk);
+       //console.log(" -----  MUPS_LvlFromRows_Response   ----");
+       //console.log("    sel_lvlbase_pk", sel_lvlbase_pk);
+       //console.log("    schoolbase_pk", schoolbase_pk);
+       //console.log("    depbase_pk", depbase_pk);
 
         if (sel_lvlbase_pk && schoolbase_pk && depbase_pk){
             const schoolbase_pk_str = schoolbase_pk.toString();
@@ -2773,19 +2782,19 @@ console.log( "upload_dict", upload_dict);
             const allowed_schoolbase = (schoolbase_pk_str in allowed_sections) ? allowed_sections[schoolbase_pk_str] : {};
             const allowed_depbase = (depbase_pk_str in allowed_schoolbase) ? allowed_schoolbase[depbase_pk_str] : {};
 
-        console.log("    lvlbase_pk_str", lvlbase_pk_str);
-        console.log("    allowed_depbase", allowed_depbase);
+       //console.log("    lvlbase_pk_str", lvlbase_pk_str);
+       //console.log("    allowed_depbase", allowed_depbase);
             if( isEmpty(allowed_depbase) || !(lvlbase_pk_str in allowed_depbase) ){
                 allowed_depbase[lvlbase_pk_str] = [];
-        console.log("    allowed_depbase[lvlbase_pk_str]", allowed_depbase[lvlbase_pk_str]);
+       //console.log("    allowed_depbase[lvlbase_pk_str]", allowed_depbase[lvlbase_pk_str]);
 
                 // when lvl added and mode = showall: show 'add subject' PR20223-01-26
                 if (mod_MUPS_dict.expand_all) {
                     const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk_str];
-                console.log("    expanded_schoolbase_dict", expanded_schoolbase_dict);
+               //console.log("    expanded_schoolbase_dict", expanded_schoolbase_dict);
                     if (expanded_schoolbase_dict) {
                         const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk_str];
-                console.log("    expanded_depbase_dict", expanded_depbase_dict);
+               //console.log("    expanded_depbase_dict", expanded_depbase_dict);
                         if (expanded_depbase_dict) {
                             if (!(lvlbase_pk_str in expanded_depbase_dict)){
                                 expanded_depbase_dict[lvlbase_pk_str] = {"expanded": true}
@@ -2800,9 +2809,9 @@ console.log( "upload_dict", upload_dict);
     };
 
     function MUPS_DepFromRows_Response(sel_depbase_pk, schoolbase_pk, depbase_pkNIU) {
-        console.log(" -----  MUPS_DepFromRows_Response   ----");
-        console.log("    sel_depbase_pk", sel_depbase_pk, typeof sel_depbase_pk);
-        console.log("    schoolbase_pk", schoolbase_pk, typeof schoolbase_pk);
+       //console.log(" -----  MUPS_DepFromRows_Response   ----");
+       //console.log("    sel_depbase_pk", sel_depbase_pk, typeof sel_depbase_pk);
+       //console.log("    schoolbase_pk", schoolbase_pk, typeof schoolbase_pk);
 
         if (sel_depbase_pk && schoolbase_pk){
             // lookup depbase, get lvl_req
@@ -2813,10 +2822,10 @@ console.log( "upload_dict", upload_dict);
                     break;
                 };
             };
-            console.log("    lvl_req", lvl_req)
+           //console.log("    lvl_req", lvl_req)
 
             const allowed_sections = mod_MUPS_dict.allowed_sections[schoolbase_pk.toString()];
-            console.log("    allowed_sections", allowed_sections, typeof allowed_sections);
+           //console.log("    allowed_sections", allowed_sections, typeof allowed_sections);
             const schoolbase_pk_str = schoolbase_pk.toString();
             const depbase_pk_str = sel_depbase_pk.toString();
             if( isEmpty(allowed_sections) || !(depbase_pk_str in allowed_sections) ){
@@ -2826,10 +2835,10 @@ console.log( "upload_dict", upload_dict);
                 // when dep added and mode = showall: show 'add level' PR20223-01-26
                 if (mod_MUPS_dict.expand_all) {
                     const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk_str];
-                console.log("    expanded_schoolbase_dict", expanded_schoolbase_dict);
+               //console.log("    expanded_schoolbase_dict", expanded_schoolbase_dict);
                     if (expanded_schoolbase_dict) {
                         const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk_str];
-                console.log("    expanded_depbase_dict", expanded_depbase_dict);
+               //console.log("    expanded_depbase_dict", expanded_depbase_dict);
                         if (!(depbase_pk_str in expanded_schoolbase_dict)){
                             expanded_schoolbase_dict[depbase_pk_str] = {"expanded": true}
                         };
@@ -2837,25 +2846,29 @@ console.log( "upload_dict", upload_dict);
                 };
             };
             const allowed_depbases = allowed_sections[depbase_pk_str];
-            console.log("    allowed_depbases", allowed_depbases);
+           //console.log("    allowed_depbases", allowed_depbases);
         };
-        console.log("@@@ mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
+       //console.log("    mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
 
 // ---  fill selecttable
         MUPS_FillSelectTable();
     };
 
-//=========  MUPS_SelectSchool_Response  ================ PR2022-10-26 PR2022-11-21
-    function MUPS_SelectSchool_Response(tblName, selected_dict, selected_pk) {
-        console.log( "===== MUPS_SelectSchool_Response ========= ");
-        console.log( "    tblName", tblName);
-        console.log( "    selected_dict", selected_dict);
-        console.log( "    selected_pk", selected_pk, typeof selected_pk);
+//=========  MUPS_SelectSchool_Response  ================ PR2022-10-26 PR2022-11-21 PR2024-05-13
+    function MUPS_SelectSchool_Response(modalName, tblName, selected_dict, selected_pk) {
+        // format of MSSSS_Response: (modalName, tblName, selected_dict, selected_pk_int);
+       //console.log( "===== MUPS_SelectSchool_Response ========= ");
+       //console.log( "    tblName", tblName);
+       //console.log( "    selected_dict", selected_dict);
+       //console.log( "    selected_pk", selected_pk, typeof selected_pk);
+       //console.log( "    mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
 
-        // Note: when tblName = school: pk_int = schoolbase_pk
+        // Note: when tblName = school: selected_pk = schoolbase_pk
         if (selected_pk === -1) { selected_pk = null};
         if (selected_pk){
             const schoolbase_pk_str = selected_pk.toString();
+       //console.log( "    schoolbase_pk_str", schoolbase_pk_str);
+       //console.log( "    !(schoolbase_pk_str in mod_MUPS_dict.allowed_sections)", !(schoolbase_pk_str in mod_MUPS_dict.allowed_sections));
 
             // skip when schoolbase_pk_str in allowed_sections
             if (!(schoolbase_pk_str in mod_MUPS_dict.allowed_sections)){
@@ -2871,16 +2884,16 @@ console.log( "upload_dict", upload_dict);
                         // when dep added and mode = showall: show 'add level' PR20223-01-26
                         if (mod_MUPS_dict.expand_all) {
                             const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk_str];
-                        console.log("   @@@@@@@@@@@@  schoolbase_pk_str", schoolbase_pk_str);
-                        console.log("   @@@@@@@@@@@@  mod_MUPS_dict.expanded", mod_MUPS_dict.expanded);
-                        console.log("   @@@@@@@@@@@@  expanded_schoolbase_dict", expanded_schoolbase_dict);
+                       //console.log("     schoolbase_pk_str", schoolbase_pk_str);
+                       //console.log("     mod_MUPS_dict.expanded", mod_MUPS_dict.expanded);
+                       //console.log("     expanded_schoolbase_dict", expanded_schoolbase_dict);
                             if (expanded_schoolbase_dict) {
 
                             // PR2023-05-11 Sentry debug: ReferenceError depbase_pk_str is not defined
                             // TODO solve this error
 
                                 const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk_str];
-                        console.log("    expanded_depbase_dict", expanded_depbase_dict);
+                       //console.log("    expanded_depbase_dict", expanded_depbase_dict);
                                 if (!(depbase_pk_str in expanded_schoolbase_dict)){
                                     expanded_schoolbase_dict[depbase_pk_str] = {"expanded": true}
                                 };
@@ -2898,10 +2911,10 @@ console.log( "upload_dict", upload_dict);
 
 //=========  MUPS_SelectSubject_Response  ================ PR2022-10-26 PR2022-11-21 PR2024-05-02
     function MUPS_SelectSubject_Response(modalName, tblName, selected_dict, selected_pk) {
-        console.log( "===== MUPS_SelectSubject_Response ========= ");
-        console.log( "    tblName", tblName);
-        console.log( "    selected_dict", selected_dict);
-        console.log( "    selected_pk", selected_pk, typeof selected_pk);
+       //console.log( "===== MUPS_SelectSubject_Response ========= ");
+       //console.log( "    tblName", tblName);
+       //console.log( "    selected_dict", selected_dict);
+       //console.log( "    selected_pk", selected_pk, typeof selected_pk);
 
         // Note: when tblName = school: pk_int = schoolbase_pk
         if (selected_pk === -1) { selected_pk = null};
@@ -2909,10 +2922,10 @@ console.log( "upload_dict", upload_dict);
             const selected_pk_str = selected_pk.toString();
 
             const subjbase_pk = selected_dict.base_id;
-        console.log( "    subjbase_pk", subjbase_pk, typeof subjbase_pk);
-        console.log( "    mod_MUPS_dict.sel_schoolbase_pk_str", mod_MUPS_dict.sel_schoolbase_pk_str, typeof mod_MUPS_dict.sel_schoolbase_pk_str);
-        console.log( "    mod_MUPS_dict.sel_depbase_pk_str", mod_MUPS_dict.sel_depbase_pk_str, typeof mod_MUPS_dict.sel_depbase_pk_str);
-        console.log( "    mod_MUPS_dict.sel_lvlbase_pk_str", mod_MUPS_dict.sel_lvlbase_pk_str, typeof mod_MUPS_dict.sel_lvlbase_pk_str);
+       //console.log( "    subjbase_pk", subjbase_pk, typeof subjbase_pk);
+       //console.log( "    mod_MUPS_dict.sel_schoolbase_pk_str", mod_MUPS_dict.sel_schoolbase_pk_str, typeof mod_MUPS_dict.sel_schoolbase_pk_str);
+       //console.log( "    mod_MUPS_dict.sel_depbase_pk_str", mod_MUPS_dict.sel_depbase_pk_str, typeof mod_MUPS_dict.sel_depbase_pk_str);
+       //console.log( "    mod_MUPS_dict.sel_lvlbase_pk_str", mod_MUPS_dict.sel_lvlbase_pk_str, typeof mod_MUPS_dict.sel_lvlbase_pk_str);
 
             if (subjbase_pk){
                 const allowed_sections = (mod_MUPS_dict.allowed_sections) ? mod_MUPS_dict.allowed_sections : {};
@@ -4508,9 +4521,11 @@ console.log( "new_value", new_value);
     }  // MSED_Response
 
 //###########################################################################
-//=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
-    function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
-        //console.log( "===== MSSSS_Response ========= ");
+/*
+//=========  MSSSS_ResponseNIU  ================ PR2021-04-23  PR2021-07-26
+    function MSSSS_ResponseNIU(modalName, tblName, selected_dict, selected_pk) {
+        console.log( "===== MSSSS_Response ========= ");
+        console.log( "    tblName", tblName);
 
         // Note: when tblName = school: pk_int = schoolbase_pk
         if(selected_pk === -1) { selected_pk = null};
@@ -4523,7 +4538,7 @@ console.log( "new_value", new_value);
         DatalistDownload(datalist_request);
 
     }  // MSSSS_Response
-
+*/
 //###########################################################################
 //========= set_columns_hidden  ====== PR2021-04-26 PR2022-03-03 PR2023-05-30
     function set_columns_hidden() {

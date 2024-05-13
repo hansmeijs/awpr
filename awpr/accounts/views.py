@@ -142,7 +142,8 @@ class UserListView(ListView):
 
         # get_headerbar_param(request, page, param=None):  # PR2021-03-25
         page = 'page_user'
-        param = {'show_btn_userpermit': show_btn_userpermit, 'display_school': True, 'display_department': False }
+        # PR2024-05-13 set 'display_school': False, instead of True
+        param = {'show_btn_userpermit': show_btn_userpermit, 'display_school': False, 'display_department': False }
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
         if logging_on:
             logger.debug("show_btn_userpermit: " + str(show_btn_userpermit))

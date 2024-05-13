@@ -137,7 +137,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {
+                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)
+                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
+                }, false );
         }
 
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
@@ -178,7 +181,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if (el_SBR_select_student) {
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open_NEW("sbr", "student", student_rows, MSSSS_student_response)}, false);
+            el_SBR_select_student.addEventListener("click", function() {
+                t_MSSSS_Open_NEW("sbr", "student", student_rows, MSSSS_student_response, true); // add_all = true
+            }, false);
         };
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if (el_SBR_select_showall) {
@@ -834,7 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } ; // for (let j = 0; j < 8; j++)
 
     // --- make deleted row red (they only exist when SBR 'Show all' is clicked PR2023-01-14
-        console.log("  data_dict ", data_dict);
+    //console.log("  data_dict ", data_dict);
         if (data_dict.deleted){
             tblRow.classList.add("tsa_tr_error");
             const title_txt = loc.This_candidate_is_deleted + "\n" + loc.Click_restore_to_restore_candidate;
@@ -2552,17 +2557,19 @@ function RefreshDataRowsAfterUpload(response) {
 
 //###########################################################################
 
-//=========  MSSSS_student_response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
-    function MSSSS_student_response(mode, selected_dict, sel_pk_int) {
+//=========  MSSSS_student_response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26 PR2024-05-13
+    function MSSSS_student_response(modalName, tblName, selected_dict, sel_pk_int) {
         console.log( "===== MSSSS_student_response ========= ");
-        console.log( "    mode", mode);
+        console.log( "    modalName", modalName);
+        console.log( "    tblName", tblName);
         console.log( "    selected_dict", selected_dict);
         console.log( "    sel_pk_int", sel_pk_int, typeof sel_pk_int);
+
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
         if(sel_pk_int === -1) { sel_pk_int = null};
 
         const upload_pk_dict = {};
-
 
         setting_dict.sel_student_pk = sel_pk_int;
         setting_dict.sel_student_name = (selected_dict && selected_dict.fullname) ? selected_dict.fullname : null;
@@ -2578,7 +2585,7 @@ function RefreshDataRowsAfterUpload(response) {
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         FillTblRows();
-        // not necessary, filer will be reset
+        // not necessary, filter will be reset
         //  Filter_TableRows();
 
     };  // MSSSS_student_response
@@ -2589,6 +2596,8 @@ function RefreshDataRowsAfterUpload(response) {
         //console.log( "selected_pk", selected_pk);
         //console.log( "selected_code", selected_code);
         //console.log( "selected_name", selected_name);
+
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
 // --- reset table
         tblBody_datatable.innerText = null;

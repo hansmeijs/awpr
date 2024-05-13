@@ -144,8 +144,8 @@
 
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02 PR2023-01-08
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
-        //console.log(" --- UpdateHeaderbar ---" )
-    //console.log("    setting_dict", setting_dict )
+        console.log(" --- UpdateHeaderbar ---" )
+    console.log("    setting_dict", setting_dict )
     //console.log("    el_hdrbar_examyear", el_hdrbar_examyear )
 
 // --- EXAM YEAR
@@ -173,7 +173,7 @@
         if(el_hdrbar_department) {
             const display_department = (!!permit_dict.display_department);
 
-    //console.log("    display_department", display_department )
+    console.log("    display_department", display_department )
     //console.log("    permit_dict.allowed_depbases", permit_dict.allowed_depbases )
             const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
             //PR2023-06-14 debug: must get may_select_department from permit_dict

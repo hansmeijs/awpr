@@ -243,7 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_school_response)}, false );
+                function() {
+                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_school_response);
+                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_school_response);
+                }, false );
         };
 
 // ---  SIDEBAR ------------------------------------
@@ -2954,12 +2957,14 @@ const is_disabled =  (!auth_list || auth_list.length <= 1);
         DatalistDownload(request_item_setting);
     };  // MSED_Response
 
-//=========  MSSSS_school_response  ================ PR2023-06-03
-    function MSSSS_school_response(tblName, selected_dict, selected_pk) {
+//=========  MSSSS_school_response  ================ PR2023-06-03 PR2024-05-13
+    function MSSSS_school_response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_school_response ========= ");
         console.log( "selected_dict", selected_dict);
         console.log( "selected_pk", selected_pk);
         console.log( "tblName", tblName);
+
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
 // --- reset table rows, also delete header
         tblHead_datatable.innerText = null;

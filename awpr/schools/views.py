@@ -3895,7 +3895,8 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21 PR2021-03-25
 
 # - get headerbar parameters
         page = 'page_school'
-        display_school = True  #(request and request.user and request.user.role <= c.ROLE_008_SCHOOL)
+        # PR2024-05-13 display_school set to False
+        display_school = False
         display_department = False
         param = {'display_school': display_school, 'display_department': display_department}
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)

@@ -245,7 +245,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_response)}, false );
+                function() {
+                t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_response);
+            }, false );
         };
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
@@ -5756,7 +5758,7 @@ console.log( "......filter_dict", filter_dict);
         console.log( "    selected_dict", selected_dict);
         console.log( "    mod_MSSSS_dict", mod_MSSSS_dict);
 
-        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
+        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
         // when changing subject, only update settings, don't use DatalistDownload but filter on page
 
         if(selected_pk === -1) { selected_pk = null};

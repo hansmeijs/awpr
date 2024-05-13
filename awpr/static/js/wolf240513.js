@@ -247,7 +247,10 @@ document.addEventListener("DOMContentLoaded", function() {
             // PR2022-04-19 Sentry error: school_map is not defined
             // solved by replacing school_map by school_rows
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_response)}, false );
+                function() {
+                    //PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_response);
+                     t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
+                }, false );
         };
 
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
@@ -6055,7 +6058,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log( "    selected_dict", selected_dict);
         console.log( "    mod_MSSSS_dict", mod_MSSSS_dict);
 
-        // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
         // when changing subject, only update settings, don't use DatalistDownload but filter on page
 
         // reset sel_student_pk when selecting sel_subject_pk and vice versa

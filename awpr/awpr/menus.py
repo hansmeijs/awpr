@@ -327,7 +327,7 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             logger.debug('    display_department: ' + str(display_department))
 
 # ----- set background color in headerbar
-
+        """
         if req_usr.role == c.ROLE_032_INSP:
             _class_bg_color = 'awp_bg_green'
         elif req_usr.role == c.ROLE_016_CORR:
@@ -338,7 +338,7 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             _class_bg_color = 'awp_bg_yellow'
         else:
             _class_bg_color = 'awp_bg_blue'
-
+        """
 # ----- set menu_buttons -------- PR2018-12-21
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
         menu_buttons = set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request)
@@ -733,3 +733,5 @@ def get_depbase_list(request, requsr_school):  # PR2018-08-24  PR2018-11-23 PR20
 
     return depbase_pk_list, may_select_dep, sel_depbase_instance
 # --- end of get_depbase_list ---
+
+

@@ -198,7 +198,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {
+                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
+                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
+            }, false );
         };
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
@@ -2812,6 +2815,7 @@ console.log( "  >>>>>>>> url_str", url_str);
 //=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
     function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
         //console.log( "===== MSSSS_Response ========= ");
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
         // Note: when tblName = school: pk_int = schoolbase_pk
         if(selected_pk === -1) { selected_pk = null};

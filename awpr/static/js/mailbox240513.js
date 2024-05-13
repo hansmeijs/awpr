@@ -126,11 +126,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click",
                 function() {t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
-        }
+        };
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
-        }
+                function() {
+                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
+                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
+                }, false );
+        };
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_item_count = document.getElementById("id_SBR_item_count")
@@ -1462,6 +1465,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
     function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
         //console.log( "===== MSSSS_Response ========= ");
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
         // Note: when tblName = school: pk_int = schoolbase_pk
         if(selected_pk === -1) { selected_pk = null};

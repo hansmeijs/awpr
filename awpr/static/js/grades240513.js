@@ -230,7 +230,10 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
-            el_hdrbar_school.addEventListener("click", function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_school_response)}, false );
+            el_hdrbar_school.addEventListener("click", function() {
+                // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_school_response);
+                t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_school_response);
+            }, false );
         };
 
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
