@@ -63,6 +63,7 @@ def copy_examyearsetting_from_prev_examyear(prev_examyear_pk, new_examyear_pk, l
 
 def copy_userallowed_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
     # copy userallowed records from previous examyear PR2023-03-02
+    # PR2024-05-30 debug: don't copy allowed_clusters, because their pk is examyear specific (there is no cluster.base)
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -71,10 +72,9 @@ def copy_userallowed_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_l
     try:
         sql = ''.join((
             "INSERT INTO accounts_userallowed(",
-                "user_id, examyear_id, usergroups, allowed_sections, allowed_clusters, modifiedat, modifiedby_id",
+                "user_id, examyear_id, usergroups, allowed_sections, modifiedat, modifiedby_id",
             ") SELECT ",
-                "user_id, ", str(new_examyear_pk), "::INT, usergroups, allowed_sections, allowed_clusters, ",
-                "modifiedat, modifiedby_id ",
+                "user_id, ", str(new_examyear_pk), "::INT, usergroups, allowed_sections, modifiedat, modifiedby_id ",
             "FROM accounts_userallowed ",
             "WHERE examyear_id=", str(prev_examyear_pk), "::INT ",
             "RETURNING id;"

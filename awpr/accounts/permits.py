@@ -340,12 +340,16 @@ def get_usergroup_list_from_user_instance(user_instance):  # PR2023-01-25
 
 def get_userallowed_cluster_pk_list(userallowed_instance):
     # PR2023-01-14 PR2023-05-23
+    # PR2024-05-30 userallowed_instance is examyear specific: it has a field examyear_id
+
     logging_on = False  # s.LOGGING_ON
     allowed_cluster_pk_list = []
     if userallowed_instance:
         allowed_clusters_str = getattr(userallowed_instance, 'allowed_clusters')
+
         if logging_on:
             logger.debug('    allowed_clusters_str: ' + str(allowed_clusters_str) + ' ' + str(type(allowed_clusters_str)))
+
         if allowed_clusters_str:
             allowed_cluster_pk_list = json.loads(allowed_clusters_str)
 
@@ -660,30 +664,40 @@ def get_sqlclause_allowed_clusters(table, allowed_clusters_of_sel_school):
 # - end of get_sqlclause_allowed_clusters
 
 
-def get_allowed_clusters_of_sel_school(sel_schoolbase_pk, allowed_cluster_pk_list):
-    # PR2023-05-29
-    logging_on = False  # s.LOGGING_ON
+def get_allowed_clusters_of_sel_school(sel_schoolbase_pk, sel_examyear_pk, allowed_cluster_pk_list):
+    # PR2023-05-29 PR2024-05-30
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_allowed_clusters_of_sel_school -----')
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+        logger.debug('    sel_examyear_pk: ' + str(sel_examyear_pk))
         logger.debug('    allowed_cluster_pk_list: ' + str(allowed_cluster_pk_list))
+
     # PR2023-05-28 debug: corrector of SKAI could not approve scores
     # SKAI has no allowed_clusters, but corrector had allowed_clusters from other schools
     # gave no permission because allowed_cluster_pk_list had values and no value of SKAI
     # solved by filtering only the allowed_clusters_of_sel_school
     # TODO: change format of allowed_clusters like allowed_sections: dict with key = schoolbasepk and list of allowedclusters
+
+    # PR2024-05-30 second correctors got message 'Dit vak behoort niet tot de toegestane clusters.'
+    # because there was no filter of examyear, so clusters of previousexamyear were also in the list
+    # solved by adding examyear clause
+
     allowed_clusters_of_sel_school = []
-    if sel_schoolbase_pk and allowed_cluster_pk_list:
+    if sel_schoolbase_pk and sel_examyear_pk and allowed_cluster_pk_list:
         sql = ''.join((
-            "SELECT cls.id ",
+            "SELECT cls.id ", # "cls.name AS cls_name, school.name AS school_name, school.examyear_id ",
             "FROM subjects_cluster AS cls ",
-            "INNER JOIN schools_school AS school ON (school.id = cls.school_id)",
-            "WHERE cls.id IN (SELECT UNNEST(ARRAY", str(allowed_cluster_pk_list), "::INT[]))"
-            "AND school.base_id = ", str(sel_schoolbase_pk), "::INT;"
+            "INNER JOIN schools_school AS school ON (school.id = cls.school_id) ",
+            "WHERE cls.id IN (SELECT UNNEST(ARRAY", str(allowed_cluster_pk_list), "::INT[])) "
+            "AND school.base_id = ", str(sel_schoolbase_pk), "::INT "
+            "AND school.examyear_id = ", str(sel_examyear_pk), "::INT;"
         ))
         with connection.cursor() as cursor:
             cursor.execute(sql)
             for row in cursor.fetchall():
+                if logging_on:
+                    logger.debug('    row: ' + str(row))
                 # row is tuple
                 if row[0] not in allowed_clusters_of_sel_school:
                     allowed_clusters_of_sel_school.append(row[0])

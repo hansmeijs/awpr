@@ -1256,6 +1256,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         // input fields are: "segrade", "srgrade", "pescore", "pegrade", "cescore", "cegrade",
 
                         if (data_dict.examperiod === 4) {
+                            // PR2024-05-17 TODO remove exemption_imported filter, too strict > maybe enable change when insp agrees
                             is_enabled = ["segrade", "cegrade"].includes(field_name) && !data_dict.exemption_imported;
                         } else if (data_dict.examperiod === 1) {
                             is_enabled = ["segrade", "srgrade", "pescore", "cescore"].includes(field_name)

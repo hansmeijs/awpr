@@ -482,13 +482,19 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02 PR2023-0
         # get_allowed_sections
                                         userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
                                         userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+                                        userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
 
-                                        allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
-                                            sel_schoolbase_pk = sel_school.base_id if sel_school else None,
-                                            allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
-                                        )
                                         if logging_on:
                                             logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
+                                            logger.debug('    userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+
+                                        # PR2024-05-30 filter on examyear_pk added
+                                        allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+                                            sel_schoolbase_pk = sel_school.base_id if sel_school else None,
+                                            sel_examyear_pk=sel_school.examyear_id if sel_school else None,
+                                            allowed_cluster_pk_list=userallowed_cluster_pk_list
+                                        )
+                                        if logging_on:
                                             logger.debug('    allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
 
                                         # blank scores / grades are not included
@@ -1384,10 +1390,13 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
         # get_allowed_sections
                         userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
                         userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+                        userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
 
+                        # PR2024-05-30 filter on examyear_pk added
                         allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
                             sel_schoolbase_pk=sel_school.base_id if sel_school else None,
-                            allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                            sel_examyear_pk=sel_school.examyear_id if sel_school else None,
+                            allowed_cluster_pk_list=userallowed_cluster_pk_list
                         )
 
         # - get selected examperiod, levelbase from usersetting
@@ -3267,10 +3276,13 @@ class GradeUploadView(View):
 
                                 userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
                                 userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+                                userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
 
+                                # PR2024-05-30 filter on examyear_pk added
                                 allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
                                     sel_schoolbase_pk=grade.studentsubject.student.school.base_id,
-                                    allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                                    sel_examyear_pk=grade.studentsubject.student.school.examyear_id,
+                                    allowed_cluster_pk_list=userallowed_cluster_pk_list
                                 )
                                 is_allowed = grad_val.validate_grade_is_allowed(
                                     request=request,

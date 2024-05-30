@@ -407,10 +407,15 @@ class Studentsubject(sch_mod.AwpBaseModel):
     gradelist_use_exem = BooleanField(default=False)
 
     # PR2022-01-02 added: no input info and max_ep
+    # PR2024-05-17 TODO to be deprecated, use gl_noinput instead
     gl_ni_se = BooleanField(default=False)
     gl_ni_sr = BooleanField(default=False)
     gl_ni_pe = BooleanField(default=False)
     gl_ni_ce = BooleanField(default=False)
+
+    # PR2024-05-17 TODO use gl_noinput instead of gl_ni_se etc.
+    # gl_noinput = BooleanField(default=False)
+
     gl_examperiod = PositiveSmallIntegerField(null=True)
 # - end of Studentsubject
 
@@ -456,8 +461,11 @@ class Studentsubjectlog(sch_mod.AwpBaseModel):
     pok_pece = CharField(max_length=c.MAX_LENGTH_04, null=True)
     pok_final = CharField(max_length=c.MAX_LENGTH_04, null=True)
 
+    # PR2024-05-16 TODO log file does not store auth info, only published info.
+    # must remove subj_auth1by and subj_auth2by
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+
     subj_published = ForeignKey(sch_mod.Published, null=True, related_name='+', on_delete=SET_NULL)
 
     # 'tobechanged' is set True when schemeitem (=subjecttype) changes, it must be submitted again
@@ -475,7 +483,15 @@ class Studentsubjectlog(sch_mod.AwpBaseModel):
     gradelist_sesrgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
+    # PR2024-05-16 TODO in log file all fields must be set null=True , also boolean fields
+    # gradelist_use_exem = BooleanField(null=True)
     gradelist_use_exem = BooleanField(default=False)
+
+    # PR2024-05-17 TODO use gl_noinput instead of gl_ni_se etc.
+    # gl_noinput = BooleanField(null=True)
+    # gl_examperiod = PositiveSmallIntegerField(null=True)
+
 # - end of Studentsubjectlog
 
 class Studentsubjectnote(sch_mod.AwpBaseModel):
@@ -616,6 +632,7 @@ class Gradelog(sch_mod.AwpBaseModel): # PR2023-08-11
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
+    #PR2024-05-16 TODO no need for studentsubject in log, was:
     studentsubject = ForeignKey(Studentsubject, null=True, related_name='+', on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(null=True)
@@ -634,10 +651,15 @@ class Gradelog(sch_mod.AwpBaseModel): # PR2023-08-11
     finalgrade = CharField(null=True, max_length=c.MAX_LENGTH_04)
 
     # PR2024-02-27 TODO add:
-    # 'se_published_id', 'se_blocked' ,
-    # 'sr_published_id', 'sr_blocked'
-    # 'pe_published_id', 'pe_blocked'
-    # 'ce_published_id', 'ce_blocked'
+    # se_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=SET_NULL)
+    # sr_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=SET_NULL)
+    # pe_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=SET_NULL)
+    # ce_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=SET_NULL)
+
+    # se_blocked = BooleanField(null=True)
+    # sr_blocked = BooleanField(null=True)
+    # pe_blocked = BooleanField(null=True)
+    # ce_blocked = BooleanField(null=True)
 
     # PR2023-01-24 added, to skip approval when imported
     exemption_imported = BooleanField(null=True)

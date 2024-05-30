@@ -600,9 +600,13 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
 
     # - filter on allowed clusters
             if allowed_only:
+                userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
+
+                # PR2024-05-30 filter on examyear_pk added
                 allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
                     sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
-                    allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list_from_request(request)
+                    sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
+                    allowed_cluster_pk_list=userallowed_cluster_pk_list
                 )
                 userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters(
                     table='cluster',
@@ -4131,9 +4135,13 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
             if sql_clause:
                 sql_list.append(sql_clause)
 
+            userallowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+
+            # PR2024-05-30 filter on examyear_pk added
             allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
-                sel_schoolbase_pk=sel_school.base_id if sel_school else sel_school.base_id,
-                allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                sel_schoolbase_pk=sel_school.base_id if sel_school else None,
+                sel_examyear_pk=sel_school.examyear_id if sel_school else None,
+                allowed_cluster_pk_list=userallowed_cluster_pk_list
             )
             sqlclause_allowed_clusters = acc_prm.get_sqlclause_allowed_clusters(
                 table="studsubj",

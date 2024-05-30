@@ -742,8 +742,10 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('    sel_school_instance: ' + str(sel_school_instance))
 
     # PR2023-05-28 debug: must filter only allowed_clusters of selected school
+    # PR2024-05-30 debug: also filter on examyear
     allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
         sel_schoolbase_pk=sel_schoolbase_instance.pk if sel_schoolbase_instance else None,
+        sel_examyear_pk=sel_examyear_instance.pk  if sel_examyear_instance else None,
         allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(requsr_userallowed_instance)
     )
     if allowed_clusters_of_sel_school:

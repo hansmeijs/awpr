@@ -556,48 +556,6 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
         logger.debug('    req_mode: ' + str(req_mode))
         logger.debug('    updated_fields: ' + str(updated_fields))
 
-    """
- 
-     id                   | integer                  |           | not null | nextval('students_studentsubjectlog_id_seq'::regclass)
-     studentsubject_id    | integer                  |           | not null |
-     mode                 | character varying(1)     |           |          |
-     is_extra_nocount     | boolean                  |           |          |
-     is_extra_counts      | boolean                  |           |          |
-     is_thumbrule         | boolean                  |           |          |
-     pws_title            | character varying(80)    |           |          |
-     pws_subjects         | character varying(80)    |           |          |
-     has_exemption        | boolean                  |           |          |
-     has_sr               | boolean                  |           |          |
-     has_reex             | boolean                  |           |          |
-     has_reex03           | boolean                  |           |          |
-     exemption_year       | smallint                 |           |          |
-     pok_validthru        | smallint                 |           |          |
-     pok_sesr             | character varying(4)     |           |          |
-     pok_pece             | character varying(4)     |           |          |
-     pok_final            | character varying(4)     |           |          |
-     tobechanged          | boolean                  |           |          |
-     tobedeleted          | boolean                  |           |          |
-     deleted              | boolean                  |           |          |
-     cluster_id           | integer                  |           |          |
-     ete_cluster_id       | integer                  |           |          |
-     modifiedby_id        | integer                  |           |          |
-     schemeitem_id        | integer                  |           |          |
-     student_id           | integer                  |           |          |
-     subj_auth1by_id      | integer                  |           |          |
-     subj_auth2by_id      | integer                  |           |          |
-     subj_published_id    | integer                  |           |          |
-     subject_id           | integer                  |           |          |
-     gradelist_finalgrade | character varying(4)     |           |          |
-     gradelist_pecegrade  | character varying(4)     |           |          |
-     gradelist_sesrgrade  | character varying(4)     |           |          |
-     gradelist_use_exem   | boolean                  |           | not null |
-     pok_published_id     | integer                  |           |          |
-     reex3_published_id   | integer                  |           |          |
-     reex_published_id    | integer                  |           |          |
-     sr_published_id      | integer                  |           |          |
-     modifiedat           | timestamp with time zone |           | not null |
-     
-    """
     # PR2024-05-03 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
     # solved by adding 'gradelist_use_exem' to tobe_copied_field_list
     if grade_pk and request and request.user:
@@ -618,8 +576,11 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
                 'modifiedby_id', 'modifiedat'
             )
 
+            # PR2024-05-03 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
+            # solved by adding 'gradelist_use_exem' to tobe_copied_field_list
+            # PR2024-05-30 not true: table grade_log does not have a field 'gradelist_use_exem', removed from list
             # these fields are always included:
-            tobe_copied_field_list = ['examperiod', 'status', 'modifiedby_id', 'modifiedat', 'gradelist_use_exem']
+            tobe_copied_field_list = ['examperiod', 'status', 'modifiedby_id', 'modifiedat']  # was: , 'gradelist_use_exem']
 
             for field in field_list:
                 # - when mode is 'update': copy only updated fields and required fields

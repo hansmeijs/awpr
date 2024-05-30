@@ -913,8 +913,12 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("=== FillOptionsExamperiod");
         //console.log("el_SBR_select_examperiod", el_SBR_select_examperiod);
         if (el_SBR_select_examperiod){
+            //PR2024-05-25 debug: Milly Medema ETE: cannot change examperiod, el_SBR_select_examperiod not visible
+            // solution: don't hide el_SBR_select_examperiod,, also applies to page Orderlist
+            // Note: page Wolf and Grades don't have el_SBR_select_examperiod. Examperiod is selected with sel_btn
+            // was: examperiod is selected with sel_btn when grades, hide sbr btn when is_permit_same_school
+            add_or_remove_class(el_SBR_select_examperiod.parentNode, cls_hide, false);
 
-        // examperiod is selected with sel_btn when grades, hide sbr btn when is_permit_same_school
             const is_permit_admin = (permit_dict.requsr_role_admin && permit_dict.permit_crud);
             add_or_remove_class(el_SBR_select_examperiod.parentNode, cls_hide, !is_permit_admin);
 

@@ -182,7 +182,7 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of
 
 # - check if lvlbase_is_allowed
         if is_allowed:
-            # PR2024-045-02 debug: Jacqueline Duggins-Horsford MPC / Sundial
+            # PR2024-05-02 debug: Jacqueline Duggins-Horsford MPC / Sundial
             # cannot approve Havo / Vwo SE grades, it says: no records
             # cause:  if not lvlbase_pk :
             #                 is_allowed = False
@@ -217,8 +217,13 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_clusters_of
 
 
 def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_examyear, si_dict, request):
-    # PR2021-01-18 PR2021-09-19 PR2021-12-15 PR2021-12-25 PR2022-02-09 PR2022-04-16 PR2023-05-22
-    logging_on = s.LOGGING_ON
+    # PR2021-01-18 PR2021-09-19 PR2021-12-15 PR2021-12-25 PR2022-02-09 PR2022-04-16 PR2023-05-22 PR2024-05-18
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ------- validate_grade_input_value -------')
+        logger.debug('    si_dict: ' + str(si_dict))
+
     # values of examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'
     #  ('sesrgrade', 'pecegrade', 'finalgrade' are calculated fields)
 
@@ -253,8 +258,6 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
         max_score = exam.scalelength
 
     if logging_on:
-        logger.debug(' ')
-        logger.debug(' ------- validate_grade_input_value -------')
         logger.debug('     subj_code:     ' + str(subj_code))
         logger.debug('     student:       ' + str(student))
         logger.debug('     examgradetype: ' + str(examgradetype))
@@ -779,10 +782,13 @@ def validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dic
         si_max_reex = si_dict.get('max_reex', 1)
         if not si_max_reex:
             error_list.append(str(_('Re-examination is not allowed for this subject.')))
-        elif 'reex03' in examgradetype:
-            si_no_thirdperiod = si_dict.get('no_thirdperiod', False)
-            if si_no_thirdperiod:
-                error_list.append(str(_('This subject has no third exam period.')))
+
+        # PR2024-05-18 si does not contain no_thirdperiod, only examyear has no_thirdperiod
+        # was:
+        #elif 'reex03' in examgradetype:
+        #    si_no_thirdperiod = si_dict.get('no_thirdperiod', False)
+        #    if si_no_thirdperiod:
+        #        error_list.append(str(_('This subject has no third exam period.')))
 
 # - check if grade is allowed when combi subject
     if not error_list:
@@ -1046,6 +1052,8 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR202
         key_str = ''.join((se_sr_pe_ce, '_published_id'))
         is_publ = getattr(grade_instance, key_str)
 
+        # PR2024-05-17 TODO remove exemption_imported filter, too strict > maybe enable change when insp agrees
+        # for now: set all exemption_imported = false in production database
         exemption_imported = grade_instance.exemption_imported
 
         if not is_publ:
