@@ -590,6 +590,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
 def download_setting(request_item_setting, user_lang, request):
     # PR2020-07-01 PR2020-1-14 PR2021-08-12 PR2021-12-03 PR2022-12-10 PR2023-05-17
 
+    # PR2024-066-03 Note: settings are already saved with UserSettingsUploadView,
+    # therefore savedsetting may be same as request_item_setting
+
     if request_item_setting is None:
         request_item_setting = {}
 
@@ -722,6 +725,8 @@ def download_setting(request_item_setting, user_lang, request):
     if sel_examyear_tobesaved:
         selected_pk_dict_has_changed = True
 
+    sel_examyear_pk = sel_examyear_instance.pk if sel_examyear_instance else None
+
 # ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-04  PR2023-05-17
     sel_schoolbase_instance, sel_schoolbase_tobesaved, sel_school_instance = \
         acc_view.get_settings_schoolbase(
@@ -745,7 +750,7 @@ def download_setting(request_item_setting, user_lang, request):
     # PR2024-05-30 debug: also filter on examyear
     allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
         sel_schoolbase_pk=sel_schoolbase_instance.pk if sel_schoolbase_instance else None,
-        sel_examyear_pk=sel_examyear_instance.pk  if sel_examyear_instance else None,
+        sel_examyear_pk=sel_examyear_pk,
         allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(requsr_userallowed_instance)
     )
     if allowed_clusters_of_sel_school:
@@ -778,6 +783,9 @@ def download_setting(request_item_setting, user_lang, request):
         )
     if sel_depbase_tobesaved:
         selected_pk_dict_has_changed = True
+
+    sel_depbase_pk = sel_depbase_instance.pk if sel_depbase_instance else None
+
     if logging_on:
         logger.debug('    sel_depbase_instance: ' + str(sel_depbase_instance))
         logger.debug('    sel_department_instance: ' + str(sel_department_instance))
@@ -785,7 +793,7 @@ def download_setting(request_item_setting, user_lang, request):
 # ===== LEVELBASE =======================
     allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
         allowed_schoolbase_dict=allowed_schoolbase_dict,
-        sel_depbase_pk=sel_depbase_instance.pk if sel_depbase_instance else None
+        sel_depbase_pk=sel_depbase_pk
     )
     if logging_on:
         logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
@@ -807,18 +815,33 @@ def download_setting(request_item_setting, user_lang, request):
         selected_pk_dict_has_changed = True
 
     if logging_on:
+        logger.debug(' ')
         logger.debug('    sel_lvlbase_instance: ' + str(sel_lvlbase_instance))
         logger.debug('    sel_lvlbase_tobesaved: ' + str(sel_lvlbase_tobesaved))
         logger.debug('    sel_level_instance: ' + str(sel_level_instance))
+
+# ===== SECTORBASE =======================
+    sel_sctbase_pk, sel_sctbase_tobesaved = \
+        acc_view.get_settings_sectorbase(
+            sel_depbase_pk=sel_depbase_pk,
+            sel_examyear_pk=sel_examyear_pk,
+            setting_dict=setting_dict,
+            selected_pk_dict=selected_pk_dict,
+            request_item_setting=request_item_setting
+        )
+    if sel_sctbase_tobesaved:
+        selected_pk_dict_has_changed = True
 
 # ===== SUBJECTBASE =======================
     sel_lvlbase_instance_pk = sel_lvlbase_instance.pk if sel_lvlbase_instance else -9
     allowed_subjbases_arr = acc_prm.get_userallowed_subjbase_arr(allowed_depbase_dict, allowed_lvlbase_pk_arr, sel_lvlbase_instance_pk)
 
     if logging_on:
+        logger.debug(' ')
         logger.debug('===== SUBJECTBASE =====')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
         logger.debug('    setting_dict: ' + str(setting_dict))
+        logger.debug('    allowed_subjbases_arr: ' + str(allowed_subjbases_arr))
         logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
 
     sel_subject_instance, sel_subjbase_tobesaved = acc_view.get_settings_subjbase(
@@ -869,7 +892,6 @@ def download_setting(request_item_setting, user_lang, request):
     if sel_examptype_tobesaved:
         selected_pk_dict_has_changed = True
 
-
 # ===== AUTH INDEX =======================
     sel_authindex_tobesaved = acc_view.get_settings_auth_index(
         usergroups_arr=requsr_usergroup_list,
@@ -886,12 +908,11 @@ def download_setting(request_item_setting, user_lang, request):
 
     if logging_on:
         logger.debug(' ')
-        logger.debug('++++++++++++  SECTORBASE, SCHEME, STUDENT, CLUSTER ++++++++++++++++++++++++')
+        logger.debug('++++++++++++  SCHEME, STUDENT, CLUSTER ++++++++++++++++++++++++')
         logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
 
     # PR2022-05-29 don't save sel_student_pk, but only filter locally. Was: , c.KEY_SEL_STUDENT_PK):
-    for key_str in (c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,
-                    c.KEY_SEL_STUDENT_PK, c.KEY_SEL_CLUSTER_PK):
+    for key_str in (c.KEY_SEL_SCHEME_PK,  c.KEY_SEL_STUDENT_PK, c.KEY_SEL_CLUSTER_PK):
 
         if logging_on:
             logger.debug('........... key_str: ' + str(key_str))
@@ -949,14 +970,6 @@ def download_setting(request_item_setting, user_lang, request):
                 if student:
                     setting_dict['sel_student_name'] = stud_fnc.get_full_name(student.lastname, student.firstname, student.prefix)
                     setting_dict['sel_student_name_init'] = stud_fnc.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
-
-            elif key_str == c.KEY_SEL_SCTBASE_PK:
-                sector = subj_mod.Sector.objects.get_or_none(
-                    examyear=sel_examyear_instance,
-                    base_id=saved_pk_int)
-                if sector:
-                    setting_dict['sel_sctbase_code'] = sector.base.code if sector.base else '-'
-                    setting_dict['sel_sector_name'] = sector.name
 
             elif key_str == c.KEY_SEL_CLUSTER_PK:
                 cluster = subj_mod.Cluster.objects.get_or_none(

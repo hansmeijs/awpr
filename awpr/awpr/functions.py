@@ -1202,7 +1202,7 @@ def system_updates(examyear, request):
     update_library_in_awpr_lib(examyear, request)
 
 # PR2024-02-26 set tobedeleted False in table students
-    set_students_tobedeleted_falseONCEONLY(request)
+    #set_students_tobedeleted_falseONCEONLY(request)
 
 # PR2023-07-18 fill banklist in examyearsetting of examyear 2023
     #fillBanklistONCEONLY(request)

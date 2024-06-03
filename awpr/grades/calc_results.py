@@ -19,6 +19,7 @@ from awpr import functions as af
 
 from grades import calculations as grade_calc
 from grades import calc_score as calc_score
+from  grades import calc_finalgrade as calc_final
 from students import functions as stud_fnc
 from students import views as stud_view
 
@@ -1114,7 +1115,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
             if gradetype == c.GRADETYPE_02_CHARACTER:
                 #'OvgTvMax kiest bij gelijke cijfers de eerste parameter als TvMax
                 #'Tv01 heeft de voorkeur boven vrijstelling: daaarom Tv01 invullen als eerste parameter
-                max_examperiod = calc_max_examperiod_gradetype_character(
+                max_examperiod = calc_final.calc_max_examperiod_gradetype_character(
                     this_examperiod, this_finalgrade,
                     previous_examperiod, prev_max_finalgrade)
                 if logging_on:
@@ -1131,7 +1132,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                     logger.debug('    this_sesr: ' + str(this_sesr) + ' ' + str(type(this_sesr)))
                     logger.debug('    prev_max_sesr: ' + str(prev_max_sesr) + ' ' + str(type(prev_max_sesr)))
 
-                max_examperiod = calc_max_examperiod_gradetype_decimal(
+                max_examperiod = calc_final.calc_max_examperiod_gradetype_decimal(
                     this_examperiod, this_finalgrade, this_pece, this_sesr,
                     previous_examperiod, prev_max_finalgrade, prev_max_pece, prev_max_sesr)
                 if logging_on:
@@ -1206,11 +1207,11 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 pok_max_examperiod = None
                 # default max_examperiod = first argument, make prev ep the first argument so it will return as default
                 if gradetype == c.GRADETYPE_02_CHARACTER:
-                    pok_max_examperiod = calc_max_examperiod_gradetype_character(
+                    pok_max_examperiod = calc_final.calc_max_examperiod_gradetype_character(
                         previous_examperiod, prev_pok_final,
                         this_examperiod, this_pok_final)
                 elif gradetype == c.GRADETYPE_01_NUMBER:
-                    pok_max_examperiod = calc_max_examperiod_gradetype_decimal(
+                    pok_max_examperiod = calc_final.calc_max_examperiod_gradetype_decimal(
                         previous_examperiod, prev_pok_final, prev_pok_pece, prev_pok_sesr,
                         this_examperiod, this_pok_final, this_pok_pece, this_pok_sesr)
 
@@ -1780,100 +1781,6 @@ def calc_final_avg(student_ep_dict):  # PR2021-12-23
         final_count_str if final_count_str else '-',
         ') '))
 # - end of calc_final_avg
-
-
-def calc_max_examperiod_gradetype_decimal(examperiod_A, finalgrade_A, pece_A, sesr_A, examperiod_B, finalgrade_B, pece_B, sesr_B):
-    # PR2021-11-21 from AWP Function Calculations.EindcijferTvMax
-    # Function returns examperiod with the highest grade, returns A when grades are the same or not entered
-    # when the final grades are the same, it returns te examperiod with the highest pece grade
-    # PR2022-07-06 sesr added, to compare when weighing_ce = 0
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug( '  -----  calc_max_examperiod_gradetype_decimal  -----')
-        logger.debug('..... examperiod_A: ' + str(examperiod_A))
-        logger.debug('..... finalgrade_A: ' + str(finalgrade_A) + ' ' + str(type(finalgrade_A)))
-        logger.debug('..... pece_A: ' + str(pece_A) + ' ' + str(type(pece_A)))
-        logger.debug('..... sesr_A: ' + str(sesr_A) + ' ' + str(type(sesr_A)))
-        logger.debug('..... examperiod_B: ' + str(examperiod_B) )
-        logger.debug('..... finalgrade_B: ' + str(finalgrade_B) + ' ' + str(type(finalgrade_B)))
-        logger.debug('..... pece_B: ' + str(pece_B) + ' ' + str(type(pece_B)))
-        logger.debug('..... sesr_B: ' + str(sesr_B) + ' ' + str(type(sesr_B)))
-
-    final_A_dot_nz = finalgrade_A.replace(',', '.') if finalgrade_A else "0"
-    final_decimal_A =  Decimal(final_A_dot_nz)
-
-    final_B_dot_nz =  finalgrade_B.replace(',', '.') if finalgrade_B else "0"
-    final_decimal_B =  Decimal(final_B_dot_nz)
-
-    if logging_on:
-        logger.debug('..... final_decimal_A: ' + str(final_decimal_A) + ' ' + str(type(final_decimal_A)))
-        logger.debug('..... final_decimal_B: ' + str(final_decimal_B) + ' ' + str(type(final_decimal_B)))
-
-    max_examperiod = examperiod_A
-    # from https://www.geeksforgeeks.org/python-decimal-compare-method/
-
-# - compare final grades
-    compare_final = final_decimal_B.compare(final_decimal_A)
-
-    if compare_final == 1:  # b.compare(a) == 1 means b > a
-        max_examperiod = examperiod_B
-    elif compare_final == -1:  # b.compare(a) == -1 means b < a
-        pass  # max_examperiod = examperiod_A
-
-# - if final grades as the same: compare pece grades
-    elif compare_final == 0:  # # b.compare(a) == 0 means b = a
-        pece_A_dot_nz = pece_A.replace(',', '.') if pece_A else "0"
-        pece_decimal_A = Decimal(pece_A_dot_nz)
-
-        pece_B_dot_nz = pece_B.replace(',', '.') if pece_B else "0"
-        pece_decimal_B = Decimal(pece_B_dot_nz)
-
-        compare_pece = pece_decimal_B.compare(pece_decimal_A)
-        if compare_pece == 1:  # b.compare(a) == 1 means b > a
-            max_examperiod = examperiod_B
-
-        elif compare_pece == -1:  # b.compare(a) == -1 means b < a
-            pass  # max_examperiod = examperiod_A
-
-# - if pece grades as the same: compare sesr grades
-        elif compare_pece == 0:  # # b.compare(a) == 0 means b = a
-            sesr_A_dot_nz = sesr_A.replace(',', '.') if sesr_A else "0"
-            sesr_decimal_A = Decimal(sesr_A_dot_nz)
-
-            sesr_B_dot_nz = sesr_B.replace(',', '.') if sesr_B else "0"
-            sesr_decimal_B = Decimal(sesr_B_dot_nz)
-
-            compare_sesr = sesr_decimal_B.compare(sesr_decimal_A)
-            if compare_sesr == 1:  # b.compare(a) == 1 means b > a
-                max_examperiod = examperiod_B
-
-    if logging_on:
-        logger.debug('..... max_examperiod: ' + str(max_examperiod))
-    return max_examperiod
-# end of calc_max_examperiod_gradetype_decimal
-
-
-def calc_max_examperiod_gradetype_character(ep_A, grade_A, ep_B, grade_B):
-    # PR2021-11-21 from AWP Function Calculations.OvgTvMax
-    # Function returns examperiod with the highest grade, returns A when grades are the same or not entered
-
-    grade_A_lc = grade_A.lower() if grade_A else ''
-    grade_B_lc = grade_B.lower() if grade_B else ''
-
-    max_examperiod = ep_A
-    if grade_A_lc == 'g':
-        max_examperiod = ep_A
-    elif grade_A_lc == 'v':
-        if grade_B_lc == 'g':
-            max_examperiod = ep_B
-    elif grade_A_lc == 'o':
-        if grade_B_lc in ('g', 'v'):
-            max_examperiod = ep_B
-    else:
-        if grade_B_lc in ('g', 'v', 'o'):
-            max_examperiod = ep_B
-    return max_examperiod
-# - end of calc_max_examperiod_gradetype_character
 
 
 def put_noinput_in_student_ep_dict(is_combi, use_studsubj_ep_dict, calc_student_ep_dict):  # PR2021-12-22

@@ -69,7 +69,7 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, a
                 msg_list, is_approve=False, is_score=False, is_grade_exam=False):
     # PR2022-03-20 PR2023-02-18 PR2023-05-29
     # called by GradeUploadView and by GradeApproveView
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
         logger.debug('     allowed_clusters_of_sel_school: ' + str(allowed_clusters_of_sel_school))
@@ -1107,7 +1107,7 @@ def validate_grade_published_from_gradeinstance(grade_instance, examtype, this_i
     # when ep02/ ep03: can subject be deleted when SE approved / CE approved (take in account secret exam)
 
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_published_from_gradeinstance -------')
         logger.debug('    grade_instance: ' + str(grade_instance))
@@ -1121,10 +1121,11 @@ def validate_grade_published_from_gradeinstance(grade_instance, examtype, this_i
         if logging_on:
             logger.debug('    examperiod:  ' + str(examperiod))
             logger.debug('    examtype:  ' + str(examtype))
-            logger.debug('    _auth1by_id:    ' + str(getattr(grade_instance, examtype + '_auth1by_id')))
-            logger.debug('    _auth2by_id:    ' + str(getattr(grade_instance, examtype + '_auth2by_id')))
-            logger.debug('    _auth3by_id:    ' + str(getattr(grade_instance, examtype + '_auth3by_id')))
-            logger.debug('    _auth4by_id:    ' + str(getattr(grade_instance, examtype + '_auth4by_id')))
+            logger.debug(' '.join(('    auth1by_id:',
+                '1:', str(getattr(grade_instance, examtype + '_auth1by_id')),
+                ', 2:', str(getattr(grade_instance, examtype + '_auth2by_id')),
+                ', 3:', str(getattr(grade_instance, examtype + '_auth3by_id')),
+                ', 4:', str(getattr(grade_instance, examtype + '_auth4by_id')))))
 
         is_blocked = getattr(grade_instance, examtype + '_blocked', False)
         is_published = True if getattr(grade_instance, examtype + '_published_id') else False

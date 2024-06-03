@@ -198,7 +198,7 @@ def calc_grade_from_score_wrap(department, si_dict, row):
     # TODO enabled cescore_is_published
             # if cescore_is_published:
             if True:
-# - calculate ce_grade from ce_score
+# - calculate ce_grade from cescore
                 scalelength = row.get('scalelength')
                 if logging_on:
                     logger.debug('     scalelength: ' + str(scalelength) + ' ' + str(type(scalelength)))
@@ -216,8 +216,8 @@ def calc_grade_from_score_wrap(department, si_dict, row):
 
     # - ce_grade is None when exam is not published
                         if exam_is_published and cesuur:
-                            ce_score = row.get('cescore')
-                            score_int = int(ce_score) if ce_score is not None else None
+                            cescore = row.get('cescore')
+                            score_int = int(cescore) if cescore is not None else None
                             scalelength_int = int(scalelength)
                             cesuur_int = int(cesuur)
                             ce_grade = calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
@@ -235,8 +235,8 @@ def calc_grade_from_score_wrap(department, si_dict, row):
 
     # - DUO exams don't have to be published
                         if nterm_str:
-                            ce_score = row.get('cescore')
-                            score_int = int(ce_score) if ce_score is not None else None
+                            cescore = row.get('cescore')
+                            score_int = int(cescore) if cescore is not None else None
                             scalelength_int = int(scalelength)
 
                             ce_grade = calc_grade_from_score_duo(score_int, scalelength_int, nterm_str)
@@ -818,6 +818,107 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
 
     return updated_cegrade_count, updated_cegrade_list, updated_student_pk_list
 # end of batch_update_finalgrade
+
+
+############################## VERSION 2 of batch update  ############################### PR2024-05-14
+
+def calc_grade_from_score_v2(examperiod, no_centralexam, weight_ce, cegrade, cescore,
+                             ete_exam, scalelength, cesuur, nterm, exam_published_id):
+
+    # PR2024-05-10 this function calculates new_ce_grade from cescore
+
+    # - parameters of calc_grade_from_score_v2 are:
+    #     ey.no_centralexam, si.weight_ce, si.ete_exam,
+    #     grd.examperiod, grd.cegrade, grd.cescore,
+    #     grd.exam.scalelength, grd.exam.cesuur, grd.exam.nterm, grd.exam.published_id
+    #  - return value is new_ce_grade
+
+    # only when weight_ce > 0, not no_centralexam, ep not exemption, (was: not secret_exam)
+    # when exemption (was: or secret_exam) the ce_grade is entered, not calculated
+
+    # note: scores of secret_exam are also entered, not grades
+    # only called by batch_update_grade
+
+#++++++++ this is the one that works +++++++++++++++++++++ PR2022-05-29
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('')
+        logger.debug('----- calc_grade_from_score_v2 -----')
+        logger.debug('     examperiod:      ' + str(examperiod))
+        logger.debug('     no_centralexam:      ' + str(no_centralexam))
+        logger.debug('     weight_ce:      ' + str(weight_ce))
+
+    new_ce_grade = None
+
+# - ce_grade = None when no_centralexam or weight_ce = 0
+    has_centralexam = not no_centralexam and weight_ce
+
+    if has_centralexam:
+        if logging_on:
+            logger.debug('     examperiod:     ' + str(examperiod) + ' ' + str(type(examperiod)))
+
+# - ce_grade is an entered value when it is an exemption
+        # PR2022-06-19 scores of secret_exam are also entered, not grades
+        # was:  is_secret_exam = row.get('secret_exam', False)
+        #       if is_secret_exam or examperiod == c.EXAMPERIOD_EXEMPTION:
+        if examperiod == c.EXAMPERIOD_EXEMPTION:
+            new_ce_grade = cegrade
+            if logging_on:
+                logger.debug('     examperiod new_ce_grade: ' + str(new_ce_grade) + ' ' + str(type(new_ce_grade)))
+        else:
+
+# - ce_grade is None when cescore is not published
+    # WARNING: this one blocks cegrade when score is not published, may be too strict
+    # PR2024-05-11 don't skip calc when grade.cescore is not published
+            # was:
+            # cescore_is_published = True if row['ce_published_id'] else False
+            # if cescore_is_published:
+
+# - calculate ce_grade from cescore
+            if logging_on:
+                logger.debug('     scalelength: ' + str(scalelength) + ' ' + str(type(scalelength)))
+
+            if scalelength:
+                # score_int = int(cescore) if cescore is not None else None
+                if logging_on:
+                    logger.debug('     ete_exam: ' + str(ete_exam) + ' ' + str(type(ete_exam)))
+                    logger.debug('     cescore: ' + str(cescore) + ' ' + str(type(cescore)))
+
+                if ete_exam:
+                    exam_is_published = exam_published_id is not None
+                    if logging_on:
+                        logger.debug('     exam_is_published: ' + str(exam_is_published) + ' ' + str(type(exam_is_published)))
+
+# - new_ce_grade is None when ete exam is not published
+                    if exam_is_published and cesuur:
+                        if logging_on:
+                            logger.debug('     cescore: ' + str(cescore) + ' ' + str(type(cescore)))
+                            logger.debug('     cesuur: ' + str(cesuur) + ' ' + str(type(cesuur)))
+
+                        new_ce_grade = calc_grade_from_score_ete(cescore, scalelength, cesuur)
+                else:
+                    if logging_on:
+                        logger.debug('     nterm: ' + str(nterm) + ' ' + str(type(nterm)))
+
+# - DUO exams don't have to be published
+                    if nterm:
+                        new_ce_grade = calc_grade_from_score_duo(cescore, scalelength, nterm)
+
+                        if logging_on:
+                            logger.debug('     cescore: ' + str(cescore) + ' ' + str(type(cescore)))
+                            logger.debug('     scalelength_int: ' + str(scalelength) + ' ' + str(type(scalelength)))
+
+    if logging_on:
+        logger.debug('  >> new_ce_grade: ' + str(new_ce_grade) + ' ' + str(type(new_ce_grade)))
+        logger.debug('---- end of calc_grade_from_score_v2 -----')
+    return new_ce_grade
+# - end of calc_grade_from_score_v2
+
+
+
+############################## END OF VERSION 2 of batch update  ############################### PR2024-05-14
+
 
 """
 Public Function CalcCijferFromScoreCITO(ByVal intScore As Integer, ByVal intLschaal As Integer, ByVal crcNterm As Currency) As Currency

@@ -5352,6 +5352,7 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                             logger.debug('    studsubj_dict:   ' + str(studsubj_dict))
                             logger.debug('    studsubj_pk:   ' + str(studsubj_pk))
                             logger.debug('    schemeitem_pk: ' + str(schemeitem_pk))
+                            logger.debug('    si_dict: ' + str(si_dict))
 
 # - get current studsubj - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
                         studsubj_instance = stud_mod.Studentsubject.objects.get_or_none(
@@ -5398,8 +5399,12 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                                     studsubj = None
                                     recalc_subj_composition = True
 
-                        # +++ create or restore new studentsubject, also create grade of first examperiod
+# +++ create or restore new studentsubject, also create grade of first examperiod
                         elif mode == 'create':
+                            # PR2024-05-31 TODO use si_dict instead of schemeitem instance
+                            # must also change it in import studsubj
+                            #   si_dict = schemeitems_dict.get(schemeitem_pk)
+
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
                             error_list = []
 
@@ -5856,7 +5861,8 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
                                         studsubj_pk_list.extend(updated_pk_list)
 
                                     if logging_on:
-                                        logger.debug('updated_pk_list: ' + str(updated_pk_list))
+                                        logger.debug('msg_list: ' + str(msg_list))
+                                        logger.debug('err_fields: ' + str(err_fields))
 
                                     if recalc_subj_comp:
                                         update_student_subj_composition(student_instance)
@@ -6220,7 +6226,6 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         save_changes = True
                         recalc_finalgrade = True
                         must_add_or_delete_exem_reex_reex03 = True
-                        err_fields.append(field)
 
                         if logging_on:
                             logger.debug(' add reex, field: ' + str(field) + ' ' + str(new_value))
@@ -6280,7 +6285,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 if err_list:
                     msg_list.extend(err_list)
                     err_fields.append(field)
-        # - count 'exemption', 'sr', 'reex', 'reex03' records of this student an save count in student
+        # - count 'exemption', 'sr', 'reex', 'reex03' records of this student and save count in student
                 update_reexcount_etc_in_student(field, studsubj_instance.student_id)
 
         elif '_auth' in field:
@@ -6465,6 +6470,7 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
 
     try:
         save_changes = False
+        savetolog_mode = None
 
 # if new_value = True: check if reex / reex03 has only one exam
         ce_exam = None
@@ -6485,7 +6491,7 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
         # when new_value = True: add or undelete grade
         if new_value:
             save_changes = True
-
+            savetolog_mode = 'c'
             if grade:
                 if logging_on:
                     logger.debug('     grade deleted: ' + str(grade.deleted))
@@ -6511,7 +6517,7 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
                 )
 
                 if logging_on:
-                    logger.debug('     grade new: ' + str(exam_period))
+                    logger.debug('     grade new: ' + str(grade))
 
     # if 2nd or 3rd period: get se sr pe from first period and put them in new grade
             # PR2022-01-05 dont save se, sr, pe in reex reex03 any more
@@ -6542,6 +6548,8 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
                 setattr(grade, 'deleted', True)
                 save_changes = True
 
+                savetolog_mode = 'd'
+
                 if logging_on:
                     logger.debug('     set grade deleted and tobedeleted : ' + str(grade.deleted))
 
@@ -6549,6 +6557,13 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
             grade.save(request=request)
             if logging_on:
                 logger.debug('    changes in grade are saved ')
+
+            if savetolog_mode:
+                awpr_log.copytolog_grade_v2(
+                    grade_pk_list=[grade.pk],
+                    req_mode=savetolog_mode,
+                    modifiedby_id=request.user.pk
+                )
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -8629,12 +8644,18 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                                 setattr(grade, 'deleted', False)
                                 if not skip_save:
                                     grade.save(request=request)
+                                    # PR2024-06-02 was:
+                                    #awpr_log.savetolog_grade(
+                                    #    grade_pk=grade.pk,
+                                    #    req_mode='u',
+                                    #    request=request,
+                                    #    updated_fields=('deleted', 'tobedeleted')
+                                    #)
 
-                                    awpr_log.savetolog_grade(
-                                        grade_pk=grade.pk,
+                                    awpr_log.copytolog_grade_v2(
+                                        grade_pk_list=[grade.pk],
                                         req_mode='u',
-                                        request=request,
-                                        updated_fields=('deleted', 'tobedeleted')
+                                        modifiedby_id=request.user.pk
                                     )
 
                 except Exception as e:

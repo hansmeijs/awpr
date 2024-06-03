@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2023-07-08
     function CreateSubmenu() {
-        console.log( "===== CreateSubmenu ========= ");
+        //console.log( "===== CreateSubmenu ========= ");
 
         //PR2023-06-08 debug: to prevent creating submenu multiple times: skip if btn columns exists
         if (!document.getElementById("id_submenu_columns")){
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const show_btn_userdata = permit_dict.requsr_role_corr &&
                                           permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4");
             add_or_remove_class(document.getElementById("id_btn_userdata"), cls_hide, !show_btn_userdata)
-        console.log( "    show_btn_userdata ", show_btn_userdata);
+    //console.log( "    show_btn_userdata ", show_btn_userdata);
 
             // PR2023-03-26 show tab 'Correctors' only when requsr_same_school, to add allowed clusters
             const show_btn_correctors = permit_dict.requsr_same_school;
@@ -659,6 +659,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- loop through data_rows
             for (const data_dict of Object.values(data_dicts)) {
 
+        console.log( "    data_dict: ", data_dict);
+        console.log( "    data_dict.allowed_depbase_pk_arr: ", data_dict.allowed_depbase_pk_arr);
+        console.log( "    selected.sel_depbase_pk: ", selected.sel_depbase_pk);
+        console.log( "    data_dict.allowed_lvlbase_pk_arr: ", data_dict.allowed_lvlbase_pk_arr);
+        console.log( "    selected.sel_lvlbase_pk: ", selected.sel_lvlbase_pk);
                 // PR2023-07-11 filter on depbase and lvlbase, don't use sel_depbase_pk and sel_lvlbase_pk
                 let show_row = false;
                 if (selected_btn === "btn_correctors"){
@@ -670,8 +675,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                         data_dict.allowed_depbase_pk_arr.includes(-9) ||
                                         data_dict.allowed_depbase_pk_arr.includes(selected.sel_depbase_pk));
                         } else {
+                            // selected.sel_depbase_pk has value here
                             if (data_dict.allowed_depbase_pk_arr.includes(selected.sel_depbase_pk)){
-                                show_row = (!data_dict.allowed_lvlbase_pk_arr ||
+
+                                // PR2024-05-30 debug: corr not showing when sel_lvlbase_pk = null.
+                                // Solved by adding  show_row = (!selected.sel_lvlbase_pk ||
+                                show_row = (!selected.sel_lvlbase_pk ||
+                                    !data_dict.allowed_lvlbase_pk_arr ||
                                     data_dict.allowed_lvlbase_pk_arr.includes(-9) ||
                                     data_dict.allowed_lvlbase_pk_arr.includes(selected.sel_lvlbase_pk));
                             };
@@ -699,6 +709,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (selected_btn === "btn_userdata"){
                     show_row = true;
                 };
+        console.log( " >>>   show_row: ", show_row);
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);
                };
@@ -806,8 +817,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-02-26 PR2023-07-09
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        //console.log("=========  CreateTblRow =========", tblName);
-        //console.log("    data_dict", data_dict);
+        console.log("=========  CreateTblRow =========", tblName);
+        console.log("    data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;

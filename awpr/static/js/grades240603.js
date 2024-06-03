@@ -265,6 +265,10 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MSSSS_input.addEventListener("keyup", function(event){
                 setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
         };
+        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
+        if(el_MSSSS_btn_save){
+            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(MSSSS_response)}, false);
+        };
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
@@ -505,7 +509,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(request_item_setting, keep_loader_hidden) {
         console.log( "=== DatalistDownload ")
-        //console.log("    request_item_setting: ", request_item_setting)
+        console.log("    request_item_setting: ", request_item_setting)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -2472,7 +2476,7 @@ const is_allowed_cluster = true;
     function SBR_show_all_response() {  // PR2023-03-21
         console.log("===== SBR_show_all_response =====");
         // this is response of t_SBR_show_all
-
+            // new setting is uploaded in t_SBR_show_all
             DatalistDownload({page: "page_grade"});
     };  // SBR_show_all_response
 
@@ -4314,9 +4318,28 @@ console.log( "......filter_value", filter_value);
         new_setting.page = setting_dict.sel_page;
 
         DatalistDownload(new_setting);
-    }  // MSED_Response
+    };  // MSED_Response
 
-//=========  MSSSS_school_response  ================ PR2023-03-29
+//=========  MSSSS_response  ================ PR2024-06-03
+    function MSSSS_response(modalName, tblName, selected_dict, selected_pk) {
+        console.log( "===== MSSSS_response ========= ");
+
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
+
+        if(selected_pk === -1) { selected_pk = null};
+
+        if (tblName === "school") {
+            MSSSS_school_response(modalName, tblName, selected_dict, selected_pk);
+        } else if (tblName === "subject") {
+            MSSSS_subject_response(modalName, tblName, selected_dict, selected_pk);
+        } else if (tblName === "cluster") {
+            MSSSS_cluster_response(modalName, tblName, selected_dict, selected_pk);
+        } else if (tblName === "student") {
+            MSSSS_student_response(modalName, tblName, selected_dict, selected_pk);
+        };
+    };  // MSSSS_response
+
+//=========  MSSSS_school_response  ================ PR2023-03-29 PR2024-06-03
     function MSSSS_school_response(modalName, tblName, selected_dict, sel_schoolbase_pk) {
         console.log( "===== MSSSS_school_response ========= ");
         console.log( "   modalName", modalName);
@@ -4328,7 +4351,6 @@ console.log( "......filter_value", filter_value);
 // reset text dep and school in headerbar
         el_hdrbar_department.innerText = null;
         el_hdrbar_school.innerText = null;
-
 
 // reset cluster and student
         setting_dict.sel_cluster_pk = null;
@@ -4344,7 +4366,8 @@ console.log( "......filter_value", filter_value);
                         sel_cluster_pk: null,
                         sel_student_pk: null
                     };
-            DatalistDownload(request_item_setting);
+        console.log( "   request_item_setting", request_item_setting);
+        DatalistDownload(request_item_setting);
 
     };  // MSSSS_school_response
 
@@ -4365,7 +4388,6 @@ console.log( "......filter_value", filter_value);
         setting_dict.sel_subject_pk = (selected_dict && selected_dict.id) ? selected_dict.id : null;
         setting_dict.sel_subject_name = (selected_dict && selected_dict.name_nl) ? selected_dict.name_nl : null;
 
-        console.log( "    setting_dict.sel_subject_pk", setting_dict.sel_subject_pk);
         setting_dict.sel_cluster_pk = null;
         //setting_dict.sel_cluster_name = null;
         setting_dict.sel_student_pk = null;
@@ -4408,12 +4430,7 @@ console.log( "......filter_value", filter_value);
         setting_dict.sel_student_name = null;
 
 // ---  upload new setting
-        const upload_dict = {selected_pk: {
-                                sel_cluster_pk: sel_cluster_pk,
-                                sel_subject_pk: null,
-                                sel_student_pk: null
-                            }};
-        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+        // PR2024-06-03 sel_cluster_pk is not stored in settings
 
         t_SBR_display_subject_cluster_student();
 
@@ -4444,12 +4461,7 @@ console.log( "......filter_value", filter_value);
         //setting_dict.sel_cluster_name = null;
 
 // ---  upload new setting
-        const upload_dict = {selected_pk: {
-                                sel_student_pk: sel_student_pk,
-                                sel_subject_pk: null,
-                                sel_cluster_pk: null
-                            }};
-        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+        // PR2024-06-03 sel_student_pk is not stored in settings
 
         t_SBR_display_subject_cluster_student();
 
@@ -4788,7 +4800,7 @@ console.log( "......filter_value", filter_value);
 ///////////////////////////////////////
 // +++++++++ MOD SELECT EXAM  ++++++++++++++++ PR2022-06-22
     function MSELEX_Open(el_input){
-        //console.log(" ===  MSELEX_Open  =====") ;
+        console.log(" ===  MSELEX_Open  =====") ;
         //console.log( "el_input", el_input);
         // only called in table "grades" when clicked on field "ceex_name"
         // cannot change exam when score is approved or published
@@ -4801,7 +4813,7 @@ console.log( "......filter_value", filter_value);
         if(permit_dict.permit_crud){
             const tblRow = t_get_tablerow_selected(el_input);
             const data_dict = grade_dicts[tblRow.id];
-    //console.log("data_dict", data_dict);
+    console.log("data_dict", data_dict);
 
             if(!isEmpty(data_dict)){
                 const auth1by_field =  "ce_exam_auth1by_id" ;
@@ -4817,6 +4829,7 @@ console.log( "......filter_value", filter_value);
                 } else if (!data_dict.weight_ce){
     // exit and give message when subject weight = 0 (no central exam)
                     b_show_mod_message_html(loc.grade_err_list.weightce_is_zero);
+                    // PR2024-06-01 TODO: give message when wolf scores are entered, that they wil be deleted
                 } else {
                     mod_MSELEX_dict.exam_pk = data_dict.ce_exam_id;
                     mod_MSELEX_dict.mapid = data_dict.mapid;
@@ -4857,7 +4870,7 @@ console.log( "......filter_value", filter_value);
             const upload_dict = {
                 table: 'grade',
                 mode: "update",
-                return_grades_with_exam: true,
+                return_grades_with_exam: false, //PR2024-06-01 was: true
                 examyear_pk: setting_dict.sel_examyear_pk,
                 depbase_pk: setting_dict.sel_depbase_pk,
                 examperiod: setting_dict.sel_examperiod,
@@ -4876,11 +4889,11 @@ console.log( "......filter_value", filter_value);
 
 //=========  MSELEX_FillSelectTable  ================ PR2022-06-22
     function MSELEX_FillSelectTable() {
-        console.log( "===== MSELEX_FillSelectTable ========= ");
+        //console.log( "===== MSELEX_FillSelectTable ========= ");
 
         const tblBody_select = el_MSELEX_tblBody_select;
         tblBody_select.innerText = null;
-    console.log( "all_exam_rows", all_exam_rows);
+    //console.log( "all_exam_rows", all_exam_rows);
 
         let row_count = 0, add_to_list = false;
 // ---  loop through all_exam_rows
@@ -4905,7 +4918,7 @@ console.log( "......filter_value", filter_value);
                     };
                 };
                 if (show_row){
-    console.log( "data_dict", data_dict);
+    //console.log( "data_dict", data_dict);
                     row_count += 1;
                     MSELEX_FillSelectRow(data_dict, tblBody_select, -1);
                 };

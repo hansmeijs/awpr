@@ -285,12 +285,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  MSSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
-        el_MSSSS_input.addEventListener("keyup", function(event){
-            setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
-
-        // PR2024-03-30 added:
+        if(el_MSSSS_input){
+            el_MSSSS_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
+        };
         const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
-        el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(MSSSS_response)}, false);
+        if(el_MSSSS_btn_save){
+            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(MSSSS_response)}, false);
+        };
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -535,24 +537,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 published_rows: {get: true}
             };
 
-        DatalistDownload(datalist_request, "DOMContentLoaded");
+        DatalistDownload({page: "page_studsubj"});
     }
 //  #############################################################################################################
 
-//========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, called_by) {
-        console.log( "=== DatalistDownload ", called_by)
-        console.log("request: ", datalist_request)
+//========= DatalistDownload  ===================== PR2020-07-31 PR2024-06-03
+    function DatalistDownload(request_item_setting, keep_loader_hidden) {
+        console.log( "=== DatalistDownload ")
+        console.log("request_item_setting: ", request_item_setting)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
 // ---  show loader
         el_loader.classList.remove(cls_hide)
+        // ?? or use:
+        //if(!keep_loader_hidden){el_loader.classList.remove(cls_visible_hide)}
+
         UpdateHeaderText(true);  // true = reset
 
-// --- reset table
-        tblBody_datatable.innerText = null;
+        const datalist_request = {
+            setting: request_item_setting,
+            schoolsetting: {setting_key: "import_studsubj"},
+            locale: {page: ["page_studsubj", "page_subject", "page_student", "upload"]},
+            examyear_rows: {get: true},
+            school_rows: {get: true},
+
+            department_rows: {get: true},
+            level_rows: {cur_dep_only: true},
+            sector_rows: {cur_dep_only: true},
+
+            scheme_rows: {cur_dep_only: true},
+            schemeitem_rows: {cur_dep_only: true},
+
+            student_rows: {cur_dep_only: true},
+
+            subject_rows: {cur_dep_only: true},
+            cluster_rows: {page: "page_studsubj"},
+
+            studentsubject_rows: {cur_dep_only: true},
+
+            published_rows: {get: true}
+        };
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -566,7 +596,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(response)
 
 // ---  hide loader
-                el_loader.classList.add(cls_hide)
+                el_loader.classList.add(cls_hide);
+                // ???? or use:
+                //  el_loader.classList.add(cls_visible_hide);
+
                 // UpdateHeaderText will be done in HandleBtnSelect
 
                 let must_create_submenu = false, must_update_headerbar = false;
@@ -850,26 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
         new_setting_dict.sel_student_pk = null;
         new_setting_dict.sel_cluster_pk = null;
 
-        const datalist_request = {
-                setting: new_setting_dict,
-
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-
-                scheme_rows: {cur_dep_only: true},
-                schemeitem_rows: {cur_dep_only: true},
-
-                student_rows: {cur_dep_only: true},
-
-                subject_rows: {cur_dep_only: true},
-                cluster_rows: {page: "page_studsubj"},
-
-                studentsubject_rows: {cur_dep_only: true},
-
-            };
-
-        console.log("    datalist_request", datalist_request);
-        DatalistDownload(datalist_request);
+        DatalistDownload(new_setting_dict);
     };  // SBR_lvl_sct_response
 
 //###########################################################################
@@ -3893,26 +3907,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // this is response of t_SBR_show_all
 
 // ---  upload new setting and refresh page
-        const datalist_request = {
-                setting: {page: "page_studsubj"},
-
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-
-                scheme_rows: {cur_dep_only: true},
-                schemeitem_rows: {cur_dep_only: true},
-
-                student_rows: {cur_dep_only: true},
-
-                subject_rows: {cur_dep_only: true},
-                cluster_rows: {page: "page_studsubj"},
-
-                studentsubject_rows: {cur_dep_only: true},
-
-                published_rows: {get: true}
-            };
-
-        DatalistDownload(datalist_request);
+        DatalistDownload({page: "page_studsubj"});
     };  // SBR_show_all_response
 
 //=========  HandleSbrLevelSector  ================ PR2021-07-23 PR2021-12-03
@@ -3947,17 +3942,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const new_setting_dict = {page: "page_studsubj"}
         new_setting_dict[sel_pk_key_str] = sel_pk_int;
 
-        // also get student_rows, subject_rows, cluster_rows again
-        const datalist_request = {
-            setting: new_setting_dict,
-            student_rows: {cur_dep_only: true},
-            subject_rows: {cur_dep_only: true},
-            cluster_rows: {page: "page_studsubj"},
-            studentsubject_rows: {cur_dep_only: true},
-        };
-
-        //console.log("datalist_request", datalist_request);
-        DatalistDownload(datalist_request);
+        DatalistDownload(new_setting_dict);
     }  // HandleSbrLevelSector
 
 // +++++++++++++++++ END OF MODAL SIDEBAR SELECT +++++++++++++++++++++++++++++++++++
@@ -4879,13 +4864,8 @@ document.addEventListener('DOMContentLoaded', function() {
         //}
         //console.log( "is_test", is_test);
         if(!is_test) {
-            const datalist_request = {
-                setting: {page: "page_studsubj"},
-                studentsubject_rows: {cur_dep_only: true},
-                published_rows: {get: true}
-            };
-            DatalistDownload(datalist_request);
-        }
+            DatalistDownload({page: "page_studsubj"});
+        };
 
     }  //  RefreshDataRowsAfterUploadFromExcel
 
@@ -5654,24 +5634,31 @@ console.log( "......filter_dict", filter_dict);
 // ---  upload new selected_pk
         new_setting.page = setting_dict.sel_page;
 // also retrieve the tables that have been changed because of the change in examyear / dep
-        const datalist_request = {
-                setting: new_setting,
-                student_rows: {get: true},
-                studentsubject_rows: {get: true},
+        DatalistDownload(new_setting);
+    };  // MSED_Response
 
-                subject_rows: {cur_dep_only: true},
-                cluster_rows: {page: "page_studsubj"},
+//=========  MSSSS_response  ================ PR2024-06-03
+    function MSSSS_response(modalName, tblName, selected_dict, selected_pk) {
+        console.log( "===== MSSSS_response ========= ");
+        // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
-                //grade_rows: {get: true},
-                schemeitem_rows: {get: true}
-            };
-        DatalistDownload(datalist_request);
+        if(selected_pk === -1) { selected_pk = null};
 
-    }  // MSED_Response
+        if (tblName === "school") {
+            MSSSS_school_response(modalName, tblName, selected_dict, selected_pk);
+        } else if (tblName === "subject") {
+            MSSSS_subject_response(modalName, tblName, selected_dict, selected_pk);
+        } else if (tblName === "cluster") {
+            MSSSS_cluster_response(modalName, tblName, selected_dict, selected_pk);
+        } else if (tblName === "student") {
+            MSSSS_student_response(modalName, tblName, selected_dict, selected_pk);
+        };
+    };  // MSSSS_response
 
-//=========  MSSSS_school_response  ================ PR2023-03-29
-    function MSSSS_school_response(tblName, selected_dict, sel_schoolbase_pk) {
+//=========  MSSSS_school_response  ================ PR2023-03-29 PR2024-06-03
+    function MSSSS_school_response(modalName, tblName, selected_dict, sel_schoolbase_pk) {
         console.log( "===== MSSSS_school_response ========= ");
+        console.log( "   modalName", modalName);
         console.log( "tblName", tblName);
         console.log( "sel_schoolbase_pk", sel_schoolbase_pk, typeof sel_schoolbase_pk);
         console.log( "selected_dict", selected_dict);
@@ -5686,34 +5673,21 @@ console.log( "......filter_dict", filter_dict);
         setting_dict.sel_student_pk = null;
 
         t_SBR_display_subject_cluster_student();
+        // hide itemcount
+        t_set_sbr_itemcount_txt(loc, 0)
 
 // ---  upload new setting and refresh page
-        const datalist_request = {
-                setting: {page: "page_grade",
-                        sel_schoolbase_pk: sel_schoolbase_pk,
-                        sel_cluster_pk: null,
-                        sel_student_pk: null
-                        },
-                school_rows: {get: true},
-                department_rows: {get: true},
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-
-                subject_rows: {get: true},
-                cluster_rows: {page: "page_studsubj"},
-
-                student_rows: {get: true},
-                studentsubject_rows: {get: true},
-                //grade_rows: {get: true},
-
-                all_exam_rows: {get: true}
+            const new_setting = {page: "page_studsubj",
+                sel_schoolbase_pk: sel_schoolbase_pk,
+                sel_cluster_pk: null,
+                sel_student_pk: null
             };
-            DatalistDownload(datalist_request);
+            DatalistDownload(new_setting);
 
     };  // MSSSS_school_response
 
 //=========  MSSSS_student_response  ================ PR2023-03-30
-    function MSSSS_student_response(tblName, selected_dict, sel_student_pk) {
+    function MSSSS_student_response(modalName, tblName, selected_dict, sel_student_pk) {
         console.log( "===== MSSSS_student_response ========= ");
         console.log( "tblName", tblName);
         console.log( "sel_student_pk", sel_student_pk, typeof sel_student_pk);
@@ -5750,7 +5724,7 @@ console.log( "......filter_dict", filter_dict);
 
 //###########################################################################
 
-//=========  MSSSS_response  ================ PR2021-01-23 PR2021-07-26 PR2023-03-26 PR2024-03-31
+//=========  MSSSS_responseXXX  ================ PR2021-01-23 PR2021-07-26 PR2023-03-26 PR2024-03-31
     function MSSSS_response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_response ========= ");
         console.log( "    tblName", tblName);
@@ -5772,23 +5746,11 @@ console.log( "......filter_dict", filter_dict);
         if (tblName === "school") {
 
 // ---  upload new setting and refresh page
-            const datalist_request = {
-                    setting: {page: "page_studsubj",
-                        sel_schoolbase_pk: selected_pk
-                    },
-                    school_rows: {get: true},
-                    department_rows: {get: true},
-                    level_rows: {cur_dep_only: true},
-                    sector_rows: {cur_dep_only: true},
-                    student_rows: {cur_dep_only: true},
-                    studentsubject_rows: {cur_dep_only: true},
-                    schemeitem_rows: {cur_dep_only: true},
+            const new_setting = {page: "page_studsubj",
+                sel_schoolbase_pk: selected_pk
+            };
 
-                    subject_rows: {cur_dep_only: true},
-                    cluster_rows: {page: "page_studsubj"}
-                };
-
-            DatalistDownload(datalist_request);
+            DatalistDownload(new_setting);
 
         } else if (tblName === "subject") {
         // PR2024-03-30 sel_subject is deprecated, use subjbase instead
@@ -6044,13 +6006,8 @@ console.log( "......filter_dict", filter_dict);
         //    RefreshDataRows("studsubj", response.updated_studsubj_approve_rows, studsubj_rows, true);
         //}
         if ( (mod_MASS_dict.is_approve_mode && mod_MASS_dict.step === 3) || (mod_MASS_dict.is_submit_mode && mod_MASS_dict.step === 5)){
-                const datalist_request = { setting: {page: "page_studsubj"},
-                                studentsubject_rows: {cur_dep_only: true},
-                                published_rows: {get: true}
-                                };
 
-        console.log("......................datalist_request", datalist_request) ;
-                //DatalistDownload(datalist_request);
+            DatalistDownload({page: "page_studsubj"});
         };
     };  // MASS_UpdateFromResponse
 

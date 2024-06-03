@@ -2399,9 +2399,16 @@ def validate_studsubj_pws_title_subjects_length(field, value):
 # --- end of validate_studsubj_pws_title_subjects_length
 
 
-def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18
+def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18 PR2024-06-02
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_studsubj_add_reex_reex03_allowed -------')
+        logger.debug('    field:   ' + str(field))
+        logger.debug('    si_dict: ' + str(si_dict))
+
     err_list = []
-    if field in ['has_reex', 'has_reex03']:
+    if field in ('has_reex', 'has_reex03'):
         if si_dict.get('no_centralexam', False):
             err_list.append(str(_('This exam year has no central exams.')))
         else:
@@ -2416,6 +2423,8 @@ def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18
                 #err_list.append(str(_('You cannot enter a %(item_str)s.') % {'item_str': str(caption).lower()}))
                 err_list.append(str(_('This subject has no central exam.')))
 
+    if logging_on:
+        logger.debug('    err_list:   ' + str(err_list))
     return err_list
 # --- end of validate_studsubj_add_reex_reex03_allowed
 

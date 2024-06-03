@@ -553,11 +553,17 @@ class UserUploadMultipleView(View):
 
                     if user_instance:
                         # usergroups in userallowed = auth3;download;read
-                        # usergroups in userallowed = ["auth3", "download", "read"]
-                        usergroups = getattr(user_instance, 'usergroups')
-                        usergroups_arr = usergroups.split(';') if usergroups else None
-                        usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
-                        # check if userallowed exists
+                        # usergroups in userallowed = '["auth3", "download", "read"]'
+
+                        # PR2024-06-02 Sentry error: 'User' object has no attribute 'usergroups'
+                        # cause: field  usergroups (TEXT) is moved from table usera to table userallowed
+                        # solved by getting usergroups from previous examyear TODO not tested yet
+                        # was:
+                        #   usergroups = getattr(user_instance, 'usergroups')
+                        #   usergroups_arr = usergroups.split(';') if usergroups else None
+                        #   usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
+
+                # - check if userallowed exists
                         ual_exists = acc_mod.UserAllowed.objects.filter(
                             user=user_instance,
                             examyear=sel_examyear
@@ -565,7 +571,22 @@ class UserUploadMultipleView(View):
 
                         if logging_on:
                             logger.debug('    ual_exists: ' + str(ual_exists))
+
                         if not ual_exists:
+                # -check if userallowed record of previous year exists
+                            prev_ual_instance = acc_mod.UserAllowed.objects.filter(
+                                user=user_instance,
+                                examyear__code__lt=sel_examyear.code
+                            ).order_by('-examyear__code').first()
+                            if logging_on:
+                                logger.debug('    prev_ual_instance:    ' + str(prev_ual_instance))
+
+                            usergroups_str = None
+                            if prev_ual_instance:
+                                usergroups_str = getattr(prev_ual_instance, 'usergroups')
+                            if usergroups_str is None:
+                                usergroups_str = json.dumps(['read'])
+
                             new_userallowed = acc_mod.UserAllowed(
                                 user=user_instance,
                                 examyear=sel_examyear,
@@ -4833,7 +4854,7 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
 def get_settings_levelbase(request, request_item_setting, sel_examyear_instance, sel_department_instance,
                                 allowed_depbase_dict, page, permit_dict, setting_dict, selected_pk_dict):
     # PR2022-12-11 PR2023-01-11 PR2023-05-18
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_levelbase -------')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
@@ -4897,6 +4918,7 @@ def get_settings_levelbase(request, request_item_setting, sel_examyear_instance,
 # - end of get_settings_levelbase
 
 
+#####################
 # ===== SUBJECTBASE ======================= PR2022-12-11 PR2023-05-18
 def get_settings_subjbase(request_item_setting, sel_examyear_instance,
                              allowed_subjbases_arr, permit_dict, setting_dict, selected_pk_dict):
@@ -6278,8 +6300,10 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
 
     # PR2023-01-11 only called by get_settings_levelbase
     # ThisCodeIsOK
+    # PR2024-06-02 Nope debug: Cor Hameete CURCOM:
+    # when switching from Vsbo to Radulphus no grades arw shown because sel_lvlbase_pk is still '4'
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_lvlbase_instance  -----')
         logger.debug('    sel_department: ' + str(sel_department))
@@ -6291,13 +6315,20 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
     sel_lvlbase_tobesaved = False
     allowed_lvlbases_arr = []
 
+# - get saved_lvlbase_pk from Usersetting
+    saved_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+    saved_lvlbase_pk = saved_dict.get(c.KEY_SEL_LVLBASE_PK)
+    if logging_on:
+        logger.debug('    saved_lvlbase_pk: ' + str(saved_lvlbase_pk))
+
     if request.user:
 
     # - check if level is required in this department
         level_is_required = (sel_department and sel_department.level_req)
+        if logging_on:
+            logger.debug('    level_is_required: ' + str(level_is_required))
+
         if level_is_required:
-            if logging_on:
-                logger.debug('    level_is_required: ' + str(level_is_required))
 
         # - create array of allowed lvlbases integers of requsr from allowed_depbase_dict,
             # array stays empty when '-9' (all) in allowed_depbase_dict
@@ -6308,11 +6339,6 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
             if logging_on:
                 logger.debug('    allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
 
-        # - get saved_lvlbase_pk from Usersetting
-            saved_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-            saved_lvlbase_pk = saved_dict.get(c.KEY_SEL_LVLBASE_PK)
-            if logging_on:
-                logger.debug('    saved_lvlbase_pk: ' + str(saved_lvlbase_pk))
 
         # - check if request_item_lvlbase_pk exists and is allowed
             sel_lvlbase_pk = None
@@ -6354,6 +6380,11 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
                 sel_lvlbase_instance = subj_mod.Levelbase.objects.get_or_none(
                     pk=sel_lvlbase_pk
                 )
+        else:
+            # PR2024-06-02 added: remove selected lvlbase_pk when not level_is_required
+            if saved_lvlbase_pk:
+                sel_lvlbase_instance = None
+                sel_lvlbase_tobesaved = True
 
     if logging_on:
         logger.debug('....sel_lvlbase_instance: ' + str(sel_lvlbase_instance))
@@ -6367,6 +6398,82 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
 
 
 ######################################################
+
+def get_settings_sectorbase(sel_depbase_pk, sel_examyear_pk, setting_dict, selected_pk_dict, request_item_setting):
+
+    # PR2024-06-02 only called by Downloads
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' -----  get_settings_sectorbase  -----')
+        logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk))
+        logger.debug('    sel_examyear_pk: ' + str(sel_examyear_pk))
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
+
+# - get saved_sctbase_pk from Usersetting
+    saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+
+    # remove key when 'all' is selected in saved_pk_int and in request_item_pk_int
+    if saved_sctbase_pk == -9:
+        saved_sctbase_pk = None
+
+    if logging_on:
+        logger.debug('    saved_sctbase_pk: ' + str(saved_sctbase_pk))
+
+    request_item_sctbase_pk = request_item_setting.get(c.KEY_SEL_SCTBASE_PK) if request_item_setting else None
+    # remove key when 'all' is selected in saved_pk_int and in request_item_pk_int
+    if request_item_sctbase_pk == -9:
+        request_item_sctbase_pk = None
+
+    if logging_on:
+        logger.debug('    request_item_sctbase_pk: ' + str(request_item_sctbase_pk))
+
+# - get request_item_sctbase_pk ifit has value, get saved_sctbase_pk otherwise
+    sel_sctbase_pk = request_item_sctbase_pk if request_item_sctbase_pk else saved_sctbase_pk
+    if logging_on:
+        logger.debug('    sel_sctbase_pk: ' + str(sel_sctbase_pk))
+
+# - check if sel_sctbase_pk exists
+    if sel_sctbase_pk:
+        depbase_pk_str = str(sel_depbase_pk) + ";"
+        sctbase_exists = subj_mod.Sector.objects.filter(
+            base_id=sel_sctbase_pk,
+            examyear_id=sel_examyear_pk,
+            depbases__contains=depbase_pk_str
+        ).exists()
+        if logging_on:
+            logger.debug('    sctbase_exists: ' + str(sctbase_exists))
+        if not sctbase_exists:
+            sel_sctbase_pk  = None
+
+    sel_sctbase_tobesaved = sel_sctbase_pk != saved_sctbase_pk
+    if sel_sctbase_tobesaved:
+        # --- update selected_pk_dict, will be saved at end of def
+        if sel_sctbase_pk:
+            selected_pk_dict[c.KEY_SEL_SCTBASE_PK] = sel_sctbase_pk
+        elif c.KEY_SEL_SCTBASE_PK in selected_pk_dict:
+            selected_pk_dict.pop(c.KEY_SEL_SCTBASE_PK)
+
+# --- add info to setting_dict, will be sent back to client
+    if sel_sctbase_pk:
+        setting_dict[c.KEY_SEL_SCTBASE_PK] = sel_sctbase_pk
+        sector = subj_mod.Sector.objects.get_or_none(
+            examyear_id=sel_examyear_pk,
+            base_id=sel_sctbase_pk)
+        if sector:
+            setting_dict['sel_sctbase_code'] = sector.base.code if sector.base else '-'
+            setting_dict['sel_sector_name'] = sector.name
+
+    if logging_on:
+        logger.debug('....sel_sctbase_pk: ' + str(sel_sctbase_pk))
+        logger.debug('....sel_sctbase_tobesaved: ' + str(sel_sctbase_tobesaved))
+
+    return sel_sctbase_pk, sel_sctbase_tobesaved
+# --- end of get_settings_sectorbase
+
+
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

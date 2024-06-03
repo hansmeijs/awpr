@@ -1,28 +1,28 @@
 # PR2021-06-28
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
 
 # PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
 # instead use: django.db.models import JSONField (is added in Django 3)
 # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
-from django.contrib.postgres.fields import ArrayField #, JSONField
+# from django.contrib.postgres.fields import ArrayField #, JSONField
 
 from django.db import connection
-from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField, FileField
+# from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
+# from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField, FileField
 from django.utils import timezone
 
-import json
+#import json
 
 # PR2018-05-05 use AUTH_USER_MODEL
-from awpr.settings import AUTH_USER_MODEL
+# from awpr.settings import AUTH_USER_MODEL
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
-from awpr import functions as af
+# from django.utils.translation import gettext_lazy as _
+# from awpr import functions as af
 from awpr import settings as s
-from awpr.storage_backends import PrivateMediaStorage
+# from awpr.storage_backends import PrivateMediaStorage
 
 from schools import models as sch_mod
-from students import models as stud_mod
+# from students import models as stud_mod
 from subjects import models as subj_mod
 
 import logging
@@ -485,6 +485,7 @@ def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_field
 
     #  PR2024-04-02 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
     #   cause: forgot to add non-null field gradelist_use_exem to field_list
+    # PR2024-05-30 TODO make gradelist_use_exem nullable, remove from default fieldlist
     if studentsubject_pk and request and request.user:
         try:
             mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
@@ -507,6 +508,11 @@ def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_field
 
             # these fields are always included: 'modifiedby_id', 'modifiedat'
             tobe_copied_field_list = ['modifiedby_id', 'modifiedat']
+
+            # PR2024-06-02 TODO in log file all fields must be set null=True , also boolean fields
+            # gradelist_use_exem = BooleanField(null=True)
+            # till that is done: add gradelist_use_exem as requited field
+            tobe_copied_field_list.append('gradelist_use_exem')
 
             for field in field_list:
                 # - when mode is 'update': copy only updated fields
@@ -556,8 +562,6 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
         logger.debug('    req_mode: ' + str(req_mode))
         logger.debug('    updated_fields: ' + str(updated_fields))
 
-    # PR2024-05-03 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
-    # solved by adding 'gradelist_use_exem' to tobe_copied_field_list
     if grade_pk and request and request.user:
         try:
             mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
@@ -578,7 +582,8 @@ def savetolog_grade(grade_pk, req_mode, request, updated_fields):
 
             # PR2024-05-03 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
             # solved by adding 'gradelist_use_exem' to tobe_copied_field_list
-            # PR2024-05-30 not true: table grade_log does not have a field 'gradelist_use_exem', removed from list
+            # PR2024-05-30 not true: table gradelog does not have a field 'gradelist_use_exem', removed from list
+
             # these fields are always included:
             tobe_copied_field_list = ['examperiod', 'status', 'modifiedby_id', 'modifiedat']  # was: , 'gradelist_use_exem']
 
@@ -631,7 +636,7 @@ def copy_department_to_log(mode, instance, modby_id, mod_at):  # PR2021-04-25 PR
         logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)))
         logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)))
 
-# - get most recent examyear_log (with highest id)  PR20201-06-28
+# - get most recent examyear_log (with the highest id)  PR20201-06-28
     examyear_log = get_examyear_log(instance.examyear_id)
 
     if examyear_log:
@@ -672,7 +677,7 @@ def copy_scheme_to_log(mode, instance, modby_id, mod_at):  # PR2021-06-28
         logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)))
         logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)))
 
-    # get most recent department_log, level_log, sector_log (with highest id)
+    # get most recent department_log, level_log, sector_log (with the highest id)
     department_log = get_department_log(instance.department_id)
     level_log = get_level_log(instance.level_id)
     sector_log = get_sector_log(instance.sector_id)
@@ -717,7 +722,7 @@ def copy_scheme_to_log(mode, instance, modby_id, mod_at):  # PR2021-06-28
 
 
 def get_examyear_log(examyear_id):
-    # get most recent examyear_log (with highest id)  PR20201-06-28
+    # get most recent examyear_log (with the highest id)  PR20201-06-28
     log = None
     try:
         log = sch_mod.Examyear_log.objects.filter(
@@ -729,7 +734,7 @@ def get_examyear_log(examyear_id):
 
 
 def get_department_log(department_id):
-    # get most recent department_log (with highest id)  PR20201-06-28
+    # get most recent department_log (with the highest id)  PR20201-06-28
     log = None
     try:
         log = sch_mod.Department_log.objects.filter(
@@ -779,163 +784,62 @@ def get_exam_log_pk(exam_id): # PR2021-12-13
         logger.error(getattr(e, 'message', str(e)))
     return log_pk
 
-"""
-Old save_to_log with SQL, not in use PR2021-04-25
-fields updated PR2021-12-13
-elif model_name == 'Grade':
-    # this one not working, cannot get filter pc.id with LIMIT 1 in query, get info from pricecodelist instead
-    sub_ssl_list = ["SELECT id, studentsubject_id AS studsubj_id,",
-                    "FROM studentsubject_log",
-                    "ORDER BY id DESC NULLS LAST LIMIT 1"]
-    sub_ssl = ' '.join(sub_ssl_list)
-    # note: multiple WITH clause syntax:WITH cte1 AS (SELECT...), cte2 AS (SELECT...) SELECT * FROM ...
-    sql_keys = {'grade_id': pk_int,  'mode': mode, 'modby_id': modby_id, 'mod_at': mod_at}
-    sql_list = ["WITH sub_ssl AS (" + sub_ssl + ")",
-                "INSERT INTO students_grade_log (id,",
-                    "grade_id, studentsubject_log_id, exam_id, examperiod,",
-                    
-                    "pescore, cescore, segrade, srgrade, sesrgrade,",
-                    "pegrade, cegrade, pecegrade, finalgrade,",
-                    
-                    "sepublished_id, sr_published_id, pepublished_id, cepublished_id,",
-                    "seblocked, srblocked, peblocked, ceblocked,",
-                    
-                    "answers, blanks, answers_published_id,",
-                    
-                    "mode, modifiedby_id, modifiedat)",
-                    
-                "SELECT nextval('students_grade_log_id_seq'),",
-                    "grade_id, sub_ssl.id, exam_id, examperiod, ",
-                    
-                    "pescore, cescore, segrade, srgrade, sesrgrade,",
-                    "pegrade, cegrade, pecegrade, finalgrade,",
-                    
-                    "sepublished_id, sr_published_id, pepublished_id, cepublished_id,",
-                    "seblocked, srblocked, peblocked, ceblocked,",
-                    
-                    "answers, blanks, answers_published_id,",
-                    
-                    "%(mode)s::TEXT, %(modby_id)s::INT, %(mod_at)s::DATE",
-                "FROM students_grade AS grade",
-                "INNER JOIN sub_ssl ON (sub_ssl.studsubj_id = grade.studentsubject_id)",
-                "WHERE (grade.id = %(grade_id)s::INT"]
 
-    sql_list = ["SELECT nextval('students_grade_log_id_seq') AS sgl_id,",
-                    "grade.id, grade.examperiod,",
-                    "%(mode)s::TEXT AS mode, %(modby_id)s::INT AS modby_id, %(mod_at)s::DATE AS mod_at",
-                "FROM students_grade AS grade",
-                "WHERE id = %(grade_id)s::INT"]
-    sql = ' '.join(sql_list)
-    #logger.debug('sql_keys: ' + str(sql_keys))
-    #logger.debug('sql: ' + str(sql))
-
-    #logger.debug('---------------------- ')
-    with connection.cursor() as cursor:
-        #logger.debug('================= ')
-        cursor.execute(sql, sql_keys)
-        #for qr in connection.queries:
-            #logger.debug('-----------------------------------------------------------------------------')
-            #logger.debug(str(qr))
-
-        #logger.debug('---------------------- ')
-        #rows = dictfetchall(cursor)
-        #logger.debug('---------------------- ')
-        #for row in rows:
-            #logger.debug('row: ' + str(row))
-
-
-# PR2018-06-08 
-# PR2024-03-02 not in use
-def get_studentsubject_log_pkNIU(studentsubject_id): # PR2021-12-13
-    log_pk = None
-    try:
-        log = stud_mod.Studentsubject_log.objects.filter(
-            studentsubject_id=studentsubject_id
-        ).order_by('-pk').first().values('pk')
-
-    # add Studentsubject_log if it does not exist yet
-        # TODO create Studentsubject_log if it does not exist yet
-        if log is None:
-            pass
-
-        if log:
-            log_pk = getattr(log, 'pk')
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-    return log_pk
-
-# PR2018-06-08 
-# PR2024-03-02not in use
-def copy_grade_to_logNIU(mode, instance, modby_id, mod_at):  # PR2021-12-13
-    # ISN
-    # fields updated PR2021-12-13
+############################## VERSION 2 ############################### PR2024-06-02
+def copytolog_grade_v2(grade_pk_list, req_mode, modifiedby_id=None):
+    # PR2024-06-02
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- copy_grade_to_log  -----')  # PR2021-06-28
-        logger.debug('mode: ' + str(mode))
-        logger.debug('instance: ' + str(instance) + ' ' + str(type(instance)))
-        logger.debug('modby_id: ' + str(modby_id) + ' ' + str(type(modby_id)))
-        logger.debug('mod_at: ' + str(mod_at) + ' ' + str(type(mod_at)))
+        logger.debug(' ----- copytolog_grade_v2 ----- ')
+        logger.debug('    grade_pk_list: ' + str(grade_pk_list))
+    def where_clause(pk_list):
+        sql_clause = 'AND FALSE'
+        if pk_list:
+            if len(pk_list) == 1:
+                sql_clause = ''.join(("WHERE grd.id=", str(pk_list[0]), "::INT;"))
+            else:
+                sql_clause = ''.join(("WHERE grd.id IN (SELECT UNNEST(ARRAY", str(pk_list), "::INT[]));"))
+        return sql_clause
 
-    # get most recent studentsubject_log, exam_log (with highest id)
-    # studentsubject_log_pk = get_studentsubject_log_pk(instance.studentsubject_id)
-    exam_log_pk = get_exam_log_pk(instance.exam_id)
-    if studentsubject_log_pk:
+    def sql_mode_value():
+        mode = req_mode[:1] if req_mode else '-'
+        return ''.join(("'", mode, "', "))
+
+    def sql_modifiedvalue():
+        if modifiedby_id:
+            modifiedat_str = ''.join(("'", str(timezone.now()), "'"))
+            sql_value = ''.join((
+                str(modifiedby_id), "::INT, ",
+                modifiedat_str, " ",
+            ))
+        else:
+            sql_value = "modifiedby_id, modifiedat "
+        return sql_value
+
+    if grade_pk_list:
+
         try:
-            grade_log = stud_mod.Grade_log(
-                grade_id=instance.id,
+            field_list = ''.join((
+                'examperiod, pescore, cescore, segrade, srgrade, sesrgrade, pegrade, cegrade, pecegrade, finalgrade, ',
+                'exemption_imported, deleted, status, '
+            ))
+            # PR2024-02-27 TODO add:
+            # se_published_id, sr_published_id, pe_published_id, ce_published_id
+            # se_blocked, sr_blocked, pe_blocked, ce_blocked
 
-                studentsubject_log_id=studentsubject_log_pk,
-                exam_log_id=exam_log_pk,
+            sql = ''.join((
+                "INSERT INTO students_gradelog (grade_id, ", field_list, " mode, modifiedby_id, modifiedat) ",
+                "SELECT id, ", field_list,
+                sql_mode_value(),
+                sql_modifiedvalue(),
+                "FROM students_grade AS grd ",
+                where_clause(grade_pk_list)
+            ))
 
-                examperiod=instance.examperiod,
-                pescore=instance.pescore,
-                cescore=instance.cescore,
-                segrade=instance.segrade,
-                srgrade=instance.srgrade,
-                sesrgrade=instance.sesrgrade,
-                pegrade=instance.pegrade,
-                cegrade=instance.cegrade,
-                pecegrade=instance.pecegrade,
-                finalgrade=instance.finalgrade,
-                
-                fields=instance.fields,
-
-                min_subjects=instance.min_subjects,
-                max_subjects=instance.max_subjects,
-
-                min_mvt=instance.min_mvt,
-                max_mvt=instance.max_mvt,
-
-                min_wisk=instance.min_wisk,
-                max_wisk=instance.max_wisk,
-
-                min_combi=instance.min_combi,
-                max_combi=instance.max_combi,
-
-                rule_avg_pece_sufficient=instance.rule_avg_pece_sufficient,
-                rule_avg_pece_notatevlex=instance.rule_avg_pece_notatevlex,
-                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
-                rule_core_sufficient=instance.rule_core_sufficient,
-                rule_core_notatevlex=instance.rule_core_notatevlex,
-                # PR2021-11-27  NOT IN USE: mustbe_avg_pece_sufficient not at evening or lex school
-
-                modifiedby_id=modby_id,
-                modifiedat=mod_at,
-                mode=mode
-            )
-            grade_log.save()
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 
-# - end of copy_grade_to_log
-
-
-
-"""
-
-
-
-
-
+# - end of copytolog_grade_v2

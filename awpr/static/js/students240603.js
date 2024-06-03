@@ -212,12 +212,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  MSSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
-        el_MSSSS_input.addEventListener("keyup", function(event){
-            setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
-
+        if(el_MSSSS_input){
+            el_MSSSS_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSSSS_InputKeyup_NEW(el_MSSSS_input)}, 50)});
+        };
         const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
-        el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(MSSSS_student_response)}, false);
-
+        if(el_MSSSS_btn_save){
+            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(MSSSS_student_response)}, false);
+        };
 // ---  MODAL STUDENT
         const el_MSTUD_div_form_controls = document.getElementById("id_MSTUD_div_form_controls")
         if(el_MSTUD_div_form_controls){

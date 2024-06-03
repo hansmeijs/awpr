@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required  # PR2018-04-01
 from django.utils import timezone
 from django.utils.functional import Promise
 
+from timeit import default_timer as timer
+
 # PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_text
 from django.core.serializers.json import DjangoJSONEncoder
@@ -41,7 +43,7 @@ from subjects import models as sbj_mod
 from students import models as stud_mod
 
 from grades import views as grade_view
-from grades import calc_finalgrade as grade_calc_final
+from grades import calc_finalgrade as calc_final
 from grades import calc_score as calc_score
 
 import json  # PR2018-10-25
@@ -1616,17 +1618,6 @@ class ExamUploadView(View):
                 deleted_row = None
 
 # - get variables from upload_dict
-                """
-                upload_dict{'table': 'ete_exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
-                upload_dict{'table': 'duo_exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'lvlbase_pk': 4, 'exam_pk': 112, 'auth_index': 1, 'auth_bool_at_index': True}
-                upload_dict{'table': 'duo_exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'lvlbase_pk': 4, 'exam_pk': 112, 'subject_pk': 122, 'auth_index': 1, 'auth_bool_at_index': True}
-                
-                when sxm tries to update ete exam: gives exam does not exist error
-                upload_dict{'table': 'ete_exam', 'mode': 'update', 'exam_pk': 187, 'examyear_pk': 1, 'subject_pk': 118, 'cesuur': '44'}
-   
-                upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk': 21, 'subject_pk': 126, 'envelopbundle_pk': 2}
-                upload_dict: {'table': 'duo_exam', 'mode': 'update', 'exam_pk': 495, 'lvlbase_pk': None,  'examtype': 'duo', 'subject_pk': 241, 'subject_code': 'Aardrijkskunde', 'examperiod': 1, 'version': 'Cariben', 'secret_exam': False}
-                """
                 table = upload_dict.get('table')
                 # PR2023-06-14 I didnt know why this was necessary: was to give msg cant change exam of other country
                 #   don't get it from usersettings, get it from upload_dict instead
@@ -5001,7 +4992,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                         new_value = None
 
                     # - get_score_from_inputscore returns None when new_value has no value, without msg_err
-                    new_value_int, new_value_str, err_list = grade_calc_final.get_score_from_inputscore(new_value)
+                    new_value_int, new_value_str, err_list = calc_final.get_score_from_inputscore(new_value)
 
                     if err_list:
                         error_list.extend(err_list)
@@ -5028,7 +5019,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                     new_value = None
                 max_score = getattr(exam_instance, 'scalelength')
                 # - get_score_from_inputscore returns None when new_value has no value, without msg_err
-                new_value_int, new_value_str, err_list = grade_calc_final.get_score_from_inputscore(new_value, max_score)
+                new_value_int, new_value_str, err_list = calc_final.get_score_from_inputscore(new_value, max_score)
                 if err_list:
                     error_list.extend(err_list)
                 else:
@@ -5198,13 +5189,29 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                         setattr(exam_instance, 'blanks', total_blanks)
                         exam_instance.save(request=request)
 
-# copy exam score to ce-score when scalelength, nterm or  cesuur has changed
+# calculate cegrade when scalelength, nterm or  cesuur has changed
                 if calc_cegrade_from_exam_score:
-                    updated_cegrade_count, updated_cegrade_listNIU, updated_student_pk_listNIU = \
-                        calc_score.batch_update_finalgrade(
-                        department_instance=sel_department,
-                        exam_instance=exam_instance
-                    )
+
+                    #starttime = timer()
+                    #updated_cegrade_count, updated_cegrade_listNIU, updated_student_pk_listNIU = \
+                    #    calc_score.batch_update_finalgrade(
+                    #   department_instance=sel_department,
+                    #    exam_instance=exam_instance
+                    #)
+                    #if logging_on:
+                    #    elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
+                    #    logger.debug('     elapsed_seconds: ' + str(elapsed_seconds))
+
+                    starttime = timer()
+                    updated_cegrade_list, updated_student_pk_list = \
+                        calc_final.batch_update_finalgrade_v2(ce_exam_pk=exam_instance.pk)
+                    updated_cegrade_count = len(updated_cegrade_list)
+                    if logging_on:
+                        elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
+                        logger.debug('     elapsed_seconds: ' + str(elapsed_seconds))
+                        logger.debug('     updated_cegrade_count: ' + str(updated_cegrade_count))
+                        logger.debug('     updated_cegrade_list: ' + str(updated_cegrade_list))
+                        logger.debug('     updated_student_pk_list: ' + str(updated_student_pk_list))
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
@@ -7222,17 +7229,24 @@ def create_schemeitem_rows(sel_examyear, append_dict, schemeitem_pk=None, scheme
 #################
 
 def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=None):
-    # PR2021-12-13
+    # PR2021-12-13 PR2024-05-31
     # --- create dict with all schemitems of this examyear, this department
     # used to validate studsubj and grades, not to make changes
     # lookup key = schemeitem_pk
+
+    # called by:
+    #   GradeUploadView,
+    #   StudentsubjectApproveSingleView,
+    #   StudentsubjectMultipleUploadView,
+    #   StudentsubjectSingleUpdateView
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== get_scheme_si_dict ============= ')
-        logger.debug('examyear_pk:   ' + str(examyear_pk) + ' ' + str(type(examyear_pk)))
-        logger.debug('depbase_pk:    ' + str(depbase_pk) + ' ' + str(type(depbase_pk)))
-        logger.debug('scheme_pk:     ' + str(scheme_pk) + ' ' + str(type(scheme_pk)))
-        logger.debug('schemeitem_pk: ' + str(schemeitem_pk) + ' ' + str(type(schemeitem_pk)))
+        logger.debug('    examyear_pk:   ' + str(examyear_pk) + ' ' + str(type(examyear_pk)))
+        logger.debug('    depbase_pk:    ' + str(depbase_pk) + ' ' + str(type(depbase_pk)))
+        logger.debug('    scheme_pk:     ' + str(scheme_pk) + ' ' + str(type(scheme_pk)))
+        logger.debug('    schemeitem_pk: ' + str(schemeitem_pk) + ' ' + str(type(schemeitem_pk)))
 
     schemeitem_dict = {}
     try:
@@ -7248,14 +7262,34 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
                 #"scheme.min_extra_counts AS sch_min_extra_counts, scheme.max_extra_counts AS sch_max_extra_counts,",
 
                 "sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
+
+                # PR2024-05-18
+                # has_prac only enables the has_practexam option of a schemeitem.
+                # schemeitem.has_pws is deprecated, use subjecttype.has_pws instead
+                # has_pws = has profielwerkstuk or sectorwerkstuk
                 "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws,",
+
                 # TODO check if these will be used
                 #"sjtp.min_subjects AS sjtp_min_subjects, sjtp.max_subjects AS sjtp_max_subjects,",
                 #"sjtp.min_extra_nocount AS sjtp_min_extra_nocount, sjtp.max_extra_nocount AS sjtp_max_extra_nocount,",
                 #"sjtp.min_extra_counts AS sjtp_min_extra_counts, sjtp.max_extra_counts AS sjtp_max_extra_counts,",
 
-                "ey.code AS ey_code, ey.no_practexam AS ey_no_practexam, ey.sr_allowed AS ey_sr_allowed,"
-                "ey.no_centralexam AS ey_no_centralexam, ey.no_thirdperiod AS ey_no_thirdperiod,",
+                # PR2024-05-18 was:
+                #   "ey.code AS ey_code, ey.no_practexam AS ey_no_practexam, ey.sr_allowed AS ey_sr_allowed,"
+                "ey.code AS ey_code,",
+
+                # PR2024-05-18 was:
+                #   "ey.no_centralexam AS ey_no_centralexam, ey.no_thirdperiod AS ey_no_thirdperiod,",
+                "ey.no_centralexam, ey.no_thirdperiod,",
+
+                # PR2024-05-18 replaced by "(ey.sr_allowed AND si.sr_allowed) AS sr_allowed",
+                # was: "ey.sr_allowed AS ey_sr_allowed, si.sr_allowed AS si_sr_allowed,",
+                "(ey.sr_allowed AND si.sr_allowed) AS sr_allowed,",
+
+                # PR2024-05-18 include ey.no_practexam
+                # TODO remove ey_no_practexam and si_has_practexam
+                "ey.no_practexam AS ey_no_practexam, si.has_practexam AS si_has_practexam,",
+                "(NOT ey.no_practexam AND si.has_practexam) AS has_practex,",
 
                 "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
                 "dep.level_req, dep.sector_req, dep.has_profiel,",
@@ -7265,7 +7299,7 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
                 "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
                 "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
 
-                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex, si.sr_allowed AS si_sr_allowed, si.no_ce_years,",
+                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex, si.no_ce_years,",
                 "si.thumb_rule AS thumb_rule_allowed",
 
                 "FROM subjects_schemeitem AS si",

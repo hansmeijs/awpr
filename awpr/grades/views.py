@@ -356,6 +356,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02 PR2023-0
 
                     # TODO PR2023-04-10
                     #  Een goedkeuring kan alleen worden verwijderd door dezelfde gebruiker,
+                    #  PR2024-05-30 and to be added: of door de vz of secr
 
     # - get grade_pk. It only has value when a single grade is approved
                     grade_pk = upload_dict.get('grade_pk')
@@ -3151,27 +3152,19 @@ class GradeUploadView(View):
         if req_usr and req_usr.country and req_usr.schoolbase:
 
             try:
-    # - get upload_dict from request.POST
+
+# - get upload_dict from request.POST
                 upload_json = request.POST.get('upload', None)
                 if upload_json:
                     upload_dict = json.loads(upload_json)
                     if logging_on:
                         logger.debug('    upload_dict: ' + str(upload_dict))
-                    """
-                    upload_dict: {'mode': 'update', 'mapid': 'grade_22958', 'examperiod': 1, 
-                    'grade_pk': 22958, 'student_pk': 3935, 'studsubj_pk': 21706, 'examgradetype': 'segrade', 'segrade': '44'}
-        
-                    upload_dict: {'table': 'grade', 'mode': 'update', 'return_grades_with_exam': True, 
-                                    'examyear_pk': 1, 'depbase_pk': 1, 'examperiod': 1, 'examtype': 'se', 
-                                    'exam_pk': 36,  'grade_pk': 22440, 'student_pk': 3747, 
-                                    'ce_exam_result': '34;35#1|2;a'}
-        
-                    """
+
                     mode = upload_dict.get('mode')
                     page = upload_dict.get('page')
                     secret_exams_only = page == 'page_secretexam'
 
-        # - get permit
+# - get permit
                     #permit_list, requsr_usergroups_listNIU, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(
                     #    request, 'page_grade')
                     #has_permit = 'permit_crud' in permit_list
@@ -3188,12 +3181,13 @@ class GradeUploadView(View):
                     if logging_on:
                         logger.debug('    page_name: ' + str(page_name))
                         logger.debug('    has_permit: ' + str(has_permit))
+                        logger.debug('    mode: ' + str(mode))
 
                     if not has_permit:
                         msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
                     else:
 
-        # - get selected examyear, school and department from usersettings
+# - get selected examyear, school and department from usersettings
                         # may_edit = False when:
                         #  - country is locked,
                         #  - examyear is not found, not published or locked
@@ -3211,7 +3205,7 @@ class GradeUploadView(View):
                             msg_list.extend(err_list)
                         else:
 
-        # - get upload_dict variables
+# - get upload_dict variables
                             # get examperiod and examtype from upload_dict
                             # don't get it from usersettings, get it from upload_dict instead
                             # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = acc_prm.get_selected_experiod_extype_subject_from_usersetting(request)
@@ -3231,7 +3225,7 @@ class GradeUploadView(View):
                                 logger.debug('    grade: ' + str(grade))
                                 logger.debug('    student: ' + str(student))
 
-            # check if student is from requsr_school
+        # - check if student is from requsr_school
                             if student:
                                 if student.department == sel_department:
                                     if logging_on:
@@ -3268,8 +3262,8 @@ class GradeUploadView(View):
                                 studsubj_tobedeleted = grade.studentsubject.tobedeleted or False
 
                                 is_score = 'score' in examgradetype
+
                                 # PR2022-04-06 <Marisela Cijntje Radulphus cannot edit grade:
-                                # cause: Havo/Vwo has no level,
                                 # error: 'NoneType' object has no attribute 'base_id'
                                 # cause: Havo/Vwo has no level
                                 lvlbase_pk = grade.studentsubject.student.level.base_id if grade.studentsubject.student.level else None
@@ -3305,7 +3299,7 @@ class GradeUploadView(View):
                                 )
 
                                 if logging_on:
-                                    logger.debug('    is_allowed: ' + str(is_allowed))
+                                    logger.debug('    validate_grade_is_allowed: ' + str(is_allowed))
                                     logger.debug('    msg_list: ' + str(msg_list))
 
                                 if is_allowed:
@@ -3375,8 +3369,6 @@ class GradeUploadView(View):
                                         grade_pk_list=[grade.pk],
                                         remove_note_status=True
                                     )
-                                if logging_on:
-                                    logger.debug('    rows: ' + str(rows))
                                 if rows:
                                     row = rows[0]
                                     if row:
@@ -3390,6 +3382,7 @@ class GradeUploadView(View):
                 # - create error when exam is not created PR2023-03-20
                 logger.error(getattr(e, 'message', str(e)))
                 msg_list.append(acc_prm.errhtml_error_occurred_no_border(e, _('The changes have not been saved.')))
+
         if logging_on:
             logger.debug('    msg_list: ' + str(msg_list))
 
@@ -3399,7 +3392,6 @@ class GradeUploadView(View):
             header_txt = str(_('Enter score') if is_score else _('Enter grade')),
             update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': header_txt,
                                         'msg_html': '<br>'.join(msg_list)}]
-
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -3413,6 +3405,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
     # add new values to update_dict (don't reset update_dict, it has values)
     logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' ------- update_grade_instance -------')
         logger.debug('    upload_dict: ' + str(upload_dict))
 
@@ -3420,15 +3413,17 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
     upload_dict: {'mode': 'update', 'mapid': 'grade_67275', 'examperiod': 1, 
                     'grade_pk': 67275, 'student_pk': 9226, 'studsubj_pk': 67836, 
                     'examgradetype': 'segrade', 'segrade': '5,8'}
+                    
+    PR2024-06-01 change of exam version:
+    upload_dict: {'table': 'grade', 'mode': 'update', 'return_grades_with_exam': True, 
+                    'examyear_pk': 6, 'depbase_pk': 1, 'examperiod': 1, 
+                    'exam_pk': 600, 'student_pk': 9920, 'lvlbase_pk': 6, 'studsubj_pk': 88082, 'grade_pk': 95509}
     """
-
-    err_list = []
-    save_changes = False
-    recalc_finalgrade = False
-    must_recalc_reex_reex03 = False
-
-    savetolog_mode = None
-    savetolog_fields = []
+    def savetolog_fields_append(field_list):
+        #PR2024-05-31
+        for fieldname in field_list:
+            if fieldname not in savetolog_fields:
+                savetolog_fields.append(fieldname)
 
     def get_ce_score_is_approved():
         return getattr(grade_instance, 'ce_auth1by') is not None or \
@@ -3441,9 +3436,17 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                               getattr(grade_instance, 'ce_exam_auth2by') is not None or \
                               getattr(grade_instance, 'ce_exam_auth3by') is not None
 
+    err_list = []
+    save_changes = False
+    recalc_finalgrade = False
+    must_recalc_reex_reex03 = False
+
+    savetolog_mode = None
+    savetolog_fields = []
 
     for field, new_value in upload_dict.items():
 
+# +++++ update score or grade
         if field in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
 
 # - validate new_value
@@ -3468,23 +3471,27 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     setattr(grade_instance, field, validated_value)
 
         # - remove exemption_imported - is only True when AWP has entered exemption from previous year
-                    saved_exemption_imported = getattr(grade_instance, 'exemption_imported')
-                    if saved_exemption_imported:
-                        setattr(grade_instance, 'exemption_imported', False)
-                        savetolog_fields.append('exemption_imported')
+                    # PR2024-05-09 added: only when examperiod is exemption
+                    # PR2024-05-17 TODO cannot change grade when exemption_imported, must add unblock by inspectorate
+                    if grade_instance.examperiod == c.EXAMPERIOD_EXEMPTION:
+                        saved_exemption_imported = getattr(grade_instance, 'exemption_imported')
+                        if saved_exemption_imported:
+                            setattr(grade_instance, 'exemption_imported', False)
+
+                            savetolog_fields_append(['exemption_imported'])
 
                     save_changes = True
                     recalc_finalgrade = True
 
                     savetolog_mode = 'u'
-                    savetolog_fields.append((field))
+
+                    savetolog_fields_append([field])
 
                     if logging_on:
                         logger.debug('  > save_changes of : ' + str(field))
 
         # - when reex or reex03: copy segrade, srgrade and pegrade to reex grade_instance
                     must_recalc_reex_reex03 = field in ('segrade', 'srgrade', 'pegrade')
-
 
  # when score has changed: recalc grade when cesuur/nterm is given
                     # PR2022-05-29 changed my mind: due to batch update needs those grades in reex_grade to calc final grade
@@ -3493,31 +3500,34 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     # - recalculate gl_sesr, gl_pece, gl_final, gl_use_exem in studsubj record
                     # - also update these fields when scores are changed or nterm entered
 
-                    if field in ('pescore', 'cescore'):
-                        recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_value)
+                    # PR2024-06-01: is done at and of function:
+                    # was:
+                    # if field in ('pescore', 'cescore'):
+                    #     recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_value)
 
-    # ----- save changes in field 'exam'
+# +++++  update field 'exam'
         elif field == 'exam_pk':
             exam = subj_mod.Exam.objects.get_or_none(pk=new_value) if new_value else None
 
+            # PR2024-05-09 TODO: when score is approved, changing exam should not be possible
+
             # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again
-            db_field = 'ce_exam'
-            saved_exam = getattr(grade_instance, db_field)
+            db_field = 'ce_exam_id'
+            saved_exam_pk = getattr(grade_instance, db_field)
 
             if logging_on:
                 logger.debug('....field: ' + str(field))
                 logger.debug('    new_value: ' + str(new_value))
-                logger.debug('    exam:       ' + str(exam) + ' ' + str(type(exam)))
-                logger.debug('    saved_exam: ' + str(saved_exam) + ' ' + str(type(saved_exam)))
+                logger.debug('    saved_exam_pk: ' + str(saved_exam_pk) + ' ' + str(type(saved_exam_pk)))
 
             # PR2023-05-25 skip when exam and saved exam are the same ( None == None gives True in Python)
-            if exam != saved_exam:
+            if new_value != saved_exam_pk:
 
     # - validate if ce_exam is approved or submitted:
                 # ce_exam_auth1by is approval of exam (wolf)
                 # ce_auth1by is approval of score
 
-            # PR2023-05-29 debug tel ANgela Richardson Masis Stella: cannot remove exam because is published (with empty score)
+            # PR2023-05-29 debug tel Angela Richardson Masis Stella: cannot remove exam because is published (with empty score)
             # was:
                     # ce_score_is_approved, ce_exam_is_submitted, ce_exam_is_approved = False, False, False
                 # - cannot change exam when ce_score_is_submitted
@@ -3526,13 +3536,13 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     #    ce_score_is_approved = get_ce_score_is_approved()
 
             # - cannot change exam when Wolf-scores are submitted or (partly) approved
-                ce_exam_is_submitted = getattr(grade_instance, 'ce_exam_published')
+                ce_exam_is_submitted = getattr(grade_instance, 'ce_exam_published') or False
                 ce_exam_is_approved = get_ce_exam_is_approved() if not ce_exam_is_submitted else False
 
                 if logging_on:
                     logger.debug('....field: ' + str(field))
                     logger.debug('    ce_exam_is_submitted: ' + str(ce_exam_is_submitted))
-                    logger.debug('    ce_exam_is_approved: ' + str(ce_exam_is_approved))
+                    logger.debug('    ce_exam_is_approved:  ' + str(ce_exam_is_approved))
 
                 if ce_exam_is_submitted or ce_exam_is_approved:
                     score_exam_txt = gettext('this Wolf exam')
@@ -3545,10 +3555,10 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     err_list.append(str(_("You cannot %(ch_del)s %(cpt)s.") % {'ch_del': change_delete, 'cpt': score_exam_txt}))
 
                 else:
-                    # has_changed is alreay checked above
+                    # has_changed is already checked above
                     # save_exam = True
 
-                    setattr(grade_instance, db_field, exam)
+                    setattr(grade_instance, db_field, new_value)
 
             # reset ce_exam_ fields when exam_pk changes
                     setattr(grade_instance, "ce_exam_blanks", None)
@@ -3563,27 +3573,33 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     setattr(grade_instance, "ce_exam_blocked", False)
 
                     # PR2022-06-08 debug tel Angela Richardson Maris Stella: score disappears
-                    # dont reset cescore cegrade
+                    # dont reset score
                     # was: setattr(grade_instance, "pescore", None)
                     # was: setattr(grade_instance, "cescore", None)
 
                     # but do reset cegrade, pecegrade, finalgrade
+                    setattr(grade_instance, "pegrade", None)
                     setattr(grade_instance, "cegrade", None)
                     setattr(grade_instance, "pecegrade", None)
                     setattr(grade_instance, "finalgrade", None)
 
-                    # when score has changed: recalc grade when cesuur/nterm is given
-                    # NIU recalc_grade_from_score_in_grade_instance(grade_instance, 'pescore', getattr(grade_instance, "pescore"))
-                    recalc_grade_from_score_in_grade_instance(grade_instance, 'cescore', getattr(grade_instance, "cescore"))
+                    # PR2024-06-01: is done at and of function:
+                    # was: recalc_grade_from_score_in_grade_instance(grade_instance, 'cescore', getattr(grade_instance, "cescore"))
 
                     save_changes = True
                     recalc_finalgrade = True
 
                     savetolog_mode = 'u'
-                    # ce_exam_id is not stored in log
-                    savetolog_fields.append(('cegrade', 'pecegrade', 'finalgrade'))
 
-# - save changes in field 'ce_exam_result', 'pe_exam_result'
+                    # ce_exam_id is not stored in log
+                    savetolog_fields_append([db_field, 'cegrade', 'pecegrade', 'finalgrade'])
+
+                    if logging_on:
+                        logger.debug('  > save_changes of : ' + str(field))
+                        logger.debug('  > savetolog_fields : ' + str(savetolog_fields))
+
+
+# +++++  update field 'ce_exam_result', 'pe_exam_result'
         elif field in ('ce_exam_result', 'pe_exam_result'):
 
             if logging_on:
@@ -3594,7 +3610,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
             if logging_on:
                 logger.debug('    saved_value: ' + str(saved_value))
 
-    # 2. save changes if changed and no_error
+    # - save changes if changed and no_error
             # always calculate and save result, to be on the safe side. Was: if new_value != saved_value:
             total_score, total_blanks, total_no_scoreNIU, total_no_keyNIU = None, None, None, None
             exam_instance = grade_instance.ce_exam
@@ -3630,13 +3646,14 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
             save_changes = True
 
-            # ce_exam is not stored in log
+            # ce_exam_result is not stored in log
 
-        # - save changes in fields 'xx_status' and 'xxpublished'
+# +++++  update field 'xx_status' and 'xxpublished'
         elif field in ('se_status', 'pe_status', 'ce_status', 'sepublished', 'pepublished', 'cepublished'):
             pass
             # fields are updated in GradeApproveView
 
+# +++++  update field 'ce_exam_published'
         elif field == 'ce_exam_published':
             # can only remove published. Also remove auth1, auth2, auth3. PR2022-05-22
             setattr(grade_instance, field, None)
@@ -3645,7 +3662,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
             setattr(grade_instance, 'ce_exam_auth3by', None)
             save_changes = True
 
-        # - save changes in fields 'ce_exam_auth1by' and 'ce_exam_auth2by' and 'ce_exam_auth3by'
+# +++++  update fields 'ce_exam_auth1by' and 'ce_exam_auth2by' and 'ce_exam_auth3by'
         elif field == 'auth_index':
             auth_index = upload_dict.get(field)
             auth_bool_at_index = upload_dict.get('auth_bool_at_index', False)
@@ -3676,21 +3693,79 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                 setattr(grade_instance, fldName, new_ce_exam_authby)
                 save_changes = True
 
-# --- end of for loop ---
+# --- end of for field, new_value in upload_dict.items()
 
-# 5. save changes`
+    if logging_on:
+        logger.debug('  > save_changes : ' + str(save_changes))
+
+# +++++ save changes`
     if save_changes:
 
+    # --- first calculate ce_grade if necessary
+        if recalc_finalgrade:
+            if logging_on:
+                logger.debug('  > recalc_finalgrade')
+
+            ce_exam = grade_instance.ce_exam if grade_instance else None
+
+            new_ce_grade = calc_score.calc_grade_from_score_v2(
+                examperiod=grade_instance.examperiod,
+                no_centralexam=si_dict['no_centralexam'],
+                weight_ce=si_dict['weight_ce'],
+                cegrade=grade_instance.cegrade,
+                cescore=grade_instance.cescore,
+                ete_exam=si_dict['ete_exam'],
+                scalelength=ce_exam.scalelength if ce_exam else None,
+                cesuur=ce_exam.cesuur if ce_exam else None,
+                nterm=ce_exam.nterm if ce_exam else None,
+                exam_published_id=ce_exam.published_id if ce_exam else None
+            )
+            setattr(grade_instance, 'cegrade', new_ce_grade)
+
+            savetolog_fields_append(['cegrade'])
+
+            if logging_on:
+                logger.debug('  > new_ce_grade : ' + str(new_ce_grade))
+
+    # --- then calc final grade
+            studsubj = grade_instance.studentsubject if grade_instance else None
+
+            if studsubj:
+                new_sesrgrade, new_pecegrade, new_finalgrade, delete_exemption_cegrade_without_ce = \
+                    calc_final.calc_final_grade_v2(
+                        examperiod=grade_instance.examperiod,
+                        subj_code=si_dict['subj_code'],
+                        gradetype=si_dict['gradetype'],
+                        weight_se=si_dict['weight_se'],
+                        weight_ce=si_dict['weight_ce'],
+                        no_ce_years=si_dict['no_ce_years'],
+                        sr_allowed=si_dict['sr_allowed'],
+                        has_practex=si_dict['has_practex'],
+
+                        exemption_year=studsubj.exemption_year,
+                        has_sr=studsubj.has_sr,
+
+                        segrade=grade_instance.segrade,
+                        srgrade=grade_instance.srgrade,
+                        pegrade=grade_instance.pegrade,
+                        cegrade=new_ce_grade
+                    )
+
+                setattr(grade_instance, 'sesrgrade', new_sesrgrade)
+                setattr(grade_instance, 'pecegrade', new_pecegrade)
+                setattr(grade_instance, 'finalgrade', new_finalgrade)
+
+                savetolog_fields_append(['sesrgrade', 'pecegrade', 'finalgrade'])
+
+                if logging_on:
+                    logger.debug('  > new_sesrgrade : ' + str(new_sesrgrade))
+                    logger.debug('  > new_pecegrade : ' + str(new_pecegrade))
+                    logger.debug('  > new_finalgrade : ' + str(new_finalgrade))
+
+
+# - save grade instance
         try:
             grade_instance.save(request=request)
-            if savetolog_mode:
-                # PR2023-08-15
-                awpr_log.savetolog_grade(
-                    grade_pk=grade_instance.pk,
-                    req_mode=savetolog_mode,
-                    request=request,
-                    updated_fields=savetolog_fields
-                )
 
             if logging_on:
                 logger.debug('The changes have been saved.')
@@ -3700,12 +3775,28 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
             err_list.append(str(_('An error occurred. The changes have not been saved.')))
         else:
 
-# +++ if one of the input fields has changed: recalc final grade
-            if recalc_finalgrade:
-                calc_score.batch_update_finalgrade(
-                    department_instance=sel_department,
-                    grade_pk_list=[grade_instance.pk]
+# - save changes to gradelog
+            if savetolog_mode:
+                # PR2023-08-15
+                #awpr_log.savetolog_grade(
+                #    grade_pk=grade_instance.pk,
+                #    req_mode=savetolog_mode,
+                #    request=request,
+                #    updated_fields=savetolog_fields
+                #)
+
+                awpr_log.copytolog_grade_v2(
+                    grade_pk_list=[grade_instance.pk],
+                    req_mode=savetolog_mode,
+                    modifiedby_id=request.user.pk
                 )
+
+# +++ if one of the input fields has changed: recalc final grade
+            # if recalc_finalgrade:
+            #    calc_score.batch_update_finalgrade(
+            #        department_instance=sel_department,
+            #        grade_pk_list=[grade_instance.pk]
+            #    )
 
 # - recalculate gl_sesr, gl_pece, gl_final, gl_use_exem in studsubj record
             # TODO also update these fields when scores are changed or nterm entered
@@ -3716,6 +3807,13 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
                 recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
 
+    # PR2024-05-14
+            calc_final.batch_recalc_update_studsubj_grade_v2(
+                request=request,
+                studsubj_pk_list=[grade_instance.studentsubject_id]
+            )
+
+
     if logging_on:
         logger.debug('....err_list:  ' + str(err_list))
 
@@ -3723,7 +3821,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 # --- end of update_grade_instance
 
 
-def recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_value):
+def recalc_grade_from_score_in_grade_instanceNIU(grade_instance, field, validated_value):
     # PR2022-06-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -4476,7 +4574,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
     # PR2023-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
     # must rename secret_exam to ceex_secret_exam etc
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('    sel_examyear:    ' + str(sel_examyear))
@@ -4796,8 +4894,9 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
             #                  'pe_auth1by_id', 'pe_auth2by_id', 'pe_auth3by_id', 'pe_auth4by_id',
             #                  'ce_auth1by_id', 'ce_auth2by_id', 'ce_auth3by_id' 'ce_auth4by_id')
 
-            if logging_on and False:
+            if logging_on :
                 logger.debug('---------------- ')
+
             for row in grade_rows:
                 first_name = row.get('firstname')
                 last_name = row.get('lastname')
@@ -4841,6 +4940,8 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                             for key, value in grade_append_dict.items():
                                 row[key] = value
 
+                if logging_on:
+                    logger.debug(' row: ' + str(row))
             if logging_on:
                 logger.debug('---------------- ')
 
@@ -4864,7 +4965,7 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
     #   they may not be downloaded by schools,
     #   to be 100% sure that the answers cannot be retrieved by a school.
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_with_exam_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))

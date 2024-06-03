@@ -5570,7 +5570,7 @@ def create_userdata_xlsx(sel_examyear, req_usr_school, req_usr_role, mapped_depc
         # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-        # PR2024-02-27 debug: special charactes in schoolname gibve gunicorn error. use abbrev instead of schoolname
+        # PR2024-02-27 debug: special characters in schoolname gibve gunicorn error. use abbrev instead of schoolname
         # was: requsr_school_name = ' '.join((req_usr_school.base.code, req_usr_school.name))
         requsr_school_name = ' '.join((req_usr_school.base.code, req_usr_school.abbrev))
 
@@ -5894,7 +5894,7 @@ def create_student_xlsx(sel_examyear, sel_school, sel_department, user_lang):  #
         # PR2023-12-05 was:  school_name = ' '.join((sel_school.base.code, sel_school.name))
         # change temporary to: school_name = sel_school.base.code
 
-        # PR2024-02-27 debug: special charactes in schoolname give gunicorn error. use abbrev instead of schoolname
+        # PR2024-02-27 debug: special characters in schoolname give gunicorn error. use abbrev instead of schoolname
         school_name = ' '.join((sel_school.base.code, sel_school.abbrev))
 
         title = ' '.join((str(_('Candidates')), str(school_name), str(sel_examyear), 'dd', today_dte.isoformat()))
@@ -6481,7 +6481,7 @@ def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, l
 
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
-        # PR2024-02-27 debug: special charactes in schoolname give gunicorn error. use abbrev instead of schoolname
+        # PR2024-02-27 debug: special characters in schoolname give gunicorn error. use abbrev instead of schoolname
         # was: school_name = ' '.join((sel_school.base.code, sel_school.name))
         school_name = ' '.join((sel_school.base.code, sel_school.abbrev))
 
