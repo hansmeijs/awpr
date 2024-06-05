@@ -5352,7 +5352,7 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                             logger.debug('    studsubj_dict:   ' + str(studsubj_dict))
                             logger.debug('    studsubj_pk:   ' + str(studsubj_pk))
                             logger.debug('    schemeitem_pk: ' + str(schemeitem_pk))
-                            logger.debug('    si_dict: ' + str(si_dict))
+                            logger.debug('    schemeitems_dict: ' + str(schemeitems_dict))
 
 # - get current studsubj - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
                         studsubj_instance = stud_mod.Studentsubject.objects.get_or_none(

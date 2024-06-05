@@ -1047,7 +1047,14 @@ def create_grade_approve_rows(request, sel_examyear, sel_school, sel_department,
         sql_list.extend([
             "subj.base_id AS subjbase_id, lvl.base_id AS lvlbase_id, dep.base_id AS depbase_id, school.base_id AS schoolbase_id,",
             "CONCAT_WS (' ', stud.prefix, CONCAT(stud.lastname, ','), stud.firstname) AS stud_name, subj.name_nl AS subj_name,",
-            "CASE WHEN stud.subj_composition_ok OR stud.subj_dispensation THEN FALSE ELSE TRUE END AS composition_error,",
+
+            # PR2024-06-4 added: OR stud.partial_exam
+            # was: "CASE WHEN stud.subj_composition_ok OR stud.subj_dispensation THEN FALSE ELSE TRUE END AS composition_error,",
+            "CASE WHEN stud.subj_composition_ok OR stud.subj_dispensation OR stud.partial_exam THEN FALSE ELSE TRUE END AS composition_error,",
+
+            # PR2024-06-04 added:
+            "stud.extrafacilities, stud.iseveningstudent, stud.islexstudent, stud.bis_exam, stud.partial_exam,",
+
             "studsubj.tobedeleted AS studsubj_tobedeleted,",
             "CASE WHEN studsubj.subj_published_id IS NULL THEN TRUE ELSE FALSE END AS studsubj_not_published",
 
@@ -1363,7 +1370,7 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
 
                     is_sxm = sel_examyear.country.abbrev.lower() == 'sxm'
 
-    # - get selected mode. Modes are 'submit_test' 'submit_save'
+# -- get selected mode. Modes are 'submit_test' 'submit_save'
                     mode = upload_dict.get('mode')
                     form_name = upload_dict.get('form')
                     is_test = (mode == 'submit_test')
@@ -4574,7 +4581,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
     # PR2023-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
     # must rename secret_exam to ceex_secret_exam etc
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('    sel_examyear:    ' + str(sel_examyear))
@@ -5847,7 +5854,8 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
 # ------------  loop through all questions of this partex
                     for q_number in range(1, this_partex_amount + 1):  # range(start_value, end_value, step), end_value is not included!
                         q_result_str = partex_result_dict.get(q_number) if partex_result_dict else None
-
+                        # PR2024-06-03 debug MIL: q_result_str = 'b while question was not multiple choice
+                        # solve by ignoring q_result_str when not multiple choice
                         q_dict = all_q_dict.get(q_number) or {}
 
                         """

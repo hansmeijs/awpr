@@ -4030,9 +4030,10 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_level, sel_examperiod, is_submit, request,
                                   sel_subjbase_pk=None, sel_cluster_pk=None, sel_grade_pk=None):
     # PR2022-04-25 PR2022-06-01 PR2023-04-30 PR2023-05-16 PR2023-05-26
-    # not any more: approving single grade_exam happens in UploadGrade
-    logging_on = False  # s.LOGGING_ON
+    # not anymore: approving single grade_exam happens in UploadGrade
+    logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug('  ---- get_approve_grade_exam_rows -----')
         logger.debug('     sel_examperiod: ' + str(sel_examperiod))
         logger.debug('     sel_subjbase_pk: ' + str(sel_subjbase_pk))
@@ -4152,7 +4153,12 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
                     #for conn_query in connection.queries:
                     #    logger.debug('conn_query: ' + str(conn_query))
 
+
                 if logging_on:
+                    logger.debug('grade_exam_rows: ' + str(len(grade_exam_rows)))
+                    for row in grade_exam_rows:
+                        logger.debug('row: ' + str(row))
+
                     logger.debug('---------------- ')
 
     except Exception as e:
@@ -4168,7 +4174,7 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise
 
     # PR2023-05-26 msg_list is used for single approve
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('---- approve_grade_exam -----')
 

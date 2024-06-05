@@ -46,7 +46,6 @@ def update_library(examyear):
         ('exform', 'bullet_deleted', 'Dit vak is gewist.'),
         ('exform', 'bullet_changed', 'Het karakter van dit vak is gewijzigd.'),
 
-
         ('exform', 'signature_chairperson', '(Handtekening voorzitter)'),
         ('exform', 'signature_secretary', '(Handtekening secretaris)'),
 
@@ -99,7 +98,8 @@ def update_library(examyear):
         ('ex2', 'submit_before', 'Inzenden ten minste 3 dagen vóór aanvang van de centrale examens*'),
         ('ex2', 'footnote01', 'Ex. nr. en naam dienen in overeenstemming '),
         ('ex2', 'footnote02', 'te zijn met formulier EX.1'),
-        ('ex2', 'footnote03', '1) doorhalen hetgeen niet van toepassing is.'),
+        # PR2024-06-05 was: ('ex2', 'footnote03', '1) doorhalen hetgeen niet van toepassing is.'),
+        ('ex2', 'footnote03', None),
         ('ex2', 'footnote04', 'Het getekend exemplaar en een digitale versie ten minste 3 dagen'),
         ('ex2', 'footnote05', 'vóór aanvang van de centrale examens inzenden naar de Onderwijs Inspectie'),
         ('ex2', 'footnote06', 'en een digitale versie naar het ETE.'),

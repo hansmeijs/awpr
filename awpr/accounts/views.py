@@ -2005,7 +2005,7 @@ class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
             if not self.user.activated:
                 logger.debug('     user.activated: ' + str(self.user.activated))
                 # PR2022-05-01 debug. User can change password and login when account is not activated
-                # add 'and self.user.activated' to if clause
+                # add 'and self.user.activated' to if-clause
 
                 response = render_to_string('password_reset_notactivated.html')
                 return HttpResponse(response)
@@ -4854,7 +4854,7 @@ def get_settings_departmentbase(request, request_item_setting, sel_examyear_inst
 def get_settings_levelbase(request, request_item_setting, sel_examyear_instance, sel_department_instance,
                                 allowed_depbase_dict, page, permit_dict, setting_dict, selected_pk_dict):
     # PR2022-12-11 PR2023-01-11 PR2023-05-18
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_levelbase -------')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
@@ -6303,7 +6303,7 @@ def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, a
     # PR2024-06-02 Nope debug: Cor Hameete CURCOM:
     # when switching from Vsbo to Radulphus no grades arw shown because sel_lvlbase_pk is still '4'
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_lvlbase_instance  -----')
         logger.debug('    sel_department: ' + str(sel_department))
@@ -6403,7 +6403,7 @@ def get_settings_sectorbase(sel_depbase_pk, sel_examyear_pk, setting_dict, selec
 
     # PR2024-06-02 only called by Downloads
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' -----  get_settings_sectorbase  -----')

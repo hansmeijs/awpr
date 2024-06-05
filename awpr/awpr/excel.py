@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, gettext_lazy as _
+from django.utils.translation import activate, gettext, gettext_lazy as _
 from django.utils import timezone
 from django.views.generic import View
 
@@ -274,6 +274,8 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
         bold_format = ex1_formats.get('bold_format')
         bold_blue = ex1_formats.get('bold_blue')
         normal_blue = ex1_formats.get('normal_blue')
+        normal_black = ex1_formats.get('normal_black')
+
         th_merge_bold = ex1_formats.get('th_merge_bold')
         th_prelim = ex1_formats.get('th_prelim')
         row_align_center_black = ex1_formats['row_align_center_black']
@@ -312,7 +314,7 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
 
 # - put Ex1 in right upper corner
         #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
-        sheet.merge_range(0, col_count - 5, 1, col_count - 1, 'EX.1', th_merge_bold)
+        sheet.merge_range(0, col_count - 1, 1, col_count - 1, 'EX.1', th_merge_bold)
 
         row_index = 9
         if not save_to_disk:
@@ -347,10 +349,15 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
                     row_index += 1
 
                 for i, field_caption in enumerate(ex1_formats['field_captions']):
-                    sheet.write(row_index, i, field_caption, ex1_formats['header_formats'][i])
+                    if field_caption == 'Opmerkingen':
+                        sheet.merge_range(row_index, i, row_index, i+1, field_caption, ex1_formats['header_formats'][i])
+                    else:
+                        sheet.write(row_index, i, field_caption, ex1_formats['header_formats'][i])
 
                 if len(stud_list):
                     for row in stud_list:
+                        if logging_on:
+                            logger.debug('  > row: ' + str(row))
                         stud_tobedel = row.get('tobedel', False)
 
                         subj_id_arr = row.get('subj', [])
@@ -388,6 +395,15 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
                                         # new studsubjects
                                         value = u"\u2B24" # large solid circle
                                         exc_format = row_align_center_blue
+                                sheet.write(row_index, i, value, exc_format)
+
+                            elif field_name == 'notes':
+                                # PR2024-06-04 added column notes
+                                value = get_note_txt(row)
+                                if stud_tobedel:
+                                    exc_format = row_align_left_red
+
+                                sheet.merge_range(row_index, i, row_index, i+1, value, exc_format)
 
                             else:
                                 value = row.get(field_name, '')
@@ -397,7 +413,7 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
                                     else:
                                         exc_format = row_align_center_red
 
-                            sheet.write(row_index, i, value, exc_format)
+                                sheet.write(row_index, i, value, exc_format)
 
         # ---  level subtotal row
                 # skip subtotal row in Havo/vwo,
@@ -409,6 +425,8 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
                             #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
                             sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL ' + lvl_name,
                                               totalrow_merge)
+                        elif field_name == 'notes':
+                            sheet.merge_range(row_index, i, row_index, i + 1, '', ex1_formats['totalrow_formats'][i])
                         else:
                             if isinstance(field_name, int):
                                 if field_name in lvl_totals:
@@ -430,6 +448,9 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
             if field_name == 'exnr':
                 #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
                 sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL', totalrow_merge)
+
+            elif field_name == 'notes':
+                sheet.merge_range(row_index, i, row_index, i + 1, '', ex1_formats['totalrow_formats'][i])
             else:
                 if isinstance(field_name, int):
                     if field_name in total_dict:
@@ -444,8 +465,11 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
         for i, field_name in enumerate(ex1_formats['field_names']):
             if i == 0:
                 sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
+            elif field_name == 'notes':
+                sheet.merge_range(row_index, i, row_index, i + 1, '', ex1_formats['header_formats'][i])
             else:
-                sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+                field_caption = ex1_formats['field_captions'][i] if field_name != 'notes' else ''
+                sheet.write(row_index, i, field_caption, ex1_formats['header_formats'][i])
 
 # ---  extrafacilities row:
         if ex1_rows_dict.get('extrafacilities'):
@@ -458,18 +482,21 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
         # large solid circle
         sheet.write(row_index, 0, u"\u2B24", ex1_formats.get('footer_align_center_blue'))
         sheet.write(row_index, 1, settings.get('bullet_new'), ex1_formats.get('footer_align_left_black'))
+
 # ---  has_subj_chang:
         if ex1_rows_dict.get('has_subj_chang'):
             row_index += 1
             # large outlined circle
             sheet.write(row_index, 0, u"\u2B58", ex1_formats.get('footer_align_center_blue'))
             sheet.write(row_index, 1, settings.get('bullet_changed'), ex1_formats.get('footer_align_left_black'))
+
 # ---  has_subj_publ:
         if ex1_rows_dict.get('has_subj_publ'):
             row_index += 1
             # large solid circle
             sheet.write(row_index, 0, u"\u2B24", ex1_formats.get('footer_align_center_black'))
             sheet.write(row_index, 1, settings.get('bullet_submitted'), ex1_formats.get('footer_align_left_black'))
+
 # ---  has_subj_tobedel:
         if ex1_rows_dict.get('has_subj_tobedel'):
             row_index += 1
@@ -487,50 +514,51 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
             if key in settings:
                 value = settings.get(key)
                 if value:
-                    sheet.write(row_index + i - 1, 0, value, bold_format)
+                    sheet.write(row_index + i - 1, 0, value, normal_black)
 
 # ---  digitally signed by
         # PR2022-05-31 also show signatures on preliminary Ex1 form
         auth_row = first_footnote_row
-        if save_to_disk or True:
-            sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
-            auth_row += 2
-            # - Chairperson
-            sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
-            auth1_list = ex1_rows_dict.get('auth1')
-            if auth1_list:
-                for auth1_pk in auth1_list:
-                    auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
-                    if auth1:
-                        sheet.write(auth_row, first_subject_column + 4, auth1.last_name, normal_blue)
-                        auth_row += 1
-            else:
-                auth_row += 1
-            auth_row += 1
-            # - Secretary
-            sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
-            auth2_list = ex1_rows_dict.get('auth2')
-            if auth2_list:
-                for auth2_pk in auth2_list:
-                    auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
-                    if auth2:
-                        sheet.write(auth_row, first_subject_column + 4, auth2.last_name, normal_blue)
-                        auth_row += 1
-            else:
-                auth_row += 1
 
+        sheet.write(auth_row, first_subject_column, 'Digitaal ondertekend door:')
+        auth_row += 2
+
+# - Chairperson
+        sheet.write(auth_row, first_subject_column, 'Voorzitter:')
+        auth1_list = ex1_rows_dict.get('auth1')
+        if auth1_list:
+            for auth1_pk in auth1_list:
+                auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
+                if auth1:
+                    sheet.write(auth_row, first_subject_column + 3, auth1.last_name, normal_blue)
+                    auth_row += 1
+        else:
             auth_row += 1
+        auth_row += 1
+
+# - Secretary
+        sheet.write(auth_row, first_subject_column, 'Secretaris:')
+        auth2_list = ex1_rows_dict.get('auth2')
+        if auth2_list:
+            for auth2_pk in auth2_list:
+                auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
+                if auth2:
+                    sheet.write(auth_row, first_subject_column + 3, auth2.last_name, normal_blue)
+                    auth_row += 1
+        else:
+            auth_row += 1
+        auth_row += 1
 
 # -  place, date
         sheet.write(auth_row, first_subject_column, 'Plaats:')
-        sheet.write(auth_row, first_subject_column + 4, str(sel_school.examyear.country.name),
+        sheet.write(auth_row, first_subject_column + 3, str(sel_school.examyear.country.name),
                     normal_blue)
-        sheet.write(auth_row, first_subject_column + 8, 'Datum:')
-        sheet.write(auth_row, first_subject_column + 11, today_formatted, normal_blue)
+        sheet.write(auth_row, first_subject_column + 7 , 'Datum:')
+        sheet.write(auth_row, first_subject_column + 10, today_formatted, normal_blue)
 
         book.close()
 
-        # +++ save file to disk
+# +++ save file to disk
         if save_to_disk:
             excel_file = File(temp_file)
 
@@ -700,11 +728,14 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
         bold_format = ex4_formats.get('bold_format')
         bold_blue = ex4_formats.get('bold_blue')
         normal_blue = ex4_formats.get('normal_blue')
+        normal_black = ex4_formats.get('normal_black')
         th_merge_bold = ex4_formats.get('th_merge_bold')
         th_merge_normal = ex4_formats.get('th_merge_normal')
-        th_exists = ex4_formats.get('th_exists')
+        # th_exists = ex4_formats.get('th_exists')
         row_align_center_blue = ex4_formats['row_align_center_blue']
         row_align_center_black = ex4_formats['row_align_center_black']
+        row_align_center_red = ex4_formats['row_align_center_red']
+        row_align_left_red = ex4_formats['row_align_left_red']
         th_prelim = ex4_formats.get('th_prelim')
         totalrow_merge = ex4_formats.get('totalrow_merge')
         col_count = len(ex4_formats['field_width'])
@@ -752,7 +783,7 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
 
 # - put Ex4 in right upper corner
         #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
-        sheet.merge_range(0, col_count - 5, 1, col_count -1, 'EX.4', th_merge_bold)
+        sheet.merge_range(0, col_count - 1, 1, col_count -1, 'EX.4', th_merge_bold)
 
         row_index = 9
         if not save_to_disk:
@@ -789,13 +820,17 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                     row_index += 1
 
                 for i, field_caption in enumerate(ex4_formats['field_captions']):
-                     sheet.write(row_index, i, field_caption, ex4_formats['header_formats'][i])
-
+                    if field_caption == 'Opmerkingen':
+                        sheet.merge_range(row_index, i, row_index, i + 1, field_caption, ex4_formats['header_formats'][i])
+                    else:
+                        sheet.write(row_index, i, field_caption, ex4_formats['header_formats'][i])
 
 # +----  iterate through stud_list
                 if len(stud_list):
 
                     for row in stud_list:
+
+                        stud_tobedel = row.get('tobedel', False)
 
                         subj_id_list = row.get('subj')
                         reex_publ_list = row.get('reex_publ')
@@ -838,11 +873,26 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                                         exc_format = row_align_center_black
                                     else:
                                         exc_format = row_align_center_blue
+                                sheet.write(row_index, i, value, exc_format)
+
+                            elif field_name == 'notes':
+                                # PR2024-06-04 added column notes
+                                value = get_note_txt(row)
+
+                                if stud_tobedel:
+                                    exc_format = row_align_left_red
+
+                                sheet.merge_range(row_index, i, row_index, i+1, value, exc_format)
 
                             else:
                                 value = row.get(field_name, '')
+                                if stud_tobedel:
+                                    if field_name == 'name':
+                                        exc_format = row_align_left_red
+                                    else:
+                                        exc_format = row_align_center_red
 
-                            sheet.write(row_index, i, value, exc_format)
+                                sheet.write(row_index, i, value, exc_format)
 
 # ---  level subtotal row
                 # skip subtotal row in Havo/vwo,
@@ -853,6 +903,8 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                         if field_name == 'exnr':
                             #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
                             sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL ' + lvl_name, totalrow_merge)
+                        elif field_name == 'notes':
+                            sheet.merge_range(row_index, i, row_index, i + 1, '', ex4_formats['totalrow_formats'][i])
                         else:
                             if isinstance(field_name, int):
                                 if field_name in lvl_totals:
@@ -875,6 +927,8 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
             if field_name == 'exnr':
                 #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
                 sheet.merge_range(row_index, 0, row_index, first_subject_column -1, 'TOTAAL', totalrow_merge)
+            elif field_name == 'notes':
+                sheet.merge_range(row_index, i, row_index, i + 1, '', ex4_formats['totalrow_formats'][i])
             else:
                 if isinstance(field_name, int):
                     if field_name in total_dict:
@@ -887,6 +941,8 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
         for i, field_name in enumerate(ex4_formats['field_names']):
             if i == 0:
                 sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
+            elif field_name == 'notes':
+                sheet.merge_range(row_index, i, row_index, i + 1, '', ex4_formats['header_formats'][i])
             else:
                 sheet.write(row_index, i, ex4_formats['field_captions'][i], ex4_formats['header_formats'][i])
 
@@ -915,11 +971,15 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
         verhinderd_txt = ' '.join((settings['ex4_verhinderd_header01'], '\n', settings['ex4_verhinderd_header02']))
         sheet.merge_range(row_index, 0, row_index + 1, col_count -1, verhinderd_txt, th_merge_normal)
         row_index += 2
+
         sheet.write(row_index, 0, ex4_formats['field_captions'][0], th_merge_normal)
         sheet.merge_range(row_index, 1, row_index, first_subject_column -1, settings['ex4_verhinderd_header03'], th_merge_normal)
 
         for i in range(first_subject_column, col_count):
-            sheet.write(row_index, i, '', th_merge_normal)
+            if i == col_count - 2:
+                sheet.merge_range(row_index, i, row_index, i + 1, '', th_merge_normal)
+            else:
+                sheet.write(row_index, i, '', th_merge_normal)
 
         for x in range(0, 5):
             row_index += 1
@@ -927,7 +987,10 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
             sheet.merge_range(row_index, 1, row_index, first_subject_column - 1, '', th_merge_normal)
 
             for i in range(first_subject_column, col_count):
-                sheet.write(row_index, i, '', th_merge_normal)
+                if i == col_count - 2:
+                    sheet.merge_range(row_index, i, row_index, i + 1, '', th_merge_normal)
+                else:
+                    sheet.write(row_index, i, '', th_merge_normal)
 
 # ---  footnote row
         row_index += 2
@@ -940,34 +1003,37 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
             if key in settings:
                 value = settings.get(key)
                 if value:
-                    sheet.write(row_index + i - 1, 0, value, bold_format)
+                    sheet.write(row_index + i - 1, 0, value, normal_black)
 
 # ---  digitally signed by
         # PR2022-05-31 also show signatures on preliminary Ex4 form
         auth_row = first_footnote_row
+
         if save_to_disk or True:
-            sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
+            sheet.write(auth_row, first_subject_column, 'Digitaal ondertekend door:')
             auth_row += 2
+
     # - Chairperson
-            sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
+            sheet.write(auth_row, first_subject_column, 'Voorzitter:')
             auth1_list = ex4_rows_dict.get('auth1')
             if auth1_list:
                 for auth1_pk in auth1_list:
                     auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
                     if auth1:
-                        sheet.write(auth_row, first_subject_column + 4, auth1.last_name, normal_blue)
+                        sheet.write(auth_row, first_subject_column + 3, auth1.last_name, normal_blue)
                         auth_row += 1
             else:
                 auth_row += 1
             auth_row += 1
+
     # - Secretary
-            sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
+            sheet.write(auth_row, first_subject_column, 'Secretaris:')
             auth2_list = ex4_rows_dict.get('auth2')
             if auth2_list:
                 for auth2_pk in auth2_list:
                     auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
                     if auth2:
-                        sheet.write(auth_row, first_subject_column + 4, auth2.last_name, normal_blue)
+                        sheet.write(auth_row, first_subject_column + 3, auth2.last_name, normal_blue)
                         auth_row += 1
             else:
                 auth_row += 1
@@ -976,10 +1042,9 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
 
     # -  place, date
         sheet.write(auth_row, first_subject_column, 'Plaats:')
-        sheet.write(auth_row, first_subject_column + 4, str(sel_school.examyear.country.name),
-                    normal_blue)
-        sheet.write(auth_row, first_subject_column + 8, 'Datum:')
-        sheet.write(auth_row, first_subject_column + 11, today_formatted, normal_blue)
+        sheet.write(auth_row, first_subject_column + 3, str(sel_school.examyear.country.name), normal_blue)
+        sheet.write(auth_row, first_subject_column + 7, 'Datum:')
+        sheet.write(auth_row, first_subject_column + 10, today_formatted, normal_blue)
 
         book.close()
 
@@ -1024,6 +1089,7 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
     bold_format = book.add_format({'bold': True})
     bold_blue = book.add_format({'font_color': 'blue', 'bold': True})
     normal_blue = book.add_format({'font_color': 'blue'})
+    normal_black = book.add_format({'font_color': 'black', 'bold': False})
 
     # th_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
     # or: th_format = book.add_format({'bg_color': '#d8d8d8'
@@ -1083,6 +1149,7 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
                     'bold_format': bold_format,
                    'bold_blue': bold_blue,
                    'normal_blue': normal_blue,
+                   'normal_black': normal_black,
 
                    'row_align_center_black': row_align_center_black,
                    'row_align_center_blue': row_align_center_blue,
@@ -1153,10 +1220,9 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
             logger.debug(' >> subject_pk: ' + str(subject_pk))
             logger.debug(' >> ex1_formats[field_names]: ' + str(ex1_formats['field_names']))
 
-
-    # - add empty subject columns if col_count is less than 15
-    if colcount_subjects < 15:
-        for x in range(colcount_subjects, 15):  # range(start_value, end_value, step), end_value is not included!
+ # - add empty columns if col_count is less than 10
+    if colcount_subjects < 10:
+        for x in range(colcount_subjects, 10):  # range(start_value, end_value, step), end_value is not included!
             field_width.append(subject_col_width)
             subject_code = ''
             # was: subject_pk = 0
@@ -1166,6 +1232,24 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
             ex1_formats['header_formats'].append(th_rotate)
             ex1_formats['row_formats'].append(row_align_center_blue)
             ex1_formats['totalrow_formats'].append(totalrow_number)
+
+# - add column 'Notes'
+    col_count += 1
+    field_width.append(25)
+    ex1_formats['field_names'].append('notes')
+    ex1_formats['field_captions'].append('Opmerkingen')
+    ex1_formats['header_formats'].append(th_align_center)
+    ex1_formats['row_formats'].append(row_align_left)
+    ex1_formats['totalrow_formats'].append(totalrow_align_center)
+
+# - add empty column, to put Ex1 in upper right corner
+    col_count += 1
+    field_width.append(8)
+    ex1_formats['field_names'].append('right')
+    ex1_formats['field_captions'].append('')
+    ex1_formats['header_formats'].append(th_align_center)
+    ex1_formats['row_formats'].append(row_align_left)
+    ex1_formats['totalrow_formats'].append(totalrow_align_center)
 
     ex1_formats['first_subject_column'] = first_subject_column
     ex1_formats['field_width'] = field_width
@@ -1279,6 +1363,10 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
     sql_list = ["WITH studsubj AS (" , sql_studsubj_agg, ")",
         "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix,",
         "st.classname, st.extrafacilities, st.tobedeleted,",
+
+        # PR2024-06-04 added:
+        "st.iseveningstudent, st.islexstudent, st.bis_exam, st.partial_exam,",
+
         "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,"]
 
     if examperiod == 1:
@@ -1362,9 +1450,8 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
     # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
             idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
-            extrafacilities = row.get('extrafacilities', False)
-            if extrafacilities:
-                ex1_ex4_rows_dict['extrafacilities'] = True
+            has_extrafacilities = row.get('extrafacilities', False)
+            ex1_ex4_rows_dict['extrafacilities'] = has_extrafacilities
 
             if examperiod == 1:
                 if row.get('subj_id_arr_publ') and 'has_subj_publ' not in ex1_ex4_rows_dict:
@@ -1384,7 +1471,7 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
                 last_name=row.get('lastname', ''),
                 first_name=row.get('firstname', ''),
                 prefix=row.get('prefix'),
-                has_extrafacilities=extrafacilities,
+                has_extrafacilities=has_extrafacilities,
             )
 
             subj_id_arr = row.get('subj_id_arr') or []
@@ -1393,6 +1480,13 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
                             'exnr': row.get('examnumber' , '---'),
                             'name': fullname,
                             'tobedel': row.get('tobedeleted', False),
+
+                            # PR2024-06-04 added:
+                            'iseveningstudent': row.get('iseveningstudent', False),
+                            'islexstudent': row.get('islexstudent', False),
+                            'bis_exam': row.get('bis_exam', False),
+                            'partial_exam': row.get('partial_exam', False),
+
                             'lvl': row.get('lvl_abbrev', '---'),
                             'sct': row.get('sct_abbrev', '---'),
                             'cls': row.get('classname', ''),
@@ -1581,7 +1675,8 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
                     sel_examperiod = c.EXAMPERIOD_FIRST
                     ex_form = 'ex2'
 
-                    # PR2023-08-26 function create_ex2_ex2a_rows_dict moved from within create_ex2_ex2a_ex6_xlsx TODO check if this causes any bugs
+                    # PR2023-08-26 function create_ex2_ex2a_rows_dict moved from within create_ex2_ex2a_ex6_xlsx
+                    # # TODO check if this causes any bugs
                     ex_rows_dict, grades_auth_dict = create_ex2_ex2a_rows_dict(
                         examyear=sel_examyear,
                         school=sel_school,
@@ -2064,6 +2159,7 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
             bold_format = ex2_formats.get('bold_format')
             bold_blue = ex2_formats.get('bold_blue')
             normal_blue = ex2_formats.get('normal_blue')
+            normal_black = ex2_formats.get('normal_black')
 
             row_align_center_black = ex2_formats.get('row_align_center_black')
             row_align_center_red = ex2_formats.get('row_align_center_red')
@@ -2075,6 +2171,11 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
             totalrow_merge = ex2_formats.get('totalrow_merge')
             col_count = len(ex2_formats['field_width'])
             first_subject_column = ex2_formats.get('first_subject_column', 0)
+
+            if logging_on:
+                logger.debug('  ex2_formats:')
+                for key_str, value in ex2_formats.items():
+                    logger.debug('  - ' + str(key_str) + ': ' + str(value))
 
 # --- set column width
             for i, width in enumerate(field_width):
@@ -2113,9 +2214,10 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
             sheet.write(7, 0, library[lb_school_key], bold_format)
             sheet.write(7, 2, school.name, bold_blue)
 
-    # - put Ex in right upper corner
-            start_col_index = col_count - 2 if is_ex6 else col_count - 5
-            sheet.merge_range(0, start_col_index, 1, col_count - 1, exform_name, th_merge_bold)
+# - put Ex in right upper corner
+            # was:  start_col_index = col_count - 2 if is_ex6 else col_count - 5
+            #       sheet.merge_range(0, start_col_index, 1, col_count - 1, exform_name, th_merge_bold)
+            sheet.merge_range(0, col_count - 1, 1, col_count - 1, exform_name, th_merge_bold)
 
             row_index = 9
             if not save_to_disk:
@@ -2156,7 +2258,10 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
 
     # ---  write table header
                     for i, field_caption in enumerate(ex2_formats['field_captions']):
-                        sheet.write(row_index, i, field_caption, ex2_formats['header_formats'][i])
+                        if field_caption == 'Opmerkingen':
+                            sheet.merge_range(row_index, i, row_index, i+1, field_caption, ex2_formats['header_formats'][i])
+                        else:
+                            sheet.write(row_index, i, field_caption, ex2_formats['header_formats'][i])
 
                     if logging_on and False:
                         logger.debug('  students_dict: ' + str(students_dict))
@@ -2213,20 +2318,35 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
                                         elif value == 'vr':
                                             exc_format = row_align_center_green
 
+                                    sheet.write(row_index, i, value, exc_format)
+
+                                elif field_name == 'notes':
+                                    # PR2024-06-04 added column notes
+                                    note_list = []
+                                    if stud_dict.get('iseveningstudent', False):
+                                        note_list.append('avondstudent')
+                                    if stud_dict.get('islexstudent', False):
+                                        note_list.append('Landsexamen')
+                                    if stud_dict.get('bis_exam', False):
+                                        note_list.append('bis-examen')
+                                    if stud_dict.get('partial_exam', False):
+                                        note_list.append('aanvullend examen')
+                                    if note_list:
+                                        value = ', '.join(note_list)
+
+                                    sheet.merge_range(row_index, i, row_index, i + 1, value, exc_format)
+
                                 else:
                                     value = stud_dict.get(field_name, '')
-
-                                if logging_on:
-                                    logger.debug('  field_name: ' + str(field_name))
-                                    logger.debug('  value: ' + str(value))
-
-                                sheet.write(row_index, i, value, exc_format)
+                                    sheet.write(row_index, i, value, exc_format)
 
     # ---  table footer row
                     row_index += 1
                     for i, field_name in enumerate(ex2_formats['field_names']):
                         if i == 0:
                             sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
+                        elif field_name == 'notes':
+                            sheet.merge_range(row_index, i, row_index, i + 1, '', ex2_formats['header_formats'][i])
                         else:
                             sheet.write(row_index, i, ex2_formats['field_captions'][i], ex2_formats['header_formats'][i])
 
@@ -2241,60 +2361,52 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
                     key = 'lex_footnote0' + str(i)
                 else:
                     key = 'footnote0' + str(i)
+
                 if key in library:
                     value = library.get(key)
                     if value:
-                        sheet.write(row_index + i - 1, 0, value, bold_format)
+                        # was: sheet.write(row_index + i - 1, 0, value, bold_format)
+                        sheet.write(row_index + i - 1, 0, value, normal_black)
 
     # ---  digitally signed by
             # PR2022-05-04 Lionel Mongen saw wrong secretary on Ex2,
             # to be able to check: also add signed by on prelim Ex-form
             # was:  if save_to_disk:
             auth_row = first_footnote_row
-            #sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
-            sheet.write(auth_row, 0, str(_('Digitally signed by')) + ':')
+
+            sheet.write(auth_row, first_subject_column, 'Digitaal ondertekend door:')
             auth_row += 2
 
      # - Chairperson
+            sheet.write(auth_row, first_subject_column, 'Voorzitter:')
             auth1_list = grades_auth_dict.get('auth1')
             # auth1_list: ['Monique Beek', 'Hans Meijs']
             if auth1_list:
-                #sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
-                sheet.write(auth_row, 0, str(_('Chairperson')) + ':')
                 for auth1 in auth1_list:
                     if auth1:
-                        #sheet.write(auth_row, first_subject_column + 4, auth1, normal_blue)
-                        sheet.write(auth_row, 2, auth1, normal_blue)
+                        sheet.write(auth_row, first_subject_column + 3, auth1, normal_blue)
                         auth_row += 1
-
+            else:
                 auth_row += 1
+            auth_row += 1
 
     # - Secretary
+            sheet.write(auth_row, first_subject_column, 'Secretaris:')
             auth2_list = grades_auth_dict.get('auth2')
             if auth2_list:
-                # sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
-                sheet.write(auth_row, 0, str(_('Secretary')) + ':')
                 for auth2 in auth2_list:
-                    if logging_on:
-                        logger.debug('auth2: ' + str(auth2) + ' ' + str(type(auth2)))
                     if auth2:
-                        #sheet.write(auth_row, first_subject_column + 4, auth2, normal_blue)
-                        sheet.write(auth_row, 2, auth2, normal_blue)
+                        sheet.write(auth_row, first_subject_column + 3, auth2, normal_blue)
                         auth_row += 1
-
+            else:
                 auth_row += 1
-
-        # -  place, date
-            #sheet.write(auth_row, first_subject_column, 'Plaats:')
-            #sheet.write(auth_row, first_subject_column + 4, str(school.examyear.country.name), normal_blue)
-            #sheet.write(auth_row, first_subject_column + 8, 'Datum:')
-            #sheet.write(auth_row, first_subject_column + 11, today_formatted, normal_blue)
-
-            sheet.write(auth_row, 0, 'Plaats:')
-            sheet.write(auth_row, 2, str(school.examyear.country.name), normal_blue)
             auth_row += 1
-            sheet.write(auth_row, 0, 'Datum:')
-            sheet.write(auth_row, 2, today_formatted, normal_blue)
+
+# -  place, date
+            sheet.write(auth_row, first_subject_column, 'Plaats:')
+            sheet.write(auth_row, first_subject_column + 3, str(school.examyear.country.name), normal_blue)
+            sheet.write(auth_row, first_subject_column + 7, 'Datum:')
+            sheet.write(auth_row, first_subject_column + 10, today_formatted, normal_blue)
 
 # +++++++++++++++++++++++++
 # +++ print back page
@@ -2441,6 +2553,7 @@ def create_ex2_format_dict(book, sheet, sheet_index, school, department, subject
     bold_format = book.add_format({'bold': True})
     bold_blue = book.add_format({'font_color': 'blue', 'bold': True})
     normal_blue = book.add_format({'font_color': 'blue'})
+    normal_black = book.add_format({'font_color': 'black', 'bold': False})
 
     # th_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
     # or: th_format = book.add_format({'bg_color': '#d8d8d8'
@@ -2482,9 +2595,12 @@ def create_ex2_format_dict(book, sheet, sheet_index, school, department, subject
                    'header_formats': [th_align_center, th_align_center, th_align_center],
                    'row_formats': [row_align_center, row_align_center, row_align_left],
                    'totalrow_formats': [totalrow_merge, totalrow_align_center, totalrow_align_center],
+
                    'bold_format': bold_format,
                    'bold_blue': bold_blue,
                    'normal_blue': normal_blue,
+                   'normal_black': normal_black,
+
                    'row_align_center_black':  book.add_format(c.XF_ROW_ALIGN_CENTER_BLACK),
                    'row_align_center_red': book.add_format(c.XF_ROW_ALIGN_CENTER_RED),
                    'row_align_center_blue': book.add_format(c.XF_ROW_ALIGN_CENTER_BLUE),
@@ -2542,9 +2658,9 @@ def create_ex2_format_dict(book, sheet, sheet_index, school, department, subject
         ex2_formats['row_formats'].append(row_align_center)
         ex2_formats['totalrow_formats'].append(totalrow_number)
 
-    # - add empty subject columns if col_count is less than 15
-    if colcount_subjects < 15:
-        for x in range(colcount_subjects, 15):  # range(start_value, end_value, step), end_value is not included!
+    # - add empty subject columns if col_count is less than 10
+    if colcount_subjects < 10:
+        for x in range(colcount_subjects, 10):  # range(start_value, end_value, step), end_value is not included!
             field_width.append(subject_col_width)
             subject_code = ''
             # was: subject_pk = 0
@@ -2554,6 +2670,24 @@ def create_ex2_format_dict(book, sheet, sheet_index, school, department, subject
             ex2_formats['header_formats'].append(th_align_center if sheet_index or is_ex6 else th_rotate)
             ex2_formats['row_formats'].append(row_align_center)
             ex2_formats['totalrow_formats'].append(totalrow_number)
+
+# - add column 'Notes'
+    col_count += 1
+    field_width.append(25)
+    ex2_formats['field_names'].append('notes')
+    ex2_formats['field_captions'].append('Opmerkingen')
+    ex2_formats['header_formats'].append(th_align_center)
+    ex2_formats['row_formats'].append(row_align_left)
+    ex2_formats['totalrow_formats'].append(totalrow_align_center)
+
+# - add empty column, to put Ex1 in upper right corner
+    col_count += 1
+    field_width.append(8)
+    ex2_formats['field_names'].append('right')
+    ex2_formats['field_captions'].append('')
+    ex2_formats['header_formats'].append(th_align_center)
+    ex2_formats['row_formats'].append(row_align_left)
+    ex2_formats['totalrow_formats'].append(totalrow_align_center)
 
     ex2_formats['first_subject_column'] = first_subject_column
     ex2_formats['field_width'] = field_width
@@ -2797,6 +2931,9 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, e
                 "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ",
                 "si.subject_id, cluster.name AS clustername, ",
 
+                # PR2024-06-04 added:
+                "st.extrafacilities, st.iseveningstudent, st.islexstudent, st.bis_exam, st.partial_exam, ",
+
                 "grd.", grade_score, " AS grade_score, grd.", se_ce, "_auth1by_id AS auth1by_id, grd.", se_ce, "_auth2by_id AS auth2by_id, ",
                 "grd.", se_ce, "_auth3by_id AS auth3by_id, grd.", se_ce, "_auth4by_id AS auth4by_id, ",
 
@@ -2897,6 +3034,14 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, e
                 'cls': row.get('classname', ''),
                 'lvl': row.get('lvl_abbrev', '---'),
                 'sct': row.get('sct_abbrev', '---'),
+
+                # PR2024-06-04 added:
+                'extrafacilities': row.get('extrafacilities', False),
+                'iseveningstudent': row.get('iseveningstudent', False),
+                'islexstudent': row.get('islexstudent', False),
+                'bis_exam': row.get('bis_exam', False),
+                'partial_exam': row.get('partial_exam', False),
+
                 'stud_tobedel': row.get('stud_tobedel', False),
                 'name': fullname,
                 'grades': {},
@@ -3725,6 +3870,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, level, exa
         bold_format = book.add_format(c.XF_BOLD)
         bold_blue = book.add_format(c.XF_BOLD_FCBLUE)
         normal_blue = book.add_format(c.XF_FCBLUE)
+        normal_black = book.add_format(c.XF_FCBLACK)
 
         row_align_center = book.add_format(c.XF_ROW_ALIGN_CENTER_BLUE)
         row_align_center_green = book.add_format(c.XF_ROW_ALIGN_CENTER_GREEN)
@@ -3832,7 +3978,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, level, exa
             if key in library:
                 value = library.get(key)
                 if value:
-                    sheet.write(row_index + i - 1, 0, value, bold_format)
+                    sheet.write(row_index + i - 1, 0, value, normal_black)
 
 # ---  digitally signed by
         # PR2022-05-04 Lionel Mongen saw wrong secretary on Ex2,
@@ -7104,6 +7250,21 @@ def xl_book_add_format(book, font_size=11, font_color='black', font_bold=False, 
     return book.add_format(xl_format)
 # - end of xl_book_add_format
 
+def get_note_txt(row):
+    # PR2024-06-05 added column notes
+    note_txt = ''
+    note_list = []
+    if row.get('iseveningstudent', False):
+        note_list.append('avondstudent')
+    if row.get('islexstudent', False):
+        note_list.append('Landsexamen')
+    if row.get('bis_exam', False):
+        note_list.append('bis-examen')
+    if row.get('partial_exam', False):
+        note_list.append('aanvullend examen')
+    if note_list:
+        note_txt = ', '.join(note_list)
+    return  note_txt
 
 def create_zipfileNIU(dirName):
     # create a ZipFile object

@@ -1335,7 +1335,10 @@ def reset_show_msg(request):
 
 
 def update_library_in_awpr_lib(examyear, request):
-    # pr2023-04-29
+    # PR2023-04-29
+    # first delete 'update_library' from schools_systemupdate manually by running:
+    #       delete from schools_systemupdate where name='update_library';
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_library_in_awpr_lib -------')

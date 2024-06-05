@@ -790,7 +790,8 @@ HTMLCLASS_border_bg_transparent = 'border_bg_transparent'
 # XLSWRITER FORMATS
 XF_BOLD = {'bold': True}
 XF_BOLD_FCBLUE = {'font_color': 'blue', 'bold': True}
-XF_FCBLUE = {'font_color': 'blue'}
+XF_FCBLUE = {'font_color': 'blue', 'bold': False}
+XF_FCBLACK = {'font_color': 'black', 'bold': False}
 
 XF_FOOTER_SIZE11_ALIGNCENTER_BLACK = {'font_size': 11, 'font_color': 'black', 'align': 'center', 'valign': 'vcenter'}
 XF_FOOTER_SIZE08_ALIGNCENTER_BLACK = {'font_size': 8, 'font_color': 'black', 'align': 'center', 'valign': 'vcenter'}

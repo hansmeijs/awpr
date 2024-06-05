@@ -485,11 +485,11 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
 def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, user_lang):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('    student: ' + str(student))
-        # logger.debug('    studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
+        logger.debug('    studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
     """
     studsubj_dictlist_with_tobedeleted: [
         {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20635, 'studsubj_id': None, 'subj_id': 2641, 'subj_code': 'ak', 'is_extra_counts': False, 'is_extra_nocount': False}, 
@@ -551,8 +551,8 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
 # - return warning when no subjects found
             elif studsubj_dictlist is None:
                 msg_list = ["<div class='p-2 border_bg_warning'><p>", str(_('This candidate has no subjects.')), "</p></div>"]
-            else:
 
+            else:
     # ++++++++++++++++++++++++++++++++
     # - get min max subjects and mvt from scheme, also min studyloadhours
                 scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
@@ -620,17 +620,37 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                 # TODO also skip validation when student does partial_exam PR2022-08-30
                 # TODO add separate rules for evening_or_lex_student  PR2022-08-30
                 # TODO give return message that validation is skipped PR2022-08-30
-                is_evening_or_lex_student = get_evening_or_lex_student(student)
+                is_evening_student, is_lex_student, partial_exam = get_evening_or_lex_student(student)
 
     # - get sxm_student - also skip validation when sxm_student
                 is_sxm_student = get_is_sxm_student(student)
 
                 if logging_on:
-                    logger.debug('    is_evening_or_lex_student: ' + str(is_evening_or_lex_student))
+                    logger.debug('    is_evening_student: ' + str(is_evening_student))
+                    logger.debug('    is_sxm_student: ' + str(is_sxm_student))
+                    logger.debug('    partial_exam: ' + str(partial_exam))
                     logger.debug('    is_sxm_student: ' + str(is_sxm_student))
 
         # - skip validation when is_evening_or_lex_student
-                if not is_evening_or_lex_student and not is_sxm_student:
+                if is_sxm_student:
+                    # PR2024-06-05 Sint Maarten does not validate the composition of the subjects
+                    pass
+                if is_evening_student or is_lex_student or partial_exam:
+                    # - return message when is_evening_student, is_lex_student, partial_exam
+
+                    msg_list.append("<div class='p-2 border_bg_transparent'><p>")
+                    lst = []
+                    if is_evening_student:
+                        lst.append(gettext('This candidate is an evening student.'))
+                    if is_lex_student:
+                        lst.append(gettext('This candidate is taking a Landsexamen.'))
+                    if partial_exam:
+                        lst.append(gettext('This candidate is taking a partial exam.'))
+                    msg_list.append('<br>'.join(lst))
+                    msg_list.append("</p></div>")
+
+                else:
+
         # - check required subjects
                     validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
         # - check total number of subjects
@@ -809,20 +829,32 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
 # --- end of validate_studentsubjects_TEST
 
 
-def get_evening_or_lex_student(student):  # PR 2021-09-08
+def get_evening_or_lex_student(student):  # PR2021-09-08
+    # PR2024-06-05 partial_exam added
     # - get eveninstudent or lex student
     # PR 2021-09-08 debug tel Lionel Mongen CAL: validation still chekcs for required subjects
     # reason: CAL iseveningschool, but students were not set iseveningstudent
-    # and validation onkly checked for iseveningstudent / islexstudent
-    # solved by checking validation on iseveningstudent only when school is both dayschool and evveningschool,
+    # and validation only checked for iseveningstudent / islexstudent
+    # solved by checking validation on iseveningstudent only when school is both dayschool and eveningschool,
     # check on eveningschool when only eveningschool
+    is_evening_student = False
+    is_lex_student = False
+    has_partial_exam = student.partial_exam
+
     if student.school.isdayschool:
-        is_evening_or_lex_student = (student.school.iseveningschool and student.iseveningstudent) or \
-                                    (student.school.islexschool and student.islexstudent)
+        if student.school.iseveningschool:
+            is_evening_student = student.iseveningstudent
+        if student.school.islexschool:
+            is_lex_student = student.islexstudent
     else:
-        # when mot a dayschool: alle students are iseveningstudent / islexstudent
+        # when not a dayschool: alle students are iseveningstudent / islexstudent
         is_evening_or_lex_student = student.school.iseveningschool or student.school.islexschool
-    return is_evening_or_lex_student
+        if student.school.iseveningschool:
+            is_evening_student = True
+        if student.school.islexschool:
+            is_lex_student = True
+
+    return is_evening_student, is_lex_student, has_partial_exam
 
 
 def get_is_sxm_student(student_instance):  # PR 2022-09-01
@@ -938,14 +970,17 @@ def validate_studentsubjects_no_msg(student_instance, user_lang):
 
         # ++++++++++++++++++++++++++++++++
         # - get eveninstudent or lex student
-                    # skip validaate when is_evening_or_lex_student
-                    is_evening_or_lex_student = get_evening_or_lex_student(student_instance)
-                    if is_evening_or_lex_student:
+                    # skip validate when is_evening_or_lex_student
+                    # PR2024-06-05 added: or partial_exam
+                    is_evening_student, is_lex_student, partial_exam = get_evening_or_lex_student(student_instance)
+                    is_evening_or_lex_student = is_evening_student or is_lex_student
+
+                    if is_evening_or_lex_student or partial_exam:
                         pass
                     else:
 
                 # -------------------------------
-                # - check required subjects - not when is_evening_or_lex_student
+                # - check required subjects - not when is_evening_or_lex_student or partial_exam
                         validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
                         if msg_list:
                             has_error = True

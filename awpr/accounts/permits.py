@@ -666,7 +666,7 @@ def get_sqlclause_allowed_clusters(table, allowed_clusters_of_sel_school):
 
 def get_allowed_clusters_of_sel_school(sel_schoolbase_pk, sel_examyear_pk, allowed_cluster_pk_list):
     # PR2023-05-29 PR2024-05-30
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_allowed_clusters_of_sel_school -----')
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))

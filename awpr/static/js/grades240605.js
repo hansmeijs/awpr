@@ -3472,10 +3472,10 @@ const is_allowed_cluster = true;
     }; // MAG_set_cluster_txt
 
     function MAG_set_subject_txt() { // PR2023-02-11 PR2024-05-02
-        console.log("----- MAG_set_subject_txt -----") ;
+        //console.log("----- MAG_set_subject_txt -----") ;
         //console.log("    setting_dict", setting_dict) ;
         //console.log("    permit_dict", permit_dict) ;
-        console.log("    subject_rows", subject_rows) ;
+        //console.log("    subject_rows", subject_rows) ;
 
         const allowed_subjectname_nl_arr = [];
         let subjectname_nl_txt = "", title_txt = "";
@@ -3489,31 +3489,31 @@ const is_allowed_cluster = true;
         const user_is_auth1_or_auth2 = ( [1, 2].includes(setting_dict.sel_auth_index) &&
                                         (permit_dict.usergroup_list.includes("auth1") ||
                                         permit_dict.usergroup_list.includes("auth2") ) );
-        console.log("    user_is_auth1_or_auth2", user_is_auth1_or_auth2);
+        //console.log("    user_is_auth1_or_auth2", user_is_auth1_or_auth2);
 
 // --- loop through subjects
 
         for (let i = 0, subject_dict; subject_dict = subject_rows[i]; i++) {
-    console.log("    subject_dict", subject_dict) ;
+    //console.log("  >>>  subject_dict", subject_dict) ;
 // - check if cluster is in allowed subjbases  (skip when auth1 auth2)
             if (user_is_auth1_or_auth2 ||
                 !permit_dict.allowed_subjbases ||
                 !permit_dict.allowed_subjbases.length ||
                 permit_dict.allowed_subjbases.includes(subject_dict.base_id)) {
 
-    console.log("    subject_dict is in allowed subjbases") ;
-    console.log("    setting_dict.sel_subjbase_pk", setting_dict.sel_subjbase_pk) ;
-    console.log("    subject_dict.base_id", subject_dict.base_id) ;
+    //console.log("    subject_dict is in allowed subjbases") ;
+    //console.log("    setting_dict.sel_subjbase_pk", setting_dict.sel_subjbase_pk) ;
+    //console.log("    subject_dict.base_id", subject_dict.base_id) ;
 // - check if cluster_subjbase is selected subjbase (or no selected subjbase)
                 if (!setting_dict.sel_subjbase_pk || setting_dict.sel_subjbase_pk === subject_dict.base_id){
-    console.log("    cluster is selected (or there is no selected cluster", subject_dict.name_nl) ;
+    //console.log("    subject is selected (or there is no selected subject", subject_dict.name_nl) ;
                     allowed_subjectname_nl_arr.push(subject_dict.name_nl);
                 };
             };
         };
 
-    console.log("    count_subjects", count_subjects) ;
-    console.log("    allowed_subjectname_nl_arr", allowed_subjectname_nl_arr) ;
+    //console.log("    count_subjects", count_subjects) ;
+    //console.log("    allowed_subjectname_nl_arr", allowed_subjectname_nl_arr) ;
             //subjectname_nl_txt = loc.All_subjects;
 
         if (allowed_subjectname_nl_arr.length) {
