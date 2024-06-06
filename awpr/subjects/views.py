@@ -2974,22 +2974,67 @@ class ExamApproveOrSubmitWolfView(View):
                         logger.debug('     req_usr.schoolbase:  ' + str(req_usr.schoolbase.code))
                         logger.debug('     is_role_same_school: ' + str(is_role_same_school))
 
-# - get selected examperiod from usersetting
-                    sel_examperiod, sel_subject_pk, sel_subjbase_pk, sel_cluster_pk = None, None, None, None
-
+# PR2024-05-06 debug: cannot approve Wolf, because sel_custer not allowed
+                    # PR2023-05-28 debug: must filter only allowed_clusters of selected school
+                    # PR2024-05-30 debug: also filter on examyear
+                    # get saved settings
                     selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                    if selected_pk_dict:
-                        sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
-                        sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
-                        sel_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
-                    # Filter on subjbase_pk, not sel_subject_pk because subject_pk of SXM is different from Curacao
-                        if sel_subject_pk:
-                            subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
-                            if subject:
-                                sel_subjbase_pk=subject.base_id
+
+                    # get_allowed_sections
+                    requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
+                    userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(requsr_userallowed_instance)
+
+# - get saved_subjbase_pk from usersetting and check if it is in allowed_subjbase of sel_dep
+
+                    userallowed_schoolbase_dict, userallowed_depbases_pk_arr = \
+                        acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+                           userallowed_sections_dict=userallowed_sections_dict,
+                           sel_schoolbase_pk=sel_school.base_id if sel_school else None
+                        )
+
+                    userallowed_depbase_dict, userallowed_lvlbase_pk_arr = \
+                        acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
+                           allowed_schoolbase_dict=userallowed_schoolbase_dict,
+                           sel_depbase_pk=sel_department.base_id if sel_department else None
+                        )
+
+                    userallowed_subjbase_pk_list = \
+                        acc_prm.get_userallowed_subjbase_arr(
+                           allowed_depbase_dict=userallowed_depbase_dict,
+                           allowed_lvlbase_pk_arr=userallowed_lvlbase_pk_arr,
+                           sel_lvlbase_pk=sel_level.base_id if sel_level else None
+                        )
+
+                    sel_subjbase_pk = None
+                    saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+                    if saved_subjbase_pk:
+                        if not userallowed_subjbase_pk_list or \
+                                saved_subjbase_pk in userallowed_subjbase_pk_list:
+                            sel_subjbase_pk = saved_subjbase_pk
+
+# - get saved_cluster_pk from usersetting and check if it is in allowed_clusters of sel_school
+                    sel_cluster_pk = None
+                    allowed_clusters_of_sel_school = acc_prm.get_allowed_clusters_of_sel_school(
+                        sel_schoolbase_pk=sel_school.base_id,
+                        sel_examyear_pk=sel_examyear.pk,
+                        allowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(requsr_userallowed_instance)
+                    )
+                    saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+                    if saved_cluster_pk:
+                        if not allowed_clusters_of_sel_school or \
+                                saved_cluster_pk in allowed_clusters_of_sel_school:
+                            sel_cluster_pk = saved_cluster_pk
+
+                    if logging_on:
+                        logger.debug('     saved_cluster_pk:  ' + str(saved_cluster_pk))
+                        logger.debug('     allowed_clusters_of_sel_school:  ' + str(allowed_clusters_of_sel_school))
+                        logger.debug('     sel_cluster_pk:  ' + str(sel_cluster_pk))
+
+# - get selected examperiod from usersetting, only first and second examperiod
+                    saved_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+                    sel_examperiod = saved_examperiod if saved_examperiod in (1, 2) else None
 
 # +++ get selected grade_exam_rows
-                    sel_examperiod = sel_examperiod if sel_examperiod in (1, 2) else None
                     # exclude published rows:
                     #  - when published_id has value it means that admin has published the exam, so it is visible for the schools.
                     #  - submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
@@ -3008,7 +3053,7 @@ class ExamApproveOrSubmitWolfView(View):
                     )
                     if logging_on:
                         logger.debug('     sel_examperiod:      ' + str(sel_examperiod))
-                        logger.debug('     sel_subject_pk:      ' + str(sel_subject_pk))
+                        logger.debug('     sel_subjbase_pk:      ' + str(sel_subjbase_pk))
                         logger.debug('     row_count:      ' + str(len(grade_exam_rows)))
 
                     # grade_exams_tobe_updated_list contains list of tuples with (grade_pk, exam_pk)
@@ -4123,9 +4168,11 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
                 userallowed_sections_dict=userallowed_sections_dict,
                 return_false_when_no_allowedsubjects=False
             )
-
             if sql_clause:
                 sql_list.append(sql_clause)
+
+            if logging_on:
+                logger.debug('sql_clause: ' + str(sql_clause))
 
             userallowed_cluster_pk_list=acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
 
@@ -4142,6 +4189,9 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
             if sqlclause_allowed_clusters:
                 sql_list.append(sqlclause_allowed_clusters)
 
+            if logging_on:
+                logger.debug('sqlclause_allowed_clusters: ' + str(sqlclause_allowed_clusters))
+
             sql = ' '.join(sql_list)
 
             with connection.cursor() as cursor:
@@ -4149,15 +4199,17 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
                 grade_exam_rows = af.dictfetchall(cursor)
 
                 if logging_on:
-                    logger.debug('sql: ' + str(sql))
+                    logger.debug('sql_list: ')
+                    for sql_txt in sql_list:
+                        logger.debug('  > ' + str(sql_txt))
+
                     #for conn_query in connection.queries:
                     #    logger.debug('conn_query: ' + str(conn_query))
 
-
                 if logging_on:
                     logger.debug('grade_exam_rows: ' + str(len(grade_exam_rows)))
-                    for row in grade_exam_rows:
-                        logger.debug('row: ' + str(row))
+                    #for row in grade_exam_rows:
+                    #    logger.debug('row: ' + str(row))
 
                     logger.debug('---------------- ')
 
@@ -4174,7 +4226,7 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise
 
     # PR2023-05-26 msg_list is used for single approve
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('---- approve_grade_exam -----')
 

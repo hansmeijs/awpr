@@ -4581,7 +4581,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
     # PR2023-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
     # must rename secret_exam to ceex_secret_exam etc
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('    sel_examyear:    ' + str(sel_examyear))
@@ -4657,12 +4657,10 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     "studsubj.has_exemption, studsubj.exemption_year, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
                     "studsubj.tobedeleted AS studsubj_tobedeleted,",
 
-                    "grd.segrade, grd.srgrade, grd.sesrgrade, grd.cescore, grd.cegrade, grd.pescore, grd.pegrade, grd.pecegrade,",
-                    "grd.finalgrade AS finalgrade,",
+                    "grd.examperiod, grd.segrade, grd.srgrade, grd.sesrgrade, grd.cescore, grd.cegrade,",
+                    "grd.pescore, grd.pegrade, grd.pecegrade, grd.finalgrade AS finalgrade,",
                     "grd.se_status, grd.sr_status, grd.pe_status, grd.ce_status,",
 
-                    "exam.ete_exam, exam.secret_exam, exam.version, ntb.omschrijving AS ntb_omschrijving,",
-                    "grd.examperiod,",
 
                     "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_blocked,", #  grd.se_auth4by_id,
                     "grd.ce_auth1by_id, grd.ce_auth2by_id, grd.ce_auth3by_id, grd.ce_auth4by_id, grd.ce_blocked,",
@@ -4677,6 +4675,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
                     "grd.exemption_imported,",  # PR2023-01-24 added
 
+                    "exam.ete_exam, exam.secret_exam, exam.version, ntb.omschrijving AS ntb_omschrijving,",
                     "si.subject_id, si.subjecttype_id,",
                     "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed,",
                     "si.extra_nocount_allowed, si.has_practexam,",
@@ -4741,10 +4740,13 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     "LEFT JOIN accounts_user AS ce_auth3 ON (ce_auth3.id = grd.ce_auth3by_id)",
                     "LEFT JOIN accounts_user AS ce_auth4 ON (ce_auth4.id = grd.ce_auth4by_id)",
 
-                    "WHERE NOT stud.deleted AND NOT studsubj.deleted",
-                    "AND ey.id = ", str(sel_examyear.pk), "::INT",
-                    "AND grd.examperiod = ", str(sel_examperiod), "::INT",
-                    "AND dep.base_id = ", str(sel_depbase.pk), "::INT"
+                    # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
+                    # not true: in 2022 there were some deleted grades  PR2023-03-29
+                    "WHERE NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
+
+                    ''.join(("AND ey.id=", str(sel_examyear.pk), "::INT")),
+                    ''.join(("AND grd.examperiod=", str(sel_examperiod), "::INT")),
+                    ''.join(("AND dep.base_id=", str(sel_depbase.pk), "::INT"))
                     ))
 
         # PR2023-05-22 skip schoolbase clause when secret_exams_only
@@ -4753,23 +4755,18 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
             sql_list.append("AND exam.secret_exam")
         else:
             if sel_schoolbase:
-                sql_list.extend(("AND school.base_id=", str(sel_schoolbase.pk), "::INT"))
+                sql_list.append(''.join(("AND school.base_id=", str(sel_schoolbase.pk), "::INT")))
             else:
                 sql_list.append("AND FALSE")
 
-        # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
-        # not true, in 2022 there were some deleted grades  PR2023-03-29
-        # was: if sel_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_EXEMPTION):
-        sql_list.append("AND NOT grd.deleted")
 
         if grade_pk_list:
             # when grade_pk_list has value: skip subject filter
             sql_list.append(''.join(("AND grd.id IN (SELECT UNNEST(ARRAY", str(grade_pk_list), "::INT[]))")))
 
 # --- filter on usersetting
-        # TODO replace all sel_subject_pk filters by sel_subjbase_pk filters
-
-        # PR2022-05-29 don't filter on sel_student_pk any more
+        # PR2022-05-29 don't filter on sel_student_pk anymore
+        # PR2024-06-06 also don't filter on sel_cluster, is done on client side
 
         else:
 
@@ -4803,6 +4800,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     logger.debug('     sql_clause_lvlbase:  ' + str(sql_clause_lvlbase))
 
     # - filter on selected sectorbase
+            # PR2024-06-06 is sectorbase is not part of get_sqlclause_allowed_NEW, so it muust stay here
             saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
             if logging_on:
                 logger.debug('     saved_sctbase_pk:  ' + str(saved_sctbase_pk))
@@ -4814,6 +4812,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
     # - filter on selected subjectbase
             # PR2024-03-29 switched to subjbase_pk
+            # PR2024-06-06 selected subjectbase is not part of get_sqlclause_allowed_NEW, so it muust stay here
             saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
             if logging_on:
                 logger.debug('     saved_subjbase_pk:  ' + str(saved_subjbase_pk))
@@ -4835,12 +4834,13 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
     # - filter on selected cluster_pk
             # don't filter on allowed clusters. Allowed clusters give permit to edit and approve, but others may be viewed
-            saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
-            if saved_cluster_pk:
-                sql_clause_cluster_pk = ''.join(("AND (studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)"))
-                sql_list.append(sql_clause_cluster_pk)
-                if logging_on:
-                    logger.debug('     sql_clause_cluster_pk:  ' + str(sql_clause_cluster_pk))
+            # also don't filter on selected cluster, will be done on client side
+            #saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+            #if saved_cluster_pk:
+            #    sql_clause_cluster_pk = ''.join(("AND (studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)"))
+            #    sql_list.append(sql_clause_cluster_pk)
+            #    if logging_on:
+            #        logger.debug('     sql_clause_cluster_pk:  ' + str(sql_clause_cluster_pk))
 
     # - filter on allowed depbases, levelbase, subjectbases
             # was: sqlclause_allowed_dep_lvl_subj = acc_prm.get_sqlclause_allowed_dep_lvl_subj(
@@ -4867,7 +4867,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                     logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
                     logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
 
-            # dont filter on sel_schoolbase when secret_exams_only
+            # don't filter on sel_schoolbase when secret_exams_only
             if secret_exams_only:
                 sel_schoolbase = None
 
@@ -4881,6 +4881,9 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
             )
             if sql_clause:
                 sql_list.append(sql_clause)
+
+            if logging_on:
+                logger.debug('    sql_clause: ' + str(sql_clause))
 
         sql_list.append('ORDER BY grd.id')
         if logging_on:
@@ -4947,10 +4950,12 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
                             for key, value in grade_append_dict.items():
                                 row[key] = value
 
-                if logging_on:
-                    logger.debug(' row: ' + str(row))
-            if logging_on:
-                logger.debug('---------------- ')
+                #if logging_on:
+                #    logger.debug(' row: ' + str(row))
+
+        if logging_on:
+            logger.debug(' grade_rows len: ' + str(len(grade_rows)))
+            logger.debug('---------------- ')
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -5073,18 +5078,16 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
                         "LEFT JOIN accounts_user AS auth3 ON (auth3.id = grd.ce_exam_auth3by_id)",
                         "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
 
-                        "WHERE ey.id = %(ey_id)s::INT",
-                        "AND school.base_id = %(sb_id)s::INT",
-                        "AND dep.base_id = %(depbase_id)s::INT",
+                        ''.join(("WHERE ey.id = ", str(sel_examyear.pk), "::INT")),
+                        ''.join(("AND school.base_id = ", str(sel_schoolbase.pk), "::INT")),
+                        ''.join(("AND dep.base_id = ", str(sel_depbase.pk), "::INT")),
 
                         # PR2023-01-16 added:
                         # show tobedeleted students / subjects PR2-23-02-09
-                        #"AND NOT stud.tobedeleted AND NOT stud.deleted",
-                        #"AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
+                        # was:  "AND NOT stud.tobedeleted AND NOT stud.deleted",
+                        #       "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
 
-                        "AND NOT stud.deleted",
-                        "AND NOT studsubj.deleted",
-                        "AND NOT grd.deleted",
+                        "AND NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
                         
                         # PR2023-05-05 added: only subjects with CE must be shown
                         "AND si.weight_ce > 0"
@@ -5110,7 +5113,7 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
                     sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
                     if sel_examperiod in (1, 2):
                         sql_keys['ep'] = sel_examperiod
-                        sql_list.append("AND grd.examperiod = %(ep)s::INT")
+                        sql_list.append(''.join(("AND grd.examperiod=", str(sel_examperiod), "::INT")))
 
                     # filter on sel_cluster_pk happens on client.
                     # filter on sel_student_pk happens on client.
@@ -5172,6 +5175,10 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
             sql_list.append('ORDER BY grd.id')
 
             sql = ' '.join(sql_list)
+
+            if logging_on:
+                for sql_txt in sql_list:
+                    logger.debug(' > ' + str(sql_txt))
 
             with connection.cursor() as cursor:
 
@@ -5235,7 +5242,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     # when DOE: show all SXM exams
     # when school: show all exams of this school
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))

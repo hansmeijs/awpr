@@ -5012,21 +5012,21 @@ def get_settings_subjbase(request_item_setting, sel_examyear_instance,
         # save subject_pk when sel_subject_instance exists
         if sel_subject_instance:
             selected_pk_dict[c.KEY_SEL_SUBJBASE_PK] = sel_subject_instance.base_id
-            selected_pk_dict[c.KEY_SEL_SUBJECT_PK] = sel_subject_instance.pk
+            # selected_pk_dict[c.KEY_SEL_SUBJECT_PK] = sel_subject_instance.pk
 
         else:
             # remove key when 'all' is selected
             # PR2023-07-04 was: if selected_pk_dict and c.KEY_SEL_SUBJECT_PK in selected_pk_dict:
             if saved_subjbase_pk:
                 selected_pk_dict.pop(c.KEY_SEL_SUBJBASE_PK)
+
+# - remove deprecated subject_pk from selected_pk_dict if it still exists PR2024-06-06
+        if c.KEY_SEL_SUBJECT_PK in selected_pk_dict:
                 selected_pk_dict.pop(c.KEY_SEL_SUBJECT_PK)
-    if logging_on:
-        logger.debug(' __ sel_subject_instance: ' + str(sel_subject_instance))
-        logger.debug(' __ sel_subjbase_tobesaved: ' + str(sel_subjbase_tobesaved))
-        logger.debug(' __ selected_pk_dict: ' + str(selected_pk_dict))
 
     return sel_subject_instance, sel_subjbase_tobesaved
 # --- end of get_settings_subjbase
+
 
 def get_settings_subjectNIU(request_item_setting, sel_examyear_instance,
                              allowed_subjbases_arr, permit_dict, setting_dict, selected_pk_dict):
@@ -6474,11 +6474,7 @@ def get_settings_sectorbase(sel_depbase_pk, sel_examyear_pk, setting_dict, selec
 # --- end of get_settings_sectorbase
 
 
-
-
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-
 def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
     logging_on = False  # s.LOGGING_ON
     if logging_on:

@@ -871,6 +871,28 @@ def download_setting(request_item_setting, user_lang, request):
     #    if sel_subject_tobesaved:
     #        selected_pk_dict_has_changed = True
 
+# ===== CLUSTER =======================
+    # PR 2024-06-05new sel_cluster is saved with b_upload_settings
+    # - get saved_cluster_pk from Usersetting
+    sel_cluster_pk = None
+    saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK) if selected_pk_dict else None
+    if saved_cluster_pk:
+        if not allowed_clusters_of_sel_school or saved_cluster_pk in allowed_clusters_of_sel_school:
+            sel_cluster_pk = saved_cluster_pk
+
+    if sel_cluster_pk != saved_cluster_pk:
+        selected_pk_dict_has_changed = True
+        selected_pk_dict[c.KEY_SEL_CLUSTER_PK] = sel_cluster_pk
+
+    # - add info to setting_dict, will be sent back to client
+    if sel_cluster_pk:
+        setting_dict[c.KEY_SEL_CLUSTER_PK] = sel_cluster_pk
+
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('===== CLUSTER =====')
+        logger.debug('    saved_subjbase_pk: ' + str(saved_cluster_pk) + '  >> ' + str(sel_cluster_pk))
+
 # ===== EXAM PERIOD =======================
     sel_examperiod, sel_pk_dict_has_changed = acc_view.get_settings_examperiod(
         request=request,

@@ -278,10 +278,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  SIDEBAR ------------------------------------
         // el_SBR_select_examperiod only exists when not is_requsr_same_school
-        //const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
-        //if (el_SBR_select_examperiod){
-        //    el_SBR_select_examperiod.addEventListener("change", function() {HandleSbrPeriod(el_SBR_select_examperiod)}, false );
-        //};
+        const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");
+        if (el_SBR_select_examperiod){
+            el_SBR_select_examperiod.addEventListener("change", function() {HandleSbrPeriod(el_SBR_select_examperiod)}, false );
+        };
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         if (el_SBR_select_level){
             el_SBR_select_level.addEventListener("change", function() {HandleSbrLevel(el_SBR_select_level)}, false );
@@ -580,8 +580,6 @@ document.addEventListener("DOMContentLoaded", function() {
             published_rows: {get: true}
         };
 
-
-
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
         $.ajax({
@@ -629,7 +627,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     // if sel_subject_pk has value, set sel_student_pk null
                     if (setting_dict.sel_subject_pk) {setting_dict.sel_student_pk = null;}
 
-                    MSSSS_display_in_sbr_reset()
+
+                    MSSSS_display_in_sbr_reset();
 
             // ---  fill cols_hidden
                     if("cols_hidden" in setting_dict){
@@ -691,7 +690,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
 
                 if ("cluster_rows" in response) {
-                    b_fill_datadicts("cluster",  "id", null, response.cluster_rows, cluster_dictsNEW);
+                    b_fill_datadicts("cluster", "id", null, response.cluster_rows, cluster_dictsNEW);
                     t_MSSSS_display_in_sbr_NEW("cluster")
                 };
                 if ("ete_exam_rows" in response) {ete_exam_rows = response.ete_exam_rows};
@@ -724,13 +723,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25 PR2021-05-25
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
         //console.log("permit_dict.permit_submit_exam", permit_dict.permit_submit_exam);
         //console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
-        let el_submenu = document.getElementById("id_submenu")
-
-         if (permit_dict.requsr_role_school){
+        const el_submenu = document.getElementById("id_submenu")
+        el_submenu.innerHTML = null;
+        if (permit_dict.requsr_role_school){
             if (permit_dict.permit_approve_exam ){
                 AddSubmenuButton(el_submenu, loc.Approve_wolf_exams, function() {MASE_Open("approve_school")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
             };
@@ -752,9 +751,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14  PR2021-03-15 PR2022-01-31 PR2022-02-28
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ");
-        //console.log( "data_btn", data_btn);
-        //console.log( "skip_upload", skip_upload);
+        console.log( "===== HandleBtnSelect ========= ");
+        console.log( "data_btn", data_btn);
+        console.log( "skip_upload", skip_upload);
 
         // function is called by MSSSS_response, select_btn.click, DatalistDownload after response.setting_dict
         //  data_btn only inm use when requsr_role_admin
@@ -769,12 +768,32 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
         const btns_allowed = ["btn_ep_01", "btn_reex", "btn_results"];
-        if (data_btn && btns_allowed.includes(data_btn)) {
-            selected_btn = data_btn;
-        } else {
-            selected_btn = btns_allowed[0];
+        selected_btn = (data_btn && btns_allowed.includes(data_btn)) ? data_btn : null
+
+// PR024-06-06 debug: check if btn is same as examperiod, change if not
+        if(!selected_btn){
+            selected_btn = (setting_dict.sel_examperiod === 2) ? "btn_reex" : "btn_ep_01";
+        } else if (selected_btn ==="btn_results") {
+            // skip
+        } else if (selected_btn ==="btn_reex") {
+            if (setting_dict.sel_examperiod === 1) {
+                selected_btn ==="btn_ep_01";
+            };
+        } else if (selected_btn ==="btn_ep_01") {
+            if (setting_dict.sel_examperiod === 2) {
+                selected_btn ==="btn_reex";
+            };
         };
-        setting_dict.sel_btn = selected_btn;
+
+// ---  upload new selected_btn, when changed)
+        if (selected_btn !== setting_dict.sel_btn){
+            setting_dict.sel_btn = selected_btn;
+
+            const upload_dict = {page_grade: {sel_btn: selected_btn}};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+        };
+
+        console.log( "setting_dict.sel_btn", setting_dict.sel_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
@@ -799,8 +818,11 @@ document.addEventListener("DOMContentLoaded", function() {
             FillTblRows();
         };
 
+        FillOptionsExamperiod();
+
 // --- update header text - comes after MSSSS_display_in_sbr
         UpdateHeaderLeftRight(skip_upload);
+
 // ---  highlight selected button
         b_highlight_BtnSelect(el_btn_container, selected_btn);
 
@@ -887,30 +909,26 @@ document.addEventListener("DOMContentLoaded", function() {
     };  // HandleSbrLevel
 
 //=========  FillOptionsExamperiod  ================ PR2021-03-08 PR2022-02-20
-/*
+
     function FillOptionsExamperiod() {
-        //console.log("=== FillOptionsExamperiod");
-        //console.log("el_SBR_select_examperiod", el_SBR_select_examperiod);
+        console.log("=== FillOptionsExamperiod");
+        console.log("el_SBR_select_examperiod", el_SBR_select_examperiod);
         if (el_SBR_select_examperiod){
 
-        // examperiod is selected with sel_btn when grades, hide sbr btn when is_permit_same_school
-            const is_permit_admin = (permit_dict.requsr_role_admin && permit_dict.permit_crud);
-            add_or_remove_class(el_SBR_select_examperiod.parentNode, cls_hide, !is_permit_admin);
+        // examperiod is onl shown when btn_results
+            const show_sbr_examperiod =  selected_btn === "btn_results";
+            add_or_remove_class(el_SBR_select_examperiod.parentNode, cls_hide, !show_sbr_examperiod);
 
-            if (is_permit_admin){
+            if (show_sbr_examperiod){
                 const sel_examperiod = setting_dict.sel_examperiod;
 
-                // don't show 'all exam periods' (loc.options_examperiod_exam[0]] when is_requsr_same_school;
-                const option_list = loc.options_examperiod_exam;
+                // don't show 'all exam periods'
+                let option_list = [];
 
-                //let option_list = [];
-                //if (permit_dict.requsr_role_admin) {
-                //    option_list = loc.options_examperiod_exam;
-                //} else {
-                //    for (let i = 1, option_dict; option_dict = loc.options_examperiod_exam[i]; i++) {
-                //        option_list.push(option_dict);
-                //    };
-                //};
+                for (let i = 1, option_dict; option_dict = loc.options_examperiod_exam[i]; i++) {
+                    option_list.push(option_dict);
+                };
+
 
                 t_FillOptionsFromList(el_SBR_select_examperiod, option_list, "value", "caption",
                     loc.Select_examperiod + "...", loc.No_examperiods_found, sel_examperiod);
@@ -918,7 +936,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }  //  if (is_permit_same_school)
         };
     };  // FillOptionsExamperiod
-*/
 
 //========= UpdateHeaderLeftRight  ================== PR2021-03-14 PR2022-01-17 PR2022-08-28
     function UpdateHeaderLeftRight(skip_upload){
@@ -949,7 +966,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // values of tblName are : "grades", "results"
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
-    //console.log( "tblName", tblName);
+    console.log( "tblName", tblName);
     //console.log( "field_setting", field_setting);
 
 // --- get data_rows
@@ -992,6 +1009,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
 
+    //console.log( "    data_dict", data_dict);
+    //console.log( "    setting_dict.sel_student_pk", setting_dict.sel_student_pk,data_dict.student_id );
+
             // only show rows of selected student / subject
                 let show_row = true;
 
@@ -1003,6 +1023,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                 (!setting_dict.sel_cluster_pk || data_dict.cluster_id === setting_dict.sel_cluster_pk) &&
                                 (!setting_dict.sel_student_pk || data_dict.student_id === setting_dict.sel_student_pk);
                 };
+
+    if(setting_dict.sel_student_pk){console.log("  student", setting_dict.sel_student_pk, data_dict.student_id, (show_row) ? "BINGO" : "")};
+    if(setting_dict.sel_cluster_pk){console.log("  cluster", setting_dict.sel_cluster_pk, data_dict.cluster_id, (show_row) ? "BINGO" : "")};
+
                 if(show_row){
             // --- insert row
                     let tblRow = CreateTblRow(tblName, field_setting, data_dict, col_hidden)
@@ -5102,9 +5126,9 @@ document.addEventListener("DOMContentLoaded", function() {
 //////////////////////////////////////////////
 //========= MOD APPROVE SUBMIT EXAMS ====================================
     function MASE_Open(mode ) {  // PR2022-03-10 PR2023-04-29 PR2023-05-19
-        //console.log("===  MASE_Open  =====") ;
-        //console.log("mode", mode) ;
-        //console.log("setting_dict", setting_dict) ;
+        console.log("===  MASE_Open  =====") ;
+        console.log("    mode", mode) ;
+        console.log("    setting_dict", setting_dict) ;
         // modes are:  "approve_school", "submit_school"
         // modes  "approve_admin" and  "submit_admin" are used in page exams
         // modes is also "copy_scores"
@@ -5204,6 +5228,16 @@ document.addEventListener("DOMContentLoaded", function() {
                     subject_text = "<" + loc.All_subjects + ">";
                 }
                 el_MASE_subject.innerText = subject_text;
+
+// get cluster_text
+                let cluster_text = null;
+                if(setting_dict.sel_cluster_pk){
+                    const data_dict = cluster_dictsNEW["cluster_" + setting_dict.sel_cluster_pk];
+                    if (data_dict) {
+                        cluster_text = dict.name;
+                    };
+                };
+                el_MASE_cluster.innerText = cluster_text;
 
     // ---  show info container and delete button only in approve mode
 
@@ -6015,6 +6049,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  MSSSS_response  ================ PR2024-06-03
     function MSSSS_response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_response ========= ");
+        console.log( "tblName", tblName);
         // arguments are set in t_MSSSS_Save_NEW: MSSSS_Response(modalName, tblName, selected_dict, selected_pk_int)
 
         if(selected_pk === -1) { selected_pk = null};
@@ -6094,7 +6129,6 @@ document.addEventListener("DOMContentLoaded", function() {
         DatalistDownload(request_item_setting);
     };  // MSSSS_subject_response
 
-
     function MSSSS_cluster_response(modalName, tblName, selected_dict, sel_cluster_pk) {
         console.log( "===== MSSSS_cluster_response ========= ");
         console.log( "tblName", tblName);
@@ -6109,6 +6143,7 @@ document.addEventListener("DOMContentLoaded", function() {
         setting_dict.sel_cluster_pk = sel_cluster_pk;
         //setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
 
+
 // when selecting cluster: also set subject to the subject of this cluster
         // dont reset subject when subject of selected cluster is the same as selected subject PR2023-03-30
         if (!selected_dict || selected_dict.subject_id !== setting_dict.sel_subject_pk){
@@ -6120,6 +6155,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  upload new setting
         // PR2024-06-03 sel_cluster_pk is not stored in settings
+        // PR2024-06-05 not true: sel_cluster_pk must be stored in settings to filter tobe_approved rows
+
+// ---  upload new setting
+        const selected_pk_dict = {
+            sel_cluster_pk: sel_cluster_pk,
+            sel_student_pk: null
+        };
+        const upload_dict = {selected_pk: selected_pk_dict};
+
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         t_SBR_display_subject_cluster_student();
         // hide itemcount
@@ -6129,8 +6174,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     };  // MSSSS_cluster_response
 
-//=========  MSSSS_student_response  ================ PR2023-03-30
-    function MSSSS_student_response(tblName, selected_dict, sel_student_pk) {
+//=========  MSSSS_student_response  ================ PR2023-03-30 PR2024-06-05
+    function MSSSS_student_response(modalName, tblName, selected_dict, sel_student_pk) {
         console.log( "===== MSSSS_student_response ========= ");
         console.log( "tblName", tblName);
         console.log( "sel_student_pk", sel_student_pk, typeof sel_student_pk);
@@ -6138,7 +6183,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing student, only update settings, dont use DatalistDownload but filter on page
 
-        // 'all clusters' has value -1
+        // 'all students' has value -1
         if(sel_student_pk === -1) { sel_student_pk = null};
 
         setting_dict.sel_student_pk = sel_student_pk;

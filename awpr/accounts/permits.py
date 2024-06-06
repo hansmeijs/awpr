@@ -732,19 +732,11 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
     def get_add_to_list(sel_base_pk, base_pk_str):
         # add_to_list = True if:
-        # - when base_pk_str = '-9' or
-        # - when base_pk_str = sel_base_pk or
-        # - when sel_base_pk is None
-
-        add_to_list = False
-        if base_pk_str:
-            if sel_base_pk:
-                if base_pk_str in ('-9', str(sel_base_pk)):
-                    add_to_list = True
-            else:
-                add_to_list = True
-
-        return add_to_list
+        # base_pk_str has value and
+        # - sel_base_pk is None or
+        # - base_pk_str = '-9' or
+        # - base_pk_str = sel_base_pk or
+        return base_pk_str and (not sel_base_pk or base_pk_str in ('-9', str(sel_base_pk)))
 
     def get_AND_joined(parent_clause, child_clause, has_subjbases):
         and_joined = None
@@ -811,7 +803,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
 #############################################
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')
@@ -834,6 +826,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
     sch_dep_lvl_subjbase_clause_joined = None
 
     if userallowed_sections_dict:
+
 # - check if there are any allowed subjects
         has_subjbases = False
         for userallowed_schoolbase_dict in userallowed_sections_dict.values():
@@ -1712,7 +1705,7 @@ def get_return_false_when_no_allowedsubjects(req_usr):
     # PR2023-06-02
     # when a corrector has no allowed subjects, must return None.
     # when an examiner has no allowed subjects, must return all subjects.
-    # PR2023-06-02 Shalini v Uytrecht: wants to be able to see the grades. Ship when chairperson or secretary
+    # PR2023-06-02 Shalini v Uytrecht: wants to be able to see the grades. Skip when chairperson or secretary
 
     return_false_when_no_allowedsubjects = False
     if (req_usr.role == c.ROLE_016_CORR):

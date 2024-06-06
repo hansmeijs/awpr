@@ -472,10 +472,12 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
                 sheet.write(row_index, i, field_caption, ex1_formats['header_formats'][i])
 
 # ---  extrafacilities row:
-        if ex1_rows_dict.get('extrafacilities'):
-            row_index += 1
-            sheet.write(row_index, 0, '*', ex1_formats.get('footer_size11_aligncenter_black'))
-            sheet.write(row_index, 1, settings.get('extrafacilities'), ex1_formats.get('footer_align_left_black'))
+        #  PR2024-06-06 has_extrafacilities is added to notes instead of asteriks after fullname
+        #if ex1_rows_dict.get('extrafacilities'):
+        #    row_index += 1
+        #    sheet.write(row_index, 0, '*', ex1_formats.get('footer_size11_aligncenter_black'))
+        #    sheet.write(row_index, 1, settings.get('extrafacilities'), ex1_formats.get('footer_align_left_black'))
+        row_index += 1
 
 # ---  has_subj_new:
         row_index += 1
@@ -947,11 +949,13 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                 sheet.write(row_index, i, ex4_formats['field_captions'][i], ex4_formats['header_formats'][i])
 
 # ---  extrafacilities row:
-        if ex4_rows_dict.get('extrafacilities'):
-            row_index += 1
-            sheet.write(row_index, 0, '*', ex4_formats.get('footer_size11_aligncenter_black'))
-            sheet.write(row_index, 1, settings.get('extrafacilities'),
-                        ex4_formats.get('footer_align_left_black'))
+        #  PR2024-06-06 has_extrafacilities is added to notes instead of asteriks after fullname
+        #if ex4_rows_dict.get('extrafacilities'):
+        #    row_index += 1
+        #    sheet.write(row_index, 0, '*', ex4_formats.get('footer_size11_aligncenter_black'))
+        #    sheet.write(row_index, 1, settings.get('extrafacilities'),
+        #                ex4_formats.get('footer_align_left_black'))
+        row_index += 1
 
 # ---  has_subj_new:
         row_index += 1
@@ -1004,6 +1008,10 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                 value = settings.get(key)
                 if value:
                     sheet.write(row_index + i - 1, 0, value, normal_black)
+
+        sheet.write(row_index, 0, settings.get('ex4_footer01'), normal_black)
+        row_index += 1
+        sheet.write(row_index, 0, settings.get('ex4_footer02'), normal_black)
 
 # ---  digitally signed by
         # PR2022-05-31 also show signatures on preliminary Ex4 form
@@ -1078,7 +1086,7 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
 
 
 def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_pk_list, subject_code_list): # PR2021-08-10
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_ex4_format_dict -----')
         logger.debug('    subject_pk_list: ' + str(subject_pk_list))
@@ -1215,11 +1223,6 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
         ex1_formats['row_formats'].append(row_align_center_blue)
         ex1_formats['totalrow_formats'].append(totalrow_number)
 
-        if logging_on:
-            logger.debug(' ----- create_ex1_ex4_format_dict -----')
-            logger.debug(' >> subject_pk: ' + str(subject_pk))
-            logger.debug(' >> ex1_formats[field_names]: ' + str(ex1_formats['field_names']))
-
  # - add empty columns if col_count is less than 10
     if colcount_subjects < 10:
         for x in range(colcount_subjects, 10):  # range(start_value, end_value, step), end_value is not included!
@@ -1253,6 +1256,9 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
 
     ex1_formats['first_subject_column'] = first_subject_column
     ex1_formats['field_width'] = field_width
+
+    if logging_on:
+        logger.debug('     ex1_formats field_names: ' + str(ex1_formats['field_names']))
 
     return ex1_formats
 # - end of create_ex1_ex4_format_dict
@@ -1451,7 +1457,8 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
             idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
             has_extrafacilities = row.get('extrafacilities', False)
-            ex1_ex4_rows_dict['extrafacilities'] = has_extrafacilities
+            if has_extrafacilities:
+                ex1_ex4_rows_dict['extrafacilities'] = True
 
             if examperiod == 1:
                 if row.get('subj_id_arr_publ') and 'has_subj_publ' not in ex1_ex4_rows_dict:
@@ -1471,7 +1478,8 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
                 last_name=row.get('lastname', ''),
                 first_name=row.get('firstname', ''),
                 prefix=row.get('prefix'),
-                has_extrafacilities=has_extrafacilities,
+                # PR2024-06-06 has_extrafacilities is added to notes instead of asteriks after fullname
+                has_extrafacilities=False,
             )
 
             subj_id_arr = row.get('subj_id_arr') or []
@@ -1482,6 +1490,7 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
                             'tobedel': row.get('tobedeleted', False),
 
                             # PR2024-06-04 added:
+                            'extrafacilities': row.get('extrafacilities', False),
                             'iseveningstudent': row.get('iseveningstudent', False),
                             'islexstudent': row.get('islexstudent', False),
                             'bis_exam': row.get('bis_exam', False),
@@ -1675,8 +1684,6 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
                     sel_examperiod = c.EXAMPERIOD_FIRST
                     ex_form = 'ex2'
 
-                    # PR2023-08-26 function create_ex2_ex2a_rows_dict moved from within create_ex2_ex2a_ex6_xlsx
-                    # # TODO check if this causes any bugs
                     ex_rows_dict, grades_auth_dict = create_ex2_ex2a_rows_dict(
                         examyear=sel_examyear,
                         school=sel_school,
@@ -2331,6 +2338,8 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
                                         note_list.append('bis-examen')
                                     if stud_dict.get('partial_exam', False):
                                         note_list.append('aanvullend examen')
+                                    if stud_dict.get('extrafacilities', False):
+                                        note_list.append('extra faciliteiten')
                                     if note_list:
                                         value = ', '.join(note_list)
 
@@ -7262,6 +7271,9 @@ def get_note_txt(row):
         note_list.append('bis-examen')
     if row.get('partial_exam', False):
         note_list.append('aanvullend examen')
+    if row.get('extrafacilities', False):
+        note_list.append('extra faciliteiten')
+
     if note_list:
         note_txt = ', '.join(note_list)
     return  note_txt
