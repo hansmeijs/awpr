@@ -981,7 +981,7 @@ def create_grade_approve_rows(request, sel_examyear, sel_school, sel_department,
     sel_depbase_pk = sel_department.base_id if sel_department else None
     sel_lvlbase_pk = sel_level.base.pk if sel_level else None
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_grade_approve_rows -----')
@@ -994,15 +994,14 @@ def create_grade_approve_rows(request, sel_examyear, sel_school, sel_department,
     grade_rows = []
     log_list = []
 
-
 # - get selected_pk_dict of req_usr
-    sel_sctbase_pk, sel_subject_pk, sel_cluster_pk = None, None, None
+    sel_sctbase_pk, sel_subjbase_pk, sel_cluster_pk = None, None, None
     selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     if selected_pk_dict:
         # don't filter on sct, subj, cluster when approving single grade or when submitting Ex2 form
         if grade_pk is None and apply_allowed_filter:
             sel_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
-            sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+            sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
             sel_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
 
     if sel_examyear_pk and sel_examperiod and sel_schoolbase_pk and sel_depbase_pk:
@@ -1123,8 +1122,11 @@ def create_grade_approve_rows(request, sel_examyear, sel_school, sel_department,
             sql_list.append(''.join(("AND (sct.base_id = ", str(sel_sctbase_pk), "::INT)")))
 
 # - filter on selected subjectbase TODO to be changed to subjectbase
-        if sel_subject_pk and apply_allowed_filter:
-            sql_list.append(''.join(("AND (subj.id = ", str(sel_subject_pk), "::INT)")))
+        # SO FAR
+        #PR2024-06-11 TODO check if sel_subjbase_pk is in allowed subjbase_arr of this school / dep / lvl
+        # only add filter when it is in the list
+        if sel_subjbase_pk and apply_allowed_filter:
+            sql_list.append(''.join(("AND (subj.base_id = ", str(sel_subjbase_pk), "::INT)")))
 
 # - filter on selected cluster_pk
         if sel_cluster_pk and apply_allowed_filter:
@@ -1147,8 +1149,8 @@ def create_grade_approve_rows(request, sel_examyear, sel_school, sel_department,
                 sql_list.append(sqlclause_allowed_dep_lvl_subj)
 
 # - filter on allowed clusters
-            # PR2023-05-29 dont filter on allowed cluster here, because msg must be sent when cluster not allowed
-            # filtyer in validate_approve
+            # PR2023-05-29 do'nt filter on allowed cluster here, because msg must be sent when cluster not allowed
+            # filter in validate_approve
             #userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters(
             #    table='studsubj',
             #    allowed_clusters_of_sel_school=allowed_clusters_of_sel_school

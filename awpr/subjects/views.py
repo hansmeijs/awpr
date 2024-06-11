@@ -1941,7 +1941,7 @@ class ExamCopyView(View):
 class ExamCopyNtermenView(View):
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= ExamCopyNtermenView ============= ')
@@ -2010,27 +2010,35 @@ class ExamCopyNtermenView(View):
                             exams = subj_mod.Exam.objects.filter(
                                 department__examyear=examyear,
                                 ete_exam=False
-                            )
+                            ).order_by('examperiod', 'department__base_id', 'subject__name_nl', 'level__base__code')
                             if logging_on:
                                 logger.debug('    exams count' + str(len(exams)))
                             if exams:
                                 for exam in exams:
                                     if logging_on:
-                                        logger.debug('   exam' + str(exam))
+                                        logger.debug('..... ')
+                                        logger.debug('   exam: ' + str(exam))
 
                                     subject = exam.subject.name_nl if exam.subject.name_nl else '---'
                                     dep_code = exam.department.base.code if exam.department.base.code else '---'
-                                    exam_name = dep_code + ' ' + subject
-                                    if exam.level:
-                                        exam_name += ' ' + exam.level.base.code
 
+                                    exam_name_list = [dep_code, subject]
+                                    if exam.level:
+                                        exam_name_list.append(exam.level.base.code)
+                                    exam_name_list.append(c.get_examperiod_caption(exam.examperiod))
+
+                                    exam_name = ' '.join(exam_name_list)
                                     if logging_on:
-                                        logger.debug('    exam_name' + str(exam_name))
+                                        logger.debug('    exam_name: ' + str(exam_name))
 
                                     log_list.append(' ')
                                     log_list.append(exam_name)
 
                                     ntermentable = exam.ntermentable
+
+                                    if logging_on:
+                                        logger.debug('    ntermentable: ' + str(ntermentable))
+
                                     if not ntermentable:
                                         log_list.append(''.join(('    ', str(_('This exam is not linked to a CVTE exam.')))))
 
@@ -5262,7 +5270,10 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
                     starttime = timer()
                     updated_cegrade_list, updated_student_pk_list = \
-                        calc_final.batch_update_finalgrade_v2(ce_exam_pk=exam_instance.pk)
+                        calc_final.batch_update_finalgrade_v2(
+                            req_user=request.user,
+                            ce_exam_pk=exam_instance.pk
+                        )
                     updated_cegrade_count = len(updated_cegrade_list)
                     if logging_on:
                         elapsed_seconds = int(1000 * (timer() - starttime)) / 1000

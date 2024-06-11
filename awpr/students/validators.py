@@ -621,7 +621,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                 # TODO add separate rules for evening_or_lex_student  PR2022-08-30
                 # TODO give return message that validation is skipped PR2022-08-30
                 is_evening_student, is_lex_student, partial_exam = get_evening_or_lex_student(student)
-
+                is_evening_or_lex_student = is_evening_student or is_lex_student
     # - get sxm_student - also skip validation when sxm_student
                 is_sxm_student = get_is_sxm_student(student)
 
@@ -650,7 +650,6 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                     msg_list.append("</p></div>")
 
                 else:
-
         # - check required subjects
                     validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
         # - check total number of subjects

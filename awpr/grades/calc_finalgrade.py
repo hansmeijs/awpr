@@ -8,7 +8,7 @@ from django.db import connection
 from awpr import constants as c
 from awpr import settings as s
 from awpr import functions as af
-
+from awpr import logs as awpr_logs
 from grades import calculations as grade_calc
 from grades import calc_score as calc_score
 
@@ -20,7 +20,7 @@ def calc_sesr_pece_final_grade(si_dict, examperiod, has_sr, exemption_year, se_g
     # PR2021-12-28 PR2022-04-11  PR2022-05-26
     # called by GradeUploadView.recalc_finalgrade_in_grade_and_save and by import_studsubj_grade_from_datalist
     # this function does not save the calculated fields
-    logging_on = False  #s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- calc_sesr_pece_final_grade -------')
         logger.debug('si_dict: ' + str(si_dict))
@@ -861,9 +861,10 @@ def compare_two_grades_v2(this_sesrgrade, this_pecegrade, this_finalgrade,
 # - end of calc_max_grade_v2
 
 
-def calc_has_pok_v2(noinput, examperiod, no_centralexam, gradetype, is_combi, weight_se, weight_ce, sesrgrade, pecegrade, finalgrade):
+def calc_has_pok_v2(noinput, no_centralexam, gradetype, is_combi, weight_se, weight_ce, sesrgrade, pecegrade, finalgrade, examperiod=None):
     # PR2022-07-01 PR2024-05-03 PR2024-05-27
     # function calculates proof of knowledge
+    # examperiod is only used to skip exemption. examperiod can be None
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -907,83 +908,82 @@ def calc_has_pok_v2(noinput, examperiod, no_centralexam, gradetype, is_combi, we
     elif not finalgrade:
         if logging_on:
             logger.debug('  >  final_grade is empty ')
-    else:
 
+    # PR2024-05-07 function is only called when examperiod is ep1, ep2 ep3, not when exemption
+    elif examperiod == c.EXAMPERIOD_EXEMPTION:
+        if logging_on:
+            logger.debug('  >  examperiod not in ep 1 2 3 ')
+    else:
 # 2b. bereken BvK als het cijfer niet is gebaseerd is op vrijstelling
-        # PR2024-05-07 function is only called when examperiod is ep1, ep2 ep3, not when exemption
-        if examperiod not in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
-            if logging_on:
-                logger.debug('  >  examperiod not in ep 1 2 3 ')
-        else:
-            final_grade_ok, sesr_grade_ok, pece_grade_ok = False, False, False
+        final_grade_ok, sesr_grade_ok, pece_grade_ok = False, False, False
 
 # 3. als cijferType is VoldoendeOnvoldoende
-            if gradetype == c.GRADETYPE_02_CHARACTER:
+        if gradetype == c.GRADETYPE_02_CHARACTER:
 
-    # a. Eindcijfer moet een "v" of "g" zijn.
-                final_grade_ok = finalgrade and finalgrade.lower() in ('v', 'g')
+# a. Eindcijfer moet een "v" of "g" zijn.
+            final_grade_ok = finalgrade and finalgrade.lower() in ('v', 'g')
 
-                if logging_on:
-                    logger.debug('  >  ovg final_grade_ok: ' + str(final_grade_ok) + ' ' + str(finalgrade))
+            if logging_on:
+                logger.debug('  >  ovg final_grade_ok: ' + str(final_grade_ok) + ' ' + str(finalgrade))
 
-                if final_grade_ok:
-    # b. SE cijfer moet een "v" of "g" zijn.
-                    if not weight_se:
-                        sesr_grade_ok = True
-                    elif sesrgrade and sesrgrade.lower() in ('v', 'g'):
-                        sesr_grade_ok = True
+            if final_grade_ok:
+# b. SE cijfer moet een "v" of "g" zijn.
+                if not weight_se:
+                    sesr_grade_ok = True
+                elif sesrgrade and sesrgrade.lower() in ('v', 'g'):
+                    sesr_grade_ok = True
 
-    # c. CE cijfer moet een "v" of "g" zijn. (crcCEweging > 0 komt niet voor)
-                    # 'PR2020-05-27 ovg vakken hebben geen CE, sla deze eis dus over
-                    pece_grade_ok = True
+# c. CE cijfer moet een "v" of "g" zijn. (crcCEweging > 0 komt niet voor)
+                # 'PR2020-05-27 ovg vakken hebben geen CE, sla deze eis dus over
+                pece_grade_ok = True
 
 # 4. als cijferType is Numeric
-            elif gradetype == c.GRADETYPE_01_NUMBER:
+        elif gradetype == c.GRADETYPE_01_NUMBER:
 
-    # 4a. als het een combinatievak is
-                if is_combi:
-        # a. Eindcijfer moet minstens een 6 zijn.
-                    final_grade_ok = finalgrade and Decimal(finalgrade) >= 6
+# 4a. als het een combinatievak is
+            if is_combi:
+    # a. Eindcijfer moet minstens een 6 zijn.
+                final_grade_ok = finalgrade and Decimal(finalgrade) >= 6
+                if logging_on:
+                    logger.debug(
+                        '  >  combinatievak final_grade_ok: ' + str(final_grade_ok) + ' ' + str(finalgrade))
+
+                if final_grade_ok:
+    # b. SE cijfer moet minstens een 5,5 zijn.
+                    sesr_grade_ok = weight_se > 0 and sesrgrade and Decimal(sesrgrade) >= 5.5
+
+    # c. CE cijfer niet van toepassing bij combinatievak.
+                    pece_grade_ok = True
+
+# 4b. als het een gewoon vak is (geen combinatievak)
+            else:
+    # a. Eindcijfer moet minstens een 7 zijn.
+                final_grade_ok = finalgrade and Decimal(finalgrade) >= 7
+                if logging_on:
+                    logger.debug(
+                        '  >  final_grade_ok = ' + str(final_grade_ok) + ' (' + str(finalgrade) + ')')
+
+                if final_grade_ok:
+    # b. SE cijfer moet minstens een 6,0 zijn.
+                    sesr_grade_ok = weight_se > 0 and sesrgrade and Decimal(sesrgrade) >= 6
                     if logging_on:
-                        logger.debug(
-                            '  >  combinatievak final_grade_ok: ' + str(final_grade_ok) + ' ' + str(finalgrade))
-
-                    if final_grade_ok:
-        # b. SE cijfer moet minstens een 5,5 zijn.
-                        sesr_grade_ok = weight_se > 0 and sesrgrade and Decimal(sesrgrade) >= 5.5
-
-        # c. CE cijfer niet van toepassing bij combinatievak.
-                        pece_grade_ok = True
-
-    # 4b. als het een gewoon vak is (geen combinatievak)
-                else:
-        # a. Eindcijfer moet minstens een 7 zijn.
-                    final_grade_ok = finalgrade and Decimal(finalgrade) >= 7
-                    if logging_on:
-                        logger.debug(
-                            '  >  final_grade_ok = ' + str(final_grade_ok) + ' (' + str(finalgrade) + ')')
-
-                    if final_grade_ok:
-        # b. SE cijfer moet minstens een 6,0 zijn.
-                        sesr_grade_ok = weight_se > 0 and sesrgrade and Decimal(sesrgrade) >= 6
-                        if logging_on:
-                            logger.debug('  >  sesr_grade_ok = ' + str(sesr_grade_ok) + ' (' + str(sesrgrade)+ ')')
-                        if sesr_grade_ok:
-        # c. CE cijfer moet minstens een 6,0 zijn.
-                            # PR2020-05-20 Corona: geen CE cijfer, sla deze eis daarom over
-                            if no_centralexam:
-                                pece_grade_ok = True
-                            elif not weight_ce:
-                                pece_grade_ok = True
-                            else:
-                                pece_grade_ok = pecegrade and Decimal(pecegrade) >= 6
-                                if logging_on:
-                                    logger.debug(
-                                        '  >  pece_grade_ok =  ' + str(pece_grade_ok)  + ' (' + str(pecegrade)+ ')')
+                        logger.debug('  >  sesr_grade_ok = ' + str(sesr_grade_ok) + ' (' + str(sesrgrade)+ ')')
+                    if sesr_grade_ok:
+    # c. CE cijfer moet minstens een 6,0 zijn.
+                        # PR2020-05-20 Corona: geen CE cijfer, sla deze eis daarom over
+                        if no_centralexam:
+                            pece_grade_ok = True
+                        elif not weight_ce:
+                            pece_grade_ok = True
+                        else:
+                            pece_grade_ok = pecegrade and Decimal(pecegrade) >= 6
+                            if logging_on:
+                                logger.debug(
+                                    '  >  pece_grade_ok =  ' + str(pece_grade_ok)  + ' (' + str(pecegrade)+ ')')
 
 # 5. bereken BewijsVanKennis
-            if final_grade_ok and sesr_grade_ok and pece_grade_ok:
-                has_pok = True
+        if final_grade_ok and sesr_grade_ok and pece_grade_ok:
+            has_pok = True
 
     if logging_on:
         logger.debug('  >  has_pok: ' + str(has_pok))
@@ -1334,7 +1334,7 @@ def calc_max_examperiod_gradetype_character(ep_A, grade_A, ep_B, grade_B):
 
 ##################
 
-def batch_update_finalgrade_v2(grade_pk_list=None, student_pk_list=None, schemeitem_pk_list=None, ce_exam_pk=None):
+def batch_update_finalgrade_v2(req_user, grade_pk_list=None, student_pk_list=None, schemeitem_pk_list=None, ce_exam_pk=None):
     #PR2022-05-25 PR2022-06-03 PR2024-06-01
     # called by calc_cegrade_from_exam_score and CalcResultsView
 
@@ -1362,7 +1362,6 @@ def batch_update_finalgrade_v2(grade_pk_list=None, student_pk_list=None, schemei
         return sql_clause
 
     def get_sql_value_str(value):
-
         return ''.join(("'", str(value), "'")) if value else 'NULL'
 
     updated_cegrade_list = []
@@ -1436,9 +1435,8 @@ def batch_update_finalgrade_v2(grade_pk_list=None, student_pk_list=None, schemei
             logger.debug('query: ' + str(cq))
 
     if rows:
-
         try:
-            # do not change modby, it will give user of admin
+            # do not change modby in grade and sstudsubj table, it will give user of admin, but do store it in log table
             # to do: write as modifiedat = %(modat)s::TIMESTAMP, dont know how to do it yet
             # modifiedat_str = str(timezone.now())
             # sql_keys = {'modby_id': request.user.pk}
@@ -1457,7 +1455,6 @@ def batch_update_finalgrade_v2(grade_pk_list=None, student_pk_list=None, schemei
                     updated_student_pk_list.append(student_id)
 
     # - calc ce_grade from score, or get from row when exemption (was: or secret_exam)
-
                 new_ce_grade = calc_score.calc_grade_from_score_v2(
                     examperiod=row['examperiod'],
                     no_centralexam=row['no_centralexam'],
@@ -1494,7 +1491,7 @@ def batch_update_finalgrade_v2(grade_pk_list=None, student_pk_list=None, schemei
                         has_practex=row['has_practex']
                     )
 
-                if logging_on and False:
+                if logging_on:
                     logger.debug('     new_ce_grade:    ' + str(new_ce_grade))
                     logger.debug('     sesr_grade:    ' + str(sesr_grade))
                     logger.debug('     pece_grade:    ' + str(pece_grade))
@@ -1536,6 +1533,13 @@ def batch_update_finalgrade_v2(grade_pk_list=None, student_pk_list=None, schemei
                     updated_cegrade_list.append(updated_row[0])
                     if logging_on:
                         logger.debug('  updated_cegrade_list updated_row:    ' + str(updated_row))
+
+            if updated_cegrade_list:
+                awpr_logs.copytolog_grade_v2(
+                    grade_pk_list=grade_pk_list,
+                    req_mode='b',
+                    modifiedby_id=req_user.pk
+                )
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -2078,7 +2082,6 @@ def batch_recalc_update_studsubj_grade_v2(request, studsubj_pk_list= None, schem
 # --- calc_has_pok
                 this_ep_has_pok = calc_has_pok_v2(
                     noinput=this_ep_has_noinput,
-                    examperiod=examperiod,
                     no_centralexam=row['no_centralexam'],
                     gradetype=row['gradetype'],
                     is_combi=row['is_combi'],
@@ -2086,7 +2089,8 @@ def batch_recalc_update_studsubj_grade_v2(request, studsubj_pk_list= None, schem
                     weight_ce=row['weight_ce'],
                     sesrgrade=grade_dict['sesrgrade'],
                     pecegrade=grade_dict['pecegrade'],
-                    finalgrade=grade_dict['finalgrade']
+                    finalgrade=grade_dict['finalgrade'],
+                    examperiod=examperiod
                 )
                 if logging_on:
                     logger.debug('    this_ep_has_noinput:  ' + str(this_ep_has_noinput))

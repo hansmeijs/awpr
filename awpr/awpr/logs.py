@@ -533,8 +533,8 @@ def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_field
             sql = ' '.join((
                 "INSERT INTO students_studentsubjectlog(",
                 "studentsubject_id, mode,", tobe_copied_field_str,
-                ") SELECT",
-                "id,", mode, ",", tobe_copied_field_str,
+                ") SELECT id,", mode, ",",
+                tobe_copied_field_str,
                 "FROM students_studentsubject AS studsubj",
                 "WHERE studsubj.id=", str(studentsubject_pk), "::INT",
                 "RETURNING id;"

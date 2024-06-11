@@ -44,7 +44,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -596,7 +596,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ')
@@ -692,7 +692,7 @@ def download_setting(request_item_setting, user_lang, request):
 
 # ----- display opening message ------ PR2022-05-28
     usersetting_dict = acc_prm.get_usersetting_dict(c.KEY_OPENARGS, request)
-    # skip displaying opening message when user has ticked off 'Dont show message again'
+    # skip displaying opening message when user has ticked off 'Don't show message again'
     # set 'show_msg' = False to prevent showing this messages when changing page.
     # 'show_msg' will be set to False after first display, to prevent showing multiple times in one session
     hide_msg = usersetting_dict.get('hide_msg')

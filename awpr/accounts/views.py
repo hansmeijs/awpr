@@ -406,6 +406,7 @@ class UserUploadView(View):
                                                     #   <Grade: Grade object (61831)>, ...
                                                     # most likely when Skaih tried to delete user
                                                     # I assume ' the 'try' function has trapped this error
+                                                    # PR2024-06-10 it works, but still sends error to Sentry
 
                                                     user_instance.delete()
                                                     updated_dict['deleted'] = True

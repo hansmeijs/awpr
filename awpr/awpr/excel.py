@@ -17,7 +17,7 @@ from os.path import basename
 
 from accounts import models as acc_mod
 from accounts import views as acc_view
-from  accounts import permits as acc_prm
+from accounts import permits as acc_prm
 
 from awpr import constants as c
 from awpr import functions as af
@@ -33,6 +33,7 @@ from students import views as stud_view
 from students import functions as stud_fnc
 
 from grades import calc_results as calc_res
+from grades import calc_finalgrade as calc_final
 
 import xlsxwriter
 from zipfile import ZipFile
@@ -3481,7 +3482,8 @@ def create_ex5_rows_dict(examyear, school, department, level, examperiod, save_t
 
 #WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
 def create_ex6_rows_dict(examyear, school, department, level):
-    # PR2022-08-25
+    # PR2022-08-25 #
+    # PR204-06-10 TODO use fields in studentssubject table: pok_final pok_pece pok_sesr
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------------ create_ex6_rows_dict -----------------')
@@ -3604,19 +3606,19 @@ def create_ex6_rows_dict(examyear, school, department, level):
                 pece_grade = row.get('gradelist_pecegrade')
                 final_grade = row.get('gradelist_finalgrade')
 
-                has_pok = calc_res.calc_pok(
+                no_input = False if final_grade else True
+                has_pok = calc_final.calc_has_pok_v2(
+                    noinput=no_input,
                     no_centralexam=examyear.no_centralexam,
                     gradetype=row.get('gradetype'),
                     is_combi=row.get('is_combi'),
                     weight_se=row.get('weight_se'),
                     weight_ce=row.get('weight_ce'),
-                    subj_code=subj_code,
-                    use_exemp=row.get('gradelist_use_exem'),
-                    no_input=False if final_grade else True,
-                    sesr_grade=sesr_grade,
-                    pece_grade=pece_grade,
-                    final_grade=final_grade
+                    sesrgrade=sesr_grade,
+                    pecegrade=pece_grade,
+                    finalgrade=final_grade
                 )
+
                 if has_pok:
                     if subject_pk not in subject_dict:
                         subject_dict[subject_pk] = {'pk': subject_pk, 'code': subj_code}

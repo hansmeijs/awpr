@@ -826,7 +826,29 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     Het registratienummer op het diploma en cijferlijst wordt voortaan door AWP aangemaakt en is uniek voor elk waardepapier. Het is niet meer nodig om het diplomanummer en cijferlijstnummer in te voeren.
     De waardepapieren zijn terug te vinden in de pagina Archief, tab Dipi=oma’s en cijferlijsten.
     """
+    msg = ''.join((
+        '<p><b>', gettext("The N-terms of the first exam period are published"), '</b></p>',
+        "</p><p class='pb-0'>", gettext("Please do the following to calculate the results"), ":</p>",
+        "<ul class='manual_bullet mb-0 pb-2'><li>",
+        gettext("Go to the page <i>Results</i> and click in the black bar on the tab <i>Results</i>."),
+        "</li><li>", gettext("Click on the light gray button <i>Calculate results</i>."),
+        "<br>", gettext("AWP will now calculate the results of the selected candidates."),
+        "<br>", gettext("A log file will be downloaded with the details of how AWP has calculated the results."),
+        "</li><li>", gettext("Click on the light gray button <i>Short grade list</i>."),
+        "<br>", gettext("AWP will download the short grade list that can be used in the results meeting."),
+        "</li><li>", gettext("The short grade list contains a column <i>reex</i>."),
+        "<br>", gettext("If a candidate has failed, the possible re-examinations and the minimum grade, that must be achieved to pass, are listed here."),
+        "<br>", gettext("The '>' sign indicates the re-examination with the lowest difference from the CE grade."),
+        "<br>", gettext("An empty column <i>reex</i> means that none of the retakes can give the result 'Passed'."), "</li></ul>"
+    ))
 
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+    message = None
+
+    return message
+
+    """
+    
     msg = ''.join((
         '<p><b>', gettext("The results need the approval of the Inspectorate"), '</b></p>',
         "<ul class='manual_bullet mb-0 pb-2'><li>",
@@ -844,14 +866,6 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
         "</li><li>", gettext("You no longer have to enter the diploma numbers and grade list numbers in AWP."),
         "</li></ul>"
     ))
-
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-    message = None
-
-    return message
-
-    """
-    
 
     msg = ''.join((
         '<p><b>', gettext("The N-terms of the first exam period are published"), '</b></p>',

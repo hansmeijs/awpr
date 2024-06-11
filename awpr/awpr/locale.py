@@ -1990,6 +1990,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Download_result_overview'] = _('Download result overview')
         dict['Download_Ex_form'] = _('Download Ex form')
 
+        dict['Download'] = _('Download')
+
         dict['The_overview_of_results'] = _('The overview of the results')
         dict['The_preliminary_gradelist_of'] = _('The preliminary grade list of')
         dict['The_final_gradelist_of'] = _('The final grade list of')

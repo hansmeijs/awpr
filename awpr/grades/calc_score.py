@@ -660,7 +660,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
 
     # note: scores of secret_exam are also entered, not grades
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_update_finalgrade -----')
         logger.debug('     exam_instance:    ' + str(exam_instance))

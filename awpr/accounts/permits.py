@@ -1403,7 +1403,7 @@ def get_sqlclause_allowed_dep_lvl_subj(table, userallowed_sections_dict, sel_sch
                 # subjbase_clause: subj.base_id IN (SELECT UNNEST(ARRAY[118, 121]::INT[]))
 
 
-        # - join depbase_clause and lvlbase_clause  and add to array, to prvent error when base_clause = None
+        # - join depbase_clause and lvlbase_clause  and add to array, to prevent error when base_clause = None
                 lvl_subjbase_clause = None
                 if lvlbase_clause:
                     if subjbase_clause:

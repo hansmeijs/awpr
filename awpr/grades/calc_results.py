@@ -123,7 +123,7 @@ logger = logging.getLogger(__name__)
 class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
     def post(self, request, list):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= CalcResultsView ============= ')
@@ -206,7 +206,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
@@ -3745,14 +3745,10 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
 
 def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, student_pk_list=None):
     # PR2022-07-02 temporary, to be replaced by calc_proof_of_knowledge as part of  calc_studsubj_result
-
+    # PR2024-06-10 only students that have failed the exam can have a pok, or when it ispartial_exam
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_proof_of_knowledge  --------- ')
-
-    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'student_pk_list': student_pk_list}
-    if logging_on:
-        logger.debug('sql_keys: ' + str(sql_keys))
 
     sql_list = [
         "SELECT studsubj.id AS studsubj_id, stud.id AS student_id, stud.idnumber, stud.gender, stud.examnumber,",
@@ -3780,20 +3776,20 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
         "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
-        "WHERE school.examyear_id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
+        "WHERE school.examyear_id = ", str(examyear.pk), "::INT",
+        "AND school.id = ", str(school.pk), "::INT AND dep.id = ", str(department.pk), "::INT",
         "AND NOT stud.deleted AND NOT stud.tobedeleted",
-        "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted"
+        "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
+
+        # PR2024-06-10 only students that have failed the exam can have a pok, or when it ispartial_exam CORRECT?
+        "AND (stud.result=", str(c.RESULT_FAILED), "::INT OR stud.partial_exam)"
     ]
 
     if student_pk_list:
-        sql_keys['student_pk_arr'] = student_pk_list
-        sql_list.append("AND stud.id IN ( SELECT UNNEST( %(student_pk_arr)s::INT[]))")
+        sql_list.extend(("AND stud.id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[])) "))
     else:
-        sql_list.extend(("AND stud.result=", str(c.RESULT_FAILED), "::INT"))
-
         if lvlbase_pk:
-            sql_keys['lvlbase_pk'] = lvlbase_pk
-            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+            sql_list.extend(("AND lvl.base_id = ", str(lvlbase_pk), "::INT"))
 
     sql_list.append("ORDER BY stud.lastname, stud.firstname, subj.name_nl")
 
@@ -3801,7 +3797,7 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
 
     proof_of_knowledge_dict = {}
     with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
+        cursor.execute(sql)
         rows = af.dictfetchall(cursor)
 
     if rows:
@@ -3963,19 +3959,34 @@ def calc_proof_of_knowledge(subj_code, examperiod, this_examperiod_dict, no_cent
         use_exem = this_examperiod_dict.get('use_exem') or False
         no_input = True if this_examperiod_dict.get('max_ni') else False
 
-        has_pok = calc_pok(
+        # PR2024-06-10 was:
+        #has_pok = calc_pok(
+        #    no_centralexam=no_centralexam,
+        #    gradetype=gradetype,
+        #    is_combi=is_combi,
+        #    weight_se=weight_se,
+        #    weight_ce=weight_ce,
+        #    subj_code=subj_code,
+        #    use_exemp=False, # skip use_exemp here, to calc pok even when use_exemp
+        #    no_input=no_input,
+        #    sesr_grade=sesr_grade,
+        #    pece_grade=pece_grade,
+        #    final_grade=final_grade
+        #)
+
+        has_pok = calc_final.calc_has_pok_v2(
+            noinput=no_input,
             no_centralexam=no_centralexam,
             gradetype=gradetype,
             is_combi=is_combi,
             weight_se=weight_se,
             weight_ce=weight_ce,
-            subj_code=subj_code,
-            use_exemp=False, # skip use_exemp here, to calc pok even when use_exemp
-            no_input=no_input,
-            sesr_grade=sesr_grade,
-            pece_grade=pece_grade,
-            final_grade=final_grade
+            sesrgrade=sesr_grade,
+            pecegrade=pece_grade,
+            finalgrade=final_grade,
+            examperiod=examperiod
         )
+
         if has_pok:
             # also when use_exemp, pok has value
             # values of pok_sesr, pok_pece and pok_final are: sesr_grade,pece_grade and final_grade
@@ -3998,7 +4009,7 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
     # - calcPok2022AndSaveInStudsubjONCEONLY
     # - get_proof_of_knowledge_dict  (to be deprecated)
     # - calc_proof_of_knowledge (only called by calc_studsubj_result)
-
+    # PR2024-06-10 TODO replace by calc_final.calc_has_pok_v2
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:

@@ -9,7 +9,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, gettext, gettext_lazy as _
+from django.utils.translation import activate, pgettext_lazy, gettext, gettext_lazy as _
 from django.views.generic import View
 
 # PR2019-01-04  https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
@@ -87,8 +87,9 @@ class ResultListView(View):  # PR2021-11-15
 @method_decorator([login_required], name='dispatch')
 class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
 
+    # def post(self, request, lst):
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GetGradelistDiplomaAuthView ============= ')
 
@@ -105,8 +106,44 @@ class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
 
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
+
             if upload_json:
                 upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('    upload_dict: ' + str(upload_dict) + ' ' + str(type(upload_dict)))
+                    #  upload_dict = {"mode":"final","print_all":false,"student_pk_list":[3605,3606]}
+
+     # - get selected examyear, school and department from usersettings
+                sel_examyearNIU, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
+                if logging_on:
+                    logger.debug('     sel_school: ' + str(sel_school))
+                    logger.debug('     sel_department: ' + str(sel_department))
+                    logger.debug('     sel_department: ' + str(sel_department))
+
+                if sel_school and sel_department:
+                    mode = upload_dict.get('mode')
+                    student_pk_list = upload_dict.get('student_pk_list') or []
+
+                    if logging_on:
+                        logger.debug('    student_pk_list: ' + str(student_pk_list))
+
+                    has_rows, has_gl_approved, gl_msg_html = get_gl_msg_approved(
+                        sel_school_pk = sel_school.pk if sel_school else None,
+                        sel_dep_pk=sel_department.pk if sel_department else None,
+                        mode=mode,
+                        student_pk_list=student_pk_list,
+                        sel_lvlbase_pk=sel_lvlbase_pk,
+                        sel_sctbase_pk=sel_sctbase_pk
+                    )
+
+                    if logging_on:
+                        logger.debug('    gl_msg_html: ' + str(gl_msg_html))
+
+                    update_wrap['has_rows'] = has_rows
+                    update_wrap['has_gl_approved'] = has_gl_approved
+                    update_wrap['gl_msg_html'] = gl_msg_html
 
       # ----- pres_secr_rows, used in results.js
                 pres_secr_dict = get_pres_secr_dict(request)
@@ -128,7 +165,7 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17 PR2023-08-18
     # function creates a dict of auth1 and auth2 users
     # also retrieves the selected auth and printdate from schoolsettings
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_pres_secr_dict -----')
 
@@ -190,13 +227,217 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17 PR2023-08-18
 
                         auth_dict[usergroup].append(a_dict)
     # add printdate
-        print_date = stored_setting.get('printdate')
-        if print_date:
-            auth_dict['printdate'] = print_date
+        print_date_iso = stored_setting.get('printdate')
+        if print_date_iso:
+            print_date_dte = af.get_date_from_ISO(print_date_iso)
+            if print_date_dte:
+                print_date_year = print_date_dte.year
+                today_dte = af.get_today_dateobj()
+                today_dte_year = today_dte.year
+                if print_date_year != today_dte_year:
+                    print_date_iso = af.get_dateISO_from_dateOBJ(today_dte)
+    # PR2024-06-11 when printdate is from last year: replace by today's date
+                if logging_on:
+                    logger.debug('    print_date_iso: ' + str(print_date_iso) + ' ' + str(type(print_date_iso)))
+                    logger.debug('    print_date_dte: ' + str(print_date_dte) + ' ' + str(type(print_date_dte)))
+                    logger.debug('    print_date_year: ' + str(print_date_year) + ' ' + str(type(print_date_year)))
+                    logger.debug('    today_dte: ' + str(today_dte) + ' ' + str(type(today_dte)))
+                    logger.debug('    print_date_iso: ' + str(print_date_iso) + ' ' + str(type(print_date_iso)))
+            # print_date: 2023-07-06 <class 'str'>
+        if print_date_iso:
+            auth_dict['printdate'] = print_date_iso
 
     # auth_dict: {'auth1': [{'pk': 120, 'name': 'jpd'}, {'pk': 116, 'name': 'Hans meijs'}], 'auth2': []}
     return auth_dict
 # - -end of get_pres_secr_dict
+
+
+def get_gl_msg_approved(sel_school_pk, sel_dep_pk, mode, student_pk_list, sel_lvlbase_pk=None, sel_sctbase_pk=None):
+    # PR2024-06-07
+    # function creates a list of students that passed the exam, but are not approved by de Inspectorate yet
+    # also retrieves the selected auth and printdate from schoolsettings
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_gl_msg_approved -----')
+        logger.debug('    student_pk_list: ' + str(student_pk_list))
+
+    def get_dpl_gl_txt(count_rows):
+        if is_calc_results:
+            dpl_gl_txt = gettext('The result of') if count_rows == 1 else _('The results of')
+        elif is_diploma:
+            dpl_gl_txt = gettext('The diploma of') if count_rows == 1 else _('The diplomas of')
+        elif is_prelim:
+            dpl_gl_txt = gettext('The preliminary grade list of') if count_rows == 1 else _('The preliminary grade lists of')
+        elif is_pok:
+            dpl_gl_txt = gettext('The proof of knowledge of')
+        else:
+            dpl_gl_txt = gettext('The final grade list of') if count_rows == 1 else _('The final grade lists of')
+
+        return dpl_gl_txt
+
+    # values of mode are: 'calc_results', 'prelim' (gradelist), 'final' (gradelist), 'diploma', 'pok'
+    # 'final' means final gradelist
+    is_diploma = mode == 'diploma'
+    is_prelim = mode == 'prelim'
+    is_pok = mode == 'pok'
+    is_calc_results = mode == 'calc_results'
+
+    sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix, stud.gl_status, stud.result, stud.partial_exam",
+
+                "FROM students_student AS stud",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+                "WHERE NOT stud.deleted AND NOT stud.tobedeleted",
+                ''.join(("AND school.id = ", str(sel_school_pk), "::INT ",
+                "AND stud.department_id = ", str(sel_dep_pk), "::INT"))
+                ]
+    # when printing diploma: only diplomas of candidates that have passed can be downloaded
+    if is_diploma:
+        sql_list.append(''.join(("AND (stud.ep01_result = ", str(c.RESULT_PASSED), "::INT OR stud.ep02_result = ", str(c.RESULT_PASSED), "::INT OR stud.result = ", str(c.RESULT_PASSED), "::INT)")))
+
+    if student_pk_list:
+        sql_list.append(''.join(("AND stud.id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[]))")))
+    else:
+        if sel_lvlbase_pk:
+            sql_list.append(''.join(("AND lvl.base_id = ", str(sel_lvlbase_pk) ,"::INT")))
+        if sel_sctbase_pk:
+            sql_list.append(''.join(("AND sct.base_id = ", str(sel_sctbase_pk) ,"::INT")))
+
+    sql_list.append("ORDER BY LOWER(stud.lastname), LOWER(stud.firstname)")
+
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = af.dictfetchall(cursor)
+
+    gl_approved_list = []
+    gl_not_approved_list = []
+    gl_not_failed_list = []
+
+    has_gl_approved = False
+    has_rows = False
+    msg_list = []
+
+    if not rows:
+        msg_list.extend(("<div class='pt-2 mb-1 border_bg_invalid'><p class='pb-2'>",
+                        gettext('The selection contains no candidates.'),
+                        "</p></div>"
+                        ))
+    else:
+        has_rows = True
+
+        for row in rows:
+            full_name = '&emsp;&emsp;' + stud_fnc.get_full_name(
+                last_name=row.get('lastname') or '---',
+                first_name=row.get('firstname'),
+                prefix=row.get('prefix')
+            )
+            if is_prelim or is_calc_results:
+                # when downloading preliminary gradelists, also not approved gradelists can be downloaded
+                gl_approved_list.append(full_name)
+
+            elif is_pok:
+                # only add students that have failed or that have partial_exam
+                if row.get('result') == c.RESULT_FAILED or row.get('partial_exam', False):
+                    if row.get('gl_status') == c.GL_STATUS_01_APPROVED:
+                        gl_approved_list.append(full_name)
+                    else:
+                        gl_not_approved_list.append(full_name)
+                else:
+                    gl_not_failed_list.append(full_name)
+
+            else:
+                if row.get('gl_status') == c.GL_STATUS_01_APPROVED:
+                    gl_approved_list.append(full_name)
+                else:
+                    gl_not_approved_list.append(full_name)
+
+        if gl_approved_list:
+            has_gl_approved = True
+            len_approved = len(gl_approved_list)
+
+            dpl_gl_txt = get_dpl_gl_txt(len_approved)
+            cand_txt = gettext('candidate') if len_approved == 1 else gettext('candidates')
+            will_be_txt = str(pgettext_lazy('wordt', 'will be') if len_approved == 1 or is_pok else pgettext_lazy('worden', 'will be'))
+            verb_txt = _('calculated') if is_calc_results else _('downloaded')
+            val_txt = _('the following') if len_approved <= 10 else str(len_approved)
+            msg_list.extend((
+                "<div class='p-2 mb-2 border_bg_valid'><p>",
+                gettext('%(dpl_gl)s %(val)s %(cand)s %(will_be)s %(verb)s') \
+                            % {'dpl_gl': dpl_gl_txt, 'val': val_txt, 'cand': cand_txt,
+                               'will_be': will_be_txt, 'verb': verb_txt}
+            ))
+
+            if len_approved <= 10:
+                cand_list = '<br>'.join(gl_approved_list)
+                msg_list.extend(( ":<p>", cand_list,"</p>"))
+            else:
+                msg_list.append(".")
+
+            if is_calc_results:
+                msg_list.extend(("</p><p>", gettext("The logfile with details will be downloaded.")))
+
+            msg_list.append("</p></div>")
+
+        if gl_not_approved_list:
+            len_not_approved = len(gl_not_approved_list)
+
+            cand_txt = str(_('candidate') if len_not_approved == 1 else _('candidates'))
+            result_txt = str(_('The exam result') if len_not_approved == 1 else _('The exaa results'))
+            has_have_txt = pgettext_lazy('is_nl', 'has') if len_not_approved == 1 else pgettext_lazy( 'zijn_nl', 'have')
+            val_txt = _('the following') if len_not_approved <= 10 else str(len_not_approved)
+
+            msg_list.append("<div class='p-2 mb-2 border_bg_invalid'><p>")
+            msg_list.append(gettext(
+                '%(result)s of %(val)s %(cand)s %(has_have)s not yet been approved by the Inspectorate') \
+                            % {'result': result_txt, 'val': val_txt, 'cand': cand_txt, 'has_have': has_have_txt})
+
+            if len_not_approved <= 10:
+                cand_list = '<br>'.join(gl_not_approved_list)
+                msg_list.extend(( ":<p class='pb-2'>", cand_list,"</p>"))
+            else:
+                msg_list.append(".</p>")
+
+            msg_list.extend((
+                "<p>",
+                gettext("Contact the Inspectorate to have %(result)s approved.") % {'result': result_txt.lower()},
+                "</p></div>"
+            ))
+
+        if gl_not_failed_list:
+            len_not_failed = len(gl_not_failed_list)
+
+            cand_txt = str(_('candidate') if len_not_failed == 1 else _('candidates'))
+            is_have_txt = pgettext_lazy('is_nl', 'has') if len_not_failed == 1 else pgettext_lazy( 'zijn_nl', 'have')
+            has_have_txt = gettext('has') if len_not_failed == 1 else gettext('have')
+            val_txt = gettext('the following').capitalize() if len_not_failed <= 10 else str(len_not_failed)
+
+            msg_list.append("<div class='p-2 mb-2 border_bg_transparent'><p>")
+            msg_list.append(gettext(
+                '%(val)s %(cand)s %(is_have)s not failed the exam and %(has_have)s not taken a partial exam') \
+                            % {'val': val_txt, 'cand': cand_txt, 'is_have': is_have_txt, 'has_have': has_have_txt})
+
+            if len_not_failed <= 10:
+                cand_list = '<br>'.join(gl_not_failed_list)
+                msg_list.extend(( ":<p class='pb-2'>", cand_list,"</p>"))
+            else:
+                msg_list.append(".</p>")
+
+            msg_list.extend((
+                "<p>",
+                gettext("Only candidates that have failed the exam or have taken a partial exam can get a proof of knowledge."),
+                "</p></div>"
+            ))
+    msg_html = ''.join(msg_list)
+    return has_rows, has_gl_approved, msg_html
+# - end of get_gl_msg_approved
 
 
 @method_decorator([login_required], name='dispatch')
@@ -369,9 +610,9 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
 class DownloadGradelistDiplomaView(View):
     # PR2021-11-15 PR2023-12-04
 
-    # PR2023-12-04 TODO cannor print final gradelist / diploma when result is not approved by Inspectorate
+    # PR2023-12-04 TODO cannot print final gradelist / diploma when result is not approved by Inspectorate
     # the gradelist / diploma stays then blank
-    # mustt create a message to inform that the result must be approved by the Inspectorate
+    # must create a message to inform that the result must be approved by the Inspectorate
 
     def get(self, request, lst):
         logging_on = s.LOGGING_ON
@@ -1133,7 +1374,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_diploma_dictlist -----')
-        logger.debug('student_pk_list: ' + str(student_pk_list))
+        logger.debug('    student_pk_list: ' + str(student_pk_list))
 
     # PR2023-07-04 debug: Friedeman Hasselbaink Jacques Ferrandi: wants to print gradelist 2022.
     # has saved regnumber instead of calculated regnumber

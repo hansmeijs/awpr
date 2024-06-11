@@ -321,6 +321,7 @@ urlpatterns = [
         path('result', student_results.ResultListView.as_view(), name='results_url'),
 
         path('get_auth', student_results.GetGradelistDiplomaAuthView.as_view(), name='url_get_auth'),
+
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
         path('calc_reex/<list>/', grade_calc_reex.CalcReexView.as_view(), name='url_calc_reex'),
         path('download_gradelist/<lst>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
