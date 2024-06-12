@@ -843,7 +843,6 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     ))
 
     message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-    message = None
 
     return message
 

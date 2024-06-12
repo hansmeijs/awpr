@@ -4,11 +4,9 @@ from django.db import connection
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import pgettext_lazy, gettext, gettext_lazy as _
 
-from reportlab.pdfbase.pdfmetrics import stringWidth, registerFont
-from reportlab.pdfbase.ttfonts import TTFont
-import math
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
-from operator import itemgetter
+import math
 
 from awpr import constants as c
 from awpr import functions as af
@@ -286,10 +284,10 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
                                     ]
                         sql = ' '.join(sql_list)
 
-                        with connection.cursor() as cursor:
-                            cursor.execute(sql, sql_keys)
+                        with connection.cursor() as cursor2:
+                            cursor2.execute(sql, sql_keys)
 
-                            for row in cursor.fetchall():
+                            for row in cursor2.fetchall():
                                 if row[0]:
                                     sorted_idnumber_list.append(row[0])
 
@@ -724,7 +722,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                 # check if subject has already been submitted
                 # PR2022-02-15 don't check on submitted studsubj or submitted grades
                     # - this will give problems when a school wants to delete subject with submitted grades
-                    if (studsubj_pk) and (tobedeleted or tobechanged):
+                    if studsubj_pk and (tobedeleted or tobechanged):
                         is_published = False
 
                         #if tobedeleted:
@@ -847,7 +845,7 @@ def get_evening_or_lex_student(student):  # PR2021-09-08
             is_lex_student = student.islexstudent
     else:
         # when not a dayschool: alle students are iseveningstudent / islexstudent
-        is_evening_or_lex_student = student.school.iseveningschool or student.school.islexschool
+        # is_evening_or_lex_student = student.school.iseveningschool or student.school.islexschool
         if student.school.iseveningschool:
             is_evening_student = True
         if student.school.islexschool:
@@ -1407,6 +1405,7 @@ def get_scheme_si_sjtp_dict(scheme):
 
     # PR2024-05-03 Sentry error: SystemExit
     # probably because it is taking too long,
+    # PR2024-06-11 no, was keyError: 'base'
     # TODO: use sql instead of model
 
 # - get min max subjects and mvt from scheme
@@ -1452,27 +1451,32 @@ def get_scheme_si_sjtp_dict(scheme):
 
     sis = subj_mod.Schemeitem.objects.filter(scheme=scheme)
     for si in sis:
-        subj_pk = si.subject.pk
-        subj_code = si.subject.base.code
-        subject_code[subj_pk] = subj_code
+        #PR2024-06-11 Sentry error: KeyError: 'base'
+        # added: if si and si.subject:
+        if si and si.subject:
+            subj_pk = si.subject.pk
+            if si.subject.base:
+                subj_base = si.subject.base
+                if subj_base.code:
+                    subject_code[subj_pk] = subj_base.code
 
-        if si.is_mandatory:
-            mand_list.append(subj_pk)
-        if si.is_mand_subj:
-            mand_subj_list.append(subj_pk)
-        if si.is_combi:
-            combi_list.append(subj_pk)
-        if si.is_mvt:
-            mvt_list.append(subj_pk)
-        if si.is_wisk:
-            wisk_list.append(subj_pk)
-        if si.is_core_subject:
-            core_list.append(subj_pk)
+            if si.is_mandatory:
+                mand_list.append(subj_pk)
+            if si.is_mand_subj:
+                mand_subj_list.append(subj_pk)
+            if si.is_combi:
+                combi_list.append(subj_pk)
+            if si.is_mvt:
+                mvt_list.append(subj_pk)
+            if si.is_wisk:
+                wisk_list.append(subj_pk)
+            if si.is_core_subject:
+                core_list.append(subj_pk)
 
-        if si.rule_grade_sufficient:  # PR2021-11-23
-            sufficient_list.append(subj_pk)
-        if si.rule_gradesuff_notatevlex:  # PR2021-11-23
-            notatevlex_list.append(subj_pk)
+            if si.rule_grade_sufficient:  # PR2021-11-23
+                sufficient_list.append(subj_pk)
+            if si.rule_gradesuff_notatevlex:  # PR2021-11-23
+                notatevlex_list.append(subj_pk)
 
     scheme_dict = {
         'schemename': schemename,
@@ -1623,7 +1627,10 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-
         msg_list.append(_("This candidate has no subjects."))
     else:
         for studsubj in rows:
-            get_schemitem_info(stud_scheme, studsubj.schemeitem,
+            # PR2024-06-11 Sentry error: KeyError 'schemeitem'
+            # added:  if stud_scheme is not None and studsubj is not None:
+            if stud_scheme is not None and studsubj is not None and studsubj.schemeitem is not None:
+                get_schemitem_info(stud_scheme, studsubj.schemeitem,
                                    studsubj.is_extra_nocount, studsubj.is_extra_counts, total_studyloadhour_list,
                                    subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
                                    mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list)
@@ -1653,10 +1660,20 @@ def get_schemitem_info(stud_scheme, schemeitem,
                        studsubj_is_extra_nocount, studsubj_is_extra_counts, total_studyloadhour_list,
                        subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
                        mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list):
-    # - get info from schemitem PR2021-08-17
+    # - get info from schemitem PR2021-08-17 PR2024-06-11
     logging_on = False  # s.LOGGING_ON
-    if schemeitem.scheme_id != stud_scheme.pk:
-        value = schemeitem.subject.base.code
+    # PR2024-06-11 added
+    if not schemeitem:
+        msg_str = '<li>' + gettext("Subject scheme item not found.") + '</li>'
+        if logging_on:
+            logger.debug('msg_str: ' + str(msg_str))
+        msg_list.append(msg_str)
+    elif schemeitem.scheme_id != stud_scheme.pk:
+        # PR2024-06-11 Sentry error: KeyError: 'subject'
+        # added: if schemeitem.subject and schemeitem.subject.base:
+        value = '-'
+        if schemeitem.subject and schemeitem.subject.base:
+            value = schemeitem.subject.base.code
         msg_str = '<li>' + str(_("Subject '%(val)s' does not occur in this subject scheme.") % {'val': value}) + '</li>'
         if logging_on:
             logger.debug('msg_str: ' + str(msg_str))
@@ -1664,7 +1681,10 @@ def get_schemitem_info(stud_scheme, schemeitem,
     else:
 
 # - put subject.pk in subject_list, or in doubles_list when already exists
-        subj_pk = schemeitem.subject.pk
+        # PR2024-06-11 Sentry debug: KeyError 'subject'
+        # weird, because field subject is a non-null field
+        # was:  subj_pk = schemeitem.subject.pk
+        subj_pk = schemeitem.subject_id
 
         # if subject already exists: skip double from other checks (double should not be possible)
         if subj_pk in subject_list:

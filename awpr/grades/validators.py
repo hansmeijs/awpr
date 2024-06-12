@@ -1054,7 +1054,8 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR202
 
         # PR2024-05-17 TODO remove exemption_imported filter, too strict > maybe enable change when insp agrees
         # for now: set all exemption_imported = false in production database
-        exemption_imported = grade_instance.exemption_imported
+        # PR2024-06-11 was: exemption_imported = grade_instance.exemption_imported
+        exemption_imported = False
 
         if not is_publ:
             for auth_index in range(1, 5):  # range(start_value, end_value, step), end_value is not included!
