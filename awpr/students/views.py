@@ -593,7 +593,7 @@ def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
 def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
     # - show only students that are not tobedeleted
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_results_per_school_rows -----')
 
@@ -3933,7 +3933,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
         try:
             published_field = prefix + 'published_id'
-            # PR2025-02-25 was:
+            # PR2024-02-25 was:
             # sql_keys = {'publ_pk': published_pk, 'sb_arr': studsubj_pk_list}
             # sql_list = ["UPDATE students_studentsubject AS studsubj",
             #            "SET", published_field, "= %(publ_pk)s::INT,",
@@ -8999,7 +8999,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
             # when an examiner has no allowed subjects, must return all subjects.
             return_false_when_no_allowedsubjects = requsr_corrector
 
-            sql_clause = acc_prm.get_sqlclause_allowed_NEW(
+            sql_clause = acc_prm.get_sqlclause_allowed_v2(
                 table='studsubj',
                 sel_schoolbase_pk=sel_schoolbase_pk,
                 sel_depbase_pk=sel_depbase_pk,

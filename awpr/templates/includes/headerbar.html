@@ -34,11 +34,9 @@
                         {{department}}
                     </li>
                 {% endif %}
-                {% if display_school %}
-                    <li id="id_hdrbar_school" class="nav-item awp_navbar_item {{class_bg_color}}">
-                        {{school}}
-                    </li>
-                {% endif %}
+                <li id="id_hdrbar_school" class="nav-item awp_navbar_item {{class_bg_color}}">
+                    {{school}}
+                </li>
                 <li id="id_hdrbar_school_locked" class="nav-item awp_navbar {{class_bg_color}} ml-0 mt-1">
                     <div class="stat_0_0"></div>
                 </li>
@@ -58,19 +56,30 @@
                                 <a class="dropdown-item" href="{% url 'users_url' %}" >{% trans 'Users' %}</a>
                                 <div class="dropdown-divider"></div>
                             {% endif %}
-
-                            <button id="id_hdrbar_allowed_sections" class="display_hide dropdown-item {{ auth.color_class }}">{% trans 'Allowed sections' %}</button>
-                            <div class="display_hide dropdown-divider"></div>
-
                             <a class="dropdown-item" href="{% url 'password_change' %}">{% trans 'Change password' %}</a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="{% url 'language_set_url' 'nl' %}"> {% trans 'Dutch' %}</a>
                             <a class="dropdown-item" href="{% url 'language_set_url' 'en' %}">{% trans 'English' %}</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{% url 'logout' %}">{% trans 'Logout' %}</a>
                         </div>
                     </li>
-                    <li>
-                        <a class="awp_navbaritem_may_select {{class_bg_color}}" href="{% url 'logout' %}" >{% trans 'Logout' %}</a>
+
+                    <li class="nav-item dropdown {{ display_auth.functions }}">
+                        <a id="id_hdrbar_function" class="awp_navbaritem_may_select {{class_bg_color}} dropdown-toggle"
+                           href="#" data-toggle="dropdown"
+                           aria-haspopup="true" aria-expanded="false"> {{ display_auth.sel_function }}</a>
+                        <div id="id_hdrbar_dropdown_auth" class="dropdown-menu" aria-labelledby="userMenu">
+                            <a id="id_hdrbar_auth1" class=" dropdown-item {{ display_auth.auth1 }}" href="#">{% trans 'Chairperson' %}</a>
+                            <a id="id_hdrbar_auth2" class=" dropdown-item {{ display_auth.auth2 }}" href="#">{% trans 'Secretary' %}</a>
+                            <a id="id_hdrbar_auth3" class=" dropdown-item {{ display_auth.auth3 }}" href="#">{% trans 'Examiner' %}</a>
+                            <a id="id_hdrbar_auth4" class=" dropdown-item {{ display_auth.auth4 }}" href="#">{% trans 'Second corrector' %}</a>
+                            <div class="dropdown-divider"></div>
+                            <button id="id_hdrbar_allowed_sections" class="dropdown-item display_hide">{% trans 'Allowed sections' %}</button>
+
+                        </div>
                     </li>
+
                 {% else %}
                     <li >
                         <a class="awp_navbaritem_may_select {{class_navbar_bg_color}}" href="{% url 'login' %}" >{% trans 'Login' %}</a>

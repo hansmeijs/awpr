@@ -1949,7 +1949,7 @@ class GradeDownloadEx6View(View):  # PR2023-08-23
 
 
 @method_decorator([login_required], name='dispatch')
-class GradeDownloadResultOverviewView(View):  # PR2022-06-01
+class GradeDownloadResultOverviewViewNIU(View):  # PR2022-06-01
 
     def get(self, request):
         logging_on = s.LOGGING_ON
@@ -6689,9 +6689,9 @@ def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, l
 
             'hdr_subsubtotal': book.add_format(c.XF_HDR_SUBSUBTOTAL),
             'hdr_subsubtotal_alignleft': book.add_format(c.XF_HDR_SUBSUBTOTAL_ALIGNLEFT),
-            'hdr_subsubtotal_percentage': book.add_format(c.XF_HDR_SUBSUBTOTAL_PERCENTAGE),
+            'hdr_subsubtotal_percentage': book.add_format(c.XF_HDR_SUBSUBTOTAL_PERC),
             'hdr_subsubtotal_borderleft': book.add_format(c.XF_HDR_SUBSUBTOTAL_BORDERLEFT),
-            'hdr_subsubtotal_perc_borderleft': book.add_format(c.XF_HDR_SUBSUBTOTAL_PERCENTAGE_BORDERLEFT),
+            'hdr_subsubtotal_perc_borderleft': book.add_format(c.XF_HDR_SUBSUBTOTAL_PERC_BORDERLEFT),
 
             'row_value': book.add_format(c.XF_ROW_VALUE),
             'row_value_alignleft': book.add_format(c.XF_ROW_VALUE_ALIGNLEFT),

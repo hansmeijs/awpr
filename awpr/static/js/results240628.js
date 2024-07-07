@@ -75,13 +75,15 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_download_pok = get_attr_from_el(el_data, "data-url_download_pok");
 
     urls.url_calc_results = get_attr_from_el(el_data, "data-url_calc_results");
-    urls.url_calc_reex = get_attr_from_el(el_data, "data-url_calc_reex");
+    //urls.url_calc_reex = get_attr_from_el(el_data, "data-url_calc_reex");
 
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_result_download_ex5 = get_attr_from_el(el_data, "data-url_result_download_ex5");
     urls.url_result_download_ex6 = get_attr_from_el(el_data, "data-url_result_download_ex6");
-    urls.url_result_download_overview = get_attr_from_el(el_data, "data-url_result_download_overview");
+    urls.url_download_result_overview = get_attr_from_el(el_data, "data-url_download_result_overview");
+    urls.url_download_average_overview = get_attr_from_el(el_data, "data-url_download_average_overview");
+
     urls.url_result_download_shortgradelist = get_attr_from_el(el_data, "data-url_result_download_shortgradelist");
     urls.url_change_birthcountry = get_attr_from_el(el_data, "data-url_change_birthcountry");
     urls.url_approve_result = get_attr_from_el(el_data, "data-url_approve_result");
@@ -100,7 +102,8 @@ document.addEventListener('DOMContentLoaded', function() {
         result_status: "Final_result",
         ep01_result: "Result_ep01",
         ep02_result: "Result_ep02",
-        withdrawn: "Withdrawn"
+        withdrawn: "Withdrawn",
+        partial_exam: "Partial_exam"
         // idnumber: "ID_number", regnumber: "Regnumber", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
     };
 
@@ -112,15 +115,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // declared as global: let field_settings = {};
     field_settings.student = {
         field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "classname",
-                    "ep01_result", "ep02_result", "result_status", "gl_status", "withdrawn"],  //  "diplomanumber", "gradelistnumber"],
+                    "ep01_result", "ep02_result", "result_status", "gl_status", "withdrawn", "partial_exam"],  //  "diplomanumber", "gradelistnumber"],
         field_caption: ["", "Ex_nr", "Name", "Learningpath_twolines", "Sector", "Class",
-                    "Result_ep01_2lines", "Result_ep02_2lines", "Final_result_2lines", "", "Withdrawn_2lines"],  // "Diplomanumber_2lines", "Gradelistnumber_2lines"],
-        field_tags:["div", "div", "div", "div", "div", "div",  "div", "div", "div", "div", "div"],  // ,"input", "input"],
+                    "Result_ep01_2lines", "Result_ep02_2lines", "Final_result_2lines", "", "Withdrawn_2lines", "Partial_exam_2lines"],  // "Diplomanumber_2lines", "Gradelistnumber_2lines"],
+        field_tags:["div", "div", "div", "div", "div", "div",  "div", "div", "div", "div", "div", "div"],  // ,"input", "input"],
 
-        filter_tags: ["select", "text", "text", "text" ,"text", "text" ,"text", "text", "text", "toggle", "toggle"],  // "text", "text"],
-        field_width:  ["020", "060", "390", "060", "060", "090", "120", "120", "120", "032", "090"],  // "120", "120"],
-        field_align: ["c", "c", "l", "c", "c", "c", "c", "c", "c", "c", "c"],  // "c", "c"],
-        cols_left_border: [1, 2, 3, 4, 5, 6, 7, 8, 10]
+        filter_tags: ["select", "text", "text", "text" ,"text", "text" ,"text", "text", "text", "toggle", "toggle", "toggle"],  // "text", "text"],
+        field_width:  ["020", "060", "390", "060", "060", "090", "120", "120", "120", "032", "090", "090"],  // "120", "120"],
+        field_align: ["c", "c", "l", "c", "c", "c", "c", "c", "c", "c", "c", "c"],  // "c", "c"],
+        cols_left_border: [1, 2, 3, 4, 5, 6, 7, 8, 10, 11]
     };
     field_settings.overview = {
         field_names: ["select", "db_code", "lvl_code", "sb_code", "sch_name",
@@ -360,12 +363,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_confirm_header = document.getElementById("id_modconfirm_header");
         const el_confirm_loader = document.getElementById("id_modconfirm_loader");
         const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
+        const el_confirm_info_container = document.getElementById("id_modconfirm_info_container")
+
+        const el_confirm_checkbox_container = document.getElementById("id_modconfirm_checkbox_container");
+        const el_confirm_checkbox_label = document.getElementById("id_modconfirm_checkbox_label");
+        const el_confirm_checkbox = document.getElementById("id_modconfirm_checkbox");
+        if(el_confirm_checkbox){ el_confirm_checkbox.addEventListener("change", function() {ModConfirmCheckboxChanged(el_confirm_checkbox)}) };
+
+        const el_confirm_checkbox2_container = document.getElementById("id_modconfirm_checkbox2_container");
+        const el_confirm_checkbox2_label = document.getElementById("id_modconfirm_checkbox2_label");
+        const el_confirm_checkbox2 = document.getElementById("id_modconfirm_checkbox2");
+
+        const el_confirm_select_container = document.getElementById("id_modconfirm_select_container");
+        const el_confirm_select_label = document.getElementById("id_modconfirm_select_label");
+        const el_confirm_select = document.getElementById("id_modconfirm_select");
 
         const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         const el_confirm_btn_reject = document.getElementById("id_modconfirm_btn_reject");
         if(el_confirm_btn_reject){ el_confirm_btn_reject.addEventListener("click", function() {ModConfirmSave("reject")}) };
         const el_confirm_btn_remove = document.getElementById("id_modconfirm_btn_remove");
         if(el_confirm_btn_remove){ el_confirm_btn_remove.addEventListener("click", function() {ModConfirmSave("remove")}) };
+
+        const el_confirm_link = document.getElementById("id_modconfirm_link");
 
         const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave("save")}) };
@@ -497,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if (!skip_messages && "messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
@@ -591,6 +610,11 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             AddSubmenuButton(el_submenu, loc.Download_result_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
+            AddSubmenuButton(el_submenu, loc.Download_average_grades, function() {ModConfirmOpen("average")}, ["tab_show", "tab_btn_overview"]);
+
+
+
+
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_result")}, [], "id_submenu_columns");
             el_submenu.classList.remove(cls_hide);
         };
@@ -709,8 +733,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15 PR2021-08-02 PR2021-12-14
     function CreateTblHeader(field_setting, col_hidden) {
-        console.log("===  CreateTblHeader ===== ");
-        console.log("field_setting", field_setting);
+        //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
         //console.log("col_hidden", col_hidden);
 
 //--- get info from selected department_map
@@ -947,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };  // UpdateTblRow
 
-//=========  UpdateField  ================ PR2020-08-16 PR2021-06-16
+//=========  UpdateField  ================ PR2020-08-16 PR2021-06-16 PR2024-06-24
     function UpdateField(el_div, data_dict) {
         //console.log("=========  UpdateField =========");
         //console.log("data_dict", data_dict);
@@ -963,9 +987,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
 
-                } else if (field_name === "withdrawn") {
-                    el_div.className = (data_dict.withdrawn) ? "tickmark_2_2" : "tickmark_0_0";
-                    filter_value = (data_dict.withdrawn) ? "1" : "0";
+                } else if (["withdrawn", "partial_exam"].includes(field_name)){
+                    el_div.className = (fld_value) ? "tickmark_2_2" : "tickmark_0_0";
+                    filter_value = (fld_value) ? "1" : "0";
                     el_div.setAttribute("data-value", filter_value);
 
                 } else if (["lvl_code", "sct_code"].includes(field_name)){
@@ -988,8 +1012,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 } else if (field_name === "result_status") {
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
-                    el_div.innerText = (fld_value) ? fld_value : "\n";
-                    filter_value = (fld_value) ? fld_value.toLowerCase() : null;
+                    const fld_val = data_dict['result'];
+                    const result_txt = (fld_val === 1) ? loc.Passed : (fld_val === 2) ? loc.Failed : (fld_val === 4) ? loc.Withdrawn :  (fld_val === 0) ? loc.No_result : "---";
+
+                    el_div.innerText = (result_txt) ? result_txt : "\n";
+                    filter_value = (result_txt) ? result_txt.toLowerCase() : null;
                     // PR2023-04-18 Sentry error: data_dict.result_info.replaceAll is not a function
                     // dont know why
                     if (data_dict.result_info) {
@@ -1730,10 +1757,31 @@ function RefreshDataRowsAfterUpload(response) {
 // ---  put text in modal for
         let header_text = "";
         let msg_html = "";
+        let info_html = "";
 
         let msg01_txt = null, msg02_txt = null, msg03_txt = null;
         let hide_save_btn = false, hide_reject_btn = true, hide_remove_btn = true;
         let caption_save = loc.OK, caption_cancel = loc.Cancel;
+
+// fill select element with examyears
+        const examyear_list = [];
+        for (let i = 0, row; row = examyear_rows[i]; i++) {
+            if (row.examyear_code < setting_dict.sel_examyear_code){
+                examyear_list.push(row.examyear_code);
+            };
+        };
+        examyear_list.sort().reverse();
+
+// --- how / hide checkbox, select element PR2024-006-22
+        const show_checkbox1 = (["overview", "average"].includes(mode) && examyear_list.length > 0);
+        add_or_remove_class(el_confirm_checkbox_container, "display_hide", !show_checkbox1);
+        add_or_remove_class(el_confirm_checkbox2_container, "display_hide", (mode !== "average"));
+
+        add_or_remove_class(el_confirm_select_container, "display_hide", true)
+        el_confirm_checkbox.checked = false;
+        el_confirm_checkbox2.checked = false;
+        el_confirm_select.innerHTML = null;
+        el_confirm_info_container.innerHTML = null;
 
         if (mode === "check_birthcountry"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
@@ -1741,33 +1789,58 @@ function RefreshDataRowsAfterUpload(response) {
             if (may_edit){
                 show_modal = true;
 
-                add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-md", true, "modal-lg");
                 header_text = loc.Birthcountry_not_correct;
                 msg_html = response.check_birthcountry_msg_html;
 
-                const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-                if (el_modconfirm_link) {
-                    const url_str = urls.url_result_download_overview;
-                    el_modconfirm_link.setAttribute("href", url_str);
+                if (el_confirm_link) {
+                    const url_str = urls.url_download_result_overview;
+                    el_confirm_link.setAttribute("href", url_str);
                 };
                 add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
             };
 
-        } else if(mode === "overview"){
+        } else if(["overview", "average"].includes(mode)){
             show_modal = true;
 
-            header_text = loc.Download_result_overview;
-            msg_html = ["<p>", loc.The_overview_of_results, " ", loc.will_be_downloaded_sing, "</p><p>"].join("");
+            header_text = (mode === "average") ? loc.Download_average_grades :  loc.Download_result_overview;
+            msg_html = [
+                "<p>",
+                (mode === "average") ? loc.The_overview_of_average : loc.The_overview_of_results, " ",
+                loc.will_be_downloaded_sing, "</p>"
+            ].join("");
 
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
-                const url_str = urls.url_result_download_overview;
-                el_modconfirm_link.setAttribute("href", url_str);
+            info_html =  ["<div class='m-2 p-2 border_bg_warning'><b>",
+                        loc.ATTENTION, ": </b><br>",
+                        loc.totals_not_visible, " ",
+                        loc.in_protectedview, "<br>",
+                        loc.click_enable_editing, "</div>"
+                    ].join("");
+
+            el_confirm_checkbox_label.innerText = (mode === "average") ? loc.include_grades_of_previous_years : loc.include_results_of_previous_years;
+            el_confirm_select_label.innerText = loc.as_of_examyear + ":";
+
+            el_confirm_checkbox2_label.innerText = loc.split_by_gender;
+
+            let option_text = "";
+            for (let i = 0, examyear; examyear = examyear_list[i]; i++) {
+
+                //const selected_pk_str = (selected_pk != null) ? selected_pk.toString() : "";
+                const is_selected = (i === 0);
+                option_text += "<option value=\"" + examyear + "\"";
+                if (is_selected) {option_text += " selected=true" };
+                option_text +=  ">" + examyear + "</option>";
+
+            };
+            el_confirm_select.innerHTML = option_text;
+
+            if (el_confirm_link) {
+                const url_str = urls.url_download_result_overview;
+                el_confirm_link.setAttribute("href", url_str);
             };
 
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
-        } else if(mode === "prelim_ex5"){
+        } else if (mode === "prelim_ex5"){
             show_modal = true;
 
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
@@ -1775,10 +1848,9 @@ function RefreshDataRowsAfterUpload(response) {
             header_text = loc.Download_Ex_form;
             msg_html = ["<p>", loc.The_preliminary_ex5_form, " ", loc.will_be_downloaded_sing, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
 
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
+            if (el_confirm_link) {
                 const url_str = urls.url_result_download_ex5;
-                el_modconfirm_link.setAttribute("href", url_str);
+                el_confirm_link.setAttribute("href", url_str);
             };
 
         } else if(mode === "prelim_ex6"){
@@ -1789,10 +1861,9 @@ function RefreshDataRowsAfterUpload(response) {
             header_text = loc.Download_Ex_form;
             msg_html = ["<p>", loc.The_preliminary_ex6_form, " ", loc.will_be_downloaded_sing, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
 
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
+            if (el_confirm_link) {
                 const url_str = urls.url_result_download_ex6;
-                el_modconfirm_link.setAttribute("href", url_str);
+                el_confirm_link.setAttribute("href", url_str);
             };
         } else if(mode === "withdrawn"){
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
@@ -1818,10 +1889,6 @@ function RefreshDataRowsAfterUpload(response) {
 
                     const all_are_approved = (mod_dict.gl_status_approved_count === mod_dict.student_pk_count);
                     const all_are_rejected = (mod_dict.gl_status_rejected_count === mod_dict.student_pk_count);
-
-        console.log(" mod_dict.student_pk_count", mod_dict.student_pk_count);
-        console.log(" all_are_approved", all_are_approved);
-        console.log(" all_are_rejected", all_are_rejected);
 
                     const msg_list = ["<p>"];
                     if (mod_dict.student_pk_count === 1){
@@ -1860,15 +1927,12 @@ function RefreshDataRowsAfterUpload(response) {
         } else if (mode === "pok"){
             show_modal = true;
 
-            add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-md", true, "modal-lg");
-
             header_text = loc.Birthcountry_not_correct;
             msg_html = response.check_birthcountry_msg_html;
 
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
-                const url_str = urls.url_result_download_overview;
-                el_modconfirm_link.setAttribute("href", url_str);
+            if (el_confirm_link) {
+                const url_str = urls.url_download_result_overview;
+                el_confirm_link.setAttribute("href", url_str);
             };
 
             caption_save = loc.Yes_change;
@@ -1883,7 +1947,9 @@ function RefreshDataRowsAfterUpload(response) {
         if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
         if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
         if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
-        el_confirm_msg_container.innerHTML = msg_html
+        el_confirm_msg_container.innerHTML = msg_html;
+
+        el_confirm_info_container.innerHTML = info_html;
 
         el_confirm_btn_save.innerText = caption_save;
         el_confirm_btn_cancel.innerText = caption_cancel;
@@ -1902,15 +1968,16 @@ function RefreshDataRowsAfterUpload(response) {
             $("#id_mod_confirm").modal({backdrop: true});
 // change size to 'large' when check_birthcountry
             // this code must come after $("#id_mod_confirm"), otherwise it will not work
-            add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-lg", (mode === "check_birthcountry"), "modal-md");
+            const show_large_modal = ["check_birthcountry", "overview", "average"].includes(mode);
+            add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-lg", show_large_modal, "modal-md");
         };
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2019-06-23 PR2023-06-09
     function ModConfirmSave(mode) {
         console.log(" --- ModConfirmSave --- ");
-        console.log("mode: ", mode);
-        console.log("mod_dict: ", mod_dict);
+        console.log("    mode: ", mode);
+        console.log("    mod_dict: ", mod_dict);
 
         // mode : "save" "reject", "remove"
 // ---  Upload Changes
@@ -1924,10 +1991,24 @@ function RefreshDataRowsAfterUpload(response) {
                 UploadChanges(upload_dict, urls.url_change_birthcountry);
             };
 
-        } else if(["prelim_ex5", "prelim_ex6", "overview"].includes(mod_dict.mode)){
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
-                el_modconfirm_link.click();
+        } else if(["overview", "average"].includes(mod_dict.mode)){
+
+            if (el_confirm_link) {
+                let min_examyear_str = (el_confirm_checkbox.checked && el_confirm_select.value) ? el_confirm_select.value : "-";
+                if (mod_dict.mode === "average" && el_confirm_checkbox2.checked) {
+                    min_examyear_str = "split" + min_examyear_str;
+                }
+                let url_str = (mod_dict.mode === "average") ? urls.url_download_average_overview : urls.url_download_result_overview;
+                const href_str = (min_examyear_str) ? url_str.replace("-", min_examyear_str) : url_str;
+
+                el_confirm_link.setAttribute("href", href_str);
+
+                el_confirm_link.click();
+            };
+
+        } else if(["prelim_ex5", "prelim_ex6"].includes(mod_dict.mode)){
+            if (el_confirm_link) {
+                el_confirm_link.click();
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
             };
@@ -2017,6 +2098,13 @@ function RefreshDataRowsAfterUpload(response) {
             $("#id_mod_confirm").modal("hide");
         };
     };  // ModConfirmResponse
+
+//=========  ModConfirmCheckboxChanged  ================ PR20240=-06-22
+    function ModConfirmCheckboxChanged(el_checkbox) {
+        console.log(" --- ModConfirmCheckboxChanged --- ");
+        add_or_remove_class(el_confirm_select_container, "display_hide", !el_checkbox.checked);
+    };
+
 
 //=========  ModMessageHide  ================ PR2022-05-28
     function ModMessageHide() {

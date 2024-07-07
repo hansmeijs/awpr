@@ -603,7 +603,7 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug(' ----------------- download_setting ---------------------- ')
         logger.debug('    request_item_setting: ' + str(request_item_setting))
 
-    # this function get settingss from request_item_setting.
+    # this function get settings from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
     # datalist_request_item 'setting' can have several key/dict values that will be saved in usersettings:
@@ -628,6 +628,9 @@ def download_setting(request_item_setting, user_lang, request):
     on changing sel_btn:
         datalist_request: {'setting': {'page': 'page_grade', 'sel_btn': 'btn_exem', 'sel_examperiod': 4}} 
         request_item_setting: {'page': 'page_grade', 'sel_btn': 'btn_reex', 'sel_examperiod': 2, 'sel_examtype': 'ce'}
+        
+        request_item_setting: {'page': 'page_secretexam', 'sel_btn': 'btn_reex03', 'sel_examperiod': 2, 'sel_examtype': 'ce'}
+
     page_studsubj, on changing SBR level:
         datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
     page orderlist, select all depbases:
@@ -658,7 +661,8 @@ def download_setting(request_item_setting, user_lang, request):
     ------+-------------------------------+--------------------------------------------+--------------------------+------------------+-------------+---------------+---------
      2361 | 2023-03-06 06:21:01.833729-04 | ["admin", "auth2", "edit", "read", "wolf"] | {"2": {"1": {"-9": []}}} |                  |           6 |               |     904
     """
-
+    """
+    # PR2024-06-26 debug: must get sel_examyear_instance after get_settings_examyear, otherwise change in examyear is not reflected in settings
     sel_examyear_instance = acc_prm.get_sel_examyear_from_user_instance(request.user)
     requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear_instance)
     requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
@@ -676,12 +680,26 @@ def download_setting(request_item_setting, user_lang, request):
             # PR2023-04-05 'write_message' is not in use anymore, use usergroup msgsend instead
             if prm:
                 permit_dict[prm] = True
+    """
 
+# ===== PAGE =======================
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('===== PAGE =====')
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    page: ' + str(page))
+        logger.debug('    setting_dict: ' + str(setting_dict))
+    acc_view.get_settings_page(request, request_item_setting, page, setting_dict)
+
+# ===== selected_pk_dict =======================
 # - selected_pk_dict contains saved selected_pk's from Usersetting, key: selected_pk
     # changes are stored in this dict, saved at the end when
     selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     selected_pk_dict_has_changed = False
+
     if logging_on:
+        logger.debug(' ')
+        logger.debug('===== selected_pk_dict =====')
         logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
 
 # ==== MESSAGES ========================
@@ -692,9 +710,15 @@ def download_setting(request_item_setting, user_lang, request):
 
 # ----- display opening message ------ PR2022-05-28
     usersetting_dict = acc_prm.get_usersetting_dict(c.KEY_OPENARGS, request)
-    # skip displaying opening message when user has ticked off 'Don't show message again'
-    # set 'show_msg' = False to prevent showing this messages when changing page.
+    # skip displaying opening message when user has ticked off 'Don't show message again'.
+    # In that case hide_msg = true in usersettings.open_args
+    # in UserModMessageHideView set_usersetting_dict(c.KEY_OPENARGS is set to: {'show_msg': False, 'hide_msg': True}
+
+    # 'show_msg' will be set True in function LoggedIn.
     # 'show_msg' will be set to False after first display, to prevent showing multiple times in one session
+    # function message_openargs() is stored in awpr/validators
+
+    # set 'show_msg' = False to prevent showing this messages when changing page.
     hide_msg = usersetting_dict.get('hide_msg')
     if not hide_msg:
         if usersetting_dict.get('show_msg'):
@@ -702,9 +726,6 @@ def download_setting(request_item_setting, user_lang, request):
             if message:
                 msg_list.append(message)
             acc_view.set_usersetting_dict(c.KEY_OPENARGS, {'show_msg': False}, request)
-
-# ===== PAGE =======================
-    acc_view.get_settings_page(request, request_item_setting, page, setting_dict)
 
 # ==== COUNTRY ========================
     acc_view.get_settings_country(request, permit_dict)
@@ -726,6 +747,49 @@ def download_setting(request_item_setting, user_lang, request):
         selected_pk_dict_has_changed = True
 
     sel_examyear_pk = sel_examyear_instance.pk if sel_examyear_instance else None
+
+# ===== USERGROUP LIST =======================
+    # PR2024-06-26 debug: must get sel_examyear_instance after get_settings_examyear, otherwise change in examyear is not reflected in settings
+    requsr_userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear_instance)
+    requsr_usergroup_list = acc_prm.get_usergroup_list(requsr_userallowed_instance)
+    permit_dict['usergroup_list'] = requsr_usergroup_list
+
+    requsr_allowed_sections_dict = acc_prm.get_userallowed_sections_dict(requsr_userallowed_instance)
+    if requsr_allowed_sections_dict:
+        permit_dict['allowed_sections'] = requsr_allowed_sections_dict
+
+    # permit_dict['allowed_clusters comes after retrieving selected school
+
+    permit_list = acc_prm.get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroup_list)
+    if permit_list:
+        for prm in permit_list:
+            # PR2023-04-05 'write_message' is not in use anymore, use usergroup msgsend instead
+            if prm:
+                permit_dict[prm] = True
+
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('===== USERGROUP LIST =====')
+        logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
+        logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
+
+# ===== AUTH INDEX =======================
+    sel_authindex_tobesaved = acc_view.get_settings_auth_index(
+        usergroups_arr=requsr_usergroup_list,
+        request_item_setting=request_item_setting,
+        setting_dict=setting_dict,
+        selected_pk_dict=selected_pk_dict
+    )
+    if sel_authindex_tobesaved:
+        selected_pk_dict_has_changed = True
+
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('===== AUTH INDEX =====')
+        logger.debug('    sel_authindex_tobesaved: ' + str(sel_authindex_tobesaved))
+        logger.debug('    setting_dict: ' + str(setting_dict))
 
 # ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-04  PR2023-05-17
     sel_schoolbase_instance, sel_schoolbase_tobesaved, sel_school_instance = \
@@ -912,17 +976,6 @@ def download_setting(request_item_setting, user_lang, request):
         sel_examperiod=sel_examperiod
     )
     if sel_examptype_tobesaved:
-        selected_pk_dict_has_changed = True
-
-# ===== AUTH INDEX =======================
-    sel_authindex_tobesaved = acc_view.get_settings_auth_index(
-        usergroups_arr=requsr_usergroup_list,
-        request_item_setting=request_item_setting,
-        setting_dict=setting_dict,
-        selected_pk_dict=selected_pk_dict,
-        sel_examperiod=sel_examperiod
-    )
-    if sel_authindex_tobesaved:
         selected_pk_dict_has_changed = True
 
 # ===== SECTORBASE, SCHEME, SUBJECT, STUDENT, =======================

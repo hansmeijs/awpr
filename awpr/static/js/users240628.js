@@ -143,25 +143,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-        //const el_hdrbar_school = document.getElementById("id_hdrbar_school");
-        //const el_hdrbar_department = document.getElementById("id_hdrbar_department");
 
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click",
                 function() {t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
-        // PR2024-05-13 not in use in page users
-        /*
-        if (el_hdrbar_department){
-            el_hdrbar_department.addEventListener("click",
-                function() {t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
-        };
-        if (el_hdrbar_school){
-            el_hdrbar_school.addEventListener("click",
-                function() {
-                    t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)
-                }, false );
-        };
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+/*
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
             el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
@@ -368,8 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if(isloaded_loc && isloaded_permits){CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){
-                    // PR2024-05-13 was: b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, null, el_hdrbar_school);
                 };
                 if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 

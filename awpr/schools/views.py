@@ -46,6 +46,7 @@ from schools import functions as sf
 from schools import dicts as sch_dicts
 from schools import models as sch_mod
 from students import models as stud_mod
+from  students import functions as stud_fnc
 from subjects import models as subj_mod
 from subjects import views as subj_view
 from subjects import calc_orderlist as subj_calc
@@ -4559,6 +4560,218 @@ class ArchivesUploadView(View):  # PR2022-11-02
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ArchivesUploadView
 
+@method_decorator([login_required], name='dispatch')
+class ArchivesLookupDocumentView(View):  # PR2024-07-07
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ArchivesLookupDocumentView ============= ')
+
+        update_wrap = {}
+        has_error = False
+        found_rows = []
+        msg_html = None
+
+    # - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+
+    # - get permit
+            page_name = 'page_archive'
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+            has_permit = True
+            if logging_on:
+                logger.debug('    upload_dict:       ' + str(upload_dict))
+                # upload_dict:       {'mode': 'lookup', 'regnumber': 'aa'}
+            if has_permit:
+                req_user_role = request.user.role
+                req_user_schoolbase_pk = request.user.schoolbase_id
+    # - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+    # - get variables
+                regnumber = upload_dict.get('regnumber')
+
+                if not regnumber :
+                    has_error = True
+                    msg_html = ''.join((
+                        "<div class='m-2 p-2 border_bg_invalid'>",
+                        gettext('The registration number is not entered.'),
+                        "</div>"))
+                elif not (12 <= len(regnumber) <= 13):
+                    has_error = True
+                    msg_html = ''.join((
+                        "<div class='m-2 p-2 border_bg_invalid'>",
+                        gettext('The registration number must contain 12 or 13 characters.'),
+                        "</div>"))
+                else:
+                    found_rows = self.lookup_document(regnumber)
+                    msg_html = self.get_msg_html(found_rows, req_user_role, req_user_schoolbase_pk, user_lang)
+
+        update_wrap['lookup_document_has_error'] = has_error
+        update_wrap['msg_html'] = msg_html
+        update_wrap['found_rows'] = found_rows
+
+        # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+
+    def lookup_document(self, regnumber):
+        rows = []
+        try:
+            # don't filter on deleted students
+            sub_sql = ''.join((
+                "SELECT dpgl.student_id, dpgl.doctype, ",
+                "ARRAY_AGG(dpgl.id ORDER BY dpgl.id DESC) AS dpgl_id_arr ",
+                "FROM students_diplomagradelist AS dpgl ",
+                "GROUP BY dpgl.student_id, dpgl.doctype"
+            ))
+
+            # don't filter on deleted students
+            sql = ''.join(("WITH sub_sql AS (", sub_sql, ") ",
+                "SELECT dpgl.id AS dpgl_id, stud.lastname, stud.firstname, stud.prefix, "
+                "dpgl.regnumber, dpgl.doctype, dpgl.datepublished, dpgl.modifiedat, ",
+
+                "ey.code AS ey_code, school.name AS school_name, sb.code AS sb_code, sb.id AS sb_id, ",
+                "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev, ",
+                "sub_sql.dpgl_id_arr, ",
+                "au.last_name AS modby_username ",
+
+                "FROM students_diplomagradelist AS dpgl ",
+                "INNER JOIN students_student AS stud ON (stud.id = dpgl.student_id) ",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id) ",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id) ",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id) ",
+                "INNER JOIN schools_country AS c ON (c.id = ey.country_id) ",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id) ",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id) ",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id) ",
+
+                "LEFT JOIN sub_sql ON (sub_sql.student_id = dpgl.student_id AND sub_sql.doctype = dpgl.doctype) ",
+
+                "LEFT JOIN accounts_user AS au ON (au.id = dpgl.modifiedby_id) ",
+                "WHERE dpgl.regnumber ILIKE '", regnumber, "';"
+                ))
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = af.dictfetchall(cursor)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        return rows
+
+    def get_msg_html(self, rows, req_user_role, req_user_schoolbase_pk, user_lang):
+        html_list = []
+        if not rows:
+            html_list.extend((
+                "<div class='m-2 p-2 border_bg_invalid'>",
+                gettext('AWP has no document found with this registration number.'),
+                "</div>"))
+        else:
+            if len(rows) == 1:
+                doc_txt = gettext('AWP has found the following document') + ":"
+            else:
+                doc_txt = gettext('AWP has found the following documents')+ ":"
+            html_list.extend(("<div class='m-2 p-2 border_bg_transparent'>", doc_txt))
+            for row in rows:
+                html_list.append(self.get_document_html(row, req_user_role, req_user_schoolbase_pk, user_lang))
+
+            html_list.append("</div>")
+        msg_html = ''.join(html_list)
+        return msg_html
+
+    def get_document_html(self, row, req_user_role, req_user_schoolbase_pk, user_lang):
+        doc_type = row.get('doctype')
+        doc_txt = gettext('Diploma') if doc_type == 'dp' else  gettext('Grade list') if doc_type == 'gl' else '-'
+        doc_txt += ' ' + row.get('depbase_code', '-')
+        lvl_txt = row.get('lvl_abbrev')
+        if lvl_txt:
+            doc_txt += ' ' + lvl_txt
+        school_txt = ' '.join((row.get('sb_code', '-'), row.get('school_name', '-') ))
+        student_txt = stud_fnc.get_full_name(
+            last_name=row.get('lastname') or '---',
+            first_name=row.get('firstname'),
+            prefix=row.get('prefix')
+        )
+
+        modifiedat_txt = af.format_modified_at( row.get('modifiedat'), user_lang)
+        flex_container_txt =  "<div class='px-2 flex_container'>"
+        flex1_txt = "<div class='flex_1'>"
+        flex2_txt = ":</div><div class='flex_3'>"
+
+        doc_html = ''.join((
+                "<div class='mx-2 mt-2 p-2'>",
+                    flex_container_txt,
+                        flex1_txt, gettext('Document type'), flex2_txt, doc_txt, "</div>",
+                    "</div>", flex_container_txt,
+                        flex1_txt, gettext('Exam year'), flex2_txt, str(row.get('ey_code', '-')), "</div>",
+                    "</div>", flex_container_txt,
+                        flex1_txt, gettext('Candidate'), flex2_txt, student_txt, "</div>",
+                    "</div>", flex_container_txt,
+                        flex1_txt, gettext('School'), flex2_txt, school_txt, "</div>",
+                    "</div>", flex_container_txt,
+                        flex1_txt, gettext('Created at '), flex2_txt, modifiedat_txt, "</div>",
+                    "</div>", flex_container_txt,
+                        flex1_txt, gettext('Created by '), flex2_txt, row.get('modby_username', '-'), "</div>",
+                    "</div>",
+
+                    self.create_multiple_dpgl_html(row),
+                    self.create_file_url(row, req_user_role, req_user_schoolbase_pk),
+                "</div>"))
+
+        return doc_html
+
+    def create_file_url(self, row, req_user_role, requsr_schoolbase_pk):
+        url_html = ''
+        # - create dict with urls
+        # only when requsr is from same chool as student, or is admin or insp
+        sb_id = row.get('sb_id')
+        if requsr_schoolbase_pk ==  sb_id or \
+            req_user_role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
+
+            dpgl_id = row.get('dpgl_id')
+            if dpgl_id:
+                row = stud_mod.DiplomaGradelist.objects.get_or_none(
+                    pk=dpgl_id,
+                )
+                if row and row.file and row.file.url:
+                    # PR2022-06-12 There a a lot of published_instances saved without file_url
+                    # that should not happen, but it does. I don't know why.Check out TODO
+
+                    url_html = ''.join((
+                        "<div class='mx-2 mt-2'>",
+                        gettext("Click <a href='%(href)s' class='awp_href' target='_blank'>here</a> to download it.")
+                        % {'href': row.file.url},
+                        "</div>"
+                    ))
+
+        return url_html
+
+    def create_multiple_dpgl_html(self, row):
+        multiple_dpgl_html = ''
+
+        # check if this is the latest
+        dpgl_id_arr = row.get('dpgl_id_arr') or []
+
+        if len(dpgl_id_arr) > 1:
+            if dpgl_id_arr[0] != row.get('dpgl_id'):
+
+                multiple_dpgl_html = ''.join((
+                    "<div class='m-2 p-2 border_bg_warning'>",
+                    '<b>', gettext('ATTENTION'), '</b>: ',
+                    gettext("This document has been created multiple times."), '<br>',
+                    gettext("This is not the most recent version."),
+                    "</div>"
+                ))
+
+        return multiple_dpgl_html
+# - end of ArchivesLookupDocumentView
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def delete_published_instance(published_instance, request):

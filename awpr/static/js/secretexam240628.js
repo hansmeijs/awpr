@@ -534,7 +534,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_permits) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if ("messages" in response) {
                     // skip showing warning messages when clicking selectbtn,
@@ -645,31 +645,38 @@ document.addEventListener("DOMContentLoaded", function() {
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2020-11-14 PR2021-03-15 PR2023-06-19
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ", data_btn);
+        console.log( "===== HandleBtnSelect ========= ", data_btn);
         // function is called by select_btn.click, t_MCOL_Save, DatalistDownload after response.setting_dict
         // skip_upload = true when called by DatalistDownload or t_MCOL_Save
 
+        console.log( "    data_btn", data_btn);
+        console.log( "    setting_dict.sel_examperiod", setting_dict.sel_examperiod);
+
+        if (data_btn && ["btn_reex", "btn_reex03"].includes(data_btn)) {
+        selected_btn = data_btn;
+        } else {
+            selected_btn = "btn_reex";
+        }
+
     // - change sel_examperiod if not "btn_reex" or "btn_reex03",
-        if (!setting_dict.sel_examperiod || ![2, 3].includes(setting_dict.sel_examperiod)) {
-            setting_dict.sel_examperiod = 2;
-            data_btn = "btn_reex";
-            skip_upload = false;
-        };
+        if (selected_btn === "btn_reex") {
+            if (setting_dict.sel_examperiod !== 2){
+                setting_dict.sel_examperiod = 2;
+                skip_upload = false;
+            };
+        } else if (selected_btn === "btn_reex03") {
+            if (setting_dict.sel_examperiod !== 3){
+                setting_dict.sel_examperiod = 3;
+                skip_upload = false;
+            };
+
+        }
 
         // skip_upload = true when called by DatalistDownload or t_MCOL_Save
         //  PR2021-09-07 debug: gave error because old btn name was still in saved setting
 
         // PR2023-06-16 debug: sel_btn and sel_examperiod did not match, empty list as result
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
-        if (skip_upload) {
-            selected_btn = (setting_dict.sel_examperiod === 3) ? "btn_reex03" : "btn_reex" ;
-        } else {
-            if (data_btn && ["btn_reex", "btn_reex03"].includes(data_btn)) {
-                selected_btn = data_btn;
-            } else {
-                selected_btn = "btn_reex";
-            };
-        };
 
 // ---  highlight selected button
         b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
@@ -1420,7 +1427,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateFieldDownloadExam  ================ PR2022-05-17
     function UpdateFieldDownloadExamNIU(tblName, el_div, data_dict) {
-        const show_href = (tblName === "ete_exam" || (data_dict.ce_exam_id && !data_dict.secret_exam && data_dict.ceex_published_id) );
+        const show_href = (tblName === "ete_exam" || (data_dict.ce_exam_id && !data_dict.secret_exam && data_dict.exam_published_id) );
         if (show_href){
             // EventListener "mouseenter" and "mouseleave" will be added each time this function is called.
             // better solution is class with and without hover. No time to figure this out yet PR2022-05-17

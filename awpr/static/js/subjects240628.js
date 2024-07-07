@@ -298,6 +298,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
 
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
             el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
@@ -451,36 +453,41 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  set selected menu button active
     SetMenubuttonActive(document.getElementById("id_hdr_users"));
     if(may_view_page){
-        // period also returns emplhour_list
+        DatalistDownload({page: "page_subject"});
+    }
+//  #############################################################################################################
+
+//========= DatalistDownload  ===================== PR2020-07-31
+    function DatalistDownload(request_item_setting, keep_loader_hidden) {
+        console.log( "===== DatalistDownload ===== ")
+        console.log("    request_item_setting: ", request_item_setting)
+
+// ---  Get today's date and time - for elapsed time
+        let startime = new Date().getTime();
+
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
+// ---  show loader  // keep_loader_hidden not in use yet
+        if(!keep_loader_hidden){el_loader.classList.remove(cls_visible_hide)}
+
         const datalist_request = {
                 setting: {page: "page_subject"},
+                setting: request_item_setting,
                 locale: {page: ["page_subject"]},
 
                 scheme_rows: {cur_dep_only: false},
                 subject_rows_page_subjects: {get: true},
                 schemeitem_rows: {get: true},
                 subjecttype_rows: {get: true},
+
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
                 level_rows: {get: true},
                 sector_rows: {get: true}
             };
-
-        DatalistDownload(datalist_request);
-    }
-//  #############################################################################################################
-
-//========= DatalistDownload  ===================== PR2020-07-31
-    function DatalistDownload(datalist_request, keep_loader_hidden) {
-        console.log( "===== DatalistDownload ===== ")
-        console.log("request: ", datalist_request)
-
-// ---  Get today's date and time - for elapsed time
-        let startime = new Date().getTime();
-
-// ---  show loader  // keep_loader_hidden not in use yet
-        if(!keep_loader_hidden){el_loader.classList.remove(cls_visible_hide)}
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -534,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(must_create_submenu){CreateSubmenu()};
 
                 if(must_update_headerbar){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear);
+                   h_UpdateHeaderBar(el_hdrbar_examyear, null, el_hdrbar_school);
                 };
                 // TODO remove response.msg_list
                 if("msg_list" in response){
@@ -1660,20 +1667,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tblName === "school") {
 
 // ---  upload new setting and refresh page
-            const datalist_request = {
-                    setting: {page: "page_studsubj",
-                        sel_schoolbase_pk: selected_pk
-                    },
-                    school_rows: {get: true},
-                    department_rows: {get: true},
-                    level_rows: {cur_dep_only: true},
-                    sector_rows: {cur_dep_only: true},
-                    student_rows: {cur_dep_only: true},
-                    studentsubject_rows: {cur_dep_only: true},
-                    schemeitem_rows: {cur_dep_only: true}
-                };
+            const request_item_setting = {
+                page: "page_studsubj",
+                sel_schoolbase_pk: selected_pk
+            };
+            DatalistDownload(request_item_setting);
 
-            DatalistDownload(datalist_request);
 
         } else if (tblName === "subject") {
             setting_dict.sel_subject_pk = selected_pk;
@@ -1929,7 +1928,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // SBR_show_all
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT EXAMYEAR OR OR DEPARTMENT ++++++++++++++++++++
+// +++++++++++++++++ MODAL SELECT EXAMYEAR ++++++++++++++++++++
 // functions are in table.js, except for MSED_Response
 
 //=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
@@ -1943,266 +1942,12 @@ document.addEventListener('DOMContentLoaded', function() {
             //ModConfirmOpen("examyear", "copy_scheme")
         } else {
 
-// --- reset tblBody
-        tblBody_datatable.innerText = null;
-
     // ---  upload new selected_pk
             new_setting.page = setting_dict.sel_page;
     // also retrieve the tables that have been changed because of the change in examyear / dep
-
-            const datalist_request = {
-                    setting: new_setting,
-                    department_rows: {get: true},
-                    subject_rows: {get: true},
-                    level_rows: {cur_dep_only: true},
-                    sector_rows: {cur_dep_only: true},
-                    subjecttype_rows: {cur_dep_only: false},
-                    scheme_rows: {get: true}
-                };
-
-            DatalistDownload(datalist_request);
+            DatalistDownload(new_setting);
         };
     }  // MSED_Response
-
-
-
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// +++++++++++++++++ MODAL SELECT  ++++++++++++++++++++++++++++
-
-//=========  ModSelect_Open  ================ PR2020-10-27
-    function ModSelect_Open(tblName) {
-        //console.log( "===== ModSelect_Open ========= ", tblName);
-
-        // <PERMIT> PR2020-10-27
-        // - every user may change examyear and department
-        // -- only insp, admin and system may change school
-        const may_open_modselect = (tblName === "school") ? has_permit_select_school : true;
-
-        //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
-        if (may_open_modselect && !isEmpty(loc)) {
-
-        const base_pk = (tblName === "examyear" && setting_dict.sel_examyear_pk) ? setting_dict.sel_examyear_pk :
-                     (tblName === "school" && setting_dict.requsr_schoolbase_pk) ? setting_dict.requsr_schoolbase_pk :
-                     (tblName === "department" && setting_dict.requsr_depbase_pk) ? setting_dict.requsr_depbase_pk : 0;
-
-        //console.log( "base_pk ", base_pk);
-            mod_dict = {base_pk: base_pk, table: tblName};
-            el_ModSelect_input.value = null;
-            const item = (tblName === "examyear") ? loc.an_examyear :
-                         (tblName === "school") ? loc.a_school :
-                         (tblName === "department") ? loc.a_department : "";
-            const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list + "..";
-            el_ModSelect_input.setAttribute("placeholder", placeholder)
-
-            //console.log( "mod_dict ", mod_dict);
-    // ---  fill select table
-            ModSelect_FillSelectTable(tblName, 0);
-
-    // ---  set header text
-            el_ModSelect_header.innerText = loc.Select + item
-
-    // ---  Set focus to el_ModSelect_input
-            //Timeout function necessary, otherwise focus wont work because of fade(300)
-            setTimeout(function (){el_ModSelect_input.focus()}, 50);
-
-        // show modal
-            $("#id_mod_select_examyear").modal({backdrop: true});
-            }
-    }  // ModSelect_Open
-
-//=========  ModSelect_Save  ================ PR2020-10-28
-    function ModSelect_Save() {
-        //console.log("===  ModSelect_Save =========");
-        //console.log("mod_dict", mod_dict);
-// selected_pk: {sel_examyear_pk: 23, sel_schoolbase_pk: 15, sel_depbase_pk: 1}
-
-// ---  upload new setting
-        const setting = {page_subject: {mode: "get"}};
-        if (mod_dict.table === "examyear"){
-            setting.sel_examyear_pk = mod_dict.base_pk
-        }
-        const datalist_request = {
-                // page_subject is necessary, otherwise sel_btn will loose its value
-                setting: setting,
-                examyear_rows: {get: true},
-                subject_rows: {get: true},
-                school_rows: {get: true},
-                department_rows: {get: true},
-                level_rows: {get: true},
-                sector_rows: {get: true},
-                subjecttype_rows: {cur_dep_only: false},
-                scheme_rows: {get: true}
-            };
-
-        DatalistDownload(datalist_request);
-
-// hide modal
-        $("#id_mod_select_examyear").modal("hide");
-
-    }  // ModSelect_Save
-
-//=========  ModSelect_SelectItem  ================ PR2020-10-28
-    function ModSelect_SelectItem(tblName, tblRow) {
-        //console.log( "===== ModSelect_SelectItem ========= ");
-        //console.log( tblRow);
-        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
-// ---  get clicked tablerow
-        if(tblRow) {
-// ---  deselect all highlighted rows
-            DeselectHighlightedRows(tblRow, cls_selected)
-// ---  highlight clicked row
-            tblRow.classList.add(cls_selected)
-// ---  get pk from id of select_tblRow
-            let data_pk = get_attr_from_el(tblRow, "data-pk", 0)
-            if(!Number(data_pk)){
-               mod_dict.base_pk = 0;
-            } else {
-                mod_dict.base_pk = Number(data_pk)
-            }
-            ModSelect_Save()
-        }
-    }  // ModSelect_SelectItem
-
-//=========  MSE_InputKeyup  ================ PR2020-03-01
-    function MSE_InputKeyup() {
-        //console.log( "===== MSE_InputKeyup  ========= ");
-
-// ---  get value of new_filter
-        let new_filter = el_ModSelect_input.value
-        //console.log( "new_filter", new_filter);
-
-        let tblBody = el_MSE_tblbody_select;
-        //const len = tblBody.rows.length;
-       // if (new_filter && len){
-// ---  filter rows in table select_employee
-            const filter_dict = t_Filter_SelectRows(tblBody, new_filter);
-// ---  if filter results have only one employee: put selected employee in el_ModSelect_input
-            const selected_pk = get_dict_value(filter_dict, ["selected_pk"])
-            const selected_value = get_dict_value(filter_dict, ["selected_value"])
-        //console.log( "selected_pk", selected_pk);
-            if (selected_pk) {
-                el_ModSelect_input.value = selected_value;
-// ---  put pk of selected employee in mod_dict
-                if(!Number(selected_pk)){
-                    if(selected_pk === "addall" ) {
-                        mod_dict.selected_employee_pk = 0;
-                        mod_dict.selected_employee_code = null;
-                    }
-                } else {
-                    mod_dict.selected_employee_pk =  Number(selected_pk);
-                    mod_dict.selected_employee_code = selected_value;
-                }
-
-// ---  Set focus to btn_save
-                el_MSE_btn_save.focus()
-            }  //  if (!!selected_pk) {
-      //  }
-    }; // MSE_InputKeyup
-
-//=========  ModSelect_FillSelectTable  ================ PR2020-08-21
-    function ModSelect_FillSelectTable(tblName, selected_pk) {
-        //console.log( "===== ModSelect_FillSelectTable ========= ");
-        //console.log( "tblName: ", tblName);
-
-        const caption_none = (tblName === "examyear") ? loc.No_exam_years :
-                             (tblName === "school") ? loc.No_schools :
-                             (tblName === "department") ?  loc.No_departments : "";
-        const tblBody_select = (tblName === "examyear") ? el_MSEY_tblBody_select :
-                             (tblName === "school") ? el_ModSelect_tblBody_select :
-                             (tblName === "department") ?  el_ModSelect_tblBody_select : "";
-        tblBody_select.innerText = null;
-
-        let row_count = 0, add_to_list = false;
-//--- loop through data_rows
-        const data_rows = (tblName === "examyear") ? examyear_rows :
-                         (tblName === "school") ? school_rows :
-                         (tblName === "department") ? department_rows : null;
-        //console.log( "data_rows: ", data_rows);
-        for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-            add_to_list = ModSelect_FillSelectRow(data_dict, tblBody_select, tblName, -1, selected_pk);
-            if(add_to_list){ row_count += 1};
-        };
-
-        if(!row_count){
-            let tblRow = tblBody_select.insertRow(-1);
-            const inner_text = (tblName === "order" && mod_dict.customer_pk === 0) ? loc.All_orders : caption_none
-
-            let td = tblRow.insertCell(-1);
-            td.innerText = inner_text;
-
-        } else if(row_count === 1){
-            let tblRow = tblBody_select.rows[0]
-            if(tblRow) {
-// ---  highlight first row
-                tblRow.classList.add(cls_selected)
-                if(tblName === "order") {
-                    selected_period.order_pk = get_attr_from_el_int(tblRow, "data-pk");
-                    MSE_SelectEmployee(tblName, tblRow)
-                }
-            }
-        }
-    }  // ModSelect_FillSelectTable
-
-//=========  ModSelect_FillSelectRow  ================ PR2020-10-27
-    function ModSelect_FillSelectRow(map_dict, tblBody_select, tblName, row_index, selected_pk) {
-        //console.log( "===== ModSelect_FillSelectRow ========= ");
-        //console.log("tblName: ", tblName);
-        //console.log( "map_dict: ", map_dict);
-
-//--- loop through data_map
-        let pk_int = null, code_value = null, add_to_list = false, is_selected_pk = false;
-        if(tblName === "examyear") {
-            pk_int = map_dict.examyear_id;
-            code_value = (map_dict.examyear) ? map_dict.examyear : "---"
-            add_to_list = true;
-       } else if(tblName === "school") {
-            pk_int = map_dict.base_id;
-            const code = (map_dict.sb_code) ? map_dict.sb_code : "---";
-            const name = (map_dict.name) ? map_dict.name : "---";
-            code_value = code + " - " + name;
-            const shiftmap_order_pk = map_dict.o_id;
-            // PR2020-06-11 debug: no matches because mod_dict.order_pk was str, not number.
-            add_to_list = true
-
-       } else if(tblName === "department") {
-            pk_int = map_dict.base_id;
-            code_value = (map_dict.abbrev) ? map_dict.abbrev : "---"
-            add_to_list = true;
-
-       }
-
-       if (add_to_list){
-            // selected_pk = 0 means: all customers / orders/ employees
-            is_selected_pk = (selected_pk != null && pk_int === selected_pk)
-// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
-            let tblRow = tblBody_select.insertRow(row_index);
-            tblRow.setAttribute("data-pk", pk_int);
-            //tblRow.setAttribute("data-ppk", ppk_int);
-            tblRow.setAttribute("data-value", code_value);
-// ---  add EventListener to tblRow
-            tblRow.addEventListener("click", function() {ModSelect_SelectItem(tblName, tblRow)}, false )
-// ---  add hover to tblRow
-            //tblRow.addEventListener("mouseenter", function(){tblRow.classList.add(cls_hover);});
-            //tblRow.addEventListener("mouseleave", function(){tblRow.classList.remove(cls_hover);});
-            add_hover(tblRow);
-// ---  highlight clicked row
-            //if (is_selected_pk){ tblRow.classList.add(cls_selected)}
-// ---  add first td to tblRow.
-            let td = tblRow.insertCell(-1);
-// --- add a element to td., necessary to get same structure as item_table, used for filtering
-            let el_div = document.createElement("div");
-                el_div.innerText = code_value;
-                el_div.classList.add("tw_090", "px-4", "pointer_show" )
-            td.appendChild(el_div);
-// --- add second td to tblRow with icon locked, published or activated.
-            td = tblRow.insertCell(-1);
-            el_div = document.createElement("div");
-                el_div.classList.add("tw_032", "stat_1_6")
-            td.appendChild(el_div);
-        };
-        return add_to_list;
-    }  // ModSelect_FillSelectRow
-
 
 //###########################################################################
 // +++++++++ MOD SUBJECTTYPE ++++++++++++++++ PR2021-06-22 PR2021-09-08
@@ -4480,12 +4225,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  upload new setting
         let new_setting = {page_subject: {mode: "get"}};
         if (tblName === "school") {
-            new_setting.requsr_schoolbase_pk = mod_dict.base_id;
+            //new_setting.requsr_schoolbase_pk = mod_dict.base_id;
         } else {
             new_setting.requsr_depbase_pk = mod_dict.base_id;
         }
-        const datalist_request = {setting: new_setting};
-        DatalistDownload(datalist_request);
+        DatalistDownload(new_setting);
 
 // hide modal
         $("#id_mod_select_examyear_or_depbase").modal("hide");

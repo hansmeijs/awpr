@@ -97,8 +97,11 @@ class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
         messages = []
 
 # - get permit
-        has_permit = acc_prm.get_permit_crud_of_this_page('page_result', request)
-        if True:
+        #has_permit = acc_prm.get_permit_crud_of_this_page('page_result', request)
+        has_permit = acc_prm.is_auth1_or_auth2(request.user)
+        if not has_permit:
+            messages.append(gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
+        else:
 
 # - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -466,16 +469,16 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
             sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
             if logging_on:
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('    sel_school: ' + str(sel_school))
+                logger.debug('    sel_department: ' + str(sel_department))
 
             if sel_school and sel_department:
 
-# +++ get grade_dictlist
+# +++ get selected classes
                 sortby_class = upload_dict.get('sortby_class') or False
                 sel_classes = upload_dict.get('sel_classes')
                 if logging_on:
-                    logger.debug('sel_classes: ' + str(sel_classes))
+                    logger.debug('    sel_classes: ' + str(sel_classes))
 
                 include_class_blank = False
                 if sel_classes:
@@ -483,15 +486,14 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
                         include_class_blank = True
                         sel_classes.remove('zz_blank')
 
-    # calc result before printing the grade list
+# - get list of selected students, to calc result before printing the shortgradelist
                 student_pk_list, classes_dictlist = get_shortgradelist_student_list(sel_school, sel_department, sel_level, sel_classes, include_class_blank)
                 if logging_on:
                     logger.debug('    student_pk_list: ' + str(student_pk_list))
                     logger.debug('    classes_dictlist: ' + str(classes_dictlist))
                 #  classes_dictlist: [{'classname': 'zz_blank', 'stud_pk_list': [3963]}]
-    # calc result before printing the grade list
 
-    # calc result before printing the grade list
+# calc result before printing the short grade list
                 if student_pk_list:
                     calc_res.calc_batch_student_result(
                         sel_examyear=sel_examyear,
@@ -502,18 +504,9 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
                         user_lang=user_lang
                     )
 
-                   # grade_dict, classname_list, failed_student_pk_list = get_shortgradelist_dict(
-                   #     school=sel_school,
-                   #     department=sel_department,
-                   #     level=sel_level,
-                    #    sel_classes=sel_classes,
-                    #    include_class_blank=include_class_blank,
-                    #    sortby_class=sortby_class
-                    #)
-
-        # +++  get_students_with_grades_dictlist
-                    grade_dict, classname_list, classes_dict, failed_student_pk_list = \
-                        calc_reex.calcreex_get_students_cascade_dictNEW(
+# +++  get_students_cascade_dict
+                    students_cascade_dict, classname_list, classes_dict, failed_student_pk_list = \
+                        calc_reex.calcreex_get_students_cascade_dict_v2(
                             examyear=sel_examyear,
                             school=sel_school,
                             department=sel_department,
@@ -528,45 +521,23 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-05
                         logger.debug('    classname_list: ' + str(classname_list))
                         logger.debug('    classes_dict: ' + str(classes_dict))
                         logger.debug('    failed_student_pk_list: ' + str(failed_student_pk_list))
-                        logger.debug('    grade_dict: ' + str(grade_dict))
+                        logger.debug('    students_cascade_dict: ' + str(students_cascade_dict))
 
-                    """
-                   grade_dict =  {
-                    3963: {
-                    'fullname': 'Granviel, Jurmaily A.', 'lastname': 'Granviel', 'firstname': 'Jurmaily Adriana', 'result': 2,
-                     
-                    'stud_id': 3963, 'examnumber': 'A19', 'bis_exam': True, 'school_name': 'Ancilla Domini Vsbo', 'school_code': 'CUR01', 
-                    'depbase_code': 'Vsbo', 'examyear_code': 2022, 'scheme_id': 73, 'dep_abbrev': 'V.S.B.O.', 'level_req': True, 'lvlbase_code': 'PKL', 'sctbase_code': 'ec',
-                     'gl_ce_avg': '5.0', 'gl_combi_avg': '7', 'gl_final_avg': '5.9', 'has_use_reex': True,
-                    
-                    'subj_list': [
-                        ('Lichamelijke opvoeding', 21571, 1, 0), ('Nederlandse taal', 21568, 1, 1), ('Papiamentu', 21573, 1, 1), ('Stage', 21576, 1, 0), 
-                    ], 
-                    
-                    21571: {'subjbase_code': 'lo', 'subject_id': 116, 'schemeitem_id': 1743, 'exemption_year': 2021, 'gl_sesrgrade': '6.5', 'gl_finalgrade': '7', 'gl_examperiod': 4, 'has_exemption': True, 'gradetype': 1, 'weight_se': 1, 'multiplier': 1, 'is_combi': True, 'rule_grade_sufficient': True, 'rule_gradesuff_notatevlex': True, 'subj_name_nl': 'Lichamelijke opvoeding', 'subjtype_abbrev': 'Gemeensch.'}, 
-                        }
-                    
-                    }
-                    
-                    """
         # calculate possible reex
                     write_log = True # for testing, set False in production to speed up
                     log_list = []
                     for failed_student_pk in failed_student_pk_list:
-                        student_dict = grade_dict.get(failed_student_pk)
+                        student_dict = students_cascade_dict.get(failed_student_pk)
                         if logging_on and False:
                             logger.debug('    student_dict: ' + str(student_dict))
 
                         if student_dict:
-                           calc_reex.calcreex_student_reex_result(sel_department, student_dict, write_log, log_list)
-
-                        if logging_on and False:
-                            logger.debug('   NEW grade_dict: ' + str(grade_dict))
+                           calc_reex.calc_student_reex_result_v2(sel_department, student_dict, write_log, log_list)
 
                     if logging_on:
                         logger.debug('    log_list: ' + str(log_list))
 
-                    pdf = grd_draw.print_shortgradelist(sel_examyear, sel_school, sel_department, classname_list, classes_dict, grade_dict, user_lang)
+                    pdf = grd_draw.print_shortgradelist(sel_examyear, sel_school, sel_department, classname_list, classes_dict, students_cascade_dict, user_lang)
 
                     response = HttpResponse(content_type='application/pdf')
                     response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
@@ -631,6 +602,8 @@ class DownloadGradelistDiplomaView(View):
             user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
+            req_user_is_auth1_or_auth2 = acc_prm.is_auth1_or_auth2(req_user)
+
 # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
@@ -639,7 +612,7 @@ class DownloadGradelistDiplomaView(View):
                 logger.debug('     sel_school: ' + str(sel_school))
                 logger.debug('     sel_department: ' + str(sel_department))
 
-            if sel_school and sel_department:
+            if req_user_is_auth1_or_auth2 and sel_school and sel_department:
                 student_pk_list = upload_dict.get('student_pk_list')
                 is_sxm = sel_examyear.country.abbrev == 'Sxm'
                 if logging_on:
@@ -762,7 +735,7 @@ class DownloadGradelistDiplomaView(View):
                     if logging_on:
                         logger.debug('save_to_disk: ' + str(save_to_disk))
 
-        # +++  print and save pdf for each sudent separately
+        # +++  print and save pdf for each student separately
                     if save_to_disk:
                 # - create new published_instance.
                         now_arr = upload_dict.get('now_arr')
@@ -907,8 +880,6 @@ class DownloadGradelistDiplomaView(View):
             logger.error(getattr(e, 'message', str(e)))
 
         return used_regnumber_list
-
-
 # - end of DownloadGradelistDiplomaView
 
 
@@ -1595,9 +1566,8 @@ def get_shortgradelist_student_list(school, department, level, sel_classes, incl
 # - end of get_shortgradelist_student_list
 
 
-def get_shortgradelist_dict(school, department, level, sel_classes, include_class_blank, sortby_class):
+def get_shortgradelist_dictNIU(school, department, level, sel_classes, include_class_blank, sortby_class):
     # PR2023-06-05
-
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
 
@@ -1815,12 +1785,14 @@ def get_shortgradelist_dict(school, department, level, sel_classes, include_clas
                         student_dict['has_use_exem'] = True
 
                     gl_examperiod = row.get('gl_examperiod', 0)
+
                     if gl_examperiod == c.EXAMPERIOD_SECOND:
                         info_list.append('her')
                         student_dict['has_use_reex'] = True
                     elif gl_examperiod == c.EXAMPERIOD_THIRD:
                         info_list.append('her 3e tv')
                         student_dict['has_use_reex3'] = True
+
 
                     subjbase_code = row.get('subjbase_code') or '-'
                     if info_list:

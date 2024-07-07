@@ -55,8 +55,9 @@ class SecretExamListView(View):  # PR2023-04-03
 
 # - set headerbar parameters
         page = 'page_secretexam'
-        param = {'display_school': False, 'display_department': True}
-        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+        # PR2024-06-14 moved to get_headerbar_param
+        # param = {'display_school': False, 'display_department': True}
+        headerbar_param = awpr_menu.get_headerbar_param(request, page)
 
         return render(request, 'secretexam.html', headerbar_param)
 
@@ -4235,340 +4236,6 @@ def create_grade_stat_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 # --- end of create_grade_stat_icon_rows
 
 
-def create_grade_rowsXXX(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod, request,
-                      secret_exams_only=False, append_dict=None, grade_pk_list=None, auth_dict=None,
-                      remove_note_status=False):
-    # --- create grade rows of all students of this examyear / school PR2020-12-14  PR2021-12-03 PR2022-02-09 PR2022-12-12
-
-    # note: don't forget to filter tobedeleted = false!! PR2021-03-15
-    # grades that are not published are only visible when 'same_school'
-    # note_icon is downloaded in separate call
-
-    # PR2023-05-22 when secret_exams_only = True: show grdaes of all schools, but secret_exams_only
-
-    # PR2023-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
-    # must rename secret_exam to ceex_secret_exam etc
-
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- create_grade_rows -----')
-        logger.debug('    sel_examyear:    ' + str(sel_examyear))
-        logger.debug('    sel_examperiod:    ' + str(sel_examperiod))
-        logger.debug('    grade_pk_list:     ' + str(grade_pk_list))
-        logger.debug('    sel_schoolbase:     ' + str(sel_schoolbase) + ' pk: ' + str(sel_schoolbase.pk if sel_schoolbase else '-') )
-        logger.debug('    sel_depbase:     ' + str(sel_depbase) + ' pk: ' + str(sel_depbase.pk if sel_depbase else '-') )
-        logger.debug('    sel_lvlbase:     ' + str(sel_lvlbase) + ' pk: ' + str(sel_lvlbase.pk if sel_lvlbase else '-') )
-        logger.debug('    secret_exams_only:     ' + str(secret_exams_only))
-        logger.debug(' ----------')
-
-    grade_rows = []
-
-    try:
-        req_usr = request.user
-
-# - only requsr of the same school can view grades that are not published, PR2021-04-29
-        # requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase.pk == sel_schoolbase.pk)
-# - also corrector can view grades
-
-    #  - add_auth_list is used in Ex form to add name of auth
-        add_auth_list = True if auth_dict is not None else False
-
-    # - get selected_pk_dict of req_usr
-        selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
-
-    # - get allowed_sections_dict from request
-        userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
-
-        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
-        if logging_on:
-            logger.debug('    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(type(userallowed_sections_dict)))
-            # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
-
-        # - only when requsr_same_school the not-published grades are visible
-        # - also the role_corrector may see the grades
-        # - also exemptions, because they are not published - they are always visible.
-        # PR2023-04-08 don't hide grades any more for Inspection and adminshow grades
-
-
-        sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
-                    "CONCAT('grade_', grd.id::TEXT) AS mapid,",
-                    "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
-                    "dep.base_id AS depbase_id, depbase.code AS depbase_code,",
-                    "lvl.id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-                    "sct.id AS sct_id, sct.base_id AS sctbase_id, sct.abbrev AS sct_abbrev,",
-
-                    "subj.name_nl AS subj_name_nl, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
-        ]
-        # add schoolname, only when secret_exams_only
-        if secret_exams_only:
-            sql_list.append("school.id AS school_id, schoolbase.code AS school_code, school.abbrev AS school_abbrev,")
-
-        sql_list.extend((
-                    "NULL AS note_status", # will be filled in after downloading note_status
-
-                    "FROM students_grade AS grd",
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
-                    "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
-
-                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
-                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-
-                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)"
-        ))
-
-        # PR2023-05-22 only show grades with exams when secret_exams_only
-        if secret_exams_only:
-            # show ete_cluster
-            sql_list.extend((
-                "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
-                # was: "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.ete_cluster_id)"
-            ))
-        else:
-            sql_list.extend((
-                "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)"
-            ))
-
-        sql_list.extend((
-                    "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
-                    "LEFT JOIN schools_published AS se_published ON (se_published.id = grd.se_published_id)",
-                    "LEFT JOIN schools_published AS ce_published ON (ce_published.id = grd.ce_published_id)",
-
-                    "LEFT JOIN accounts_user AS se_auth1 ON (se_auth1.id = grd.se_auth1by_id)",
-                    "LEFT JOIN accounts_user AS se_auth2 ON (se_auth2.id = grd.se_auth2by_id)",
-                    "LEFT JOIN accounts_user AS se_auth3 ON (se_auth3.id = grd.se_auth3by_id)",
-
-                    "LEFT JOIN accounts_user AS ce_auth1 ON (ce_auth1.id = grd.ce_auth1by_id)",
-                    "LEFT JOIN accounts_user AS ce_auth2 ON (ce_auth2.id = grd.ce_auth2by_id)",
-                    "LEFT JOIN accounts_user AS ce_auth3 ON (ce_auth3.id = grd.ce_auth3by_id)",
-                    "LEFT JOIN accounts_user AS ce_auth4 ON (ce_auth4.id = grd.ce_auth4by_id)",
-
-                    "WHERE NOT stud.deleted AND NOT studsubj.deleted",
-                    "AND ey.id = ", str(sel_examyear.pk), "::INT",
-                    "AND grd.examperiod = ", str(sel_examperiod), "::INT",
-                    "AND dep.base_id = ", str(sel_depbase.pk), "::INT"
-                    ))
-
-        # PR2023-05-22 skip schoolbase clause when secret_exams_only
-        # PR2023-06-08 Joan SXM wants to see the secret exams before publishing them.
-        if secret_exams_only:
-            sql_list.append("AND exam.secret_exam")
-        else:
-            if sel_schoolbase:
-                sql_list.extend(("AND school.base_id=", str(sel_schoolbase.pk), "::INT"))
-            else:
-                sql_list.append("AND FALSE")
-
-        # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
-        # not true, in 2022 there were some deleted grades  PR2023-03-29
-        # was: if sel_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_EXEMPTION):
-        sql_list.append("AND NOT grd.deleted")
-
-        if grade_pk_list:
-            # when grade_pk_list has value: skip subject filter
-            sql_list.append(''.join(("AND grd.id IN (SELECT UNNEST(ARRAY", str(grade_pk_list), "::INT[]))")))
-
-# --- filter on usersetting
-        # TODO replace all sel_subject_pk filters by sel_subjbase_pk filters
-
-        # PR2022-05-29 don't filter on sel_student_pk any more
-
-        else:
-
-            # - filter on selected schoolbase
-                # - filter selected schoolbase_pk is required, is already part of sql
-                # - validation of sel_schoolbase_pk has taken place in download_setting
-
-            # - filter on selected depbase
-                # - filter selected depbase_pk is required, is already part of sql
-                # - validation of sel_depbase_pk has taken place in download_setting
-
-            # +++ add sql_clause with selected sct, cluster an d allowed depbase, lvlbase, subj_base
-
-    # - filter on selected levelbase
-            # PR2023-04-29 debug: don't use saved_lvlbase_pk, it will show no records when changing to havo/vwo
-            # PR2024-03-26 debug: Ancilla Domini Yolande van Erven: teacher R_Soliana cannot see grades
-            # subject with base_id 118 = Papiamentu
-            # subjct with id = 223 is Papiament 2023 Cur
-            # becasue it is used in 2024, no records are shwon
-            # solution: save base_id, not subject_id
-            # allowed_sections_dict: {'2': {'1': {'-9': [118]}}} <class 'dict'>
-            #      sql_clause_lvlbase:  AND (lvl.base_id=6::INT)
-            #   saved_sctbase_pk:  13
-            #     sql_clause_sctbase:  AND (sct.base_id=13::INT)
-            #     saved_subject_pk:  223
-            #      sql_clause_subject_pk:  AND (subj.id = 223::INT)
-            if sel_lvlbase:
-                sql_clause_lvlbase = ''.join(("AND (lvl.base_id=", str(sel_lvlbase.pk), "::INT)"))
-                sql_list.append(sql_clause_lvlbase)
-                if logging_on:
-                    logger.debug('     sql_clause_lvlbase:  ' + str(sql_clause_lvlbase))
-
-    # - filter on selected sectorbase
-            saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
-            if logging_on:
-                logger.debug('     saved_sctbase_pk:  ' + str(saved_sctbase_pk))
-            if saved_sctbase_pk:
-                sql_clause_sctbase = ''.join(("AND (sct.base_id=", str(saved_sctbase_pk), "::INT)"))
-                sql_list.append(sql_clause_sctbase)
-                if logging_on:
-                    logger.debug('     sql_clause_sctbase:  ' + str(sql_clause_sctbase))
-
-    # - filter on selected subjectbase
-            # PR2024-03-29 switched to subjbase_pk
-            saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
-            if logging_on:
-                logger.debug('     saved_subjbase_pk:  ' + str(saved_subjbase_pk))
-            if saved_subjbase_pk:
-                sql_clause_subjbase_pk = ''.join(("AND (subj.base_id = ", str(saved_subjbase_pk), "::INT)"))
-                sql_list.append(sql_clause_subjbase_pk)
-                if logging_on:
-                    logger.debug('     sql_clause_subjbase_pk:  ' + str(sql_clause_subjbase_pk))
-
-    # - filter on selected subject_pk - deprecated
-            #saved_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
-            #if logging_on:
-            #    logger.debug('     saved_subject_pk:  ' + str(saved_subject_pk))
-            #if saved_subject_pk:
-            #    sql_clause_subject_pk = ''.join(("AND (subj.id = ", str(saved_subject_pk), "::INT)"))
-            #    sql_list.append(sql_clause_subject_pk)
-            #    if logging_on:
-            #        logger.debug('     sql_clause_subject_pk:  ' + str(sql_clause_subject_pk))
-
-    # - filter on selected cluster_pk
-            # don't filter on allowed clusters. Allowed clusters give permit to edit and approve, but others mat be viewed
-            saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
-            if saved_cluster_pk:
-                sql_clause_cluster_pk = ''.join(("AND (studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)"))
-                sql_list.append(sql_clause_cluster_pk)
-                if logging_on:
-                    logger.debug('     sql_clause_cluster_pk:  ' + str(sql_clause_cluster_pk))
-
-    # - filter on allowed depbases, levelbase, subjectbases
-            # was: sqlclause_allowed_dep_lvl_subj = acc_prm.get_sqlclause_allowed_dep_lvl_subj(
-            #    table='grade',
-            #    userallowed_sections_dict=userallowed_sections_dict,
-            #    sel_schoolbase_pk=sel_schoolbase_pk,
-            #    sel_depbase_pk=sel_depbase_pk
-            #)
-            #if sqlclause_allowed_dep_lvl_subj:
-            #    sql_list.append(sqlclause_allowed_dep_lvl_subj)
-
-            # PR2023-03-27
-            # when a corrector has no allowed subjects, must return None.
-            # when an examiner has no allowed subjects, must return all subjects.
-            # PR2023-06-02 Shalini v Uytrecht: wants to be able to see the grades. Ship when chairperson or secretary
-
-            return_false_when_no_allowedsubjects = False
-            if (req_usr.role == c.ROLE_016_CORR):
-                # - skip if auth1 or auth2 is in requsr_usergroup_list
-                requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(req_usr)
-                return_false_when_no_allowedsubjects = not requsr_usergroup_list or ('auth1' not in requsr_usergroup_list and 'auth2' not in requsr_usergroup_list)
-
-                if logging_on:
-                    logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
-                    logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
-
-            # dont filter on sel_schoolbase when secret_exams_only
-            if secret_exams_only:
-                sel_schoolbase = None
-
-            sql_clause = acc_prm.get_sqlclause_allowed_NEW(
-                table='grade',
-                sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
-                sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
-                sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
-                userallowed_sections_dict=userallowed_sections_dict,
-                return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
-            )
-            if sql_clause:
-                sql_list.append(sql_clause)
-
-        sql_list.append('ORDER BY grd.id')
-        if logging_on:
-            for sql_txt in sql_list:
-                logger.debug(' > ' + str(sql_txt))
-
-        sql = ' '.join(sql_list)
-
-        with connection.cursor() as cursor:
-            cursor.execute(sql)
-            grade_rows = af.dictfetchall(cursor)
-
-    # - add full name to rows, and array of id's of auth
-        if grade_rows:
-            # create auth_dict, with lists of each auth
-            #auth_fields = ('se_auth1by_id', 'se_auth2by_id', 'se_auth3by_id', 'se_auth4by_id',
-            #                  'sr_auth1by_id', 'sr_auth2by_id', 'sr_auth3by_id', 'sr_auth4by_id',
-            #                  'pe_auth1by_id', 'pe_auth2by_id', 'pe_auth3by_id', 'pe_auth4by_id',
-            #                  'ce_auth1by_id', 'ce_auth2by_id', 'ce_auth3by_id' 'ce_auth4by_id')
-
-            if logging_on and False:
-                logger.debug('---------------- ')
-            for row in grade_rows:
-                first_name = row.get('firstname')
-                last_name = row.get('lastname')
-
-        # - add full_name
-                prefix = row.get('prefix')
-                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
-                row['fullname'] = full_name if full_name else None
-
-        # - add exam_name
-                ce_exam_id = row.get('ce_exam_id')
-                exam_name = None
-                if ce_exam_id:
-                    exam_name = subj_vw.get_exam_name(
-                        ce_exam_id=ce_exam_id,
-                        ete_exam=row.get('ete_exam'),
-                        subj_name_nl=row.get('subj_name_nl'),
-                        depbase_code=row.get('depbase_code'),
-                        lvl_abbrev=row.get('lvl_abbrev'),
-                        examperiod=row.get('examperiod'),
-                        examyear=sel_examyear,
-                        version=row.get('version'),
-                        ntb_omschrijving=row.get('ntb_omschrijving')
-                    )
-                row['exam_name'] = exam_name
-
-        # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase note icon when refreshing this row
-                if remove_note_status:
-                    row.pop('note_status')
-
-        # - add messages to studsubj_rows, only when student_pk or grade_pk_list have value
-                if append_dict and grade_pk_list:
-                    if logging_on:
-                        logger.debug('......... ')
-                        logger.debug('append_dict: ' + str(append_dict))
-
-                    grade_pk = row.get('id')
-                    if grade_pk:
-                        grade_append_dict = append_dict.get(grade_pk)
-                        if grade_append_dict:
-                            for key, value in grade_append_dict.items():
-                                row[key] = value
-
-            if logging_on:
-                logger.debug('---------------- ')
-
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-
-    return grade_rows
-# --- end of create_grade_rows
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-
 def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod, request,
                       secret_exams_only=False, append_dict=None, grade_pk_list=None, auth_dict=None,
                       remove_note_status=False):
@@ -4580,8 +4247,6 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
     # PR2023-05-22 when secret_exams_only = True: show grdaes of all schools, but secret_exams_only
 
-    # PR2023-05-29 TODO grade_with_exam_rows returns ceex_secret_exam, grade_rows returns secret_exam
-    # must rename secret_exam to ceex_secret_exam etc
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -4595,372 +4260,380 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
         logger.debug('    secret_exams_only:     ' + str(secret_exams_only))
         logger.debug(' ----------')
 
-    grade_rows = []
-
-    try:
-        req_usr = request.user
+    req_usr = request.user
 
 # - only requsr of the same school can view grades that are not published, PR2021-04-29
-        # requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase.pk == sel_schoolbase.pk)
+    # requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase.pk == sel_schoolbase.pk)
 # - also corrector can view grades
 
-    #  - add_auth_list is used in Ex form to add name of auth
-        add_auth_list = True if auth_dict is not None else False
+#  - add_auth_list is used in Ex form to add name of auth
+    add_auth_list = True if auth_dict is not None else False
 
-    # - get selected_pk_dict of req_usr
-        selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
+# - get selected_pk_dict of req_usr
+    selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
 
-    # - get allowed_sections_dict from request
-        userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
+# - get allowed_sections_dict from request
+    userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
 
-        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
-        if logging_on:
-            logger.debug('    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(type(userallowed_sections_dict)))
-            # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
+    userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+    if logging_on:
+        logger.debug('    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(type(userallowed_sections_dict)))
+        # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
 
-        # - only when requsr_same_school the not-published grades are visible
-        # - also the role_corrector may see the grades
-        # - also exemptions, because they are not published - they are always visible.
-        # PR2023-04-08 don't hide grades any more for Inspection and adminshow grades
+    """
+    # PR2023-04-08 don't hide grades any more for Inspection and adminshow grades
+    # - only when requsr_same_school the not-published grades are visible
+    # - also the role_corrector may see the grades
+    # - also exemptions, because they are not published - they are always visible.
+    # was:
+    else:
+        grades = ' '.join([
+            "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.segrade ELSE NULL END AS segrade,",
+            "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.srgrade ELSE NULL END AS srgrade,",
+            "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.sesrgrade ELSE NULL END AS sesrgrade,",
 
-        """
-        else:
-            grades = ' '.join([
-                "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.segrade ELSE NULL END AS segrade,",
-                "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.srgrade ELSE NULL END AS srgrade,",
-                "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.sesrgrade ELSE NULL END AS sesrgrade,",
+            "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cescore ELSE NULL END AS cescore,",
+            "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cegrade ELSE NULL END AS cegrade,",
 
-                "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cescore ELSE NULL END AS cescore,",
-                "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.cegrade ELSE NULL END AS cegrade,",
+            "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pescore ELSE NULL END AS pescore,",
+            "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pegrade ELSE NULL END AS pegrade,",
+            "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pecegrade ELSE NULL END AS pecegrade,"
+        ])
 
-                "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pescore ELSE NULL END AS pescore,",
-                "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pegrade ELSE NULL END AS pegrade,",
-                "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pecegrade ELSE NULL END AS pecegrade,"
-            ])
+    # - check is to determine if final_grade must be shown. Check is True when weight = 0 or not has_practexam
+        final_check_se = '(CASE WHEN si.weight_se > 0 THEN (CASE WHEN grd.se_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+        final_check_ce = '(CASE WHEN si.weight_ce > 0 THEN (CASE WHEN grd.ce_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+        final_check_pe = '(CASE WHEN si.has_practexam THEN (CASE WHEN grd.pe_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
 
-        # - check is to determine if final_grade must be shown. Check is True when weight = 0 or not has_practexam
-            final_check_se = '(CASE WHEN si.weight_se > 0 THEN (CASE WHEN grd.se_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
-            final_check_ce = '(CASE WHEN si.weight_ce > 0 THEN (CASE WHEN grd.ce_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
-            final_check_pe = '(CASE WHEN si.has_practexam THEN (CASE WHEN grd.pe_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
+        final_grade = "CASE WHEN " + final_check_se + " AND " + final_check_ce + "  AND " + final_check_pe + " THEN grd.finalgrade ELSE NULL END AS finalgrade,"
 
-            final_grade = "CASE WHEN " + final_check_se + " AND " + final_check_ce + "  AND " + final_check_pe + " THEN grd.finalgrade ELSE NULL END AS finalgrade,"
+        status = "se_status, sr_status, pe_status, ce_status,"
+    """
 
-            status = "se_status, sr_status, pe_status, ce_status,"
-        """
+    sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
+                "CONCAT('grade_', grd.id::TEXT) AS mapid,",
+                "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+                "dep.base_id AS depbase_id, depbase.code AS depbase_code,",
+                "lvl.id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+                "sct.id AS sct_id, sct.base_id AS sctbase_id, sct.abbrev AS sct_abbrev,",
+                "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked,",
+                "school.islexschool,",
+                "studsubj.has_exemption, studsubj.exemption_year, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
+                "studsubj.tobedeleted AS studsubj_tobedeleted,",
 
-        sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
-                    "CONCAT('grade_', grd.id::TEXT) AS mapid,",
-                    "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
-                    "dep.base_id AS depbase_id, depbase.code AS depbase_code,",
-                    "lvl.id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-                    "sct.id AS sct_id, sct.base_id AS sctbase_id, sct.abbrev AS sct_abbrev,",
-                    "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked,",
-                    "school.islexschool,",
-                    "studsubj.has_exemption, studsubj.exemption_year, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
-                    "studsubj.tobedeleted AS studsubj_tobedeleted,",
+                "grd.examperiod, grd.segrade, grd.srgrade, grd.sesrgrade, grd.cescore, grd.cegrade,",
+                "grd.pescore, grd.pegrade, grd.pecegrade, grd.finalgrade AS finalgrade,",
+                "grd.se_status, grd.sr_status, grd.pe_status, grd.ce_status,",
 
-                    "grd.examperiod, grd.segrade, grd.srgrade, grd.sesrgrade, grd.cescore, grd.cegrade,",
-                    "grd.pescore, grd.pegrade, grd.pecegrade, grd.finalgrade AS finalgrade,",
-                    "grd.se_status, grd.sr_status, grd.pe_status, grd.ce_status,",
+                "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_blocked,", #  grd.se_auth4by_id,
+                "grd.ce_auth1by_id, grd.ce_auth2by_id, grd.ce_auth3by_id, grd.ce_auth4by_id, grd.ce_blocked,",
 
+                "se_auth1.last_name AS se_auth1by_usr, se_auth2.last_name AS se_auth2by_usr, se_auth3.last_name AS se_auth3by_usr,", # se_auth4.last_name AS se_auth4by_usr,",
+                "ce_auth1.last_name AS ce_auth1by_usr, ce_auth2.last_name AS ce_auth2by_usr, ce_auth3.last_name AS ce_auth3by_usr, ce_auth4.last_name AS ce_auth4by_usr,",
 
-                    "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_blocked,", #  grd.se_auth4by_id,
-                    "grd.ce_auth1by_id, grd.ce_auth2by_id, grd.ce_auth3by_id, grd.ce_auth4by_id, grd.ce_blocked,",
+                #  exam_published_id    is the exam,       published by ETE
+                #  ce_exam_published_id is the Wolf score, submitted by the school
+                #  ce_published_id      is the Ex2A score, submitted by the school
 
-                    "se_auth1.last_name AS se_auth1by_usr, se_auth2.last_name AS se_auth2by_usr, se_auth3.last_name AS se_auth3by_usr,", # se_auth4.last_name AS se_auth4by_usr,",
-                    "ce_auth1.last_name AS ce_auth1by_usr, ce_auth2.last_name AS ce_auth2by_usr, ce_auth3.last_name AS ce_auth3by_usr, ce_auth4.last_name AS ce_auth4by_usr,",
+                "grd.se_published_id, se_published.modifiedat AS se_publ_modat,",
+                "grd.ce_published_id, ce_published.modifiedat AS ce_publ_modat,",
 
-                    "grd.se_published_id, se_published.modifiedat AS se_publ_modat,",
-                    "grd.ce_published_id, ce_published.modifiedat AS ce_publ_modat,",
+                "grd.ce_exam_id, grd.ce_exam_score,",
 
-                    "grd.ce_exam_id, grd.ce_exam_score,",
+                #  ce_exam_published_id is the Wolf score, submitted by the school
+                "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_auth3by_id, grd.ce_exam_published_id,",
 
-                    "grd.exemption_imported,",  # PR2023-01-24 added
+                "grd.ce_exam_blanks, grd.ce_exam_result, grd.ce_exam_score,",
 
-                    "exam.ete_exam, exam.secret_exam, exam.version, ntb.omschrijving AS ntb_omschrijving,",
-                    "si.subject_id, si.subjecttype_id,",
-                    "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed,",
-                    "si.extra_nocount_allowed, si.has_practexam,",
+                "grd.exemption_imported,",  # PR2023-01-24 added
 
-                    # TODO check if sjtp.has_pws is used. If so: add join with subjecttype
-                    # was:  "si.has_pws,",
-                    "si.is_core_subject, si.is_mvt, si.sr_allowed, si.no_ce_years, si.thumb_rule,",
-                    "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
+                "ce_exam.ete_exam, ce_exam.secret_exam, ce_exam.version, ntb.omschrijving AS ntb_omschrijving,",
 
-                    "subj.name_nl AS subj_name_nl, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
-        ]
-        # add schoolname, only when secret_exams_only
-        if secret_exams_only:
-            sql_list.append("school.id AS school_id, schoolbase.code AS school_code, school.abbrev AS school_abbrev,")
+                # exam_published_id is the published ETE exam
+                "ce_exam.published_id AS exam_published_id,"
+                
+                "si.subject_id, si.subjecttype_id,",
+                "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed,",
+                "si.extra_nocount_allowed, si.has_practexam,",
 
+                # TODO check if sjtp.has_pws is used. If so: add join with subjecttype
+                # was:  "si.has_pws,",
+                "si.is_core_subject, si.is_mvt, si.sr_allowed, si.no_ce_years, si.thumb_rule,",
+                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
+
+                "subj.name_nl AS subj_name_nl, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+    ]
+    # add schoolname, only when secret_exams_only
+    if secret_exams_only:
+        sql_list.append("school.id AS school_id, schoolbase.code AS school_code, school.abbrev AS school_abbrev,")
+
+    sql_list.extend((
+                "NULL AS note_status", # will be filled in after downloading note_status
+
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)"
+    ))
+
+    # PR2023-05-22 only show grades with exams when secret_exams_only
+    if secret_exams_only:
+        # show ete_cluster
         sql_list.extend((
-                    "NULL AS note_status", # will be filled in after downloading note_status
-
-                    "FROM students_grade AS grd",
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
-                    "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
-
-                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
-                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-
-                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)"
+            "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
+            # was: "INNER JOIN subjects_exam AS exam ON (ce_exam.id = grd.ce_exam_id)",
+            "LEFT JOIN subjects_exam AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+            "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.ete_cluster_id)"
+        ))
+    else:
+        sql_list.extend((
+            "LEFT JOIN subjects_exam AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+            "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)"
         ))
 
-        # PR2023-05-22 only show grades with exams when secret_exams_only
-        if secret_exams_only:
-            # show ete_cluster
-            sql_list.extend((
-                "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
-                # was: "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.ete_cluster_id)"
-            ))
+    sql_list.extend((
+                "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = ce_exam.ntermentable_id)",
+                "LEFT JOIN schools_published AS se_published ON (se_published.id = grd.se_published_id)",
+                "LEFT JOIN schools_published AS ce_published ON (ce_published.id = grd.ce_published_id)",
+
+                "LEFT JOIN accounts_user AS se_auth1 ON (se_auth1.id = grd.se_auth1by_id)",
+                "LEFT JOIN accounts_user AS se_auth2 ON (se_auth2.id = grd.se_auth2by_id)",
+                "LEFT JOIN accounts_user AS se_auth3 ON (se_auth3.id = grd.se_auth3by_id)",
+
+                "LEFT JOIN accounts_user AS ce_auth1 ON (ce_auth1.id = grd.ce_auth1by_id)",
+                "LEFT JOIN accounts_user AS ce_auth2 ON (ce_auth2.id = grd.ce_auth2by_id)",
+                "LEFT JOIN accounts_user AS ce_auth3 ON (ce_auth3.id = grd.ce_auth3by_id)",
+                "LEFT JOIN accounts_user AS ce_auth4 ON (ce_auth4.id = grd.ce_auth4by_id)",
+
+                # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
+                # not true: in 2022 there were some deleted grades  PR2023-03-29
+                "WHERE NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
+
+                ''.join(("AND ey.id=", str(sel_examyear.pk), "::INT")),
+                ''.join(("AND grd.examperiod=", str(sel_examperiod), "::INT")),
+                ''.join(("AND dep.base_id=", str(sel_depbase.pk), "::INT"))
+                ))
+
+    # PR2023-05-22 skip schoolbase clause when secret_exams_only
+    # PR2023-06-08 Joan SXM wants to see the secret exams before publishing them.
+    if secret_exams_only:
+        sql_list.append("AND ce_exam.secret_exam")
+    else:
+        if sel_schoolbase:
+            sql_list.append(''.join(("AND school.base_id=", str(sel_schoolbase.pk), "::INT")))
         else:
-            sql_list.extend((
-                "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)"
-            ))
+            sql_list.append("AND FALSE")
 
-        sql_list.extend((
-                    "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
-                    "LEFT JOIN schools_published AS se_published ON (se_published.id = grd.se_published_id)",
-                    "LEFT JOIN schools_published AS ce_published ON (ce_published.id = grd.ce_published_id)",
-
-                    "LEFT JOIN accounts_user AS se_auth1 ON (se_auth1.id = grd.se_auth1by_id)",
-                    "LEFT JOIN accounts_user AS se_auth2 ON (se_auth2.id = grd.se_auth2by_id)",
-                    "LEFT JOIN accounts_user AS se_auth3 ON (se_auth3.id = grd.se_auth3by_id)",
-
-                    "LEFT JOIN accounts_user AS ce_auth1 ON (ce_auth1.id = grd.ce_auth1by_id)",
-                    "LEFT JOIN accounts_user AS ce_auth2 ON (ce_auth2.id = grd.ce_auth2by_id)",
-                    "LEFT JOIN accounts_user AS ce_auth3 ON (ce_auth3.id = grd.ce_auth3by_id)",
-                    "LEFT JOIN accounts_user AS ce_auth4 ON (ce_auth4.id = grd.ce_auth4by_id)",
-
-                    # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
-                    # not true: in 2022 there were some deleted grades  PR2023-03-29
-                    "WHERE NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
-
-                    ''.join(("AND ey.id=", str(sel_examyear.pk), "::INT")),
-                    ''.join(("AND grd.examperiod=", str(sel_examperiod), "::INT")),
-                    ''.join(("AND dep.base_id=", str(sel_depbase.pk), "::INT"))
-                    ))
-
-        # PR2023-05-22 skip schoolbase clause when secret_exams_only
-        # PR2023-06-08 Joan SXM wants to see the secret exams before publishing them.
-        if secret_exams_only:
-            sql_list.append("AND exam.secret_exam")
-        else:
-            if sel_schoolbase:
-                sql_list.append(''.join(("AND school.base_id=", str(sel_schoolbase.pk), "::INT")))
-            else:
-                sql_list.append("AND FALSE")
-
-
-        if grade_pk_list:
-            # when grade_pk_list has value: skip subject filter
-            sql_list.append(''.join(("AND grd.id IN (SELECT UNNEST(ARRAY", str(grade_pk_list), "::INT[]))")))
+    if grade_pk_list:
+        # when grade_pk_list has value: skip subject filter
+        sql_list.append(''.join(("AND grd.id IN (SELECT UNNEST(ARRAY", str(grade_pk_list), "::INT[]))")))
 
 # --- filter on usersetting
-        # PR2022-05-29 don't filter on sel_student_pk anymore
-        # PR2024-06-06 also don't filter on sel_cluster, is done on client side
+    # PR2022-05-29 don't filter on sel_student_pk anymore
+    # PR2024-06-06 also don't filter on sel_cluster, is done on client side
 
-        else:
+    else:
 
-            # - filter on selected schoolbase
-                # - filter selected schoolbase_pk is required, is already part of sql
-                # - validation of sel_schoolbase_pk has taken place in download_setting
+        # - filter on selected schoolbase
+            # - filter selected schoolbase_pk is required, is already part of sql
+            # - validation of sel_schoolbase_pk has taken place in download_setting
 
-            # - filter on selected depbase
-                # - filter selected depbase_pk is required, is already part of sql
-                # - validation of sel_depbase_pk has taken place in download_setting
+        # - filter on selected depbase
+            # - filter selected depbase_pk is required, is already part of sql
+            # - validation of sel_depbase_pk has taken place in download_setting
 
-            # +++ add sql_clause with selected sct, cluster an d allowed depbase, lvlbase, subj_base
+        # +++ add sql_clause with selected sct, cluster an d allowed depbase, lvlbase, subj_base
 
-    # - filter on selected levelbase
-            # PR2023-04-29 debug: don't use saved_lvlbase_pk, it will show no records when changing to havo/vwo
-            # PR2024-03-26 debug: Ancilla Domini Yolande van Erven: teacher R_Soliana cannot see grades
-            # subject with base_id 118 = Papiamentu
-            # subjct with id = 223 is Papiament 2023 Cur
-            # becasue it is used in 2024, no records are shwon
-            # solution: save base_id, not subject_id
-            # allowed_sections_dict: {'2': {'1': {'-9': [118]}}} <class 'dict'>
-            #      sql_clause_lvlbase:  AND (lvl.base_id=6::INT)
-            #   saved_sctbase_pk:  13
-            #     sql_clause_sctbase:  AND (sct.base_id=13::INT)
-            #     saved_subject_pk:  223
-            #      sql_clause_subject_pk:  AND (subj.id = 223::INT)
-            if sel_lvlbase:
-                sql_clause_lvlbase = ''.join(("AND (lvl.base_id=", str(sel_lvlbase.pk), "::INT)"))
-                sql_list.append(sql_clause_lvlbase)
-                if logging_on:
-                    logger.debug('     sql_clause_lvlbase:  ' + str(sql_clause_lvlbase))
-
-    # - filter on selected sectorbase
-            # PR2024-06-06 is sectorbase is not part of get_sqlclause_allowed_NEW, so it muust stay here
-            saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+# - filter on selected levelbase
+        # PR2023-04-29 debug: don't use saved_lvlbase_pk, it will show no records when changing to havo/vwo
+        # PR2024-03-26 debug: Ancilla Domini Yolande van Erven: teacher R_Soliana cannot see grades
+        # subject with base_id 118 = Papiamentu
+        # subjct with id = 223 is Papiament 2023 Cur
+        # becasue it is used in 2024, no records are shwon
+        # solution: save base_id, not subject_id
+        # allowed_sections_dict: {'2': {'1': {'-9': [118]}}} <class 'dict'>
+        #      sql_clause_lvlbase:  AND (lvl.base_id=6::INT)
+        #   saved_sctbase_pk:  13
+        #     sql_clause_sctbase:  AND (sct.base_id=13::INT)
+        #     saved_subject_pk:  223
+        #      sql_clause_subject_pk:  AND (subj.id = 223::INT)
+        if sel_lvlbase:
+            sql_clause_lvlbase = ''.join(("AND (lvl.base_id=", str(sel_lvlbase.pk), "::INT)"))
+            sql_list.append(sql_clause_lvlbase)
             if logging_on:
-                logger.debug('     saved_sctbase_pk:  ' + str(saved_sctbase_pk))
-            if saved_sctbase_pk:
-                sql_clause_sctbase = ''.join(("AND (sct.base_id=", str(saved_sctbase_pk), "::INT)"))
-                sql_list.append(sql_clause_sctbase)
-                if logging_on:
-                    logger.debug('     sql_clause_sctbase:  ' + str(sql_clause_sctbase))
+                logger.debug('     sql_clause_lvlbase:  ' + str(sql_clause_lvlbase))
 
-    # - filter on selected subjectbase
-            # PR2024-03-29 switched to subjbase_pk
-            # PR2024-06-06 selected subjectbase is not part of get_sqlclause_allowed_NEW, so it muust stay here
-            saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
-            if logging_on:
-                logger.debug('     saved_subjbase_pk:  ' + str(saved_subjbase_pk))
-            if saved_subjbase_pk:
-                sql_clause_subjbase_pk = ''.join(("AND (subj.base_id = ", str(saved_subjbase_pk), "::INT)"))
-                sql_list.append(sql_clause_subjbase_pk)
-                if logging_on:
-                    logger.debug('     sql_clause_subjbase_pk:  ' + str(sql_clause_subjbase_pk))
-
-    # - filter on selected subject_pk - deprecated
-            #saved_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
-            #if logging_on:
-            #    logger.debug('     saved_subject_pk:  ' + str(saved_subject_pk))
-            #if saved_subject_pk:
-            #    sql_clause_subject_pk = ''.join(("AND (subj.id = ", str(saved_subject_pk), "::INT)"))
-            #    sql_list.append(sql_clause_subject_pk)
-            #    if logging_on:
-            #        logger.debug('     sql_clause_subject_pk:  ' + str(sql_clause_subject_pk))
-
-    # - filter on selected cluster_pk
-            # don't filter on allowed clusters. Allowed clusters give permit to edit and approve, but others may be viewed
-            # also don't filter on selected cluster, will be done on client side
-            #saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
-            #if saved_cluster_pk:
-            #    sql_clause_cluster_pk = ''.join(("AND (studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)"))
-            #    sql_list.append(sql_clause_cluster_pk)
-            #    if logging_on:
-            #        logger.debug('     sql_clause_cluster_pk:  ' + str(sql_clause_cluster_pk))
-
-    # - filter on allowed depbases, levelbase, subjectbases
-            # was: sqlclause_allowed_dep_lvl_subj = acc_prm.get_sqlclause_allowed_dep_lvl_subj(
-            #    table='grade',
-            #    userallowed_sections_dict=userallowed_sections_dict,
-            #    sel_schoolbase_pk=sel_schoolbase_pk,
-            #    sel_depbase_pk=sel_depbase_pk
-            #)
-            #if sqlclause_allowed_dep_lvl_subj:
-            #    sql_list.append(sqlclause_allowed_dep_lvl_subj)
-
-            # PR2023-03-27
-            # when a corrector has no allowed subjects, must return None.
-            # when an examiner has no allowed subjects, must return all subjects.
-            # PR2023-06-02 Shalini v Uytrecht: wants to be able to see the grades. Ship when chairperson or secretary
-
-            return_false_when_no_allowedsubjects = False
-            if (req_usr.role == c.ROLE_016_CORR):
-                # - skip if auth1 or auth2 is in requsr_usergroup_list
-                requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(req_usr)
-                return_false_when_no_allowedsubjects = not requsr_usergroup_list or ('auth1' not in requsr_usergroup_list and 'auth2' not in requsr_usergroup_list)
-
-                if logging_on:
-                    logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
-                    logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
-
-            # don't filter on sel_schoolbase when secret_exams_only
-            if secret_exams_only:
-                sel_schoolbase = None
-
-            sql_clause = acc_prm.get_sqlclause_allowed_NEW(
-                table='grade',
-                sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
-                sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
-                sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
-                userallowed_sections_dict=userallowed_sections_dict,
-                return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
-            )
-            if sql_clause:
-                sql_list.append(sql_clause)
-
-            if logging_on:
-                logger.debug('    sql_clause: ' + str(sql_clause))
-
-        sql_list.append('ORDER BY grd.id')
+# - filter on selected sectorbase
+        # PR2024-06-06 is sectorbase is not part of get_sqlclause_allowed_v2, so it must stay here
+        # PR2024-06-19 Dorothee C. Illis-Laurence Insectorate doe not see grades.
+        # cause: filter AND (sct.base_id=-9::INT)
+        # filter out '-9' and make sure it is not saved in usersettings,usenull instea
+        saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
         if logging_on:
-            for sql_txt in sql_list:
-                logger.debug(' > ' + str(sql_txt))
+            logger.debug('     saved_sctbase_pk:  ' + str(saved_sctbase_pk))
+        if saved_sctbase_pk and saved_sctbase_pk != -9:
+            sql_clause_sctbase = ''.join(("AND (sct.base_id=", str(saved_sctbase_pk), "::INT)"))
+            sql_list.append(sql_clause_sctbase)
+            if logging_on:
+                logger.debug('     sql_clause_sctbase:  ' + str(sql_clause_sctbase))
 
-        sql = ' '.join(sql_list)
+# - filter on selected subjectbase
+        # PR2024-03-29 switched to subjbase_pk
+        # PR2024-06-06 selected subjectbase is not part of get_sqlclause_allowed_v2, so it muust stay here
+        saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+        if logging_on:
+            logger.debug('     saved_subjbase_pk:  ' + str(saved_subjbase_pk))
+        if saved_subjbase_pk and saved_subjbase_pk != -9:
+            sql_clause_subjbase_pk = ''.join(("AND (subj.base_id = ", str(saved_subjbase_pk), "::INT)"))
+            sql_list.append(sql_clause_subjbase_pk)
+            if logging_on:
+                logger.debug('     sql_clause_subjbase_pk:  ' + str(sql_clause_subjbase_pk))
 
-        with connection.cursor() as cursor:
-            cursor.execute(sql)
-            grade_rows = af.dictfetchall(cursor)
+# - filter on selected subject_pk - deprecated
+        #saved_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+        #if logging_on:
+        #    logger.debug('     saved_subject_pk:  ' + str(saved_subject_pk))
+        #if saved_subject_pk:
+        #    sql_clause_subject_pk = ''.join(("AND (subj.id = ", str(saved_subject_pk), "::INT)"))
+        #    sql_list.append(sql_clause_subject_pk)
+        #    if logging_on:
+        #        logger.debug('     sql_clause_subject_pk:  ' + str(sql_clause_subject_pk))
 
-    # - add full name to rows, and array of id's of auth
-        if grade_rows:
-            # create auth_dict, with lists of each auth
-            #auth_fields = ('se_auth1by_id', 'se_auth2by_id', 'se_auth3by_id', 'se_auth4by_id',
-            #                  'sr_auth1by_id', 'sr_auth2by_id', 'sr_auth3by_id', 'sr_auth4by_id',
-            #                  'pe_auth1by_id', 'pe_auth2by_id', 'pe_auth3by_id', 'pe_auth4by_id',
-            #                  'ce_auth1by_id', 'ce_auth2by_id', 'ce_auth3by_id' 'ce_auth4by_id')
+# - filter on selected cluster_pk
+        # don't filter on allowed clusters. Allowed clusters give permit to edit and approve, but others may be viewed
+        # also don't filter on selected cluster, will be done on client side
+        #saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+        #if saved_cluster_pk:
+        #    sql_clause_cluster_pk = ''.join(("AND (studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)"))
+        #    sql_list.append(sql_clause_cluster_pk)
+        #    if logging_on:
+        #        logger.debug('     sql_clause_cluster_pk:  ' + str(sql_clause_cluster_pk))
 
-            if logging_on :
-                logger.debug('---------------- ')
+# - filter on allowed depbases, levelbase, subjectbases
+        # was: sqlclause_allowed_dep_lvl_subj = acc_prm.get_sqlclause_allowed_dep_lvl_subj(
+        #    table='grade',
+        #    userallowed_sections_dict=userallowed_sections_dict,
+        #    sel_schoolbase_pk=sel_schoolbase_pk,
+        #    sel_depbase_pk=sel_depbase_pk
+        #)
+        #if sqlclause_allowed_dep_lvl_subj:
+        #    sql_list.append(sqlclause_allowed_dep_lvl_subj)
 
-            for row in grade_rows:
-                first_name = row.get('firstname')
-                last_name = row.get('lastname')
+        # PR2023-03-27
+        # when a corrector has no allowed subjects, must return None.
+        # when an examiner has no allowed subjects, must return all subjects.
+        # PR2023-06-02 Shalini v Uytrecht: wants to be able to see the grades. Ship when chairperson or secretary
 
-        # - add full_name
-                prefix = row.get('prefix')
-                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
-                row['fullname'] = full_name if full_name else None
+        return_false_when_no_allowedsubjects = False
+        if (req_usr.role == c.ROLE_016_CORR):
+            # - skip if auth1 or auth2 is in requsr_usergroup_list
+            requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(req_usr)
+            return_false_when_no_allowedsubjects = not requsr_usergroup_list or ('auth1' not in requsr_usergroup_list and 'auth2' not in requsr_usergroup_list)
 
-        # - add exam_name
-                ce_exam_id = row.get('ce_exam_id')
-                exam_name = None
-                if ce_exam_id:
-                    exam_name = subj_vw.get_exam_name(
-                        ce_exam_id=ce_exam_id,
-                        ete_exam=row.get('ete_exam'),
-                        subj_name_nl=row.get('subj_name_nl'),
-                        depbase_code=row.get('depbase_code'),
-                        lvl_abbrev=row.get('lvl_abbrev'),
-                        examperiod=row.get('examperiod'),
-                        examyear=sel_examyear,
-                        version=row.get('version'),
-                        ntb_omschrijving=row.get('ntb_omschrijving')
-                    )
-                row['exam_name'] = exam_name
+            if logging_on:
+                logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
+                logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
 
-        # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase note icon when refreshing this row
-                if remove_note_status:
-                    row.pop('note_status')
+        # don't filter on sel_schoolbase when secret_exams_only
+        if secret_exams_only:
+            sel_schoolbase = None
 
-        # - add messages to studsubj_rows, only when student_pk or grade_pk_list have value
-                if append_dict and grade_pk_list:
-                    if logging_on:
-                        logger.debug('......... ')
-                        logger.debug('append_dict: ' + str(append_dict))
-
-                    grade_pk = row.get('id')
-                    if grade_pk:
-                        grade_append_dict = append_dict.get(grade_pk)
-                        if grade_append_dict:
-                            for key, value in grade_append_dict.items():
-                                row[key] = value
-
-                #if logging_on:
-                #    logger.debug(' row: ' + str(row))
+        sql_clause = acc_prm.get_sqlclause_allowed_v2(
+            table='grade',
+            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+            sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
+            sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
+            userallowed_sections_dict=userallowed_sections_dict,
+            return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
+        )
+        if sql_clause:
+            sql_list.append(sql_clause)
 
         if logging_on:
-            logger.debug(' grade_rows len: ' + str(len(grade_rows)))
+            logger.debug('    sql_clause: ' + str(sql_clause))
+
+    sql_list.append('ORDER BY grd.id')
+    if logging_on:
+        for sql_txt in sql_list:
+            logger.debug(' > ' + str(sql_txt))
+
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        grade_rows = af.dictfetchall(cursor)
+
+# - add full name to rows, and array of id's of auth
+    if grade_rows:
+        # create auth_dict, with lists of each auth
+        #auth_fields = ('se_auth1by_id', 'se_auth2by_id', 'se_auth3by_id', 'se_auth4by_id',
+        #                  'sr_auth1by_id', 'sr_auth2by_id', 'sr_auth3by_id', 'sr_auth4by_id',
+        #                  'pe_auth1by_id', 'pe_auth2by_id', 'pe_auth3by_id', 'pe_auth4by_id',
+        #                  'ce_auth1by_id', 'ce_auth2by_id', 'ce_auth3by_id' 'ce_auth4by_id')
+
+        if logging_on :
             logger.debug('---------------- ')
 
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
+        for row in grade_rows:
+            first_name = row.get('firstname')
+            last_name = row.get('lastname')
+
+    # - add full_name
+            prefix = row.get('prefix')
+            full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+            row['fullname'] = full_name if full_name else None
+
+    # - add exam_name
+            ce_exam_id = row.get('ce_exam_id')
+            exam_name = None
+            if ce_exam_id:
+                exam_name = subj_vw.get_exam_name(
+                    ce_exam_id=ce_exam_id,
+                    ete_exam=row.get('ete_exam'),
+                    subj_name_nl=row.get('subj_name_nl'),
+                    depbase_code=row.get('depbase_code'),
+                    lvl_abbrev=row.get('lvl_abbrev'),
+                    examperiod=row.get('examperiod'),
+                    examyear=sel_examyear,
+                    version=row.get('version'),
+                    ntb_omschrijving=row.get('ntb_omschrijving')
+                )
+            row['exam_name'] = exam_name
+
+    # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase note icon when refreshing this row
+            if remove_note_status:
+                row.pop('note_status')
+
+    # - add messages to studsubj_rows, only when student_pk or grade_pk_list have value
+            if append_dict and grade_pk_list:
+                if logging_on:
+                    logger.debug('......... ')
+                    logger.debug('append_dict: ' + str(append_dict))
+
+                grade_pk = row.get('id')
+                if grade_pk:
+                    grade_append_dict = append_dict.get(grade_pk)
+                    if grade_append_dict:
+                        for key, value in grade_append_dict.items():
+                            row[key] = value
+
+            #if logging_on:
+            #    logger.debug(' row: ' + str(row))
+
+    if logging_on:
+        logger.debug(' grade_rows len: ' + str(len(grade_rows)))
+        logger.debug('---------------- ')
 
     return grade_rows
 # --- end of create_grade_rows
@@ -4994,240 +4667,241 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
 
     grade_rows = []
 
-    try:
-        req_usr = request.user
-        requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase == sel_schoolbase)
+    req_usr = request.user
+    requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase == sel_schoolbase)
 
-        # PR2023-05-12 was: if requsr_same_school and sel_examyear and sel_schoolbase and sel_depbase:
-        if sel_examyear and sel_schoolbase and sel_depbase:
-            #examkeys_fields = ""
-            #if req_usr.role == c.ROLE_064_ADMIN:
-            #    # pe_exam not in use: was: examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
-            #    examkeys_fields = "ce_exam.keys AS ceex_keys,"
+    # PR2023-05-12 was: if requsr_same_school and sel_examyear and sel_schoolbase and sel_depbase:
+    if sel_examyear and sel_schoolbase and sel_depbase:
+        #examkeys_fields = ""
+        #if req_usr.role == c.ROLE_064_ADMIN:
+        #    # pe_exam not in use: was: examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
+        #    examkeys_fields = "ce_exam.keys AS ceex_keys,"
 
-            sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
-                        'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
-                        'depbase_id': sel_depbase.pk if sel_depbase else None,
-                        'experiod': sel_examperiod
-                        }
-            sub_list = ["SELECT exam.id, subjbase.id AS exam_subjbase_id,",
-                        "CONCAT(subjbase.code,",
+        sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
+                    'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
+                    'depbase_id': sel_depbase.pk if sel_depbase else None,
+                    'experiod': sel_examperiod
+                    }
+        sub_list = ["SELECT exam.id, subjbase.id AS exam_subjbase_id,",
+                    "CONCAT(subjbase.code,",
                         "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-                        "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+                        "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ",
+                            "ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
-                        "exam.examperiod, exam.ete_exam, exam.version, exam.has_partex, exam.partex, ",
-                        "exam.amount, exam.blanks, exam.assignment, exam.keys,",
-                        "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm, exam.secret_exam, exam.published_id,",
-                        "ntb.omschrijving AS ntb_omschrijving",
+                    "exam.examperiod, exam.ete_exam, exam.version, exam.has_partex, exam.partex, ",
+                    "exam.amount, exam.blanks, exam.assignment, exam.keys,",
+                    "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm, exam.secret_exam, exam.published_id,",
+                    "ntb.omschrijving AS ntb_omschrijving",
 
-                        "FROM subjects_exam AS exam",
-                        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-                        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-                        "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+                    "FROM subjects_exam AS exam",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
 
-                        "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
+                    "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
 
-                        "WHERE exam.published_id IS NOT NULL"
-                        ]
-            sub_exam = ' '.join(sub_list)
+                    "WHERE exam.published_id IS NOT NULL"
+                    ]
+        sub_exam = ' '.join(sub_list)
 
-            sql_list = ["SELECT grd.id, CONCAT('grade_', grd.id::TEXT) AS mapid,",
-                        "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
-                        "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
-                        "depbase.code AS depbase_code,",
-                        "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-                        "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name_nl AS subj_name_nl,",
-                        "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
+        sql_list = ["WITH sub_exam AS (" + sub_exam + ")",
+                    "SELECT grd.id, CONCAT('grade_', grd.id::TEXT) AS mapid,",
+                    "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+                    "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
+                    "depbase.code AS depbase_code,",
+                    "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+                    "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name_nl AS subj_name_nl,",
+                    "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
 
-                        "grd.examperiod, grd.pescore, grd.cescore,",
-                        "grd.ce_exam_id, grd.ce_exam_blanks, grd.ce_exam_result, grd.ce_exam_score,",
-                        "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_auth3by_id,",
-                        "grd.ce_exam_published_id AS ce_exam_published_id, grd.ce_exam_blocked,",
+                    "grd.examperiod, grd.pescore, grd.cescore,",
+                    "grd.ce_exam_id, grd.ce_exam_blanks, grd.ce_exam_result, grd.ce_exam_score,",
+                    "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_auth3by_id,",
+                    "grd.ce_exam_published_id AS ce_exam_published_id, grd.ce_exam_blocked,",
 
-                        "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
-                        "ce_exam.exam_subjbase_id AS ceex_exam_subjbase_id,",
-                        "ce_exam.examperiod AS ceex_examperiod, ce_exam.ete_exam AS ceex_ete_exam,",
-                        "ce_exam.version AS ceex_version, ce_exam.amount AS ceex_amount,",
-                        "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
-                        "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
-                        "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength,",
-                        "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm,",
-                        "ce_exam.secret_exam AS ceex_secret_exam, ce_exam.published_id AS ceex_published_id,",
-                        "ce_exam.ntb_omschrijving,",
+                    "sub_exam.exam_name,"
+                    "sub_exam.exam_subjbase_id,",
+                    "sub_exam.examperiod, sub_exam.ete_exam,",
+                    "sub_exam.version, sub_exam.amount,",
+                    "sub_exam.has_partex, sub_exam.partex,",
+                    "sub_exam.blanks, sub_exam.assignment,",
+                    "sub_exam.nex_id, sub_exam.scalelength,",
+                    "sub_exam.cesuur, sub_exam.nterm,",
+                    "sub_exam.secret_exam, ",
 
-                        "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr,",
-                        "auth3.last_name AS ce_exam_auth3_usr, publ.modifiedat AS ce_exam_publ_modat",
+                    # exam_published_id is the published ETE exam
+                    "sub_exam.published_id AS exam_published_id,",
+                    "sub_exam.ntb_omschrijving,",
 
-                        "FROM students_grade AS grd",
-                        "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                        "LEFT JOIN (", sub_exam, ") AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+                    "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr,",
+                    "auth3.last_name AS ce_exam_auth3_usr, publ.modifiedat AS ce_exam_publ_modat",
 
-                        "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                        "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
-                        "LEFT JOIN subjects_cluster AS cls ON (cls.id = studsubj.cluster_id)",
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "LEFT JOIN sub_exam ON (sub_exam.id = grd.ce_exam_id)",
 
-                        "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                        "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
-                        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                    "LEFT JOIN subjects_cluster AS cls ON (cls.id = studsubj.cluster_id)",
 
-                        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
-                        "LEFT JOIN accounts_user AS auth1 ON (auth1.id = grd.ce_exam_auth1by_id)",
-                        "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.ce_exam_auth2by_id)",
-                        "LEFT JOIN accounts_user AS auth3 ON (auth3.id = grd.ce_exam_auth3by_id)",
-                        "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
+                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                        ''.join(("WHERE ey.id = ", str(sel_examyear.pk), "::INT")),
-                        ''.join(("AND school.base_id = ", str(sel_schoolbase.pk), "::INT")),
-                        ''.join(("AND dep.base_id = ", str(sel_depbase.pk), "::INT")),
+                    "LEFT JOIN accounts_user AS auth1 ON (auth1.id = grd.ce_exam_auth1by_id)",
+                    "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.ce_exam_auth2by_id)",
+                    "LEFT JOIN accounts_user AS auth3 ON (auth3.id = grd.ce_exam_auth3by_id)",
+                    "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
 
-                        # PR2023-01-16 added:
-                        # show tobedeleted students / subjects PR2-23-02-09
-                        # was:  "AND NOT stud.tobedeleted AND NOT stud.deleted",
-                        #       "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
+                    ''.join(("WHERE ey.id = ", str(sel_examyear.pk), "::INT")),
+                    ''.join(("AND school.base_id = ", str(sel_schoolbase.pk), "::INT")),
+                    ''.join(("AND dep.base_id = ", str(sel_depbase.pk), "::INT")),
 
-                        "AND NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
-                        
-                        # PR2023-05-05 added: only subjects with CE must be shown
-                        "AND si.weight_ce > 0"
-                        ]
+                    # PR2023-01-16 added:
+                    # show tobedeleted students / subjects PR2-23-02-09
+                    # was:  "AND NOT stud.tobedeleted AND NOT stud.deleted",
+                    #       "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
 
-            # PR2023-05-12 in page wolf: show only ete exams
-            if ete_exams_only:
-                sql_list.append("AND si.ete_exam")
+                    "AND NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
 
-            if logging_on:
-                logger.debug(' sql_list: ' + str(sql_list))
+                    # PR2023-05-05 added: only subjects with CE must be shown
+                    "AND si.weight_ce > 0"
+                    ]
 
-            # note: don't filter on sel_subjbase_pk, must be able to change within allowed
+        # PR2023-05-12 in page wolf: show only ete exams
+        if ete_exams_only:
+            sql_list.append("AND si.ete_exam")
 
-            if grade_pk_list:
-                # when grade_pk_list has value: skip subject filter
-                sql_keys['grade_pk_arr'] = grade_pk_list
-                sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
-            else:
+        if logging_on:
+            logger.debug(' sql_list: ' + str(sql_list))
 
-                if setting_dict:
+        # note: don't filter on sel_subjbase_pk, must be able to change within allowed
 
-                    sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
-                    if sel_examperiod in (1, 2):
-                        sql_keys['ep'] = sel_examperiod
-                        sql_list.append(''.join(("AND grd.examperiod=", str(sel_examperiod), "::INT")))
+        if grade_pk_list:
+            # when grade_pk_list has value: skip subject filter
+            sql_keys['grade_pk_arr'] = grade_pk_list
+            sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
+        else:
 
-                    # filter on sel_cluster_pk happens on client.
-                    # filter on sel_student_pk happens on client.
+            if setting_dict:
+
+                sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
+                if sel_examperiod in (1, 2):
+                    sql_keys['ep'] = sel_examperiod
+                    sql_list.append(''.join(("AND grd.examperiod=", str(sel_examperiod), "::INT")))
+
+                # filter on sel_cluster_pk happens on client.
+                # filter on sel_student_pk happens on client.
 
 # show grades that are not published only when requsr_same_school PR2021-04-29
 
-                # - filter on selected schoolbase
-                # - filter selected schoolbase_pk is required, is already part of sql
-                # - validation of sel_schoolbase_pk has taken place in download_setting
+            # - filter on selected schoolbase
+            # - filter selected schoolbase_pk is required, is already part of sql
+            # - validation of sel_schoolbase_pk has taken place in download_setting
 
-                # - filter on selected depbase
-                # - filter selected depbase_pk is required, is already part of sql
-                # - validation of sel_depbase_pk has taken place in download_setting
+            # - filter on selected depbase
+            # - filter selected depbase_pk is required, is already part of sql
+            # - validation of sel_depbase_pk has taken place in download_setting
 
-                # +++ add sql_clause with selected sct, cluster an d allowed depbase, lvlbase, subj_base
+            # +++ add sql_clause with selected sct, cluster an d allowed depbase, lvlbase, subj_base
 
-                # - filter on selected sectorbase
+            # - filter on selected sectorbase
 
-                # - get selected sctbase_pk of req_usr
-                selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
-                # PR 2023-04-17 Sentry error: missing FROM-clause entry for table "sct"
-                # sql has no table sct, dont filter on sector:
+            # - get selected sctbase_pk of req_usr
+            selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
+            # PR 2023-04-17 Sentry error: missing FROM-clause entry for table "sct"
+            # sql has no table sct, dont filter on sector:
 
-                # - filter on selected subjectbase
-                # PR2023-04-17 filtering on subj_pk takes place on client function FillTblRows()
+            # - filter on selected subjectbase
+            # PR2023-04-17 filtering on subj_pk takes place on client function FillTblRows()
 
-                # - filter on selected cluster_pk
-                # dont filter on allowed clusters. Allowed clusters give permit to edit and approve, but others mat be viewed
-                # PR2023-04-17 filtering on selected cluster_pk takes place on client function FillTblRows()
+            # - filter on selected cluster_pk
+            # dont filter on allowed clusters. Allowed clusters give permit to edit and approve, but others mat be viewed
+            # PR2023-04-17 filtering on selected cluster_pk takes place on client function FillTblRows()
 
-    # - get allowed_sections_dict from request
-            userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
-            userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+# - get allowed_sections_dict from request
+        userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
+        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+        if logging_on:
+            logger.debug(
+                '    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(
+                    type(userallowed_sections_dict)))
+            # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
+
+        # PR2023-03-27
+        # when a corrector has no allowed subjects, must return None.
+        # when an examiner has no allowed subjects, must return all subjects.
+        return_false_when_no_allowedsubjects = acc_prm.get_return_false_when_no_allowedsubjects(req_usr)
+
+        sql_clause = acc_prm.get_sqlclause_allowed_v2(
+            table='grade',
+            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+            sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
+            sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
+            userallowed_sections_dict=userallowed_sections_dict,
+            return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
+        )
+        if sql_clause:
+            sql_list.append(sql_clause)
+
+        if logging_on:
+            logger.debug('    sql_clause: ' + str(sql_clause))
+
+        sql_list.append('ORDER BY grd.id')
+
+        sql = ' '.join(sql_list)
+
+        if logging_on:
+            for sql_txt in sql_list:
+                logger.debug(' > ' + str(sql_txt))
+
+        with connection.cursor() as cursor:
+
+            cursor.execute(sql, sql_keys)
+            grade_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('    len grade_rows: ' + str(len(grade_rows)))
+
+    # - add full name to rows, and array of id's of auth
+        if grade_rows:
             if logging_on:
-                logger.debug(
-                    '    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(
-                        type(userallowed_sections_dict)))
-                # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
+                logger.debug('len(grade_rows): ' + str(len(grade_rows)))
+            for row in grade_rows:
 
-            # PR2023-03-27
-            # when a corrector has no allowed subjects, must return None.
-            # when an examiner has no allowed subjects, must return all subjects.
-            return_false_when_no_allowedsubjects = acc_prm.get_return_false_when_no_allowedsubjects(req_usr)
-
-            sql_clause = acc_prm.get_sqlclause_allowed_NEW(
-                table='grade',
-                sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
-                sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
-                sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
-                userallowed_sections_dict=userallowed_sections_dict,
-                return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
-            )
-            if sql_clause:
-                sql_list.append(sql_clause)
-
-            if logging_on:
-                logger.debug('    sql_clause: ' + str(sql_clause))
-
-            sql_list.append('ORDER BY grd.id')
-
-            sql = ' '.join(sql_list)
-
-            if logging_on:
-                for sql_txt in sql_list:
-                    logger.debug(' > ' + str(sql_txt))
-
-            with connection.cursor() as cursor:
-
-                cursor.execute(sql, sql_keys)
-                grade_rows = af.dictfetchall(cursor)
-
-            if logging_on:
-                logger.debug('    len grade_rows: ' + str(len(grade_rows)))
-
-        # - add full name to rows, and array of id's of auth
-            if grade_rows:
                 if logging_on:
-                    logger.debug('len(grade_rows): ' + str(len(grade_rows)))
-                for row in grade_rows:
-                    first_name = row.get('firstname')
-                    last_name = row.get('lastname')
-                    prefix = row.get('prefix')
-                    full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
-                    row['fullname'] = full_name if full_name else None
-                    ce_exam_id = row.get('ce_exam_id')
-                    exam_name = None
+                    logger.debug('    row: ' + str(row))
 
-                    if ce_exam_id:
-                    # def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
-                        exam_name = subj_vw.get_exam_name(
-                            ce_exam_id=ce_exam_id,
-                            ete_exam=row.get('ceex_ete_exam'),
-                            subj_name_nl=row.get('subj_name_nl'),
-                            depbase_code=row.get('depbase_code'),
-                            lvl_abbrev=row.get('lvl_abbrev') or '-',
-                            examperiod=row.get('examperiod'),
-                            examyear=sel_examyear,
-                            version=row.get('ceex_version'),
-                            ntb_omschrijving=row.get('ntb_omschrijving')
-                        )
-                    row['exam_name'] = exam_name
+                first_name = row.get('firstname')
+                last_name = row.get('lastname')
+                prefix = row.get('prefix')
+                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+                row['fullname'] = full_name if full_name else None
+                ce_exam_id = row.get('ce_exam_id')
+                exam_name = None
 
-                    if logging_on and False:
-                        logger.debug('ce_exam_id: ' + str(ce_exam_id))
-                        logger.debug('ceex_name: ' + str(row.get('ceex_name')))
-                        logger.debug('exam_name: ' + str(exam_name))
+                if ce_exam_id:
+                # def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
+                    exam_name = subj_vw.get_exam_name(
+                        ce_exam_id=ce_exam_id,
+                        ete_exam=row.get('ete_exam'),
+                        subj_name_nl=row.get('subj_name_nl'),
+                        depbase_code=row.get('depbase_code'),
+                        lvl_abbrev=row.get('lvl_abbrev') or '-',
+                        examperiod=row.get('examperiod'),
+                        examyear=sel_examyear,
+                        version=row.get('version'),
+                        ntb_omschrijving=row.get('ntb_omschrijving')
+                    )
+                row['exam_name'] = exam_name
 
-            if logging_on:
-                logger.debug('---------------- ')
 
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
+        if logging_on:
+            logger.debug('---------------- ')
 
     return grade_rows
 # --- end of create_grade_with_exam_rows
@@ -5244,7 +4918,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     # when DOE: show all SXM exams
     # when school: show all exams of this school
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))
@@ -6787,133 +6461,6 @@ def calc_amount_and_scalelength_of_assignment(exam):
 
     return total_amount, total_maxscore, total_blanks, total_keys_missing, has_changed
 # - end of calc_amount_and_scalelength_of_assignment
-
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# PR2022-05-11 just added to answer question of Nancy Josefina
-def create_grade_rows_with_modbyTEMP(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, setting_dict, request,
-                      grade_pk_list=None, skip_allowed_filter=False):
-    # --- create grade rows of all students of this examyear / school PR2020-12-14  PR2021-12-03 PR2022-02-09
-
-    # note: don't forget to filter tobedeleted = false!! PR2021-03-15
-    # grades that are not published are only visible when 'same_school'
-    # note_icon is downloaded in separate call
-
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- create_grade_rows -----')
-        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
-        logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
-        logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
-        logger.debug('sel_examperiod: ' + str(sel_examperiod))
-        logger.debug('setting_dict: ' + str(setting_dict))
-        logger.debug('grade_pk_list: ' + str(grade_pk_list))
-
-    grade_rows = []
-    try:
-        req_usr = request.user
-
-        # sel_examtype not in use
-        sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk,
-                    'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
-
-        sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix,",
-                    "lvl.abbrev AS lvl, sct.abbrev AS sct,",
-                    "segrade, subj.name_nl AS subject, ",
-                    "grd.modifiedat, au.last_name AS modifiedby",
-
-                    "FROM students_grade AS grd",
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
-                    "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
-
-                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
-
-                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-
-                    "LEFT JOIN accounts_user AS au ON (au.id = grd.modifiedby_id)",
-
-                    "WHERE ey.id = %(ey_id)s::INT AND grd.examperiod = %(experiod)s::INT",
-                    "AND school.base_id = %(sb_id)s::INT",
-                    "AND dep.base_id = %(depbase_id)s::INT",
-
-                    "AND NOT stud.tobedeleted",
-                    "AND NOT studsubj.tobedeleted",
-                    "AND NOT grd.tobedeleted AND NOT grd.deleted"
-                    ]
-
-        if grade_pk_list:
-            # when grade_pk_list has value: skip subject filter
-            sql_keys['grade_pk_arr'] = grade_pk_list
-            sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
-
-# --- filter on usersetting
-        else:
-            sel_lvlbase_pk, sel_sctbase_pk, sel_subjbase_pk, sel_cluster_pk, sel_student_pk = None, None, None, None, None
-            if setting_dict:
-                sel_subject_pk = setting_dict.get(c.KEY_SEL_SUBJECT_PK)
-
-                if sel_subject_pk:
-                    sql_keys['subj_pk'] = sel_subject_pk
-                    sql_list.append("AND subj.id = %(subj_pk)s::INT")
-
-            # PR2022-04-05 use get_userfilter_allowed_subjbase instead of only sel_lvlbase_pk
-            #if sel_subjbase_pk:
-            #    sql_keys['subjbase_pk'] = sel_subjbase_pk
-            #    sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
-            acc_view.get_userfilter_allowed_subjbase(request, sql_keys, sql_list, sel_subjbase_pk)
-
-# --- filter on allowed
-        acc_view.get_userfilter_allowed_subjbase(
-            request=request,
-            sql_keys=sql_keys,
-            sql_list=sql_list,
-            subjbase_pk=None,
-            skip_allowed_filter=skip_allowed_filter
-        )
-
-        sql_list.append('ORDER BY grd.id')
-
-        sql = ' '.join(sql_list)
-
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-            grade_rows = af.dictfetchall(cursor)
-
-        if logging_on:
-            logger.debug('sql_keys: ' + str(sql_keys))
-            #logger.debug('sql: ' + str(sql))
-
-    # - add full name to rows, and array of id's of auth
-        if grade_rows:
-
-            if logging_on and False:
-                logger.debug('---------------- ')
-            for row in grade_rows:
-                first_name = row.pop('firstname')
-                last_name = row.pop('lastname')
-                prefix = row.pop('prefix')
-
-                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
-                row['fullname'] = full_name if full_name else None
-
-                if logging_on:
-                    logger.debug(str(row))
-
-            if logging_on:
-                logger.debug('---------------- ')
-
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-
-    return grade_rows
-# --- end of create_grade_rows
 
 
 def recalc_grade_ce_exam_score(exam_pk_list):

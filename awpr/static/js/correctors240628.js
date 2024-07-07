@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let examyear_map = new Map();
     let department_map = new Map();
-    let permit_map = new Map();
+    //let permit_map = new Map();
 
     //let filter_dict = {};
     let filter_mod_employee = false;
@@ -196,10 +196,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 function() {t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+console.log("??? el_hdrbar_school",  el_hdrbar_school);
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
                 function() {
-                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
                     t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
             }, false );
         };
@@ -448,6 +448,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
+
+
+                console.log("   ??? permit_dict:",permit_dict )
                     isloaded_permits = true;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
@@ -456,7 +459,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(isloaded_loc && isloaded_permits){
                     CreateSubmenu();
                 };
-                if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
+                if(isloaded_settings || isloaded_permits){
+                    h_UpdateHeaderBar(el_hdrbar_examyear, null, el_hdrbar_school);
+                };
 
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
@@ -482,7 +487,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     for (let i = 0, row; row = response.bankname_rows[i]; i++) {
                         bankname_rows.push(row);
                     };
-                    console.log("bankname_rows", bankname_rows)
                 };
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
@@ -626,9 +630,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  =================== PR2021-08-01 PR2022-02-28 PR2023-07-10
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "    selected_btn: ", selected_btn);
-        console.log( "    selected: ", selected);
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "    selected_btn: ", selected_btn);
+        //console.log( "    selected: ", selected);
 
         const tblName = get_tblName_from_selectedBtn() // tblName = userapproval, usercompensation or userdata
         const field_setting = field_settings[selected_btn];
@@ -659,11 +663,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- loop through data_rows
             for (const data_dict of Object.values(data_dicts)) {
 
-        console.log( "    data_dict: ", data_dict);
-        console.log( "    data_dict.allowed_depbase_pk_arr: ", data_dict.allowed_depbase_pk_arr);
-        console.log( "    selected.sel_depbase_pk: ", selected.sel_depbase_pk);
-        console.log( "    data_dict.allowed_lvlbase_pk_arr: ", data_dict.allowed_lvlbase_pk_arr);
-        console.log( "    selected.sel_lvlbase_pk: ", selected.sel_lvlbase_pk);
+        //console.log( "    data_dict: ", data_dict);
+        //console.log( "    data_dict.allowed_depbase_pk_arr: ", data_dict.allowed_depbase_pk_arr);
+        //console.log( "    selected.sel_depbase_pk: ", selected.sel_depbase_pk);
+        //console.log( "    data_dict.allowed_lvlbase_pk_arr: ", data_dict.allowed_lvlbase_pk_arr);
+        //console.log( "    selected.sel_lvlbase_pk: ", selected.sel_lvlbase_pk);
                 // PR2023-07-11 filter on depbase and lvlbase, don't use sel_depbase_pk and sel_lvlbase_pk
                 let show_row = false;
                 if (selected_btn === "btn_correctors"){
@@ -709,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (selected_btn === "btn_userdata"){
                     show_row = true;
                 };
-        console.log( " >>>   show_row: ", show_row);
+        //console.log( "    show_row: ", show_row);
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);
                };
@@ -817,8 +821,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-02-26 PR2023-07-09
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        console.log("=========  CreateTblRow =========", tblName);
-        console.log("    data_dict", data_dict);
+        //console.log("=========  CreateTblRow =========", tblName);
+        //console.log("    data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -937,7 +941,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateTblRow  ================ PR2020-08-01
     function UpdateTblRow(tblRow, tblName, data_dict) {
-        console.log("=========  UpdateTblRow =========");
+        //console.log("=========  UpdateTblRow =========");
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
                 UpdateField(td.children[0], data_dict);
@@ -1343,7 +1347,8 @@ console.log( "  >>>>>>>> url_str", url_str);
         if (selected_btn === "btn_usercomp_agg"){
             // reset el_input.value to saved value
             const data_dict = usercomp_agg_dicts[map_id];
-            el_input.value = (data_dict && data_dict.uc_meetings) ? data_dict.uc_meetings : null
+            el_input.value = (data_dict && data_dict.uc_meetings) ? data_dict.uc_meetings : null;
+
             b_show_mod_message_html(loc.cannot_enter_meetings_in_tab_compensation + "<br>" + loc.select_tab_approvals_to_enter_meetings);
         } else {
 
@@ -1401,7 +1406,7 @@ console.log( "  >>>>>>>> url_str", url_str);
         console.log("    data_dict", data_dict)
         if (data_dict){
             if(data_dict.u_id !== permit_dict.requsr_pk){
-                b_show_mod_message_html(["<p class='p-2 border_bg_invalid'>", loc.Meeting_canonlybe_entered_by_corrector_himself, "</p"].join(""));
+                b_show_mod_message_html(["<p class='p-2 border_bg_invalid'>", loc.Meeting_canonlybe_entered_by_corrector_himself, "</p>"].join(""));
             } else {
                 el_MCH_header_text.innerHTML = [loc.Meetings, data_dict.subj_name_nl + " - " + loc.examperiod_caption[data_dict.examperiod]].join("<br>");
         // --- get data_dict from tblName and selected_pk
@@ -2846,63 +2851,84 @@ console.log( "  >>>>>>>> url_str", url_str);
 //========= MOD APPROVE STUDENT SUBJECTS ====================================
     function MAC_Open (open_mode) {
         console.log("===  MAC_Open  =====") ;
-        console.log("open_mode", open_mode) ;
+        console.log("    open_mode", open_mode) ;
 
         b_clear_dict(mod_MAC_dict);
 
         mod_MAC_dict.form_name = 'comp';
 
+        // modes are 'approve' and 'submit'
+        mod_MAC_dict.is_approve_mode = (open_mode === "approve");
+        mod_MAC_dict.is_submit_mode = (open_mode === "submit");
+
         // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // auth_index 1 = auth1, 2 = auth2
-        const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
+        //const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
+        const sel_auth_index = setting_dict.sel_auth_index;
+        console.log("    sel_auth_index", sel_auth_index) ;
 
-        if (permit_dict.permit_approve_comp) {
-            if(auth_index){
-                // modes are 'approve' 'submit_test' 'submit_save'
-                mod_MAC_dict.is_approve_mode = (open_mode === "approve");
-                mod_MAC_dict.is_submit_mode = (open_mode === "submit");
-                //mod_MAC_dict.status_index = auth_index;
-                mod_MAC_dict.test_is_ok = false;
-                mod_MAC_dict.submit_is_ok = false;
-                mod_MAC_dict.step = -1;  // gets value 1 in MAC_Save
-                mod_MAC_dict.is_reset = false;
+        if (![1, 2, 3, 4].includes(sel_auth_index)) {
 
-                const function_str = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1")) ? loc.Chairperson :
-                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary : "-";
+        } else if (![1, 2].includes(sel_auth_index)) {
+            const msg_txt = (mod_MAC_dict.is_submit_mode)
+                ? (sel_auth_index === 4) ? loc.MAC_info.Corrector_cannot_submit_comp : loc.MAC_info.Examiner_cannot_submit_comp
+                : (sel_auth_index === 4) ? loc.MAC_info.Corrector_cannot_approve_comp : loc.MAC_info.Examiner_cannot_approve_comp;
 
-                let header_txt = (mod_MAC_dict.is_approve_mode)
-                                    ?  loc.Approve_compensations
-                                    : loc.Submit_compensation_form;
-                header_txt += "\n" + loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")";
-                el_MAC_header.innerText = header_txt;
+            const msg_html = ["<div class='p-2 border_bg_invalid'>", msg_txt, "</div>"].join("");
+            b_show_mod_message_html(msg_html);
 
-                // PR2023-07-14 use selected instead of setting_dict, to prevent problems when using 'all departments'
-                el_MAC_department.innerText = (selected.sel_depbase_code) ? selected.sel_depbase_code :  "<" + loc.All_departments + ">";
+        } else if (!permit_dict.permit_approve_comp) {
+            const msg_txt = (mod_MAC_dict.is_submit_mode)
+                ? loc.MAC_info.No_permission_submit : loc.MAC_info.No_permission_approve;
+            const msg_html = ["<div class='p-2 border_bg_invalid'>", msg_txt, "</div>"].join("");
+            b_show_mod_message_html(msg_html);
 
-    // ---  hide level when not level_req
-                add_or_remove_class(el_MAC_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
-                el_MAC_level.innerText = (setting_dict.sel_lvlbase_code) ? setting_dict.sel_lvlbase_code :  "<" + loc.All_levels+ ">";
+        } else {
 
-    // ---  show info container and delete button only in approve mode
-                //console.log("...........mod_MAC_dict.is_submit_mode", mod_MAC_dict.is_submit_mode) ;
-                add_or_remove_class(el_MAC_select_container, cls_hide, !mod_MAC_dict.is_approve_mode);
-                add_or_remove_class(el_MAC_btn_delete, cls_hide, mod_MAC_dict.is_submit_mode);
+            // modes are 'approve' 'submit_test' 'submit_save'
+            mod_MAC_dict.is_approve_mode = (open_mode === "approve");
+            mod_MAC_dict.is_submit_mode = (open_mode === "submit");
+            //mod_MAC_dict.status_index = auth_index;
+            mod_MAC_dict.test_is_ok = false;
+            mod_MAC_dict.submit_is_ok = false;
+            mod_MAC_dict.step = -1;  // gets value 1 in MAC_Save
+            mod_MAC_dict.is_reset = false;
 
-    // ---  reset el_MAC_input_verifcode
-                el_MAC_input_verifcode.value = null;
+            const function_str = (sel_auth_index === 1) ? loc.Chairperson : loc.Secretary;
 
-    // ---  show info and hide loader
-                // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
-                add_or_remove_class(el_MAC_loader, cls_hide, true);
+            let header_txt = (mod_MAC_dict.is_approve_mode)
+                                ?  loc.Approve_compensations
+                                : loc.Submit_compensation_form;
+            header_txt += "\n" + loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")";
+            el_MAC_header.innerText = header_txt;
 
-                MAC_Save ("save");
-                // this function is in MAC_Save:
-                // MAC_SetInfoboxesAndBtns();
+            // PR2023-07-14 use selected instead of setting_dict, to prevent problems when using 'all departments'
+            el_MAC_department.innerText = (selected.sel_depbase_code) ? selected.sel_depbase_code :  "<" + loc.All_departments + ">";
 
-                $("#id_mod_approve_compensation").modal({backdrop: true});
+// ---  hide level when not level_req
+            add_or_remove_class(el_MAC_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
+            el_MAC_level.innerText = (setting_dict.sel_lvlbase_code) ? setting_dict.sel_lvlbase_code :  "<" + loc.All_levels+ ">";
 
-            };
+// ---  show info container and delete button only in approve mode
+            //console.log("...........mod_MAC_dict.is_submit_mode", mod_MAC_dict.is_submit_mode) ;
+            add_or_remove_class(el_MAC_select_container, cls_hide, !mod_MAC_dict.is_approve_mode);
+            add_or_remove_class(el_MAC_btn_delete, cls_hide, mod_MAC_dict.is_submit_mode);
+
+// ---  reset el_MAC_input_verifcode
+            el_MAC_input_verifcode.value = null;
+
+// ---  show info and hide loader
+            // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
+            add_or_remove_class(el_MAC_loader, cls_hide, true);
+
+            MAC_Save ("save");
+            // this function is in MAC_Save:
+            // MAC_SetInfoboxesAndBtns();
+
+            $("#id_mod_approve_compensation").modal({backdrop: true});
+
+
         };
     };  // MAC_Open
 

@@ -129,10 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {
-                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
-                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
-                }, false );
+                function() {t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response)}, false);
         };
 
 // ---  SIDEBAR ------------------------------------
@@ -382,7 +379,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 if(isloaded_loc && isloaded_settings){CreateSubmenu()};
-                if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
+                if(isloaded_settings || isloaded_permits){
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                };
 
                 if ("messages" in response) {
                     b_show_mod_message_dictlist(response.messages);

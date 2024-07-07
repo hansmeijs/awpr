@@ -231,7 +231,7 @@ def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_co
         if not exit_loop:
 
             reg_list = []
-        # - first 2 characters is examenjaar
+        # - first 2 characters is examyear
             reg_list.append(examyear_str[2:4] if examyear_str else '--')
 
         # - character 3 id 'c' or 's'

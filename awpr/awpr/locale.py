@@ -26,6 +26,12 @@ def get_locale_dict(table_dict, user_lang, request):
 
     page_list = table_dict.get('page')
 
+    dict['Chairperson'] = TXT_Chairperson
+    dict['Secretary'] = TXT_Secretary
+    dict['Examiner'] = TXT_Examiner
+    dict['Corrector'] = TXT_Corrector
+    dict['Second_corrector'] = _('Second corrector')
+
     dict['weekdays_abbrev'] = TXT_weekdays_abbrev
     dict['weekdays_long'] = TXT_weekdays_long
     dict['months_abbrev'] = TXT_months_abbrev
@@ -313,13 +319,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['on_page'] = _(' on page ')
         dict['Delete_permission'] = _('Delete permission')
 
-        dict['Chairperson'] = TXT_Chairperson
-        dict['Secretary'] = TXT_Secretary
-        dict['Corrector'] = TXT_Corrector
-        dict['Second_corrector'] = _('Second corrector')
         dict['Second_corrector_2lines'] = pgettext_lazy('2 lines', 'Second\ncorrector')
 
-        dict['Examiner'] = TXT_Examiner
         dict['Teacher'] = _('Teacher')
         dict['Analyze'] = _('Analyze')
         dict['Download'] = _('Download')
@@ -506,6 +507,19 @@ def get_locale_dict(table_dict, user_lang, request):
             'Creating_comp_form': _("AWP is creating the compensation form"),
 
             'sending_verifcode': TXT_Sending_verifcode,
+
+            'Examiner_cannot_approve_comp': _("As %(auth)s, you cannot approve %(cpt)s.") % \
+                        {'auth': gettext('Examiner').lower(), 'cpt': gettext('Compensations').lower()},
+            'Corrector_cannot_approve_comp': _("As %(auth)s, you cannot approve %(cpt)s.") % \
+                        {'auth': gettext('Second corrector').lower(), 'cpt': gettext('Compensations').lower()},
+            'Examiner_cannot_submit_comp': _("As %(auth)s, you cannot submit %(cpt)s.") % \
+                        {'auth': gettext('Examiner').lower(), 'cpt': gettext('Compensations')},
+            'Corrector_cannot_submit_comp': _("As %(auth)s, you cannot submit %(cpt)s.") % \
+                        {'auth': gettext('Second corrector').lower(), 'cpt': gettext('Compensations')},
+            'No_permission_approve': _("You don't have permission to %(verb)s %(cpt)s.") % \
+                        {'verb': pgettext_lazy('goed te keuren', 'approve').lower(), 'cpt': gettext('Compensations')},
+            'No_permission_submit': _("You don't have permission to %(verb)s %(cpt)s.") % \
+                        {'verb': pgettext_lazy('in te dienen', 'submit').lower(), 'cpt': gettext('Compensations')}
         }
 
         dict['msg_userdata'] = {
@@ -524,7 +538,6 @@ def get_locale_dict(table_dict, user_lang, request):
             'is_not_valid': _(' is not valid.'),
             'mustbe_whole_number': _(' must be a whole number.')
         }
-
 
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
     if 'page_examyear' in page_list:
@@ -851,7 +864,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_candidate'] = _('Delete candidate')
         dict['Restore_deleted_candidate'] = _('Restore deleted candidate')
         dict['Remove_bis_exam'] = _('Remove bis-exam')
+        dict['Remove_partial_exam'] = _('Remove partial exam')
         dict['The_bis_exam'] = _('The bis-exam')
+        dict['The_partial_exam'] = _('The partial exam')
         dict['The_evening_student_label'] = _("Label 'evening student'")
         dict['Remove_evening_student_label'] = _("Remove label 'evening student'")
         dict['Download_candidate_data'] = _('Download candidate data')
@@ -1047,10 +1062,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Authorized_by'] = _('Authorized by')
         dict['Submitted_at'] = TXT_Submitted_at
 
-        dict['Chairperson'] = TXT_Chairperson
-        dict['Secretary'] = TXT_Secretary
-        dict['Second_corrector'] = _('Second corrector')
-        dict['Examiner'] = TXT_Examiner
+        #dict['Chairperson'] = TXT_Chairperson
+        #dict['Secretary'] = TXT_Secretary
+        #dict['Second_corrector'] = _('Second corrector')
+        #dict['Examiner'] = TXT_Examiner
 
         dict['Function'] = TXT_Function
         dict['at_'] = pgettext_lazy('at_date', 'at ')
@@ -1125,6 +1140,15 @@ def get_locale_dict(table_dict, user_lang, request):
             'cpt': _('to make changes in subjects of this cluster')}
         dict['No_cluster_approve_permission'] = _("You don't have permission %(cpt)s.") % {
             'cpt': _('to approve subjects of this cluster')}
+
+        dict['Examiner_donthaveto_approve_subjects'] = _("As %(auth)s, you don't have to approve %(cpt)s.") % {
+            'auth': gettext('Examiner').lower(), 'cpt': gettext('Subjects').lower()}
+        dict['Corrector_donthaveto_approve_subjects'] = _("As %(auth)s, you don't have to approve %(cpt)s.") % {
+            'auth': gettext('Second corrector').lower(), 'cpt': gettext('Subjects').lower()}
+        dict['Examiner_cannot_submit_exform'] = _("As %(auth)s, you cannot submit %(cpt)s.") % {
+            'auth': gettext('Examiner').lower(), 'cpt': gettext('Ex-forms')}
+        dict['Corrector_cannot_submit_exform'] = _("As %(auth)s, you cannot submit %(cpt)s.") % {
+            'auth': gettext('Second corrector').lower(), 'cpt': gettext('Ex-forms')}
 
         dict['ATTENTION'] = _('ATTENTION')
         dict['Only_the_learningpath'] = _('Only the learning path ')
@@ -1483,12 +1507,12 @@ def get_locale_dict(table_dict, user_lang, request):
         }
 
         dict['corrector_cannot_approve_wolf'] = _("As second corrector you don't have to approve %(cpt)s.") \
-                                     % {'cpt': _('Wolf exams')}
-
+                                     % {'cpt': _('Wolf scores')}
+        dict['need_auth_to_approve_wolf'] = _("You must have the function 'Chairperson, 'Secretary' or 'Examiner' to approve Wolf scores.")
         dict['subject_not_in_allowed_clusters'] = _("This subject does not belong to %(cpt)s.") % {'cpt': _('the allowed clusters')}
-        dict['no_permission_to_edit_wolf'] = _("You don't have permission %(edit)s %(score)s.") % {'edit': _('to approve'), 'score': _('Wolf exams')}
+        dict['no_permission_to_edit_wolf'] = _("You don't have permission %(edit)s %(score)s.") % {'edit': _('to approve'), 'score': _('Wolf scores')}
 
-    # ====== PAGE GRADES ========================= PR2020-10-27
+# ====== PAGE GRADES ========================= PR2020-10-27
     if 'page_grade' in page_list:
 
         dict['No_candidate_selected'] = _('No candidate selected')
@@ -1535,6 +1559,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_clusters'] = _("There are no clusters created yet.")
         dict['Goto_subjects_to_create'] = _("Go to the page <i>Subjects</i> and click the menu button <i>Clusters</i> to create them.")
 
+        dict['exam_publ_cancel_ETE'] = _('The ETE has cancelled the publication of this exam.')
+        dict['exam_publ_cancel_DES'] = _('The Division of Examinations has cancelled the publication of this exam.')
+        dict['exam_republished1'] = _('As soon as the exam is re-published,')
+        dict['score_canbe_entered'] = _('the score can be entered and the grade can be calculated.')
+        dict['grade_willbe_calculated'] = _('the grade will be calculated.')
         dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', 'Download conversion table')
         dict['Download_conv_table'] =_('Download conversion table')
 
@@ -1662,6 +1691,9 @@ def get_locale_dict(table_dict, user_lang, request):
             'verif_03': _("The verification code expires in 30 minutes."),
 
             'sending_verifcode': TXT_Sending_verifcode,
+
+            'msg_change_auth01': TXT_auth_changed_to_hdrbar1,
+            'msg_change_auth02': TXT_auth_changed_to_hdrbar2,
         }
 
         dict['Yes_remove'] = _('Yes, remove')
@@ -1732,10 +1764,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS
         dict['options_examtype'] = c.EXAMTYPE_OPTIONS
 
-        dict['Chairperson'] = TXT_Chairperson
-        dict['Secretary'] = TXT_Secretary
-        dict['Corrector'] = TXT_Corrector
-        dict['Examiner'] = TXT_Examiner
+        #dict['Chairperson'] = TXT_Chairperson
+        #dict['Secretary'] = TXT_Secretary
+        #dict['Corrector'] = TXT_Corrector
+        #dict['Examiner'] = TXT_Examiner
 
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_at'] = TXT_Submitted_at
@@ -1807,13 +1839,27 @@ def get_locale_dict(table_dict, user_lang, request):
             'This_exam_is_submitted': _('This exam is submitted.'),
             'This_exam_is_approved': _('This exam is approved.'),
             'You_cannot_change_exam': _('You cannot change the exam.'),
+
+            'Wolf_scores_submitted': _('The Wolf-scores of this exam are submitted.'),
+            'Wolf_score_approved': _('The Wolf-score of this exam is approved.'),
+
+            'ATTENTION': _('ATTENTION'),
+
+            'Wolf_scores_entered': _('There are Wolf-scores of this exam entered.'),
+            'Wolf_scores_willbe_deleted': _('The Wolf-scores will be deleted when you change the exam.'),
+            'Wolf_remove_submitted1': _("If necessary, you can remove 'Submitted' from the Wolf-score."),
+            'Wolf_remove_approved': _("If you want to chenge the exam, you must first remove the approvals from the Wolf-score."),
+            'Wolf_remove_submitted2': _(
+                "Click in the page 'Wolf' on the button 'Remove submitted'."),
+
         }
 
         dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
                     'Only_1_allowed': _('Only 1 function is allowed. '),
                     'cannot_approve': _('You cannot approve grades.'),
                     'cannot_submit': _('You cannot submit grades.'),
-                    'This_grade_is_submitted': _('This grade is submitted.'),
+                    'This_score_is_submitted': _('This score is submitted.'),
+                    'This_score_is_approved': _('This score is approved.'),
                     'You_cannot_change_approval': TXT_You_cannot_change_approval,
                     'This_grade_has_no_value': _('This grade has no value.'),
                     'You_cannot_approve': _('You cannot approve this grade.'),
@@ -1846,7 +1892,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_cluster_unlock_permission'] = _("You don't have permission to unlock grades of this cluster.")
         dict['No_cluster_remove_unlocking_permission'] = _("You don't have permission to remove unlocking of grades of this cluster.")
 
-
 # ====== PAGE RESULTS ========================= PR2021-11-15
     if 'page_result' in page_list:
         dict['Results'] = _('Results')
@@ -1868,6 +1913,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Grade_improvement'] = _('Grade improvement')
         dict['Gimp_2lines'] = pgettext_lazy('2lines', 'Grade improvement')
         dict['Withdrawn_2lines'] = pgettext_lazy('2lines', 'Withdrawn')
+
+        dict['Partial_exam_2lines'] = _('Partial\nexam')
         dict['No_result'] = _('No result')
         dict['Total_candidates'] = _('Total number of candidates')
 
@@ -1926,10 +1973,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit_Ex6_form'] = _('Submit %(form)s form') % {'form': 'Ex6'}
         dict['The_ex6_form'] = _('The %(form)s form') % {'form': 'Ex6'}
 
-        dict['Chairperson'] = TXT_Chairperson
-        dict['Secretary'] = TXT_Secretary
-        dict['Corrector'] = TXT_Corrector
-        dict['Examiner'] = TXT_Examiner
+        #dict['Chairperson'] = TXT_Chairperson
+        #dict['Secretary'] = TXT_Secretary
+        #dict['Corrector'] = TXT_Corrector
+        #dict['Examiner'] = TXT_Examiner
 
         dict['Request_verifcode'] = TXT_Request_verifcode
 
@@ -1988,11 +2035,13 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Download_diploma'] = _('Download diploma')
         dict['Short_gradelist'] = _('Short grade list')
         dict['Download_result_overview'] = _('Download result overview')
+        dict['Download_average_grades'] = _('Download average grades')
         dict['Download_Ex_form'] = _('Download Ex form')
 
         dict['Download'] = _('Download')
 
         dict['The_overview_of_results'] = _('The overview of the results')
+        dict['The_overview_of_average'] = _('The overview of the average grades')
         dict['The_preliminary_gradelist_of'] = _('The preliminary grade list of')
         dict['The_final_gradelist_of'] = _('The final grade list of')
         dict['The_diploma_of'] = _('The diploma of')
@@ -2033,6 +2082,17 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['No_candidates_passed'] = _('The selection contains no candidates that have %(cpt)s.') % {'cpt': gettext('Passed').lower()}
         dict['No_candidates_failed'] = _('The selection contains no candidates that have %(cpt)s.') % {'cpt': gettext('Failed').lower()}
+
+        dict['include_results_of_previous_years'] = _('Include results of previous exam years.')
+        dict['include_grades_of_previous_years'] = _('Include grades of previous exam years.')
+        dict['as_of_examyear'] = _('From exam year')
+        dict['split_by_gender'] = _('Split by gender')
+
+        dict['ATTENTION'] = _('ATTENTION')
+        dict['totals_not_visible'] = _("The totals and percentages are not visible")
+        dict['in_protectedview'] = _("when the Excel file is in 'Protected View'.")
+
+        dict['click_enable_editing'] = _("Click 'Enable Editing' in the Excel file to show the totals and percentages.")
 
 # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:
@@ -2086,6 +2146,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['AWP_is_uploading_document01'] = pgettext_lazy("AWP is document", "AWP is uploading document '")
         dict['AWP_is_uploading_document02'] = pgettext_lazy("aan het uploaden", "' ...")
+
+        dict['Lookup_diploma_gradelist'] = _('Look up diploma or grade list')
+        dict['Enter_registrationnumber'] = _('Enter the registration number and click OK or ENTER.')
+        dict['AWP_will_lookup_document'] = _('AWP will then look up the document.')
 
 # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
@@ -2215,7 +2279,6 @@ def get_locale_dict(table_dict, user_lang, request):
         }
         dict['color_list'] = c.COLOR_LIST
 
-
     return dict
 
 TXT_User = _('User')
@@ -2259,8 +2322,11 @@ TXT_will_be_removed= pgettext_lazy('singular', 'will be removed.')
 TXT_Function = _('Function')
 TXT_Chairperson = _('Chairperson')
 TXT_Secretary = _('Secretary')
-TXT_Corrector = _('Second Corrector')
 TXT_Examiner = _('Examiner')
+TXT_Corrector = _('Second Corrector')
+
+TXT_auth_changed_to_hdrbar1 = _('From now on you can change your function in the title bar.')
+TXT_auth_changed_to_hdrbar2 = _('Click on your function at the top right of the title bar.')
 
 TXT__of_ = _(' of ')
 TXT_Submit = _('Submit')

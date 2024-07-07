@@ -826,7 +826,32 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     Het registratienummer op het diploma en cijferlijst wordt voortaan door AWP aangemaakt en is uniek voor elk waardepapier. Het is niet meer nodig om het diplomanummer en cijferlijstnummer in te voeren.
     De waardepapieren zijn terug te vinden in de pagina Archief, tab Dipi=oma’s en cijferlijsten.
     """
+    functions = ', '.join((gettext('Chairperson'), gettext('Secretary'), gettext('Examiner'), gettext('Second corrector')))
     msg = ''.join((
+        "<p class='pb-2'><b>", gettext("Functions"), '</b>  (', functions, ')<br>',
+        gettext("Your function is now visible at the top right of the title bar."), '<br>',
+        gettext("Click on it to change your function, if you have multiple functions."), "</p>",
+
+        "<p class='pb-2'><b>", gettext("NEW"), ": ", gettext("Compare results with previous exam years"), '</b><br>',
+        gettext("In the Excel file <i>Results</i>, an option is added to include the results of previous examyears."), "</p>",
+
+        "<p class='pb-2'><b>", gettext("NEW"), ": ", gettext("Overview of the average of the grades"), '</b><br>',
+        gettext( "An Excel file with the average grades of each subject can be downloaded from the page <i>Results</i>, tab <i>Overview results</i>."), "<br>",
+        gettext( "You can select multiple examyears and a subdivision by gender."), "</p>",
+
+        "<p class='pb-2'><b>", gettext("NEW"), ": ", gettext("Look up diploma or grade list"), '</b><br>',
+        gettext( "In the page <i>Archive</i>, you can look up a diploma or grade list by entering the registration number."), "<br>",
+        gettext( "This way you can verify the authenticity of a document."), "</p>"
+# authenticiteit
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+    
+        msg = ''.join((
         '<p><b>', gettext("The N-terms of the first exam period are published"), '</b></p>',
         "</p><p class='pb-0'>", gettext("Please do the following to calculate the results"), ":</p>",
         "<ul class='manual_bullet mb-0 pb-2'><li>",
@@ -841,12 +866,30 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
         "<br>", gettext("The '>' sign indicates the re-examination with the lowest difference from the CE grade."),
         "<br>", gettext("An empty column <i>reex</i> means that none of the retakes can give the result 'Passed'."), "</li></ul>"
     ))
-
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
+    
+    #~ msgstr "De N-termen van het eerste tijdvak zijn gepubliceerd."
+    #~ msgstr "Je kunt de uitslagen als volgt berekenen"
+    #~ msgstr "Ga naar de pagina <i>Uitslagen</i> en klik in de zwarte balk op de tab <i>Uitslagen</i>."
+    #~ msgstr "Klik op de lichtgrijze knop <i>Bereken uitslagen</i>."
+    #~ msgstr "AWP berekent nu de uitslagen van de geselecteerde kandidaten."
+    #~ msgstr ""
+    #~ "Er wordt een logbestand gedownload met details hoe AWP de uitslagen heeft "
+    #~ "berekend."
+    #~ msgstr "Klik op de lichtgrijze knop <i>Verkorte cijferlijst</i>."
+    #~ msgstr ""
+    #~ "AWP download dan de verkorte cijferlijst die kan worden gebruikt in de "
+    #~ "uitslagvergadering."
+    #~ msgstr "De verkorte cijferlijst bevat een kolom <i>her</i>."
+    #~ msgstr ""
+    #~ "Als een kandidaat is afgewezen, worden hierin de mogelijke herexamens "
+    #~ "weergegeven en het laagste cijfer, dat nodig is om te slagen."
+    #~ msgstr ""
+    #~ "Het '>' teken geeft het herexamen aan met het kleinste verschil met het "
+    #~ "CE-cijfer."
+    #~ msgstr ""
+    #~ "Een lege kolom <i>her</i> betekent, dat geen van de herexamens de uitslag "
+    #~ "'Geslaagd' oplevert."
+    
     
     msg = ''.join((
         '<p><b>', gettext("The results need the approval of the Inspectorate"), '</b></p>',

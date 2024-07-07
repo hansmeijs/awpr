@@ -78,17 +78,17 @@ document.addEventListener('DOMContentLoaded', function() {
         idnumber: "ID_number", prefix: "Prefix", gender: "Gender",
         birthdate: "Birthdate", birthcountry: "Country_of_birth", birthcity: "Place_of_birth",
         lvl_abbrev:  "Learning_path", sct_abbrev: "Sector",classname: "Class",
-        examnumber: "Examnumber", extrafacilities: "Extra_facilities", bis_exam: "Bis_exam"
+        examnumber: "Examnumber", extrafacilities: "Extra_facilities", bis_exam: "Bis_exam", partial_exam: "Partial_exam"
     };
 
 // --- get field_settings
     // declared as global: let field_settings = {};
     field_settings.student = {
-        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Learning_path", "Sector", "Class", "Examnumber_twolines", "Extra_facilities_twolines", "Bis_exam"],
-        field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvl_abbrev", "sct_abbrev", "classname", "examnumber", "extrafacilities", "bis_exam"],
-        filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "toggle", "toggle"],
-        field_width:  ["020", "120", "220", "240", "090", "090", "120", "180", "180", "090", "090", "090", "090", "090","090"],
-        field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l", "l","l", "c","c"]
+        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Learning_path", "Sector", "Class", "Examnumber_twolines", "Extra_facilities_twolines", "Bis_exam", "Partial_exam"],
+        field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvl_abbrev", "sct_abbrev", "classname", "examnumber", "extrafacilities", "bis_exam", "partial_exam"],
+        filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "toggle", "toggle", "toggle"],
+        field_width:  ["020", "120", "220", "240", "090", "090", "120", "180", "180", "090", "090", "090", "090", "090","090","090"],
+        field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l", "l","l", "c","c","c"]
     };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -137,11 +137,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {
-                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)
-                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
-                }, false );
-        }
+                function() {t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response)}, false);
+        };
 
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
@@ -451,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if ("messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
@@ -826,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     td.addEventListener("click", function() {MSTUD_Open(el)}, false)
                     td.classList.add("pointer_show");
                     add_hover(td);
-                } else if (["extrafacilities", "bis_exam"].includes(field_name)) {
+                } else if (["extrafacilities", "bis_exam", "partial_exam"].includes(field_name)) {
                     if(permit_dict.permit_crud && permit_dict.requsr_same_school){
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         td.classList.add("pointer_show");
@@ -881,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
 
-                } else if (["extrafacilities", "bis_exam"].includes(field_name)) {
+                } else if (["extrafacilities", "bis_exam", "partial_exam"].includes(field_name)) {
                     el_div.className = (data_dict[field_name]) ? "tickmark_2_2" : "tickmark_0_0";
                     filter_value = (data_dict[field_name]) ? "1" : "0";
 
@@ -931,14 +928,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
         console.log( "el_input", el_input);
-        // only called by table field extrafacilities and bis_exam
+        // only called by table field extrafacilities and bis_exam and partial_exam
         if (permit_dict.permit_crud && permit_dict.requsr_same_school){
 
             const tblRow = t_get_tablerow_selected(el_input);
             const fldName = get_attr_from_el(el_input, "data-field");
             const pk_int = get_attr_from_el_int(tblRow, "data-pk");
 
-            if (["extrafacilities", "bis_exam"].includes(fldName)){
+            if (["extrafacilities", "bis_exam", "partial_exam"].includes(fldName)){
 // --- get existing data_dict from data_rows
                 const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
@@ -946,10 +943,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const old_value = data_dict[fldName];
                     const new_value = (!old_value) ? true : false;
 
-                    if ( (fldName === "extrafacilities") || (new_value)){
+                    if (["bis_exam", "partial_exam"].includes(fldName) && !new_value){
+            // open mod confirm, only when removin bis_exam, give message that exemptions will also be deleted
+                        ModConfirmOpen(fldName, el_input);
+                    } else {
+
              // ---  change icon, before uploading
                         // don't, because of validation on server side
-
                         add_or_remove_class(el_input, "tickmark_2_2", new_value, "tickmark_0_0");
 
             // ---  upload changes
@@ -959,9 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         upload_dict[fldName] = new_value;
                 console.log( "upload_dict", upload_dict);
                         UploadChanges(upload_dict, urls.url_student_upload);
-                    } else {
-            // open mod confirm, only when removin bis_exam, give message that exemptions will also be deleted
-                        ModConfirmOpen(fldName, el_input);
+
         }}}};
     };  // UploadToggle
 
@@ -2001,7 +1999,7 @@ function RefreshDataRowsAfterUpload(response) {
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         // called by menubtn Delete_candidate, Create_exam_numbers and mod MSTUD btn delete and MSTUD_InputToggle
-        // values of mode are : "delete_candidate", "validate_scheme", "correct_scheme",
+        // values of mode are : "delete_candidate", "validate_scheme", "correct_scheme", partial_exam
         //  in UploadToggle:  fldName, in MSTUD_InputToggle: "MSTUD_" + data_field)
         //  el_input has only value when called by UploadToggle
 
@@ -2036,13 +2034,16 @@ function RefreshDataRowsAfterUpload(response) {
 
         if (el_input) { mod_dict.el_input = el_input};
 
-        if (["delete_candidate", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
+        if (["delete_candidate", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent", "partial_exam"].includes(mode)){
             show_modal = may_edit;
+
+    console.log("show_modal", show_modal)
+    console.log("has_data_dict", has_data_dict)
             if(has_data_dict ){
                 mod_dict.student_pk = data_dict.id;
                 mod_dict.mapid = data_dict.mapid;
                 mod_dict.fullname = data_dict.fullname;
-            }
+            };
         } else if (["validate_scheme", "correct_scheme"].includes(mode)){
             show_modal = permit_dict.requsr_role_system;
 
@@ -2057,15 +2058,18 @@ function RefreshDataRowsAfterUpload(response) {
         let caption_close = loc.Close;
         let hide_save_btn = false;
 
-        if (["delete_candidate", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
+        if (["delete_candidate", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent", "partial_exam"].includes(mode)){
             header_txt = (mode === "delete_candidate") ? loc.Delete_candidate :
-                           (mode === "bis_exam") ? loc.Remove_bis_exam : null;
+                           (mode === "bis_exam") ? loc.Remove_bis_exam :
+                           (mode === "partial_exam") ? loc.Remove_partial_exam : null;
             if(!has_data_dict){
                 msg_list.push("<p>" +  loc.Please_select_candidate_first + "</p>");
                 hide_save_btn = true;
             } else {
                 const full_name = (has_data_dict && data_dict.fullname) ? data_dict.fullname  : "---";
                 const is_restore_candidate = (has_data_dict && data_dict.tobedeleted);
+
+
                 if (mode === "bis_exam") {
                     msg_list.push("<p>" + loc.The_bis_exam + loc._of_ + " '" + full_name + "' " + loc.will_be_removed + "</p>");
                     // PR2022-04-11 Richard westerink ATC: not when also evening / lex student
@@ -2073,6 +2077,13 @@ function RefreshDataRowsAfterUpload(response) {
                     if (has_data_dict && data_dict.bis_exam && !data_dict.iseveningstudent && !data_dict.islexstudent){
                         msg_list.push("<p>" + loc.Possible_exemptions_willbe_deleted + "</p>");
                     };
+                    msg_list.push("<p>" +  loc.Do_you_want_to_continue + "</p>");
+                    caption_save = loc.Yes_remove;
+                    caption_close = loc.No_cancel;
+
+               } else if (mode === "partial_exam") {
+                    msg_list.push("<p>" + loc.The_partial_exam + loc._of_ + " '" + full_name + "' " + loc.will_be_removed + "</p>");
+
                     msg_list.push("<p>" +  loc.Do_you_want_to_continue + "</p>");
                     caption_save = loc.Yes_remove;
                     caption_close = loc.No_cancel;
@@ -2226,7 +2237,7 @@ function RefreshDataRowsAfterUpload(response) {
                 UploadChanges(upload_dict, url_str);
             };
 
-        } else if(mod_dict.mode === "bis_exam"){
+        } else if (["bis_exam", "partial_exam"].includes(mod_dict.mode)){
             if(may_edit){
 
 // ---  when remove bis_exam: delete tickmark, before uploading
@@ -2235,9 +2246,13 @@ function RefreshDataRowsAfterUpload(response) {
         // ---  upload changes
                 const upload_dict = {
                     student_pk: mod_dict.student_pk,
-                    mapid: mod_dict.mapid,
-                    bis_exam: false
+                    mapid: mod_dict.mapid
                 };
+                if (mod_dict.mode === "bis_exam" ){
+                    upload_dict.bis_exam = false;
+                } else if (mod_dict.mode === "partial_exam" ){
+                    upload_dict.partial_exam = false;
+                }
                 UploadChanges(upload_dict, urls.url_student_upload);
             };
 

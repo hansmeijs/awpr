@@ -223,7 +223,7 @@ class SubjectListView(View):
         else:
             page = 'page_subject'
             html_page = 'subjects.html'
-            param = {'display_school': False, 'display_department': False}
+            param = {'display_school': True, 'display_department': False}
 
         params = awpr_menu.get_headerbar_param(request, page, param)
 
@@ -297,7 +297,7 @@ def create_subject_rows(request, sel_examyear, sel_schoolbase, sel_depbase, sel_
         #    )
 
     # --- filter on usersetting and allowed
-        # PR2023-05-20 cahnged to get_sqlclause_allowed_NEW
+        # PR2023-05-20 cahnged to get_sqlclause_allowed_v2
         # was:
             #sql_clause = acc_view.get_userallowed_for_subjects_studsubj(
             #    sel_examyear=sel_examyear,
@@ -310,7 +310,7 @@ def create_subject_rows(request, sel_examyear, sel_schoolbase, sel_depbase, sel_
             #if sql_clause:
             #    sub_sql_list.append("AND " + sql_clause)
 
-        sql_clause = acc_prm.get_sqlclause_allowed_NEW(
+        sql_clause = acc_prm.get_sqlclause_allowed_v2(
             table='subject',
             sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
             sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
@@ -1550,7 +1550,7 @@ class ExamListView(View):  # PR2021-04-04 PR2022-12-16
         page = 'page_exams'
         #param = {'display_school': requsr_same_school, 'display_department': True}
         param = {'display_school': True, 'display_department': True}
-        params = awpr_menu.get_headerbar_param(request, page, param, True)  # display_requsrschool = True: show ETE or DOE in titlebar
+        params = awpr_menu.get_headerbar_param(request, page, param)
 
         if logging_on:
             logger.debug('    params: ' + str(params))
@@ -1666,7 +1666,7 @@ class ExamUploadView(View):
                         msg_list.append(acc_prm.msghtml_from_msgtxt_with_border(err_txt, c.HTMLCLASS_border_bg_invalid))
                     else:
 
-# +++++ Create new instance if is_create:
+# +++++ Create new instance if is_create
                         if mode == 'create':
                             department = sch_mod.Department.objects.get_or_none(
                                 base=sel_department.base,
@@ -2885,7 +2885,7 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
 
 @method_decorator([login_required], name='dispatch')
 class ExamApproveOrSubmitWolfView(View):
-    # PR2021-04-04 PR2022-03-11 PR2022-04-26 PR2022-05-06 PR2023-04-30
+    # PR2021-04-04 PR2022-03-11 PR2022-04-26 PR2022-05-06 PR2023-04-30 PR2024-06-30
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -2903,11 +2903,12 @@ class ExamApproveOrSubmitWolfView(View):
         saved_is_ok = False
         has_tobesubmitted_eteexams = False
         is_single_approve = False
+
 # -  get user_lang
         user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-        # - get upload_dict from request.POST
+# - get upload_dict from request.POST
         upload_json = request.POST.get('upload', None)
         if upload_json:
             upload_dict = json.loads(upload_json)
@@ -3039,10 +3040,13 @@ class ExamApproveOrSubmitWolfView(View):
                         logger.debug('     sel_cluster_pk:  ' + str(sel_cluster_pk))
 
 # - get selected examperiod from usersetting, only first and second examperiod
-                    saved_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
-                    sel_examperiod = saved_examperiod if saved_examperiod in (1, 2) else None
+                    # PR2024-06-30 WOlf is only used in exameriod 1
+                    sel_examperiod = c.EXAMPERIOD_FIRST
+                    # was:
+                    #   saved_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+                    #   sel_examperiod = saved_examperiod if saved_examperiod in (1, 2) else None
 
-# +++ get selected grade_exam_rows
+                    # +++ get selected grade_exam_rows
                     # exclude published rows:
                     #  - when published_id has value it means that admin has published the exam, so it is visible for the schools.
                     #  - submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
@@ -3695,7 +3699,7 @@ def create_grade_exam_approve_submit_msg_list(req_usr, requsr_auth, count_list,
 # +++ if is test
             if is_test:
     # count candidates
-                # grade_exam_count cannot be zero because of INNER JOIN ce_exam ceex_exam_id
+                # grade_exam_count cannot be zero because of INNER JOIN ce_exam exam_id
                 grade_exam_count = count_dict.get('count') or 0
                 already_submitted_count = count_dict.get('already_submitted') or 0
 
@@ -4113,8 +4117,8 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
                         "grd.ce_exam_published_id, grd.ce_exam_blocked,",
 
                         "depbase.code AS dep_code, lvlbase.code AS lvl_code,",
-                        "ce_exam.id AS ceex_exam_id, ce_exam.version AS ceex_exam_version,",
-                        "ce_exam.amount AS ceex_amount, ce_exam.blanks AS ceex_blanks,",
+                        "ce_exam.id, ce_exam.version AS ceex_exam_version,",
+                        "ce_exam.amount, ce_exam.blanks,",
                         "subj.name_nl AS ceex_subj_name_nl, subjbase.code AS ceex_subj_code,",
 
                         "CONCAT(subj.name_nl,",
@@ -4168,7 +4172,7 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
             userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
             userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
 
-            sql_clause = acc_prm.get_sqlclause_allowed_NEW(
+            sql_clause = acc_prm.get_sqlclause_allowed_v2(
                 table='grade',
                 sel_schoolbase_pk=sel_school.base.pk if sel_school else None,
                 sel_depbase_pk=sel_department.base.pk if sel_department else None,
@@ -4244,8 +4248,8 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
         'ce_exam_result': '0;26#1|1;2|2;1|3;b|4;a|5;1|6;1|7;1|8;1|9;1|10;1|11;1|12;1|13;a|14;1|15;a|16;1|17;1|18;1|19;1|20;1|21;a|22;a|23;a|24;1|25;1|26;x', 
         'ce_exam_auth1by_id': 719, 'ce_exam_auth2by_id': 498, 
         'ce_exam_published_id': None, 'ce_exam_blocked': False, 
-        'dep_code': 'Vsbo', 'lvl_code': 'PBL', 'ceex_exam_id': 49, 'ceex_exam_version': 'Versie BLAUW',
-        'ceex_amount': 26, 'ceex_blanks': None, 
+        'dep_code': 'Vsbo', 'lvl_code': 'PBL', 'exam_id': 49, 'ceex_exam_version': 'Versie BLAUW',
+        'amount': 26, 'blanks': None, 
         'ceex_subj_name_nl': 'Engelse taal', 
         'ceex_subj_code': 'en'}
     """
@@ -4253,24 +4257,24 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
         requsr = request.user
         save_changes = False
 
-        ceex_exam_id = grade_exam_dict.get('ceex_exam_id')
+        exam_id = grade_exam_dict.get('exam_id')
 
-        if ceex_exam_id not in count_dict:
-            count_dict[ceex_exam_id] = {
-                'exam_id': grade_exam_dict.get('ceex_exam_id'),
+        if exam_id not in count_dict:
+            count_dict[exam_id] = {
+                'exam_id': grade_exam_dict.get('exam_id'),
                 'exam_name': grade_exam_dict.get('exam_name'),
                 'count': 0
             }
-        exam_dict = count_dict[ceex_exam_id]
+        exam_dict = count_dict[exam_id]
 
         af.add_one_to_count_dict(exam_dict, 'count')
 
 # - skip if this student has no exam
-        # because of INNER JOIN ce_exam ceex_exam_id has always a value
-        # was: no_exam = not grade_exam_dict.get('ceex_exam_id')
+        # because of INNER JOIN ce_exam exam_id has always a value
+        # was: no_exam = not grade_exam_dict.get('exam_id')
 
-        no_questions = not grade_exam_dict.get('ceex_amount')
-        has_blank_questions = True if grade_exam_dict.get('ceex_blanks') else False
+        no_questions = not grade_exam_dict.get('amount')
+        has_blank_questions = True if grade_exam_dict.get('blanks') else False
         already_submitted = True if grade_exam_dict.get('ce_exam_published_id') else False
 
         # requsr_auth: auth3
@@ -4369,7 +4373,7 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
 # - if no errors found: add grade_pk and new_auth_id to grade_exams_tobe_updated_list
         if save_changes:
             grade_pk = grade_exam_dict.get('grade_id')
-            exam_pk = grade_exam_dict.get('ceex_exam_id')
+            exam_pk = grade_exam_dict.get('exam_id')
             if grade_pk not in grade_exams_tobe_updated_list:
 
 # - add grade_pk to tobe_updated_list
@@ -5520,7 +5524,7 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
 def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, show_all=False, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13  PR2022-06-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear))
@@ -8521,7 +8525,7 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
                 if sel_subject:
                     sub_sql_list.extend(("AND subj.base_id=", str(sel_subject.base_id), "::INT "))
 
-            sql_clause = acc_prm.get_sqlclause_allowed_NEW(
+            sql_clause = acc_prm.get_sqlclause_allowed_v2(
                 table='grade',
                 sel_schoolbase_pk=sel_school.base.pk if sel_school else None,
                 sel_depbase_pk=sel_department.base.pk if sel_department else None,
@@ -8681,7 +8685,7 @@ class ExamCopyWolfScoresView(View):  # PR2023-05-18
                     msg_list.append("<div class='mx-2 mt-0 p-0'>")
 
                     # count candidates
-                    # grade_exam_count cannot be zero because of INNER JOIN ce_exam ceex_exam_id
+                    # grade_exam_count cannot be zero because of INNER JOIN ce_exam exam_id
                     grade_exam_count = update_dict.get('count') or 0
                     change_count = update_dict.get('change') or 0
                     diff_count = update_dict.get('diff') or 0
@@ -9287,10 +9291,10 @@ def xl_rowcol_to_cell(row, col, row_abs=False, col_abs=False):
     Returns:
         A1 style string.
     """
-    if row < 0:
+    if row is None or row < 0:
         return None
 
-    if col < 0:
+    if col is None or col < 0:
         return None
 
     row += 1  # Change to 1-index.
@@ -9311,7 +9315,7 @@ def xl_col_to_name(col, col_abs=False):
         Column style string.
     """
     col_num = col
-    if col_num < 0:
+    if col_num is None or col_num < 0:
         return None
 
     col_num += 1  # Change to 1-index.

@@ -4202,7 +4202,8 @@ def get_dnt_from_upload(sel_examyear, upload_data_list, filename, request):
     # get nex_id:
                     nex_id_str = row[pkfield_index]
                     exam_name = row[name_index]
-
+                    if logging_on:
+                        logger.debug('     nex_id_str: ' + str(nex_id_str) + ' ' + str(type(nex_id_str)))
                     try:
                         nex_id_int = int(nex_id_str)
                     except:
@@ -4237,7 +4238,7 @@ def get_dnt_from_upload(sel_examyear, upload_data_list, filename, request):
                                     value = row[col_index]
                                     saved_value = getattr(nt_instance, field)
                                     if logging_on:
-                                        logger.debug('          value: ' + str(value) + ' saved_value: ' + str(saved_value))
+                                        logger.debug('          field: ' + str(field) + ' value: ' + str(value) + 'saved_value: ' + str(saved_value))
 
                                     new_value = None
             # convert date format 20-5-2022 to 2022-05-20

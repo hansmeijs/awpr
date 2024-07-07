@@ -27,7 +27,7 @@ def calc_sesr_pece_final_grade(si_dict, examperiod, has_sr, exemption_year, se_g
 
     # - when second or third examperiod: get se_grade and pe_grade from first examperiod,
     # and store them in second or third examperiod
-    # NOT ANY MORE: se, sr and pe grades are already stored in grade reex and reex03 when updating
+    # NOT ANYMORE: se, sr and pe grades are already stored in grade reex and reex03 when updating
 
     # PR2022-04-12 no_ce_years = '2020;2021' has list of examyears that had no CE. This is used to skip no_input_ce when calculating exemption endgrade
     # PR2022-04-12 thumb_rule = True: may skip this subject when calculating result
@@ -1753,6 +1753,12 @@ def batch_recalc_update_studsubj_grade_v2(request, studsubj_pk_list= None, schem
                                 if table == 'grade':
                                     insert_fieldlist.append('examperiod')
                                     insert_valuelist.append(str(examperiod))
+
+                                #PR2024-06-28 Sentry error: null value in column "gradelist_use_exem" violates not-null const
+                                # TODO: make field nullable, remove this temporary code:
+                                if table == 'studsubj':
+                                    if 'gradelist_use_exem' not in insert_fieldlist:
+                                        insert_fieldlist.append('gradelist_use_exem')
 
                                 tobe_inserted_sql_list.append(''.join((
                                     "INSERT INTO ", log_table_name, " (",

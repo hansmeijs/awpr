@@ -30,17 +30,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def print_shortgradelist(sel_examyear, sel_school, sel_department, classname_list, classes_dict, grade_dict, user_lang):
+def print_shortgradelist(sel_examyear, sel_school, sel_department, classname_list, classes_dict, students_cascade_dict, user_lang):
     # PR2023-06-06
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- print_shortgradelist -----')
+        logger.debug('    classname_list: ' + str(classname_list))
+        logger.debug('    classes_dict: ' + str(classes_dict))
+        logger.debug('    students_cascade_dict: ' + str(students_cascade_dict))
 
     """
     classes_dictlist: [{'classname': '4A1', 'stud_pk_list': [3858, 3859, 3860, 3861, 3862, 3863, 3864, 3865, 3866, 3867, 3868, 3869, 3870]}, {'classname': 'zz_blank', 'stud_pk_list': [3963]}]
     classname_list: ['4A1', 'zz_blank']
     """
-
 
     af.register_font_arial()
 
@@ -76,7 +78,10 @@ def print_shortgradelist(sel_examyear, sel_school, sel_department, classname_lis
 
     for class_name in classname_list:
         """
-         classes_dict: {'4A1': [(3860, 'Eguis Costa', 'Bianys Carolina'), (3863, 'Knight', 'Riangelo Daymion'), (3865, 'Pieters', 'Jandruwen Gregorio Nanziano'), (3868, 'Teixeira', 'Yussely Alexandra'), (3862, 'Jonis', 'Geldrin Antonio'), (3864, 'Pericles', 'Michmaëlla '), (3867, 'Supriana', 'Gregory Richard Daniel'), (3869, 'Wederfoort', 'Queenthesely  Ruth Noëmi'), (3858, 'Cassique', 'Thomas'), (3859, 'Cespedes Curie', 'Gabriel Alejandro'), (3861, 'Elisabeth', 'Nazelly Rinalies Alegandra'), (3866, 'Sintjacoba', 'Zaïno Andjomar Ragello'), (3870, 'Welvaart', 'Shekinah Marcela Deborah')], 'zz_blank': [(3963, 'Granviel', 'Jurmaily Adriana')]}  
+        classes_dict: {'all': [(9328, 'Ogenio', 'Liliana Elisabeth')]}
+        student_list_sorted: [(9328, 'Ogenio', 'Liliana Elisabeth')]
+       
+       
         """
         student_tuplelist = classes_dict.get(class_name)
 
@@ -100,7 +105,7 @@ def print_shortgradelist(sel_examyear, sel_school, sel_department, classname_lis
         print_page_header = True
         for stud_tuple in student_list_sorted:
             student_pk = stud_tuple[0]
-            student_dict = grade_dict.get(student_pk)
+            student_dict = students_cascade_dict.get(student_pk)
 
             if logging_on:
                 logger.debug('    student_dict: ' + str(student_dict))
@@ -154,6 +159,14 @@ def print_shortgradelist(sel_examyear, sel_school, sel_department, classname_lis
                 has_use_exem, has_use_reex, has_use_reex3 = False, False, False
 
     canvas.save()
+
+    #PR024-06-18 add filename - not working
+    #file_name = gettext('Short grade list')
+    #now_formatted = af.get_now_formatted_from_timezone_now()
+    #if now_formatted:
+    #    file_name += ' ' + now_formatted
+    #file_name += '.pdf'
+
     pdf = buffer.getvalue()
     # pdf_file = File(temp_file)
 
@@ -181,7 +194,7 @@ def draw_short_gradelist(canvas, coord, line_height, offset_bottom, col_tab_list
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_gradelist -----')
-        logger.debug('    student_dict: ' + str(student_dict))
+        logger.debug('  student_dict: ' + str(student_dict))
 
 # - draw student header
     draw_shortgradelist_student_header(canvas, coord, col_tab_list, line_height, offset_bottom, student_dict)
@@ -419,38 +432,29 @@ def draw_shortgradelist_result_header(canvas, coord, col_tab_list, line_height, 
 
 def draw_shortgradelist_subject_row(canvas, coord, col_tab_list, line_height, offset_bottom, subj_dict, is_preferred_studsubj=False):
     #     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
-
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ----- draw_shortgradelist_subject_row -----')
+        logger.debug('    subj_dict: ' + str(subj_dict))
     x = coord[0]
 
     subj_name = subj_dict.get('subjbase_code', '---')
-    """
-     {'subjbase_code': 'ne', 'subject_id': 113, 'schemeitem_id': 1740, 
-     'gl_sesrgrade': '5.9', 'gl_pecegrade': '3.8', 'gl_finalgrade': '5', 'gl_examperiod': 1, 
-     'gradetype': 1, 'weight_se': 1, 'weight_ce': 1, 'multiplier': 1, 'no_ce_years': '2020;2021',
-      'subjtype_abbrev': 'Gemeensch.'}
 
-    if is_combi:
-        subj_name += " *"
-    if subj_dict.get('is_extra_nocount', False):
-        subj_name += " +"
-    if subj_dict.get('is_extra_counts', False):
-        subj_name += " ++"
-    if subj_dict.get('grlst_use_exem', False):
-        subj_name += " (d)"
-    if subj_dict.get('grlst_use_exem', False):
-        subj_name += " (vr)"
-    if subj_dict.get('grlst_use_reex', False):
-        subj_name += " (" + gettext('retake') + ")"
-    if subj_dict.get('grlst_use_reex3', False):
-        subj_name += " (" + gettext('retake3') + ")"
-    """
-    segrade = subj_dict.get('gl_sesrgrade') or ''
-    pecegrade = subj_dict.get('gl_pecegrade') or ''
+    suffix = subj_dict.get('suffix')
+    if suffix:
+        subj_name += suffix
+
+    segrade = subj_dict.get('gl_sesrgrade') or '' if not subj_dict.get('gl_ni_sesr') else '---'
+    pecegrade = subj_dict.get('gl_pecegrade') or '' if not subj_dict.get('gl_ni_pece') else '---'
     finalgrade = subj_dict.get('gl_finalgrade') or ''
 
     passed_pecegrade = subj_dict.get('passed_pecegrade') or ''
     if is_preferred_studsubj:
         passed_pecegrade = '> ' + passed_pecegrade
+
+    if logging_on:
+        logger.debug('    passed_pecegrade: ' + str(passed_pecegrade))
+
     # - draw subject_row
     txt_list = [
         {'txt': subj_name, 'font': 'Times-Roman', 'padding': 2, 'x': x + col_tab_list[0] * mm},
@@ -613,7 +617,7 @@ def draw_shortgradelist_one_line(canvas, coord, col_tab_list, line_height, offse
 # draw diploma
 
 def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate, examyear_code):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_diploma_cur +++++++++++++')
@@ -875,7 +879,7 @@ def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, prin
 
 
 def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate, examyear_int):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_diploma_sxm +++++++++++++')
@@ -1145,7 +1149,7 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, print_reex, aut
 def draw_gradelist_cur(canvas, library, student_dict, is_prelim, print_reex, auth1_name, auth2_name, printdate, sel_examyear,
                        request):
     # PR2023-08-18
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_gradelist +++++++++++++')
@@ -1930,7 +1934,7 @@ def draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_di
     'PR2020-05-08 Corona: voetnoot toegevoegd, overleg Esther, Rubya Nancy 2020-005-08
     'PR2020-07-10 verzoek Esther: geen Vrst weergeven op LEX cijferlijst als het officieel geen vrst is.
     """
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug((' ----- draw_gradelist_footnote_row -----'))
         # logger.debug(('student_dict: ' + str(student_dict)))
@@ -1965,7 +1969,7 @@ def draw_gradelist_signature_row_sxm(canvas, border, coord, col_tab_list, is_pok
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
     """
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug((' ----- draw_gradelist_signature_row_sxm -----'))
         # logger.debug(('student_dict: ' + str(student_dict)))
@@ -2245,7 +2249,7 @@ def draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
     # coord[1] decreases with line_height
 
     # still call this function when dont_print, to keep track of y_pos
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     y_pos_line = coord[1] - line_height * mm
     y_pos_txt = y_pos_line + offset_bottom * mm

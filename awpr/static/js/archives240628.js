@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_archive_upload = get_attr_from_el(el_data, "data-url_archive_upload");
+    urls.url_lookup_document = get_attr_from_el(el_data, "data-url_lookup_document");
+
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
 
     // columns_hidden and mod_MCOL_dict.columns are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
@@ -114,17 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
-        if (el_hdrbar_department){
-            el_hdrbar_department.addEventListener("click", function() {
-                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
-        };
-        if (el_hdrbar_school){
-            el_hdrbar_school.addEventListener("click",
-                function() {
-                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
-                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
-                }, false );
-        };
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -133,13 +124,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
 
-
 // ---  MOD CONFIRM ------------------------------------
-        let el_confirm_header = document.getElementById("id_modconfirm_header");
-        let el_confirm_loader = document.getElementById("id_modconfirm_loader");
-        let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
-        let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
-        let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
+        const el_confirm_header = document.getElementById("id_modconfirm_header");
+        const el_confirm_loader = document.getElementById("id_modconfirm_loader");
+        const el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container");
+        const el_confirm_info_container = document.getElementById("id_modconfirm_info_container");
+        const el_modconfirm_input_label = document.getElementById("id_modconfirm_input_label");
+        const el_modconfirm_input = document.getElementById("id_modconfirm_input");
+        if (el_modconfirm_input){
+            el_modconfirm_input.addEventListener("keyup", function() {ModConfirm_InputKeyup(el_modconfirm_input, event)}, false);
+        };
+
+        const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if (el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
 // ---  set selected menu button active
@@ -234,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if (!skip_messages && "messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
@@ -274,8 +271,12 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("loc ", loc);
 
         const el_submenu = document.getElementById("id_submenu")
-        //AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_archive")}, [], "id_submenu_columns");
-        //el_submenu.classList.remove(cls_hide);
+        AddSubmenuButton(el_submenu, loc.Lookup_diploma_gradelist, function() {ModConfirmOpen("lookup")}, ["tab_show", "tab_btn_diploma"]);
+
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_archive")}, [], "id_submenu_columns");
+
+
+        el_submenu.classList.remove(cls_hide);
 
     };//function CreateSubmenu
 
@@ -679,7 +680,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if("updated_published_rows" in response){
                         ModConfirmResponseNEW(response);
-                    }
+                    };
+
+                    if("lookup_document_has_error" in response){
+                        ModConfirmResponseLookupDocument(response);
+                    };
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -693,22 +698,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2022-11-02
+//=========  ModConfirmOpen  ================ PR2022-11-02 PR2024-07-07
     function ModConfirmOpen(mode, tblRow) {
-        //console.log(" -----  ModConfirmOpen   ----")
+        console.log(" -----  ModConfirmOpen   ----")
         //console.log("mode", mode)
         //console.log("tblRow", tblRow)
-        // value of mode is only "delete"
+        // valuesof mode are: "delete", "lookup"
+
 // reset  modal
+         add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-lg", (mode === "lookup"), "modal-md");
+
         el_confirm_header.innerText = null;
         el_confirm_msg_container.innerHTML = null;
+        el_confirm_info_container.innerHTML = null;
+
+        el_modconfirm_input_label.innerText = null;
+        el_modconfirm_input.value = null;
+        add_or_remove_class (el_modconfirm_input.parentNode, cls_hide, (mode !== "lookup"));
+
         el_confirm_loader.classList.add(cls_hide);
-        el_confirm_btn_save.classList.remove(cls_hide);
+
+        add_or_remove_class (el_confirm_btn_save, cls_hide, false);
+        el_confirm_btn_save.disabled = (mode === "lookup");
+
         el_confirm_btn_cancel.innerText = loc.Cancel;
 
-        if (mode === "delete"){
-            mod_dict = {mode: mode}
+        mod_dict = {mode: mode};
 
+        if (mode === "delete"){
             el_confirm_header.innerText = loc.Delete_document;
 
 // --- get existing data_dict from data_rows
@@ -730,18 +747,36 @@ document.addEventListener('DOMContentLoaded', function() {
                              "</div>"].join("")
 
                 el_confirm_loader.classList.add(cls_hide)
+
                 el_confirm_msg_container.className = "p-3";
                 el_confirm_msg_container.innerHTML = msg_html;
 
                 el_confirm_btn_save.innerText = loc.Yes_delete;
+
                 el_confirm_btn_cancel.innerText = loc.No_cancel;
                 add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", true, "btn-primary");
 
+
     // set focus to cancel button
-                set_focus_on_el_with_timeout(el_confirm_btn_save)
+                set_focus_on_el_with_timeout(el_confirm_btn_save);
         // show modal
                 $("#id_mod_confirm").modal({backdrop: true});
             };
+
+        } else if (mode === "lookup"){
+                el_confirm_header.innerText = loc.Lookup_diploma_gradelist;
+                const msg_html = ["<div class='mx-2 px-2 pt-2'>",
+                        loc.Enter_registrationnumber, "<br>",  loc.AWP_will_lookup_document,
+                     "</div>",
+                     ].join("");
+                el_confirm_msg_container.innerHTML = msg_html;
+
+                el_modconfirm_input_label.innerText = loc.Regnumber + ":";
+
+    // set focus to input element
+                set_focus_on_el_with_timeout(el_modconfirm_input);
+                // show modal
+                $("#id_mod_confirm").modal({backdrop: true});
         };
     };  // ModConfirmOpen
 
@@ -770,7 +805,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const tblRow = document.getElementById(mod_dict.map_id)
             ShowClassWithTimeout(tblRow, "tsa_tr_error")
+
+        } else if (mod_dict.mode === "lookup"){
+
+            // remove msg
+            el_confirm_msg_container.innerHTML = null;
+            el_confirm_info_container.innerHTML = null;
+            // show loader
+            add_or_remove_class(el_confirm_loader, cls_hide, false);
+
+            // hide save btn, input element
+            add_or_remove_class(el_confirm_btn_save, cls_hide, false);
+            //add_or_remove_class(el_modconfirm_input.parentNode, cls_hide, true);
+
+            // rename cancel btn
+            //el_confirm_btn_cancel.innerText = loc.Close;
+
+            let upload_dict = {
+                mode: "lookup_document",
+                regnumber:  el_modconfirm_input.value
+            };
+            UploadChanges(upload_dict, urls.url_lookup_document);
+
         };
+
     };  // ModConfirmSave
 
 //=========  ModConfirmResponseNEW  ================ PR2022-11-03
@@ -797,6 +855,37 @@ document.addEventListener('DOMContentLoaded', function() {
             RefreshDataRows("published", response.updated_published_rows, published_rows, true); // true = is_update
         };
     };  // ModConfirmResponseNEW
+
+//=========  ModConfirmResponseLookupDocument  ================ PR2024-07-07
+    function ModConfirmResponseLookupDocument(response) {
+        // only called by UploadChanges after ModConfirmSave
+        console.log(" --- ModConfirmResponseLookupDocument --- ");
+        console.log("response: ", response);
+
+    // - hide loader
+        el_confirm_loader.classList.add(cls_hide);
+
+        if ("msg_html" in response) {
+            el_confirm_info_container.innerHTML = response.msg_html;
+            add_or_remove_class(el_confirm_info_container, cls_hide, false);
+        } else {
+            $("#id_mod_confirm").modal("hide");
+        };
+    };  // ModConfirmResponseLookupDocument
+
+//=========  ModConfirm_InputKeyup ================ PR2024=07-07
+    function ModConfirm_InputKeyup(el_modconfirm_input, event) {
+        console.log(" --- ModConfirm_InputKeyup --- ");
+
+        if (el_confirm_btn_save){
+            const save_btn_enabled = (el_modconfirm_input.value && el_modconfirm_input.value.length >= 12);
+            el_confirm_btn_save.disabled = !save_btn_enabled;
+
+            if (event.key === "Enter" && !event.shiftKey) {
+                ModConfirmSave();
+            };
+        };
+    };  // ModConfirm_InputKeyup
 ////////////////////////
 
 //=========  RefreshDataRows  ================ R2022-11-03

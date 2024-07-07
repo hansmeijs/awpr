@@ -1,3 +1,5 @@
+import gettext
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.urls import reverse_lazy
@@ -34,7 +36,7 @@ MENUS_BUTTONS = {
                          'page_exams', 'page_studsubj', 'page_wolf', 'page_grade',
                       'page_result', 'page_corrector', 'page_archive', 'page_exampaper'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', # 'page_student',
-                       'page_exams', 'page_studsubj', 'page_grade', 'page_secretexam',
+                       'page_exams', 'pageF_studsubj', 'page_grade', 'page_secretexam',
                      'page_result', 'page_archive', 'page_exampaper'],  #, 'page_corrector', 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
                       'page_exams', 'page_grade', 'page_result', 'page_archive', 'page_exampaper'],  #,'page_report', 'page_analysis'],
@@ -99,12 +101,13 @@ class ManualListView(View):
         return render(request, 'manual.html', param)
 
 
-def get_headerbar_param(request, sel_page, param=None, display_requsrschool=False):
+def get_headerbar_param(request, sel_page, param=None):
     # PR2018-05-28 PR2021-03-25 PR2023-01-08 PR2023-04-12
     # set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logging_on = False  # s.LOGGING_ON
+
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('===== get_headerbar_param ===== ')
@@ -115,11 +118,33 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
     # solved by adding 'try' statement
     if request and request.user:
         try:
-            acc_view.set_usersetting_dict('sel_page', {'page': sel_page}, request)
+            acc_view.set_usersetting_dict(
+                key_str='sel_page',
+                setting_dict={'page': sel_page},
+                request=request
+            )
         except Exception as e:
             logger.error('e: ' + str(e))
 
+    # PR2024-06-14 move parameter param to this function
+    hide_auth_in_hdr = False
+    if not param:
+        if sel_page == 'page_corrector':
+            display_school = request.user.role == c.ROLE_008_SCHOOL
+            param = {'display_school': display_school, 'display_department': False}
+        elif sel_page == 'page_secretexam':
+            param = {'display_school': False, 'display_department': True}
+        elif sel_page == 'page_user':
+            # PR2024-06-27 show requser orgainzation instead of selected school, hide functions
+            # must add sel_page == 'page_user' also in h_UpdateHeaderBar
+            # hide_auth_in_hdr = True
+            # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+            show_btn_userpermit = request.user.role is not None and request.user.is_role_system
+            param = {'show_btn_userpermit': show_btn_userpermit, 'display_school': True, 'display_department': False}
+
+
     param = param if param else {}
+
     headerbar_param = {}
     _class_bg_color = 'awp_bg_blue'
     _class_has_mail = 'envelope_0_0'
@@ -153,9 +178,6 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             sel_examyear_pk_dict = {c.KEY_SEL_EXAMYEAR_PK: sel_examyear_instance.pk}
             acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, sel_examyear_pk_dict, request)
 
-# - get selected_pk_dict from usersettings
-        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-
 # - set background color in headerbar
         if req_usr.role == c.ROLE_032_INSP:
             _class_bg_color = 'awp_bg_green'
@@ -168,12 +190,9 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
         else:
             _class_bg_color = 'awp_bg_blue'
 
-# -  get sel_auth_index from usersetting
-        sel_auth_index = af.get_dict_value(acc_prm.get_usersetting_dict, (c.KEY_SELECTED_PK, c.KEY_SEL_AUTH_INDEX))
-
 # -  get permit_list from userallowed
         #PR2023-02-13 not in use, usergroups are displayed in moduserallowedsections
-        permit_list, usergroup_list, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = \
+        permit_list, usergroup_list, requsr_allowed_sections_dict, requsr_allowed_clusters_arr = \
             acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, sel_page)
 
 # - PR2021-06-28 debug. Add permit 'permit_userpage' if role = system,
@@ -194,7 +213,6 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             logger.debug('    usergroup_list: ' + str(usergroup_list))
 
 # +++ display examyear -------- PR2020-11-17 PR2020-12-24 PR2021-06-14
-
         if sel_examyear_instance is None:
             sel_examyear_str = ' <' + str(_('No exam years')) + '>'
             no_examyears = True
@@ -239,20 +257,24 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
         #   - otherwise sel_schoolbase_pk is equal to _requsr_schoolbase_pk
         # note: may_select_school only sets hover of school. Permissions are set in JS HandleHdrbarSelect
 
-        # hide school in page_examyear
-        display_school = param.get('display_school', True)
         school_name = ''
 
         # used in page exams template to show school or admin mod exam form PR2021-05-22
         is_requsr_same_school = False
         is_requsr_admin = req_usr.role == c.ROLE_064_ADMIN
 
-# - get allowed_sections_dict
-        allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
+        # when display_requsrschool = True the organization of the user is shown, not the selected school
+        # Note: this must also be set in h_UpdateHeaderBar
+        display_requsrschool = sel_page in ('page_user', 'page_subject', 'page_examyear',
+                                            'page_school', 'page_corrector',
+                                            'page_exampaper', 'page_archive', 'page_orderlist')
+
 
         if logging_on:
+            logger.debug('    requsr_allowed_sections_dict: ' + str(requsr_allowed_sections_dict))
             logger.debug('    display_requsrschool: ' + str(display_requsrschool))
             logger.debug('    req_usr.schoolbase: ' + str(req_usr.schoolbase))
+
 # - get sel_schoolbase_instance
         if display_requsrschool:
             sel_schoolbase_instance = req_usr.schoolbase
@@ -261,7 +283,7 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
                 acc_view.get_sel_schoolbase_instance(
                     request=request,
                     request_item_schoolbase_pk=None,
-                    allowed_sections_dict=allowed_sections_dict
+                    allowed_sections_dict=requsr_allowed_sections_dict
                 )
         sel_school_instance = None
 
@@ -290,16 +312,74 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
         if logging_on:
             logger.debug('  ..sel_school_instance: ' + str(sel_school_instance))
 
+# +++ display functions -------- PR2024-06-13
+        activate(requsr_lang)
+    # - get selected_pk_dict from usersettings
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+
+    # - get requsr_authindex_list from usergroup_list
+        requsr_authindex_list = []
+
+        if usergroup_list:
+            for auth_index in (1, 2, 3, 4):
+                usergroup = 'auth' + str(auth_index)
+                if usergroup in usergroup_list:
+                    requsr_authindex_list.append(auth_index)
+
+    # - get saved_auth_index from usersetting
+        saved_auth_index = selected_pk_dict.get(c.KEY_SEL_AUTH_INDEX)
+
+    # - get sel_auth_index
+        sel_auth_index = None
+        if saved_auth_index in requsr_authindex_list:
+            sel_auth_index = saved_auth_index
+        elif requsr_authindex_list:
+            sel_auth_index = requsr_authindex_list[0]
+
+    # - save sel_auth_index in settings if it has changed
+        if sel_auth_index != saved_auth_index:
+            selected_pk_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
+            acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
+
+        sel_auth = 'auth' + str(sel_auth_index) if sel_auth_index else None
+        if logging_on:
+            logger.debug('    selected_pk_dict:       ' + str(selected_pk_dict))
+            logger.debug('    sel_auth_index:       ' + str(sel_auth_index))
+            logger.debug('    sel_auth:       ' + str(sel_auth))
+
+
+        sel_function = '---'
+
+        # Note: display functions also set by h_UpdateHeaderBar
+
+
+        display_auth = {'functions': 'display_hide' if hide_auth_in_hdr or not requsr_authindex_list else ''}
+        sel_function = '---'
+        for auth_index in (1, 2, 3, 4):
+            found = auth_index in requsr_authindex_list
+            is_selected = found and auth_index == sel_auth_index
+            if is_selected:
+                sel_function = c.get_auth_caption(auth_index)
+
+            class_bg_color = 'display_hide' if not found else 'tsa_tr_selected' if is_selected else ''
+            display_auth['auth' + str(auth_index)] = class_bg_color
+        display_auth['sel_function'] = sel_function
+
+        if logging_on:
+            logger.debug('    display_auth: ' + str(display_auth))
+            logger.debug('    sel_function: ' + str(sel_function))
+
 # +++ display department -------- PR2029-10-27 PR2020-11-17
 
 # PR2018-08-24 select department PR2020-10-13 PR2021-04-25
         department_name = ''
         display_department = param.get('display_department', True)
+        display_department = not display_requsrschool
         if display_department:
             # - get allowed_schoolbase_dict
             allowed_schoolbase_dict, allowed_depbases_pk_arr = \
                 acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
-                    userallowed_sections_dict=allowed_sections_dict,
+                    userallowed_sections_dict=requsr_allowed_sections_dict,
                 sel_schoolbase_pk=sel_schoolbase_instance.pk if sel_schoolbase_instance else None
                 )
 
@@ -327,19 +407,6 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             logger.debug('    department_name: ' + str(department_name))
             logger.debug('    display_department: ' + str(display_department))
 
-# ----- set background color in headerbar
-        """
-        if req_usr.role == c.ROLE_032_INSP:
-            _class_bg_color = 'awp_bg_green'
-        elif req_usr.role == c.ROLE_016_CORR:
-            _class_bg_color = 'awp_bg_corr_green'
-        elif req_usr.role == c.ROLE_064_ADMIN:
-            _class_bg_color = 'awp_bg_purple'
-        elif req_usr.role == c.ROLE_128_SYSTEM:
-            _class_bg_color = 'awp_bg_yellow'
-        else:
-            _class_bg_color = 'awp_bg_blue'
-        """
 # ----- set menu_buttons -------- PR2018-12-21
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
         menu_buttons = set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request)
@@ -435,7 +502,6 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             if logging_on:
                 logger.debug('  ..messages: ' + str(messages))
 
-
 # - sentr_src contains link for Sentry awp_js PR2021-09-19
         sentry_src = s.SENTRY_SRC
 
@@ -449,12 +515,17 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
             'is_requsr_same_school': is_requsr_same_school,
             'is_requsr_admin': is_requsr_admin,
             'examyear_code': sel_examyear_str,
-            'display_school': display_school, 'school': school_name,
-            'display_department': display_department, 'department': department_name,
+            'display_requsrschool': display_requsrschool,
+            'school': school_name,
+            'display_department': display_department,
+            'department': department_name,
             'menu_buttons': menu_buttons,
             'messages': messages,
             'msgreceive': may_receive_messages,
             'permit_list': permit_list,
+
+            'display_auth': display_auth,
+            'sel_function': sel_function,
             'page': sel_page[5:],
             'paragraph': 'intro',
             'no_practexam': no_practexam,

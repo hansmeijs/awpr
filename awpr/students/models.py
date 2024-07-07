@@ -484,7 +484,7 @@ class Studentsubjectlog(sch_mod.AwpBaseModel):
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    # PR2024-05-16 TODO in log file all fields must be set null=True , also boolean fields
+    # PR2024-05-16 TODO in log file all fields must be set null=True, also boolean fields
     # gradelist_use_exem = BooleanField(null=True)
     gradelist_use_exem = BooleanField(default=False)
 
@@ -592,6 +592,7 @@ class Grade(sch_mod.AwpBaseModel):
     pe_exam_result = CharField(max_length=2048, null=True)
     pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+
     # PR2022-05-14 added
     pe_exam_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)

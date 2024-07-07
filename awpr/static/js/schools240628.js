@@ -95,13 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
-        if (el_hdrbar_school){
-            el_hdrbar_school.addEventListener("click",
-                function() {
-                    // PR2024-05-13 was: t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
-                    t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_Response);
-                }, false );
-        }
 
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
@@ -259,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     CreateSubmenu();
                 };
                 if(must_update_headerbar){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if ("schoolsetting_dict" in response) {
                     i_UpdateSchoolsettingsImport(response.schoolsetting_dict);

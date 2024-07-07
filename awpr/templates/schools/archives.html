@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Archive' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/archives240513.js' %}"></script>
+    <script src="{% static 'js/archives240628.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -64,6 +64,7 @@
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_archive_upload="{% url 'url_archive_upload' %}"
+                data-url_lookup_document="{% url 'url_lookup_document' %}"
             >
             </div>
         {% endif %}

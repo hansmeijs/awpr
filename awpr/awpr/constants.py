@@ -1,7 +1,10 @@
 # PR2018-05-25 PR2020-12-04
 
 #PR2022-02-13 was ugettext as _, replaced by: gettext as _
-from django.utils.translation import gettext as _
+from django.utils.translation import activate, gettext as _
+
+import logging
+logger = logging.getLogger(__name__)
 
 USERNAME_MAX_LENGTH = 30
 USERNAME_SLICED_MAX_LENGTH = 24
@@ -549,7 +552,7 @@ def get_role_options(request):
 USERGROUP_READ = 'read' # tobe deprecated PR2023-04-22
 USERGROUP_EDIT = 'edit'
 USERGROUP_WOLF = 'wolf' # added PR2023-04-22
-#USERGROUP_TEACHER = 'teach'
+
 USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
 USERGROUP_AUTH3_EXAM = 'auth3'
@@ -560,7 +563,7 @@ USERGROUP_MSGWRITE = 'msgsend'
 USERGROUP_MSGRECEIVE = 'msgreceive'
 USERGROUP_ARCHIVE = 'archive'
 USERGROUP_DOWNLOAD = 'download'
-
+"""
 USERGROUP_TUPLE = (
     USERGROUP_READ,
     USERGROUP_EDIT,
@@ -577,7 +580,7 @@ USERGROUP_TUPLE = (
     USERGROUP_ANALYZE,
     USERGROUP_ADMIN
 )
-
+"""
 USERGROUP_CAPTION = {
     USERGROUP_READ: _('Read'),
     USERGROUP_EDIT: _('Edit'),
@@ -595,13 +598,45 @@ USERGROUP_CAPTION = {
     USERGROUP_ADMIN: _('System administrator')
 }
 
+def get_auth_caption(auth_index):
+    AUTH_CAPTION = {
+        1: _('Chairperson'),
+        2: _('Secretary'),
+        3: _('Examiner'),
+        4: _('Second corrector')
+    }
+    return AUTH_CAPTION[auth_index]
 
-AUTH_CAPTION = {
-    1: _('Chairperson'),
-    2: _('Secretary'),
-    3: _('Examiner'),
-    4: _('Second corrector')
-}
+def get_page_html(sel_page):
+    sel_page_html = 'home.html'
+    PAGE_HTML = {
+        'page_home': 'home.html',
+        'page_user': 'users.html',
+        'page_corrector': 'correctors.html',
+        'page_examyear': 'examyears.html',
+        'page_school': 'schools.html',
+        'page_student': 'students.html',
+        'page_studsubj': 'studentsubjects.html',
+        'page_subject': 'subjects.html',
+        'page_wolf': 'wolf.html',
+        'page_grade': 'grades.html',
+        'page_result': 'results.html',
+        'page_exams': 'exams.html',
+        'page_orderlist': 'orderlists.html',
+        'page_secretexam': 'secretexam.html',
+        'page_archive': 'archives.html',
+        'page_exampaper': 'exampapers.html',
+        'page_mailbox': 'mailbox.html',
+        'page_manual': 'manual.html'
+    }
+    if sel_page not in PAGE_HTML:
+        sel_page = 'page_home'
+
+    sel_page_html = PAGE_HTML.get(sel_page)
+
+    logger.debug('@@@@@@@@@@@@ sel_page: ' + str(sel_page))
+    logger.debug('sel_page_html: ' + str(sel_page_html))
+    return  sel_page_html
 
 MAILBOX_USERGROUPS = {
     USERGROUP_AUTH1_PRES: _('Chairperson'),
@@ -788,6 +823,7 @@ HTMLCLASS_border_bg_message = 'border_bg_message'
 HTMLCLASS_border_bg_transparent = 'border_bg_transparent'
 
 # XLSWRITER FORMATS
+# see https://www.tutorialspoint.com/python_xlsxwriter/python_xlsxwriter_border.htm
 XF_BOLD = {'bold': True}
 XF_BOLD_FCBLUE = {'font_color': 'blue', 'bold': True}
 XF_FCBLUE = {'font_color': 'blue', 'bold': False}
@@ -832,12 +868,15 @@ XF_HDR_ALL_TOPBOTTOM = {'font_size': 8, 'border': True, 'bold': True, 'bg_color'
 # color #a5a5a5; /* medium grey; 165 165 165 */
 XF_TABLEHEADER = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 XF_TABLEHEADER_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
+XF_TABLEHEADER_ALIGNLEFT_BLUE = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'font_color': 'blue', 'bg_color': '#d8d8d8', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
 XF_TABLEHEADER_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'left': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 
 # color #a5a5a5; /* medium grey; 165 165 165 */
 XF_HDR_GRANDTOTAL = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_GRANDTOTAL_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#a5a5a5', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_GRANDTOTAL_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_GRANDTOTAL_BORDERLEFT_GRAY = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'left_color': '#d8d8d8', 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
 XF_HDR_GRANDTOTAL_PERCENTAGE = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_GRANDTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 
@@ -845,6 +884,8 @@ XF_HDR_GRANDTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_f
 XF_HDR_SUBTOTAL = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_SUBTOTAL_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_SUBTOTAL_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBTOTAL_BORDERLEFT_GRAY = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'left_color': '#f2f2f2', 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
 XF_HDR_SUBTOTAL_PERCENTAGE = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_SUBTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 
@@ -852,13 +893,28 @@ XF_HDR_SUBTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_for
 XF_HDR_SUBSUBTOTAL = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_SUBSUBTOTAL_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
 XF_HDR_SUBSUBTOTAL_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
-XF_HDR_SUBSUBTOTAL_PERCENTAGE = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
-XF_HDR_SUBSUBTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBSUBTOTAL_BORDERLEFT_GRAY = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'left_color': '#d8d8d8', 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+XF_HDR_SUBSUBTOTAL_PERC = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBSUBTOTAL_PERC_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'left': 1, 'left_color': '#d8d8d8', 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+XF_FTR_SUBSUBTOTAL_AVG_BORDERLEFT_GRAY = {'font_size': 10, 'bold': True, 'num_format': '##0.00', 'bottom': 2, 'top': 1, 'left': 1, 'left_color': '#d8d8d8', 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+
+#XF_HDR_GRADE = {'font_size': 10, 'bold': False, 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_GRADE_BORDERLEFT = {'font_size': 10, 'bold': False, 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+
 
 # row_align_left
 XF_ROW_VALUE = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'text_wrap': True}
 XF_ROW_VALUE_ALIGNLEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'left', 'valign': 'vcenter', 'bottom': 1, 'text_wrap': True}
 XF_ROW_PERCENTAGE = {'font_size': 8, 'num_format': '0%', 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'text_wrap': True}
-XF_ROW_VALUE_BORDERLEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1,'text_wrap': True}
+XF_ROW_VALUE_BORDERLEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1, 'text_wrap': True}
+XF_ROW_VALUE_BORDERLEFT_GRAY = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1, 'left_color': '#d8d8d8', 'text_wrap': True}
+
+XF_ROW_AVERAGE_BORDERLEFT = {'font_size': 8, 'num_format': '##0', 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1, 'text_wrap': True}
+XF_ROW_AVERAGE_BORDERLEFT_GRAY = {'font_size': 8, 'num_format': '##0.00', 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1, 'left_color': '#d8d8d8', 'text_wrap': True}
+
 XF_ROW_PERCENTAGE_BORDERLEFT = {'font_size': 8, 'num_format': '0%', 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1,'text_wrap': True}
 

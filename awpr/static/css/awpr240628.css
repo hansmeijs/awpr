@@ -59,7 +59,7 @@ a:hover {
 }
 
 .awp_navbaritem_may_select:hover {
-  color: #a8c1e0;
+  color: #a8c1e0; /* #a8c1e0 is light blue */
   text-decoration: none;
   list-style: none;
   cursor: pointer;

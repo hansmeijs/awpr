@@ -245,9 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {
-                t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_response);
-            }, false );
+                function() {t_MSSSS_Open_NEW("hdr", "school", school_rows, MSSSS_response)}, false);
         };
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
@@ -657,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if(must_create_submenu){CreateSubmenu()};
                 if(must_update_headerbar){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
 
                 if ("schoolsetting_dict" in response) {
@@ -5835,8 +5833,9 @@ console.log( "......filter_dict", filter_dict);
 //========= MOD APPROVE STUDENT SUBJECTS ====================================
     function MASS_Open (open_mode) {
         console.log("===  MASS_Open  =====") ;
-        console.log("open_mode", open_mode) ;
-        console.log("selected_btn", selected_btn) ;
+        console.log("    open_mode", open_mode) ;
+        console.log("    selected_btn", selected_btn) ;
+        console.log("    setting_dict.sel_auth_index", setting_dict.sel_auth_index) ;
         //selected_btn btn_reex
         //console.log("setting_dict", setting_dict) ;
 
@@ -5848,8 +5847,34 @@ console.log( "......filter_dict", filter_dict);
         // gives err messages when multiple found.
         // auth_index 1 = auth1, 2 = auth2
         const auth_index = b_get_auth_index_of_requsr(loc, permit_dict, true);  // true = auth12_only
+        const sel_auth_index = setting_dict.sel_auth_index;
+        if (![1, 2, 3, 4].includes(sel_auth_index)) {
 
-        if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject) {
+        } else if (![1, 2].includes(sel_auth_index)) {
+            console.log("  >>>>  sel_auth_index", sel_auth_index, typeof sel_auth_index) ;
+            const border_class = (open_mode === "submit") ? "border_bg_invalid" : "border_bg_transparent";
+            console.log("  >>>>  border_class", border_class) ;
+            const msg_list = ["<div class='p-2 ", border_class, "'>"];
+
+            if (open_mode === "submit"){
+                if (sel_auth_index === 4) {
+                    msg_list.push(loc.Corrector_cannot_submit_exform);
+                } else {
+                    msg_list.push(loc.Examiner_cannot_submit_exform);
+                };
+            } else {
+                if (sel_auth_index === 4) {
+                    msg_list.push(loc.Corrector_donthaveto_approve_subjects);
+                } else {
+                    msg_list.push(loc.Examiner_donthaveto_approve_subjects);
+                };
+            };
+            msg_list.push("</div>");
+
+            const msg_html = msg_list.join("");
+            b_show_mod_message_html(msg_html);
+
+        } else if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject) {
             if(auth_index){
                 // modes are 'approve' 'submit_test' 'submit_save'
                 mod_MASS_dict.is_approve_mode = (open_mode === "approve");

@@ -4,8 +4,7 @@
 
 
 {% block script %}
-    <script src="{% static 'js/home240503.js' %}"></script>
-
+    <script src="{% static 'js/home240628.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -22,10 +21,15 @@
 
     {% if user.is_authenticated %}
         {% include 'includes/modselectexamyearordepbase.html' %}
-        <div>
+        {% include 'includes/modselectschoolsubjectstudent.html' %}
+<!-- CONTENT HEADER - LOADER -->
+        <div class="content_margin_top78">
+<!-- loader -->
+            <div class="flex_1 py-2">
+                {% include 'includes/loader.html' %}
+            </div>
         </div>
-
-
+        <!-- end content_header -->
     {% else %}
         <div class="image_containerx mx-4 my-4">
             <h1 class="card-title mx-5 my-5"><b>{% trans 'Welkom bij AWP-online' %}</b></h1>
@@ -44,10 +48,10 @@
     {% endif %}
     <div id="id_data"
     data-url_datalist_download="{% url 'url_datalist_download' %}"
+    data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
     >
     </div>
-
-
+</div>
 {% endblock %}
 
 

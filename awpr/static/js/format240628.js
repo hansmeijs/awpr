@@ -243,11 +243,11 @@
 //=========  f_format_status_grade  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24 PR2023-07-08
     function f_format_status_grade(field_name, fld_value, data_dict) {
     //only used in secretexam, must also replace UpdateFieldStatus in grades.js
-        console.log("=========  f_format_status_grade =========");
-        console.log("    field_name", field_name);
-        console.log("    fld_value", fld_value);
-        console.log("    data_dict", data_dict);
-        console.log("    permit_dict", permit_dict);
+        //console.log("=========  f_format_status_grade =========");
+    //console.log("    field_name", field_name);
+    //console.log("    fld_value", fld_value);
+    //console.log("    data_dict", data_dict);
+    //console.log("    permit_dict", permit_dict);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
@@ -285,11 +285,11 @@
                 const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
                 const is_blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
 
-        console.log("    auth1by_id", auth1by_id);
-        console.log("    auth2by_id", auth2by_id);
-        console.log("    auth3by_id", auth3by_id);
-        console.log("    auth4by_id", auth4by_id);
-        console.log("    is_blocked", is_blocked);
+    //console.log("    auth1by_id", auth1by_id);
+    //console.log("    auth2by_id", auth2by_id);
+    //console.log("    auth3by_id", auth3by_id);
+    //console.log("    auth4by_id", auth4by_id);
+    //console.log("    is_blocked", is_blocked);
 
                 // auth3_must_sign
                 // - auth3 does not have to sign when secret exam (aangewezen examen)
@@ -301,7 +301,7 @@
                 // - PR2023-06-20 secret exams olny have to be approved by auth1 and auth2
                 const auth3_must_sign = (data_dict.examperiod !== 4 && !data_dict.secret_exam);
 
-        console.log("    auth3_must_sign", auth3_must_sign);
+    //console.log("    auth3_must_sign", auth3_must_sign);
                 // - auth4 does not have to sign when secret exam (aangewezen examen) or when se-grade
                 // - auth4 does not have to sign when se-grade
                 // - auth4 also does not have to sign when exemption (vrijstelling) PR2023-02-02
@@ -313,7 +313,7 @@
                 const auth4_must_sign = (!["pe_status", "ce_status"].includes(field_name) &&
                                         data_dict.examperiod !== 4 && !data_dict.secret_exam);
 
-        console.log("    auth4_must_sign", auth4_must_sign);
+    //console.log("    auth4_must_sign", auth4_must_sign);
                 className = f_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
                 filter_value = className;
 

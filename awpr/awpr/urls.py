@@ -23,7 +23,7 @@ from django.views.generic import RedirectView
 from accounts import views as account_views
 from accounts import correctors as acc_corr
 
-from awpr import downloads as awpr_downloads, excel as grade_excel
+from awpr import downloads as awpr_downloads, excel as grade_excel, exceloverview as awpr_exceloverview
 from awpr import menus as awpr_menus
 from schools import views as school_views
 from schools import imports as school_imports
@@ -165,6 +165,9 @@ urlpatterns = [
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
 
         path('download_userdata_xlsx', account_views.UserdataDownloadXlsxView.as_view(), name='url_download_userdata_xlsx'),
+
+        path('set_function/<idx>/', account_views.SetSelectedAuthView.as_view(), name='set_function'),
+
     ])),
 
     path('correctors/', include([
@@ -184,6 +187,7 @@ urlpatterns = [
     url(r'session_security/', include('session_security.urls')),
 # PR2018-05-11
     url(r'^users/language/(?P<lang>[A-Za-z]{2})/$', account_views.UserLanguageView.as_view(), name='language_set_url'),
+    url(r'^users/language/(?P<lang>[A-Za-z]{2})/$', account_views.UserLanguageView.as_view(), name='function_set_url'),
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -323,7 +327,6 @@ urlpatterns = [
         path('get_auth', student_results.GetGradelistDiplomaAuthView.as_view(), name='url_get_auth'),
 
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
-        path('calc_reex/<list>/', grade_calc_reex.CalcReexView.as_view(), name='url_calc_reex'),
         path('download_gradelist/<lst>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
 
         path('submit_ex5', grade_views.GradeSubmitEx5View.as_view(), name='url_result_submit_ex5'),
@@ -331,7 +334,12 @@ urlpatterns = [
         path('download_shortgradelist/<lst>/', student_results.GradeDownloadShortGradelist.as_view(), name='url_result_download_shortgradelist'),
 
         path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5'),
-        path('result_download_overview', grade_excel.GradeDownloadResultOverviewView.as_view(), name='url_result_download_overview'),
+
+        path('result_download_overview/<lst>/', awpr_exceloverview.DownloadMultipleResultOverviewView.as_view(),
+             name='url_download_result_overview'),
+
+        path('download_average_overview/<lst>/', awpr_exceloverview.DownloadGradeAvgOverviewView.as_view(),
+             name='url_download_average_overview'),
 
         path('download_pok/<lst>/', student_results.DownloadPokView.as_view(), name='url_download_pok'),
         path('result_download_ex6', grade_excel.GradeDownloadEx6View.as_view(), name='url_result_download_ex6'),
@@ -346,6 +354,7 @@ urlpatterns = [
     path('archives/', include([
         path('archive', school_views.ArchivesListView.as_view(), name='url_archive'),
         path('archive_upload', school_views.ArchivesUploadView.as_view(), name='url_archive_upload'),
+        path('lookup_document', school_views.ArchivesLookupDocumentView.as_view(), name='url_lookup_document'),
 
     ])),
 

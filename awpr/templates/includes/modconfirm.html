@@ -12,6 +12,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
+
             <div class="mt-1 image_container">
                 <div id="id_modconfirm_loader" class="display_hide">
                     <img src="{% static 'img/loader.gif' %}" height="24" width="24">
@@ -21,13 +22,37 @@
             <div id="id_modconfirm_msg_container" class="mx-4 mb-2">
             </div>
 
-           <div id="id_modconfirm_checkbox_container" class="mx-4 mb-2 display_hide">
+           <div id="id_modconfirm_checkbox_container" class="mx-4 display_hide">
                 <span>
                     <input id="id_modconfirm_checkbox" type="checkbox" value="true" class="tw_032">
                     <label id="id_modconfirm_checkbox_label" for="id_modconfirm_checkbox" class="mx-2 my-1"></label>
                 </span>
+
+               <div id="id_modconfirm_select_container" class="mx-5 display_hide">
+                    <div class="flex_container">
+                        <label id="id_modconfirm_select_label" class="flex_1 m-2"></label>
+                        <select id="id_modconfirm_select" class="flex_1 form-control"
+                            autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                       ></select>
+                    </div>
+               </div>
            </div>
 
+           <div id="id_modconfirm_checkbox2_container" class="mx-4 display_hide">
+               <span>
+                    <input id="id_modconfirm_checkbox2" type="checkbox" value="true" class="tw_032">
+                    <label id="id_modconfirm_checkbox2_label" for="id_modconfirm_checkbox2" class="mx-2 my-1"></label>
+               </span>
+           </div>
+
+           <div class="mx-4 mb-2 px-2 display_hide">
+                    <label id="id_modconfirm_input_label" for="id_modconfirm_input" class="label_margin_top_m2"></label>
+                    <input id="id_modconfirm_input" type="text" class="form-control"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+           </div>
+
+            <div id="id_modconfirm_info_container" class="mx-4 mb-2">
+            </div>
             <div class="display_hide">
                 <a id="id_modconfirm_link" href="#" target="_blank"></a>
             </div>

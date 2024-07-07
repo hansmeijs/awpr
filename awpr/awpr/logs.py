@@ -843,3 +843,4 @@ def copytolog_grade_v2(grade_pk_list, req_mode, modifiedby_id=None):
             logger.error(getattr(e, 'message', str(e)))
 
 # - end of copytolog_grade_v2
+

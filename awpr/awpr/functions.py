@@ -1,5 +1,6 @@
 # PR2018-05-28
 import json
+import re
 from datetime import date, datetime, timedelta
 from random import randint
 
@@ -339,6 +340,22 @@ def get_items_are_text(count, cpt_sing, cpt_plural, is_will_be):
     ))
 
 
+def has_no_special_char(input_str):
+    # PR2024-06-23 from https://www.tutorialspoint.com/program-to-check-if-a-string-contains-any-special-character
+    # https: // www.geeksforgeeks.org / python - regex - re - search - vs - re - findall /
+    # checking if any special character is present in given string or not
+
+    # when [^inside brackets], it means "not"
+
+    special_char_found = False
+    if input_str:
+        regex = r'[^a-zA-Z0-9\s]'
+        for char in input_str:
+            if re.search(regex, char) is not None:
+                special_char_found = True
+                break
+
+    return not special_char_found
 def get_status_list_from_status_sum(status_sum):  # PR2021-01-15
     # status_sum:                            117
     # bin:                             0b1110101
@@ -460,15 +477,26 @@ def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20 PR2021-08-12
     return date_obj
 
 
-def get_date_from_arr_str_ddmmyy(date_str):  # PR2022-06-02
+def get_date_from_arr_str_ddmmyy(date_str):  # PR2022-06-02 PR2024-05-15
     # format of date_str is "05-20-2022"
+    # PR2024-05-15 Sentry error: an integer is required (got type str) - date_str: 20-6-2024
+    # was: year_int = arr_str[2] etc
+    # use instead: year_int = int(arr_str[2])
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_date_from_arr_str_ddmmyy -----')
+        logger.debug('  date_str: ' + str(date_str))
     date_obj = None
     if date_str:
         try:
             arr_str = date_str.split('-')
-            year_int = arr_str[2]
-            month_int = arr_str[1]
-            day_int = arr_str[0]
+            if logging_on:
+                logger.debug('  arr_str: ' + str(arr_str))
+
+            year_int = int(arr_str[2])
+            month_int = int(arr_str[1])
+            day_int = int(arr_str[0])
+
             date_obj = date(year_int, month_int, day_int)
         except Exception as e:
             logger.error(' '.join((getattr(e, 'message', str(e)), '- date_str:', str(date_str))))
@@ -670,6 +698,12 @@ def get_datetimelocal_from_datetime_utc(datetime_utc):
         # datetime_local.tzinfo: America/Curacao <class 'pytz.tzfile.America/Curacao'>
 
     return datetime_local
+
+
+def get_now_formatted_from_timezone_now():
+    # PR2024-06-18
+    now = timezone.now()
+    return get_now_formatted_from_now_arr((now.year, now.month, now.date, now.hour, now.minute))
 
 
 def get_now_formatted_from_now_arr(now_arr):

@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, null, el_hdrbar_school);
                 };
                 if ("messages" in response) {
                     b_show_mod_message_dictlist(response.messages);

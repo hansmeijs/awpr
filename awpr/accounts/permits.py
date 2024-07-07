@@ -337,7 +337,6 @@ def get_usergroup_list_from_user_instance(user_instance):  # PR2023-01-25
         userallowed_instance=get_userallowed_instance_from_user_instance(user_instance)
     )
 
-
 def get_userallowed_cluster_pk_list(userallowed_instance):
     # PR2023-01-14 PR2023-05-23
     # PR2024-05-30 userallowed_instance is examyear specific: it has a field examyear_id
@@ -723,7 +722,7 @@ def allowedsections_has_subjbases(userallowed_sections_dict):
     return has_subjbases
 
 
-def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, userallowed_sections_dict, return_false_when_no_allowedsubjects):
+def get_sqlclause_allowed_v2(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, userallowed_sections_dict, return_false_when_no_allowedsubjects):
     # PR2023-02-15 PR2023-04-10
     # This function  gives sql clause of all allowed schools, deps, levels and subjects.
     # it also filters on sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk.
@@ -803,10 +802,10 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
 #############################################
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')
+        logger.debug(' +++++ get_sqlclause_allowed_v2 +++++')
         logger.debug('    allowed_sections_dict: ' + str(userallowed_sections_dict))
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
         logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk))
@@ -1001,7 +1000,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         logger.debug('   sql_clause: ' + str(sql_clause))
 
     return sql_clause
-# - end of get_sqlclause_allowed_NEW
+# - end of get_sqlclause_allowed_v2
 
 ###########################
 
@@ -1717,6 +1716,19 @@ def get_return_false_when_no_allowedsubjects(req_usr):
     return return_false_when_no_allowedsubjects
 
 # ==========================
+
+def is_auth1_or_auth2(req_usr):
+    # PR2024-06-26
+    is_auth = False
+    if req_usr and req_usr.country and req_usr.schoolbase:
+        # PR2023-02-03 was: was: requsr_usergroup_list = req_usr.usergroup_list
+        requsr_usergroup_list = get_usergroup_list_from_user_instance(req_usr)
+        is_auth1 = 'auth1' in requsr_usergroup_list
+        is_auth2 = 'auth2' in requsr_usergroup_list
+        if is_auth1 + is_auth2 == 1:
+            is_auth = True
+
+    return is_auth
 
 def is_usergroup_admin(req_usr):
     # PR2023-01-13

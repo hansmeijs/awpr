@@ -10,12 +10,12 @@ from django.contrib.auth.tokens import default_token_generator
 #)
 
 
-from django.contrib.auth import views as auth_views
+#from django.contrib.auth import views as auth_views
 
 from django.core.mail import send_mail
 
 from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
+from django.http import HttpResponse, HttpResponseRedirect # , Http404, HttpResponseNotFound, FileResponse
 
 from django.views.decorators.csrf import csrf_protect
 
@@ -24,9 +24,9 @@ from django.template import loader
 from django.core.mail import EmailMultiAlternatives
 
 import unicodedata
-from django.contrib.auth import get_user_model, authenticate
+# from django.contrib.auth import get_user_model, authenticate
 
-from django.shortcuts import render, redirect, resolve_url
+from django.shortcuts import render, redirect # , resolve_url
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -34,22 +34,26 @@ from django.utils.decorators import method_decorator
 
 # PR2022-02-13 From Django 4 we don't have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_bytes, force_text
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode, url_has_allowed_host_and_scheme
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode # ,  url_has_allowed_host_and_scheme
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext, gettext_lazy as _
 from django.views.generic import ListView, View, UpdateView, FormView
 
-from django.contrib.auth.forms import SetPasswordForm, AuthenticationForm  # PR2018-10-14
+from django.contrib.auth.forms import SetPasswordForm # , AuthenticationForm  # PR2018-10-14
 
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.core.exceptions import ValidationError
 
 from django.contrib.auth import (
-    authenticate, get_user_model, password_validation,
-    REDIRECT_FIELD_NAME, get_user_model, login as auth_login,
-    logout as auth_logout, update_session_auth_hash,
+    # authenticate, get_user_model,
+    password_validation,
+    # REDIRECT_FIELD_NAME,
+    get_user_model,
+    login as auth_login,
+    # logout as auth_logout,
+    update_session_auth_hash,
 )
 
 
@@ -58,7 +62,7 @@ import xlsxwriter
 
 from .forms import UserActivateForm
 from .tokens import account_activation_token
-from .models import User, User_log, Usersetting
+from .models import User, Usersetting # , User_log
 
 from accounts import models as acc_mod
 from accounts import permits as acc_prm
@@ -113,8 +117,10 @@ class CorrectorListView(View):
         # display school and department in header only when role = school
         display_school = request.user.role == c.ROLE_008_SCHOOL
         page = 'page_corrector'
-        param = {'display_school': display_school, 'display_department': False}
-        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+
+        # PR2024-06-14 moved to get_headerbar_param
+        # param = {'display_school': display_school, 'display_department': False}
+        headerbar_param = awpr_menu.get_headerbar_param(request, page)
         if logging_on:
             logger.debug("headerbar_param: " + str(headerbar_param))
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
@@ -135,19 +141,20 @@ class UserListView(ListView):
         # - when role is inspection: all users with role 'inspection' and country == request_user.country
         # - else (role is school): all users with role 'school' and schoolcode == request_user.schooldefault
 
-        show_btn_userpermit = False
-        if request.user.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-            if request.user.is_role_system:
-                show_btn_userpermit = True
+
 
         # get_headerbar_param(request, page, param=None):  # PR2021-03-25
         page = 'page_user'
         # PR2024-05-13 set 'display_school': False, instead of True
-        param = {'show_btn_userpermit': show_btn_userpermit, 'display_school': False, 'display_department': False }
-        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
-        if logging_on:
-            logger.debug("show_btn_userpermit: " + str(show_btn_userpermit))
-            logger.debug("headerbar_param: " + str(headerbar_param))
+
+        # PR2024-06-14 moved to get_headerbar_param
+        #show_btn_userpermit = False
+        #if request.user.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
+        #    if request.user.is_role_system:
+        #        show_btn_userpermit = True
+        # param = {'show_btn_userpermit': show_btn_userpermit, 'display_school': False, 'display_department': False }
+        headerbar_param = awpr_menu.get_headerbar_param(request, page)
+
         # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
         return render(request, 'users.html', headerbar_param)
 
@@ -1055,6 +1062,51 @@ class UserDownloadPermitsView(View):
 # - end of UserDownloadPermitsView
 
 
+
+##############################
+
+@method_decorator([login_required], name='dispatch')
+class SetSelectedAuthView(View):
+    # PR2024-06-14
+
+    def get(self, request, idx):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= SetSelectedAuthView ============= ')
+            logger.debug('     idx: ' + str(idx) + ' ' + str(type(idx)))
+        response = None
+        req_user = request.user
+        if req_user and req_user.is_authenticated and idx:
+            sel_auth_index = int(idx) if isinstance(idx, int) else None
+            if sel_auth_index:
+                if logging_on:
+                    logger.debug('     sel_auth_index: ' + str(sel_auth_index) + ' ' + str(type(sel_auth_index)))
+                    # upload_dict: {'mode': 'prelim', 'print_all': False, 'student_pk_list': [8629], 'auth1_pk': 116, 'printdate': '2021-11-18'}
+
+    # check if sel_auth_index is in usergrouplist
+                userallowed_instance = acc_prm.get_userallowed_instance_from_user_instance(req_user)
+                requsr_usergroup_list = acc_prm.get_usergroup_list(userallowed_instance)
+                if logging_on:
+                    logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
+                sel_auth = 'auth' + str(sel_auth_index)
+
+                if sel_auth in requsr_usergroup_list:
+                # - get saved_auth_index from usersetting
+                    selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    saved_auth_index = selected_pk_dict.get(c.KEY_SEL_AUTH_INDEX)
+
+                # - save sel_auth_index in settings if it has changed
+                    if sel_auth_index != saved_auth_index:
+                        selected_pk_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
+                        set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
+
+            sel_page_dict = acc_prm.get_usersetting_dict(c.KEY_SEL_PAGE, request)
+            sel_page = sel_page_dict.get('page')
+
+            page_html = c.get_page_html(sel_page) or 'home.html'
+            return render(request, page_html)
+#########################
+
 def create_permits_rows():
     # --- create list of permits_rows of this country PR2021-04-20
     # PR2021-08-22 country isremoved, permits are for CUR and SXM
@@ -1572,18 +1624,18 @@ class UserActivateView(UpdateView):
             return render(request, 'user_set_password.html', {'user': user,})
 
             # select_school = False
-            display_school = True
-            if request.user is not None:
-                if request.user.is_authenticated:
-                    if request.user.is_role_school_group_systemtem:
-                        display_school = True
+            #display_school = True
+            #if request.user is not None:
+            #    if request.user.is_authenticated:
+            #        if request.user.is_role_school_group_systemtem:
+            #            display_school = True
+            #
+            #param = {'display_school': display_school, 'display_user': True, }
+            #headerbar_param = awpr_menu.get_headerbar_param(request, 'schools', param)
+            #headerbar_param['form'] = form
+            ##logger.debug('def home(request) headerbar_param: ' + str(headerbar_param))
 
-            param = {'display_school': display_school, 'display_user': True, }
-            headerbar_param = awpr_menu.get_headerbar_param(request, 'schools', param)
-            headerbar_param['form'] = form
-            #logger.debug('def home(request) headerbar_param: ' + str(headerbar_param))
-
-            return render(request, 'user_add.html', headerbar_param)
+            #return render(request, 'user_add.html', headerbar_param)
 
         else:
             #logger.debug('def activate account_activation_token.check_token False')
@@ -3307,7 +3359,7 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
 
 def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19 PR2021-12-02
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
         logger.debug('     key_str: ' + str(key_str))
@@ -3315,6 +3367,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
         logger.debug('     new_setting_dict: ' + str(new_setting_dict))
         # new_setting_dict: {'cols_hidden': {'all': ['examnumber', 'subj_name']}}
         # new_setting_dict: {'sel_examtype': 'sr', 'sel_examperiod': 1}
+        # new_setting_dict: {'sel_sctbase_pk': -9}
 
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # PR2020-07-12 debug. creates multiple rows when key does not exist ans newdict has multiple subkeys
@@ -3348,9 +3401,11 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
                 logger.debug('    subkey: ' + str(subkey))
                 # subkey: cols_hidden
                 # subkey: sel_examperiod
+                # subkey: sel_sctbase_pk
                 logger.debug('    new_subdict_or_value: ' + str(new_subdict_or_value))
                 # new_subdict_or_value: {'all': ['examnumber', 'subj_name']}
                 # new_subdict_or_value: sr
+                # new_subdict_or_value: -9
 
             # when subkey = cols_hidden it contains a dict: saved_subdict_or_value = {'published': ['examperiod', 'datepublished', 'url']}}
             # when subkey = sel_btn it contains a value: 'btn_studsubj'
@@ -3420,7 +3475,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
 
 def replace_value_in_dict(settings_dict, key_str, new_value): # PR2021-08-19 PR2021-12-02
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- replace_value_in_dict ----- ')
         logger.debug('    settings_dict: ' + str(settings_dict))
@@ -3436,6 +3491,10 @@ def replace_value_in_dict(settings_dict, key_str, new_value): # PR2021-08-19 PR2
     saved_subdict_or_value = af.get_dict_value(settings_dict, (key_str,))
     if logging_on:
         logger.debug('    saved_subdict_or_value: ' + str(saved_subdict_or_value))
+
+    # replace -9 by None
+    if new_value == -9:
+        new_value = None
 
     if new_value is None:
         if key_str in settings_dict:
@@ -3590,7 +3649,7 @@ def get_userallowed_for_subjects_studsubj(sel_examyear, sel_schoolbase, sel_depb
     # only called by subjects.create_subject_rows
 
     # PR2023-05-20 debug: subject in 'all levels' not in list
-    # TODO change to acc_prm.get_sqlclause_allowed_NEW
+    # TODO change to acc_prm.get_sqlclause_allowed_v2
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -4348,57 +4407,54 @@ def set_userallowed_dict(user_pk, examyear_pk, usergroups_arr, allowed_clusters_
 ############## moved frnm downloads 2022-12-18 ###########################
 
 # ===== PAGE SETTINGS =======================
-def get_settings_page(request, request_item_setting, page, setting_dict):
-    # PR2021-06-22 PR2022-02-25 PR2022-12-11
+def get_settings_page(request, request_item_setting, reqitem_page_str, setting_dict):
+    # PR2021-06-22 PR2022-02-25 PR2022-12-11 PR2024-06-26
     logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ------- get_settings_page -------')
 
 # settings 'sel_btn' can be changed by calling download, also changes by b_UploadSettings
 # settings 'cols_hidden' and 'class_hidden' cannot be changed by calling downloads function
 # value of key 'sel_page' is set and retrieved in get_headerbar_param
 
     if logging_on:
+        logger.debug(' ')
+        logger.debug(' ------- get_settings_page -------')
+
         logger.debug('++++++++++++  PAGE SETTINGS  ++++++++++++++++++++++++')
-        logger.debug('..... page: ' + str(page))
+        logger.debug('..... reqitem_page_str: ' + str(reqitem_page_str))
+        logger.debug('..... request_item_setting: ' + str(request_item_setting))
+        logger.debug('..... setting_dict: ' + str(setting_dict))
 
         # request_item_setting: {'page': 'page_exams', 'page_exams': {'sel_btn': 'btn_ntermen'}}
 
-    # get page settings from usersetting
-    if page:
-        # get new page settings from request_item_setting
-        reqitem_page_dict = request_item_setting.get(page)
-        reqitem_sel_btn, saved_sel_btn = None, None
-        if reqitem_page_dict:
-            reqitem_sel_btn = reqitem_page_dict.get('sel_btn')
-        # get saved page settings from usersetting
-        saved_page_dict = acc_prm.get_usersetting_dict(page, request)
-        if saved_page_dict is None:
-            saved_page_dict = {}
-        else:
-    # - get saved_sel_btn from  usersetting
-            saved_sel_btn = saved_page_dict.get(c.KEY_SEL_BTN)
+    if reqitem_page_str:
+        pagedict_tobesaved = False
 
-        # page_dict: {'sel_btn': 'btn_studsubj', 'cols_hidden': {'published': ['examperiod'], 'studsubj': ['examnumber']}}
+        reqitem_sel_btn, saved_sel_btn = None, None
+        if reqitem_page_str:
+            reqitem_sel_btn = request_item_setting.get('sel_btn')
         if logging_on:
-            logger.debug('..... reqitem_page_dict: ' + str(reqitem_page_dict))
             logger.debug('..... reqitem_sel_btn: ' + str(reqitem_sel_btn))
+
+# - get saved page settings from usersetting
+        # changes will be stored in saved_page_dict and saved
+        saved_page_dict = acc_prm.get_usersetting_dict(reqitem_page_str, request)
+
+# - get saved_sel_btn from  saved_page_dict
+        saved_sel_btn = saved_page_dict.get(c.KEY_SEL_BTN)
+        if logging_on:
             logger.debug('..... saved_page_dict: ' + str(saved_page_dict))
             logger.debug('..... saved_sel_btn: ' + str(saved_sel_btn))
-            # saved_page_dict: {'sel_btn': 'btn_ntermen'}
 
-    # - replace by reqitem_sel_btn, if any
+# - replace by reqitem_sel_btn, if any
         if reqitem_sel_btn and reqitem_sel_btn != saved_sel_btn:
+            pagedict_tobesaved = True
             saved_sel_btn = reqitem_sel_btn
             saved_page_dict[c.KEY_SEL_BTN] = reqitem_sel_btn
 
-    # - save reqitem_sel_btn, if changed
-            set_usersetting_dict(page, saved_page_dict, request)
-
         if logging_on:
             logger.debug('..... saved_sel_btn: ' + str(saved_sel_btn))
 
-# - add info to setting_dict, will be sent back to client
+# - add sel_btn to setting_dict, will be sent back to client
         if saved_sel_btn:
             setting_dict[c.KEY_SEL_BTN] = saved_sel_btn
 
@@ -4417,7 +4473,9 @@ def get_settings_page(request, request_item_setting, page, setting_dict):
         if sortby_class:
             setting_dict[c.KEY_SORTBY_CLASS] = sortby_class
 
-
+# - save new saved_page_dict, if changed
+        if pagedict_tobesaved:
+            set_usersetting_dict(reqitem_page_str, saved_page_dict, request)
 # - end of get_settings_page
 
 
@@ -4540,10 +4598,13 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 
     # req_usr.schoolbase cannot be changed
     # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}.
-    # Note: key 'selected_pk' is not used in request_item, format is: datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
 
-    logging_on = False  # s.LOGGING_ON
+    # Note: key 'selected_pk' is not used in request_item,
+    # format is: datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
+
+    logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' ------- get_settings_schoolbase -------')
 
 # +++ get sel_schoolbase_instance
@@ -4551,15 +4612,40 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
     # - else[ check if request_item_schoolbase_pk exists: check if is allowed
     # - if requestitem_saved schoolbase is None or not allowed: check if saved schoolbase exists and is allowed
     # - if saved schoolbase is None or not allowed: use requsr_schoolbase
+    #PR2024-06-26 debug: when corrector logs in for the first time, 'deaprtment correctors is shown in the title bar
+    # This is confusing. Show first allowed school instead, if any
+    # defaultrole
+
+    def get_requsr_schoolbase():
+        requsr_schoolbase_pk, requsr_schoolbase_code, requsr_school_name = None, None, None
+        if request.user.schoolbase_id and sel_examyear_instance:
+            sql = ' '.join(("SELECT sb.id, sb.code, sch.name",
+                            "FROM schools_school AS sch",
+                            "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                            "WHERE sch.examyear_id = ", str(sel_examyear_instance.pk) ,"::INT",
+                            "AND sch.base_id = ", str(request.user.schoolbase_id) ,"::INT"
+                            ))
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                row = cursor.fetchone()
+
+                if row:
+                    requsr_schoolbase_pk = row[0]
+                    requsr_schoolbase_code = row[1]
+                    requsr_school_name = row[2]
+        return requsr_schoolbase_pk, requsr_schoolbase_code, requsr_school_name
+    # - end of get_requsr_schoolbase
 
     sel_schoolbase_instance = None
     sel_schoolbase_tobesaved = False
     requsr_same_school = False
 
 # - get requsr_schoolbase
+    requsr_schoolbase_pk, requsr_schoolbase_code, requsr_school_name = get_requsr_schoolbase()
     requsr_schoolbase = request.user.schoolbase
-    permit_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
-    permit_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
+    permit_dict['requsr_schoolbase_pk'] = requsr_schoolbase_pk
+    permit_dict['requsr_schoolbase_code'] = requsr_schoolbase_code
+    permit_dict['requsr_school_name'] = requsr_school_name
 
 # - get saved_schoolbase_pk from selected_pk_dict
     # saved_schoolbase_pk has no value -1 or -9
@@ -4567,6 +4653,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
     if logging_on:
         logger.debug('    request.user.role: ' + str(request.user.role))
         logger.debug('    requsr_schoolbase: ' + str(requsr_schoolbase))
+        logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
         logger.debug('    saved_schoolbase_pk: ' + str(saved_schoolbase_pk))
         logger.debug('    ----- ')
 
@@ -4578,13 +4665,13 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
             sel_schoolbase_tobesaved = True
     else:
 
-# - check if request_item_schoolbase_pk is in request_item_setting
+# - get request_item_schoolbase_pk from request_item_setting
         request_item_schoolbase_pk = request_item_setting.get(c.KEY_SEL_SCHOOLBASE_PK)
         if logging_on:
             logger.debug('    request_item_schoolbase_pk: ' + str(request_item_schoolbase_pk))
             logger.debug('    ..... ')
 
-# - if not: make request_item_schoolbase_pk = saved_schoolbase_pk, if any
+# - if no new request_item_schoolbase_pk: make request_item_schoolbase_pk = saved_schoolbase_pk, if any
         if request_item_schoolbase_pk is None and saved_schoolbase_pk:
             request_item_schoolbase_pk = saved_schoolbase_pk
             if logging_on:
@@ -4692,17 +4779,17 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 
 # ===== SCHOOL =======================
     # - only roles corr, insp, admin and system may select other schools
-    # these are use in b_UpdateHeaderbar
+    # these are use in h_UpdateHeaderBar
     permit_dict['may_select_school'] = (request.user.role > c.ROLE_008_SCHOOL)
 
-    if page in ('page_examyear', 'page_user'):
-        display_school = (request.user.role <= c.ROLE_008_SCHOOL)
-    else:
-        display_school = True
-    permit_dict['display_school'] = display_school
+    #if page in ('page_examyear', 'page_user'):
+    #    display_school = (request.user.role <= c.ROLE_008_SCHOOL)
+    #else:
+    #    display_school = True
+   # permit_dict['display_school'] = display_school
 
-    if logging_on:
-        logger.debug('    display_school: ' + str(display_school))
+    #if logging_on:
+    #    logger.debug('    display_school: ' + str(display_school))
 
 # - get school from sel_schoolbase and sel_examyear_instance
     sel_school_instance = sch_mod.School.objects.get_or_none(
@@ -4926,7 +5013,7 @@ def get_settings_subjbase(request_item_setting, sel_examyear_instance,
     # PR2022-12-11 PR2023-05-18
     # only called by download_setting
     # PR2024-03-29 TODO deprecate subject_pk, use only subjbase_pk instead
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ------- get_settings_subjectbase -------')
@@ -5325,7 +5412,7 @@ def get_sel_examtype(selected_pk_dict, request_item_examtype, sel_examperiod):  
 
 
 # ===== AUTH INDEX ======================= PR2022-12-11
-def get_settings_auth_index(usergroups_arr, request_item_setting, setting_dict, selected_pk_dict, sel_examperiod):
+def get_settings_auth_index(usergroups_arr, request_item_setting, setting_dict, selected_pk_dict):
     # PR2022-12-11
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -5346,20 +5433,20 @@ def get_settings_auth_index(usergroups_arr, request_item_setting, setting_dict, 
 
     if auth_index_list:
         if len(auth_index_list) == 1:
-            # when user has only 1 auth: make it selected
+# - when user has only 1 auth: make it selected
             sel_auth_index = auth_index_list[0]
         else:
-            # - get selected auth_index from request_item_setting
+    # - get selected auth_index from request_item_setting
             request_item_auth = request_item_setting.get(c.KEY_SEL_AUTH_INDEX)
             if logging_on:
                 logger.debug('request_item_auth: ' + str(request_item_auth) + ' ' + str(type(request_item_auth)))
-            # - make it the selected auth if in auth_list
+    # - make it the selected auth if in auth_list
             if request_item_auth and request_item_auth in auth_index_list:
                 sel_auth_index = request_item_auth
                 if logging_on:
                     logger.debug('make request_item_auth the selected auth: ' + str(sel_auth_index))
 
-    # - get saved_auth_index from Usersetting - saved_auth_index is string!
+# - get saved_auth_index from Usersetting - saved_auth_index is string!
     saved_auth_index = None
     saved_auth_index_str = selected_pk_dict.get(c.KEY_SEL_AUTH_INDEX)
     if saved_auth_index_str:
@@ -5368,26 +5455,26 @@ def get_settings_auth_index(usergroups_arr, request_item_setting, setting_dict, 
         logger.debug('get saved_auth_index: ' + str(saved_auth_index) + ' ' + str(type(saved_auth_index)))
         logger.debug('sel_auth_index: ' + str(sel_auth_index) + ' ' + str(type(sel_auth_index)))
 
-    # - make saved_auth_index the selected index if sel_auth_index is None
+# - make saved_auth_index the selected index if sel_auth_index is None
     if sel_auth_index is None:
         if saved_auth_index and saved_auth_index in auth_index_list:
             sel_auth_index = saved_auth_index
             if logging_on:
                 logger.debug('make saved_auth_index the selected index: ' + str(sel_auth_index))
 
-    # - get first_auth_index if sel_auth_index is still None
+# - get first_auth_index if sel_auth_index is still None
     if sel_auth_index is None:
         if auth_index_list:
             sel_auth_index = auth_index_list[0]
             if logging_on:
                 logger.debug('get first_auth_index if still None: ' + str(sel_auth_index))
 
-    # - add info to setting_dict, will be sent back to client
+# - add info to setting_dict, will be sent back to client
     if sel_auth_index:
         setting_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
         setting_dict['sel_auth_function'] = c.USERGROUP_CAPTION.get('auth' + str(sel_auth_index))
 
-    # save sel_auth_index if it is different from saved_auth_index
+# - save sel_auth_index if it is different from saved_auth_index
     if sel_auth_index != saved_auth_index:
         selected_pk_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
         sel_auth_index_tobesaved = True

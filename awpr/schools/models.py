@@ -244,7 +244,7 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
         #  json.dumps converts a dict in a json object
         #  json.loads retrieves a dict (or other type) from a json object
 
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ---  get_examyearsetting_dict  ------- ')
             logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))

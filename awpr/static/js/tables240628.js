@@ -10,9 +10,9 @@
 
 // ++++++++++++  MODAL SELECT DEPARTMENT from rows  PR2022-11-05
 
-//=========  t_MSED_OpenDepLvlFromDicts  ================ PR2023-06-27
-    function t_MSED_OpenDepLvlFromDicts(tblName, data_dicts, schoolbase_pk, depbase_pk, MSED_Response) {
-        //console.log( "===== t_MSED_OpenDepLvlFromDicts ========= ");
+//=========  t_MSED_OpenDepLvlFromDictsNIU  ================ PR2023-06-27
+    function t_MSED_OpenDepLvlFromDictsNIU(tblName, data_dicts, schoolbase_pk, depbase_pk, MSED_Response) {
+        //console.log( "===== t_MSED_OpenDepLvlFromDictsNIU ========= ");
         //console.log( "tblName", tblName);
         //console.log( "data_dicts", data_dicts);
         // only called by  page Home - for now
@@ -40,7 +40,7 @@
 
 // ---  show modal
         $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
-    };  // t_MSED_OpenDepLvlFromDicts
+    };  // t_MSED_OpenDepLvlFromDictsNIU
 
 
 // ++++++++++++  MODAL SELECT DEPARTMENT from rows  PR2022-11-05
@@ -50,7 +50,7 @@
         //console.log( "===== t_MSED_OpenDepLvlFromRows ========= ");
         //console.log( "tblName", tblName);
         //console.log( "data_rows", data_rows);
-        // only called by user page MOD USER PERMIT SUBJECTS - t_MUPS_SelectDepartment and t_MUPS_SelectLevel - for now
+        // only called by user, base, modallowed:  MUPS_SelectDepartment and t_MUPS_SelectLevel - for now
 
 // set header text
         const el_MSED_header_text = document.getElementById("id_MSED_header_text");
@@ -408,12 +408,12 @@
 //========= t_MSSSS_Open_NEW ====================================
     function t_MSSSS_Open_NEW (modalName, tblName, data_dicts, MSSSS_Response, add_all, show_delete_btn) {
         //PR2022-08-13 PR2023-01-05 PR2023-03-20 PR2024-03-28
-        //console.log(" ===  t_MSSSS_Open_NEW  =====") ;
-    //console.log( "    permit_dict", permit_dict);
-    //console.log( "    setting_dict", setting_dict);
-    //console.log( "modalName", modalName );
-    //console.log( "tblName", tblName );
-    //console.log( "data_dicts", data_dicts, typeof data_dicts );
+        console.log(" ===  t_MSSSS_Open_NEW  =====") ;
+    console.log( "    permit_dict", permit_dict);
+    console.log( "    setting_dict", setting_dict);
+    console.log( "modalName", modalName );
+    console.log( "tblName", tblName );
+    console.log( "data_dicts", data_dicts, typeof data_dicts );
 
         // tblNames are: 'cluster', 'subject',  // tobe added:  "school", "student", "envelopbundle
         // table "school", "student" use base_id as selected_pk
@@ -898,7 +898,7 @@
         if (el_SBR_select) {
 
         // Note: there is no select school element in sidebar
-            const selected_pk_int = (tblName === "subject") ? setting_dict.sel_subjbase_pk :
+            let selected_pk_int = (tblName === "subject") ? setting_dict.sel_subjbase_pk :
                                     (tblName === "cluster") ? setting_dict.sel_cluster_pk :
                                     (tblName === "student") ? setting_dict.sel_student_pk : null;
 
@@ -907,6 +907,30 @@
                               (tblName === "cluster") ? cluster_dictsNEW :
                               (tblName === "student") ? student_rows :
                               null;
+
+    // PR2024-06-18 to prevent empty list: check if selected_pk is in rows, set null if not found
+            if (selected_pk_int){
+                const lookup_field = (tblName === "subject") ? "base_id" : "id";
+                const row = t_lookup_row_in_array(data_rows, lookup_field, selected_pk_int);
+                if(!row){
+                    selected_pk_int = null;
+                    const upload_pk_dict = {};
+                    if (tblName === "subject") {
+                        setting_dict.sel_subjbase_id = null;
+                        upload_pk_dict.sel_subjbase_pk = null;
+                    } else if  (tblName === "cluster") {
+                        setting_dict.sel_cluster_id = null;
+                        upload_pk_dict.sel_cluster_pk = null;
+                    } else if (tblName === "student") {
+                        setting_dict.sel_student_id = null;
+                        upload_pk_dict.sel_student_pk = null;
+                    };
+            // ---  upload new setting
+                    const upload_dict = {selected_pk: upload_pk_dict};
+                    b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+                };
+            };
+
             // PR2024-0-01 Object.keys.length works with lists and dictionaries
             const data_rows_length = (data_rows) ? Object.keys(data_rows).length : 0;
     //console.log( "    data_rows", data_rows);
@@ -933,7 +957,7 @@
 
                 } else {
                     // display 'All' when no item selected
-                    //PR20254-04-01 was: display item when there is only one. Don't, to show if any selected
+                    //PR2024-04-01 was: display item when there is only one. Don't, to show if any selected
                     display_txt = t_MSSSS_AddAll_txt(tblName);
                 };
             };
@@ -960,7 +984,6 @@
         t_set_sbr_itemcount_txt(loc, 0)
 
     };  // t_SBR_display_subject_cluster_student
-
 
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13
@@ -1957,8 +1980,11 @@
 //========= FillOptionText  ============= PR2020-12-11 from tsa
     function FillOptionText(tblName, pk_field, item_dict, selected_pk) {
         //console.log( "===== FillOptionText  ========= ");
-        const value = (tblName === "level") ? (item_dict.abbrev) ? item_dict.abbrev : "---"
-                                            : (item_dict.name) ? item_dict.name : "---" ;
+        const value = (tblName === "level")
+                ? (item_dict.abbrev)
+                    ? item_dict.abbrev : "---"
+                : (item_dict.name)
+                    ? item_dict.name : "---" ;
         const pk_int = item_dict[pk_field];
         const pk_str = (pk_int != null) ? pk_int.toString() : "";
         const selected_pk_str = (selected_pk != null) ? selected_pk.toString() : "";
@@ -2019,7 +2045,8 @@
 
 //========= t_FillOptionFromList  ============= PR2020-01-08
     function t_FillOptionFromList(data_list, selected_pk, firstoption_txt) {
-         //console.log( "===== t_FillOptionFromList  ========= ");
+         console.log( "===== t_FillOptionFromList  ========= ");
+         console.log( "    data_list", data_list);
          // add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
          // used in page customers
         let option_text = "";
@@ -2028,6 +2055,8 @@
         }
         for (let i = 0, len = data_list.length; i < len; i++) {
             const item_dict = data_list[i];
+
+         console.log( "    item_dict", item_dict);
             const item_text = FillOptionText(item_dict, selected_pk);
             option_text += item_text;
         }

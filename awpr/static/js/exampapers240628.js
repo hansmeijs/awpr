@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
+
         const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click", function() {
@@ -223,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // both 'loc' and 'setting_dict' are needed for CreateSubmenu
                 if (isloaded_loc && isloaded_settings) {CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if (!skip_messages && "messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
@@ -1325,24 +1326,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MSED_Response
 
-
-//###########################################################################
-//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
-    function MSSSS_Response(modalName, tblName, selected_dict, selected_pk) {
-        //console.log( "===== MSSSS_Response ========= ");
-
-
-// ---  upload new setting and refresh page
-        const datalist_request = {
-                setting: {page: "page_archive",
-                          sel_schoolbase_pk: selected_pk  },
-
-                scheme_rows: {cur_dep_only: true},
-            };
-
-        DatalistDownload(datalist_request);
-
-    }  // MSSSS_Response
 
 //=========  SBR_show_all  ================ PR2021-11-18
     function SBR_show_all(FillTblRows) {

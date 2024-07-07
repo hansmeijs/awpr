@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
         // there is no btn select department in headerbar of page_orderlist
-        // there is no btn select school in headerbar of page_orderlist
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
 
         const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
         if (el_hdrbar_allowed_sections){
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 //};
                 if(must_create_submenu){CreateSubmenu()};
                 if(must_update_headerbar){
-                    b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear);
+                    h_UpdateHeaderBar(el_hdrbar_examyear, null, el_hdrbar_school);
                     FillOptionsExamperiod();
                 };
 

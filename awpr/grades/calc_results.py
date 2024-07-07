@@ -6,7 +6,7 @@ from django.db import connection
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
+from django.utils.translation import activate, gettext, pgettext_lazy, gettext_lazy as _
 from django.views.generic import View
 
 from decimal import Decimal
@@ -206,11 +206,11 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
-        logger.debug('student_pk_list: ' + str(student_pk_list))
+        logger.debug('    student_pk_list: ' + str(student_pk_list))
 
 # - get_scheme_dict
     scheme_dict = get_scheme_dict(sel_examyear, sel_department)
@@ -234,6 +234,61 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 
     if logging_on:
         logger.debug('student_dictlist: ' + str(student_dictlist))
+
+    """
+    student_dictlist: [
+    {'fullname': 'Ogenio, Liliana Elisabeth', 'stud_id': 9328, 'country': 'Curaçao', 
+    'ey_code': 2024, 'examyear_txt': '2024', 
+    'school_name': 'Kolegio Alejandro Paula', 'school_code': 'CUR16', 'islexschool': False, 
+    'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'depbase_code': 'Vwo', 'dep_abbrev': 'V.W.O.', 
+    'lvl_name': None, 'lvlbase_code': None, 'level_req': False, 'sct_name': 'Natuur en Gezondheid', 
+    'dep_id': 18, 'lvl_id': None, 'sct_id': 37, 'scheme_id': 152, 'classname': 'V6Az', 
+    'has_profiel': True, 'examnumber': '2005022501', 'iseveningstudent': False, 'islexstudent': False, 'bis_exam': True, 
+    'partial_exam': False, 'withdrawn': False, 'c_subj': 13, 
+    77569: {'si_id': 3799, 'subj': 'asw',  'exemption_year': 2023, 
+        1: {'subj': 'asw', 'se': None, 'sr': None, 'sesr': None, 'pe': None, 'ce': None, 'pece': None, 'final': None}, 
+        4: {'subj': 'asw', 'se': '7.3', 'sr': None, 'sesr': '7.3', 'pe': None, 'ce': None, 'pece': None, 'final': '7'}, 
+        'has_exemptionCALC': True}, 'c_ep4': 6, 
+    77566: {'si_id': 3805, 'subj': 'bi',
+        1: {'subj': 'bi', 'se': '5.5', 'sr': None, 'sesr': '5.5', 'pe': None, 'ce': '4.3', 'pece': '4.3', 'final': '5'}}, 
+    77564: {'si_id': 3800, 'subj': 'cav', 'exemption_year': 2023, 
+        1: {'subj': 'cav', 'se': None, 'sr': None, 'sesr': None, 'pe': None, 'ce': None, 'pece': None, 'final': None}, 
+        4: {'subj': 'cav', 'se': 'v', 'sr': None, 'sesr': 'v', 'pe': None, 'ce': None, 'pece': None, 'final': 'v'}, 
+        'has_exemptionCALC': True}, 
+    77572: {'si_id': 3817, 'subj': 'ec', 
+    1: {'subj': 'ec', 'se': '7.5', 'sr': None, 'sesr': '7.5', 'pe': None, 'ce': '5.8', 'pece': '5.8', 'final': '7'}}, 
+    77574: {'si_id': 3816, 'subj': 'entl', 
+    1: {'subj': 'entl', 'se': '7.8', 'sr': None, 'sesr': '7.8', 'pe': None, 'ce': '4.0', 'pece': '4.0', 'final': '6'}, 
+    2: {'subj': 'entl', 'se': '7.8', 'sr': None, 'sesr': '7.8', 'pe': None, 'ce': None, 'pece': None, 'final': None}, 
+    'has_reexCALC': True}, 'c_ep2': 1, 
+    78454: {'si_id': 3807, 'subj': 'frtl', 'exemption_year': 2023, 
+    1: {'subj': 'frtl', 'se': None, 'sr': None, 'sesr': None, 'pe': None, 'ce': None, 'pece': None, 'final': None}, 
+    4: {'subj': 'frtl', 'se': '6.6', 'sr': None, 'sesr': '6.6', 'pe': None, 'ce': None, 'pece': None, 'final': '7'}, 
+    'has_exemptionCALC': True}, 
+    77563: {'si_id': 3790, 'subj': 'lo', 'exemption_year': 2023, 
+    1: {'subj': 'lo', 'se': None, 'sr': None, 'sesr': None, 'pe': None, 'ce': None, 'pece': None, 'final': None}, 
+    4: {'subj': 'lo', 'se': 'v', 'sr': None, 'sesr': 'v', 'pe': None, 'ce': None, 'pece': None, 'final': 'v'}, 
+    'has_exemptionCALC': True}, 
+    77567: {'si_id': 3809, 'subj': 'na', 
+    1: {'subj': 'na', 'se': '6.9', 'sr': None, 'sesr': '6.9', 'pe': None, 'ce': '4.7', 'pece': '4.7', 'final': '6'}}, 
+    77573: {'si_id': 3815, 'subj': 'netl', 
+        1: {'subj': 'netl', 'se': '6.2', 'sr': None, 'sesr': '6.2', 'pe': None, 'ce': '5.5', 'pece': '5.5', 'final': '6'}}, 
+    77565: {'si_id': 3787, 'subj': 'pa', 'exemption_year': 2023, 
+        4: {'subj': 'pa', 'se': '8.1', 'sr': None, 'sesr': '8.1', 'pe': None, 'ce': '6.4', 'pece': '6.4', 'final': '7'}, 
+        'has_exemptionCALC': True, 
+        1: {'subj': 'pa', 'se': '2.3', 'sr': None, 'sesr': '2.3', 'pe': None, 'ce': '5.2', 'pece': '5.2', 'final': '4'}}, 
+    77570: {'si_id': 3794, 'subj': 'pws', 'exemption_year': 2023, 
+     1: {'subj': 'pws', 'se': None, 'sr': None, 'sesr': None, 'pe': None, 'ce': None, 'pece': None, 'final': None}, 
+        4: {'subj': 'pws', 'se': '8.2', 'sr': None, 'sesr': '8.2', 'pe': None, 'ce': None, 'pece': None, 'final': '8'}, 
+        'has_exemptionCALC': True}, 
+    77568: {'si_id': 3810, 'subj': 'sk', 
+        1: {'subj': 'sk', 'se': '5.4', 'sr': None, 'sesr': '5.4', 'pe': None, 'ce': '5.8', 'pece': '5.8', 'final': '6'}}, 
+    77571: {'si_id': 3813, 'subj': 'wa', 
+        1: {'subj': 'wa', 'se': '7.1', 'sr': None, 'sesr': '7.1', 'pe': None, 'ce': '7.0', 'pece': '7.0', 'final': '7'}}}]
+
+    """
+
+
 
 # - create log_list with header
     log_list = log_list_header(sel_school, sel_department, sel_examyear, user_lang)
@@ -273,7 +328,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict,
                         log_list, sql_studsubj_value_list, sql_student_value_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -422,9 +477,9 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 
 def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, no_centralexam, studsubj_pk, studsubj_dict,
                          si_dict, ep_list, log_list, sql_studsubj_value_list):
-    # PR2021-12-30 PR2022-01-02
+    # PR2021-12-30 PR2022-01-02 PR2024-06-18
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  ++++++++++++  calc_studsubj_result  ++++++++++++')
         logger.debug(' studsubj_dict: ' + str(studsubj_dict))
@@ -453,6 +508,9 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
     weight_ce = si_dict.get('weight_ce', 0)
     is_combi = si_dict.get('is_combi', False)
     is_core = si_dict.get('is_core_subject', False)
+
+    # PR2024-06-16 added:
+    sjtp_code = si_dict.get('sjtp_code')
 
     rule_grade_sufficient = si_dict.get('rule_grade_sufficient', False)
     rule_gradesuff_notatevlex = si_dict.get('rule_gradesuff_notatevlex', False)
@@ -663,6 +721,10 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
 # - calculate count of each final grade
                 calc_count_final_3457_core(calc_student_ep_dict, max_final,
                                 gradetype, is_combi, is_core, multiplier, is_extra_nocount, is_thumbrule, subj_code)
+
+# - calculate if sectorprgram is sufficient
+                calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype,
+                    max_final, is_extra_nocount, is_thumbrule)
 
 # - calculate sum of final grades, separate for combi subjects
                 calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dict,
@@ -1280,7 +1342,7 @@ def get_sql_studsubj_values(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem
     # PR2021-12-30 PR2022-01-03 PR2022-06-10 PR2022-07-09 PR2024-04-02
     # only called by calc_studsubj_result
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sql_studsubj_values -----')
 
@@ -1493,6 +1555,7 @@ def get_gradeinfo_extension(multiplier, max_ep):
 
     # PR021-11-26
     # add '2x','vr','h','h3' to grade
+
     gradeinfo_extension = ''
     addition_list = []
     if multiplier != 1:
@@ -1527,6 +1590,8 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
     #  - note: grade '3 or less' is not skipped when is_combi
     #  - note: core is not skipped when is_combi
 
+    # PR2024-06-18 spr_insuff added
+
 # - skip when subject is 'is_extra_nocount' or 'is_thumbrule'
     if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount and not is_thumbrule:
         try:
@@ -1542,6 +1607,11 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
                 default_value = 0
                 if key_str not in count_dict:
                     count_dict[key_str] = default_value
+
+    # PR2024-06-16
+            key_str = 'spr_insuff'
+            if key_str not in count_dict:
+                count_dict[key_str] = False
 
             # skip count when is combi
             #if not is_combi:
@@ -1563,7 +1633,7 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
         # count c3, c4, c5, c6, c7
                     # skip count when is combi
 
-                    # PR2022-06-11 Mail Nancy Josefina: 3 is allowe in combi subject
+                    # PR2022-06-11 Mail Nancy Josefina: 3 is allowed in combi subject
                     # was: skip count when is combi, except when max_final_int <= 3
                     # was: if not is_combi or max_final_int == 3:
                     if not is_combi:
@@ -1584,6 +1654,57 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
             logger.error(getattr(e, 'message', str(e)))
 # - end of calc_count_final_3457_core
 
+
+###################
+
+
+def calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype,
+                    finalgrade, is_extra_nocount, is_thumbrule):
+    # PR2024-06-18 check if sectorprogram had finalgrade 6 or higher spr_insuff
+    """
+    # PR224-06-13 Yvette Halley / Nancy Josephina: add rule sectorprgram as of 2025
+    LANDSBESLUIT, HOUDENDE ALGEMENE MAATREGELEN, van de 11de juli 2022 tot wijziging van het Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o
+    Artikel I
+    B Artikel 36 komt als volgt te luiden: 1. De kandidaat die eindexamen v.s.b.o. heeft afgelegd, is geslaagd indien hij: a. voor al zijn vakken waarvoor een eindcijfer is vastgesteld, het eindcijfer 6 of hoger heeft behaald, b. voor ten hoogste één van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger, of c. voor ten hoogste één van zijn examenvakken het eindcijfer 4 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger, of d. voor twee van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger,
+    # >>> met dien verstande dat het eindcijfer van het sectorprogramma in de praktisch basisgerichte leerweg dan wel de praktisch kadergerichte leerweg een voldoende dient te zijn.
+    """
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  calc_spr_insuff  ----- ' )
+        logger.debug('     subj_code: ' + str(subj_code))
+        logger.debug('     sjtp_code: ' + str(sjtp_code))
+        logger.debug('     finalgrade: ' + str(finalgrade))
+        logger.debug('     gradetype: ' + str(gradetype))
+        logger.debug('     is_thumbrule: ' + str(is_thumbrule))
+        logger.debug('     calc_student_ep_dict: ' + str(calc_student_ep_dict))
+
+# - only when subjettype = sectorprogram
+    if sjtp_code == 'spr':
+
+# - skip when subject is 'is_extra_nocount' or 'is_thumbrule'
+        if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount and not is_thumbrule:
+
+            count_dict = calc_student_ep_dict['count']
+
+            key_str = 'spr_insuff'
+            if key_str not in count_dict:
+                count_dict[key_str] = False
+
+            if finalgrade:
+                final_int = None
+                if isinstance(finalgrade, int):
+                    final_int = finalgrade
+                elif isinstance(finalgrade, str):
+                    final_int = int(finalgrade)
+
+                if final_int is not None and final_int < 6:
+                    count_dict[key_str] = True
+
+            if logging_on:
+                logger.debug('    count_dict: ' + str(count_dict))
+# - end of calc_spr_insuff
+###################
 
 def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR2021-12-22
     logging_on = False  # s.LOGGING_ON
@@ -1928,7 +2049,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
     # is reex03 when reex03 student, reex when reex student, firstperiod otherwise
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
@@ -2003,6 +2124,10 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
 
     last_examperiod = None
 
+    #PR2024-06-18 added, for vsbo 'spr_insuff' as of 2025
+    ey_code = student_dict['ey_code']
+    lvlbase_code = student_dict['lvlbase_code']
+
 # - loop through ep_list, skip exemption
     # ep_list always contains [ep4, ep1], contains ep2 and ep3 only when reex_count > 0 or reex03_count > 0
     for examperiod in ep_list:
@@ -2048,7 +2173,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
                     # calc_rule_issufficient is already called in subj loop
                     # student_ep_dict['result_index'] = c.RESULT_FAILED gets value in calc_passfailed
                     if depbase_is_vsbo:
-                        has_failed_count6 = calc_passfailed_count6_vsbo(student_ep_dict)
+                        has_failed_count6 = calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code)
                     else:
                         has_failed_count6 = calc_passfailed_count6_havovwo(student_ep_dict)
                     if has_failed_count6:
@@ -2225,10 +2350,12 @@ def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04 PR202
 # - end of calc_passfailed_noinput
 
 
-def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
-    logging_on = False  # s.LOGGING_ON
+def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
+    #  PR2021-12-24 PR2022-05-26 PR2024-06-18
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_passfailed_count6_vsbo  -----')
+        logger.debug('  @@@@@@@@@@  student_ep_dict: ' + str(student_ep_dict))
 
     """
     'PR: slagingsregeling Vsbo
@@ -2236,7 +2363,19 @@ def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
     '1b een kandidaat is geslaagd als voor ten hoogste 1 vak een 5 heeft behaald en voor de overige vakken een 6 of hoger is behaald
     '1c een kandidaat is geslaagd als voor ten hoogste 1 vak een 4 is behaald en voor de overige vakken een 6 of hoger waarvan tenminste 1 een 7 of hoger
     '1d een kandidaat is geslaagd als voor 2 vakken een 5 is behaald en voor de overige vakken een 6 of hoger waarvan tenminste 1 een 7 of hoger
+    
+    TODO
+    # PR2024-06-13 Yvette Halley / Nancy Josephina: add rule sectorprgram as of 2025
+    LANDSBESLUIT, HOUDENDE ALGEMENE MAATREGELEN, van de 11de juli 2022 tot wijziging van het Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o
+    Artikel I
+    B Artikel 36 komt als volgt te luiden: 1. De kandidaat die eindexamen v.s.b.o. heeft afgelegd, is geslaagd indien hij: 
+    a. voor al zijn vakken waarvoor een eindcijfer is vastgesteld, het eindcijfer 6 of hoger heeft behaald, 
+    b. voor ten hoogste één van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger, of 
+    c. voor ten hoogste één van zijn examenvakken het eindcijfer 4 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger, of 
+    d. voor twee van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger, 
+    >>> met dien verstande dat het eindcijfer van het sectorprogramma in de praktisch basisgerichte leerweg dan wel de praktisch kadergerichte leerweg een voldoende dient te zijn.
     """
+
     count_dict = student_ep_dict['count']
     c3 = count_dict.get('c3', 0)
     c4 = count_dict.get('c4', 0)
@@ -2244,18 +2383,29 @@ def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
     # NIU c6 = count_dict.get('c6', 0)
     c7 = count_dict.get('c7', 0)
 
+    # PR2024-06-16 added:
+    spr_insuff = count_dict.get('spr_insuff', False)
+
+    if logging_on:
+        logger.debug('  @@@@@@@@@@  count_dict: ' + str(count_dict))
+        logger.debug('  @@@@@@@@@@  spr_insuff: ' + str(spr_insuff))
+
     has_failed = False
+    result_info = ''
 
     if c3:  # 1 of meer drieën of lager
         has_failed = True
-        three_str = ' '.join((str(c3), str( _('three or lower') if c3 == 1 else _('threes or lower'))))
+        three_str = ' '.join((str(c3), gettext('three or lower') if c3 == 1 else gettext('threes or lower')))
         result_info = ''.join((three_str, '.'))
 
     else:
         # kandidaat geen drieën of lager, alleen vieren of hoger
-        four_str = ' '.join((str(c4), str( _('four') if c4 == 1 else _('fours'))))
-        five_str = ' '.join((str(c5), str( _('five') if c5 == 1 else _('fives'))))
-        seven_str = ' '.join((str(c7) if c7 else str(pgettext_lazy('geen', 'no')), str( _('seven or higher') if c7 == 1 else _('sevens or higher'))))
+        four_str = ' '.join((str(c4), gettext('four') if c4 == 1 else gettext('fours')))
+        five_str = ' '.join((str(c5), gettext('five') if c5 == 1 else gettext('fives')))
+        seven_str = ' '.join((
+            str(c7) if c7 else str(pgettext_lazy('geen', 'no')),
+            str( gettext('seven or higher') if c7 == 1 else gettext('sevens or higher'))
+        ))
 
         if c4 > 1:  # meer dan 1 vier
             has_failed = True
@@ -2266,11 +2416,11 @@ def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
 
             if c5:  # kandidaat heeft 1 vier en 1 of meer vijven
                 has_failed = True
-                result_info = ''.join((four_str, str(_(' and ')), five_str, '.'))
+                result_info = ''.join((four_str, gettext(' and '), five_str, '.'))
             else:  # 'kandidaat heeft 1 vier en geen vijf
                 if not c7:
                     has_failed = True
-                result_info = ''.join((four_str, str(_(' and ')), seven_str, '.')) # '1 four and no sevens or higher.'
+                result_info = ''.join((four_str, gettext(' and '), seven_str, '.')) # '1 four and no sevens or higher.'
 
         else:
             # 'kandidaat heeft geen vier, alleen vijven of hoger
@@ -2281,17 +2431,33 @@ def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
 
             elif c5 == 2:
                 # kandidaat heeft 2 vijven, rest zessen of hoger
+
                 if not c7:  # geen zevens en hoger
                     has_failed = True
-                result_info = ''.join((five_str, str(_(' and ')), seven_str, '.')) # '2 fives and no sevens or higher.'
+                    result_info = ''.join((five_str, gettext(' and '), seven_str, '.'))  # '2 fives and no sevens or higher.'
+                else:
+
+                    # PR2024-06-16 as of 2025 add spr_insuff = False in PBL PKL
+                    # . voor twee van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger,
+                    # met dien verstande dat het eindcijfer van het sectorprogramma in de praktisch basisgerichte leerweg dan wel de praktisch kadergerichte leerweg een voldoende dient te zijn.
+
+                    if logging_on:
+                        logger.debug('    ey_code: ' + str(ey_code))
+                        logger.debug('    spr_insuff: ' + str(spr_insuff))
+                        logger.debug('    lvlbase_code: ' + str(lvlbase_code))
+
+                    if ey_code >= 2025:
+                        if spr_insuff and lvlbase_code.lower() in ('pbl', 'pkl'):
+                            has_failed = True
+                            result_info = ''.join((five_str, gettext(' of which one in sector program'), '.'))
 
             elif c5 == 1:
                 # kandidaat heeft 1 vijf, rest zessen of hoger
-                result_info = ''.join((five_str, str(_(' and ')), str(_('for the other subjects a 6 or higher.'))))
+                result_info = ''.join((five_str, gettext(' and '), gettext('for the other subjects a 6 or higher.')))
 
             else:
                 # kandidaat heeft geen vijf, rest zessen of hoger
-                result_info = str(_('For all subjects a 6 or higher.'))
+                result_info = gettext('For all subjects a 6 or higher.')
 
 
 # - if has_failed: create dict with key 'failed' if it does not exist
@@ -2799,7 +2965,7 @@ s       sql_studsubj_value_str: 76004,'8.1',NULL,'8',FALSE,FALSE,FALSE,FALSE,FAL
 
 def save_student_batch(sql_student_value_list):  # PR2022-01-03 PR2022-06-03 PR2024-04-02
     # this function saves calculated fields in student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- save_student_batch  --------------------')
         logger.debug('QQQQQQQQQQQQQQQQQQQ sql_student_value_list: ' + str(sql_student_value_list))
@@ -2943,6 +3109,7 @@ def save_student_batch(sql_student_value_list):  # PR2022-01-03 PR2022-06-03 PR2
 
 def get_students_with_grades_dictlist(examyear, school, department, student_pk_list, lvlbase_pk=None):
     # PR2021-11-19 PR2022-05-26
+    # called by calc_batch_student_result and update_studsubj_and_recalc_student_result
 
     # NOTE: don't forget to filter studsubj.deleted = False and grade.deleted = False!! PR2021-03-15
     # TODO grades that are not published are only visible when 'same_school' (or not??)
@@ -2960,11 +3127,15 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
     #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
 
-    student_field_list = ('stud_id', 'country', 'examyear_txt', 'school_name', 'school_code', 'islexschool',
-                          'dep_name', 'depbase_code', 'dep_abbrev', 'lvl_name', 'lvlbase_code',  'level_req', 'sct_name',
+    student_field_list = ('stud_id',
+                          'country', 'ey_code', 'examyear_txt',
+                          'school_name', 'school_code', 'islexschool',
+                          'dep_name', 'depbase_code', 'dep_abbrev',
+                          'lvl_name', 'lvlbase_code', 'level_req', 'sct_name',
                           'dep_id', 'lvl_id', 'sct_id', 'scheme_id', 'classname',
-                          'has_profiel', 'examnumber', 'iseveningstudent', 'islexstudent', 'bis_exam', 'partial_exam',
-                           # these are calculated fields, dont get value from student record:
+                          'has_profiel', 'examnumber',
+                          'iseveningstudent', 'islexstudent', 'bis_exam', 'partial_exam',
+                           # these are calculated fields, don't get value from student record:
                           # 'exemption_count', 'sr_count', 'reex_count', 'reex03_count', 'thumbrule_count',
                           'withdrawn',
                           )  # 'fullname is also added to dict
@@ -2983,7 +3154,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
     cascade_dict = {}
 
-    sub_list = ["SELECT studsubj.id,studsubj.student_id, si.id as si_id, si.is_combi,",
+    sub_list = ["SELECT studsubj.id, studsubj.student_id, si.id as si_id, si.is_combi,",
                 "subj.id AS subj_id, subj.name_nl AS subj_name, subjbase.code AS subj, cl.name AS cluster_name,",
                 "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_thumbrule, studsubj.has_sr,",
                 # these are calculated fields, dont get value from studsubj record:
@@ -3022,6 +3193,10 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
                 "school.name AS school_name, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
+                
+                # PR2024-06-18 added:, to add Vsbo rule spr_insuff as of 2025
+                "ey.code AS ey_code,"
+
                 "ey.code::TEXT AS examyear_txt, c.name AS country,"
 
                 "dep.id AS dep_id, lvl.id AS lvl_id, sct.id AS sct_id, stud.scheme_id AS scheme_id,",
@@ -3078,10 +3253,10 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
-        if logging_on:
-            for cq in connection.queries:
-                if "SELECT stud.id" in cq:
-                    logger.debug('############# query: ' + cq)
+        #if logging_on:
+        #    for cq in connection.queries:
+        #        if "SELECT stud.id" in cq:
+        #            logger.debug('############# query: ' + cq)
         if rows:
             for row in rows:
                 stud_id = row.get('stud_id')
@@ -3281,6 +3456,8 @@ def get_schemeitems_dict(examyear, department):  # PR2021-11-19
     # stores in dict per schemitem
     #++++++++ this is the one that works +++++++++++++++++++++ PR2022-05-29
 
+    # PR2024-06-18 added: sjtp_code, ey_code, depbase_code for spr_insuff
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_schemeitems_dict -----')
@@ -3310,11 +3487,14 @@ def get_schemeitems_dict(examyear, department):  # PR2021-11-19
         "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 
         "subj.name_nl AS subj_name, subjbase.code AS subj_code,",
-        "sjtp.name AS sjtp_name, sjtpbase.code AS sjtp_code, sjtp.has_pws AS sjtp_has_pws",
+        "sjtp.name AS sjtp_name, sjtpbase.code AS sjtp_code, sjtp.has_pws AS sjtp_has_pws,",
+        "ey.code AS ey_code, depbase.code AS depbase_code",
 
         "FROM subjects_schemeitem AS si",
         "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
         "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
         "LEFT JOIN subjects_sector AS sct ON (lvl.id = scheme.sector_id)",
