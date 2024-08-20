@@ -35,8 +35,6 @@
                          <div class="flex_1 mt-5 p-2">
                             <button id="id_MSTUDSUBJ_btn_add_selected" class="btn btn-block btn-outline-secondary ">--><br>{% trans 'Add subjects' %}</button>
                             <button id="id_MSTUDSUBJ_btn_remove_selected" class="btn btn-block btn-outline-secondary "><--<br>{% trans 'Remove subjects' %}</button>
-                            <!-- hide till package is implemented -->
-                            <button id="id_MSTUDSUBJ_btn_add_package" class="btn btn-block btn-outline-secondary display_hide">  --><br>{% trans 'Add subjects from package' %}</button>
                          </div>
                          <div class="flex_4 p-2">
                              <h6 class="px-2">{% trans 'Subjects of this candidate' %}:</h6>
@@ -93,19 +91,6 @@
                                     </div>
                                 </div>
 
-                                <div id="id_MSTUDSUBJ_pws_wrap" class="p-2 display_hide">
-                                    <div class="flex_box mt-2">
-                                        <div class="flex_1">
-                                            <label for="id_MSTUDSUBJ_pwstitle" class="m-2">{% trans 'Title of the assignment' %}:</label>
-                                            <textarea id="id_MSTUDSUBJ_pwstitle" rows="2" data-field="pws_title" class="form-control awp_input_text"
-                                                autocomplete="off" ondragstart="return false;" ondrop="return false;"></textarea>
-                                            <label for="id_MSTUDSUBJ_pwssubjects" class="m-2">{% trans 'Subjects, to which the assignment relates' %}:</label>
-                                            <input id="id_MSTUDSUBJ_pwssubjects" type="text" data-field="pws_subjects" class="form-control awp_input_text"
-                                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
-
-                                        </div>
-                                    </div>
-                                </div>
                                 <div class="flex_box mx-1">
                                     <div class="flex_1 mt-2">
                                         <small id="id_MSTUDSUBJ_msg_modified"></small>

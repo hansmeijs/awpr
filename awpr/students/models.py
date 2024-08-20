@@ -331,7 +331,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
 
     student = ForeignKey(Student, related_name='+', on_delete=CASCADE)
 
-    # subject not in use (yet). Linked with subject.subject
+    # subject not in use. Linked with subject.subject
     subject = ForeignKey(subj_mod.Subject, null=True, related_name='+', on_delete=PROTECT)
     schemeitem = ForeignKey(subj_mod.Schemeitem, related_name='+', on_delete=PROTECT)
 
@@ -427,10 +427,12 @@ class Studentsubjectlog(sch_mod.AwpBaseModel):
     studentsubject_id = IntegerField(db_index=True)
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
+    # ForeignKey(Student) is not in use
     student = ForeignKey(Student, null=True, related_name='+', on_delete=SET_NULL)
 
-    # subject not in use (yet). Linked with subject.subject
+    # ForeignKey(Subject) is not in use, studentsubject is linked with schemeitem
     subject = ForeignKey(subj_mod.Subject, null=True, related_name='+', on_delete=SET_NULL)
+
     schemeitem = ForeignKey(subj_mod.Schemeitem, null=True, related_name='+', on_delete=SET_NULL)
 
     cluster = ForeignKey(subj_mod.Cluster, null=True, related_name='+', on_delete=SET_NULL)

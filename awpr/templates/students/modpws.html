@@ -1,0 +1,45 @@
+{% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL PWS =================== -->
+    <div class="modal" id="id_mod_pws" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+
+
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MODPWS_header" class="modal-title mx-2" ></h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body m-2 p-2">
+                   <input id="id_MODPWS_input" type="text"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control m-2 p-2">
+
+                    <div id="id_MODPWS_err_input" class="mx-3">
+                        <small class="text-danger">{% trans 'The text is too long. Maximum is 80 characters.' %}</small>
+                    </div>
+                    <div id="id_MODPWS_symbol_container" class="mt-3"></div>
+                    <div id="id_MODPWS_select_container"  class="modal-body m-2 p-2">
+                        {% trans 'Select one or more subjects' %}:
+                        <table class="table tsa_tbl mx-1 my-1">
+                            <tbody id="id_MODPWS_tblBody_select_subj">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1">
+                        <button id="id_MODPWS_btn_symbols" class="btn btn-outline-secondary" >{% trans 'Enter special characters' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MODPWS_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MODPWS_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>

@@ -267,6 +267,7 @@ urlpatterns = [
 
         path('download_student_xlsx', grade_excel.StudentDownloadXlsxView.as_view(), name='url_download_student_xlsx'),
 
+        path('history', student_views.StudentHistoryView.as_view(), name='url_student_history'),
     ])),
 
 # ===== STUDENTSUBJECTS ==========================
@@ -277,7 +278,7 @@ urlpatterns = [
 
         path('studsubj_validate_scheme', student_views.StudentsubjectValidateSchemeView.as_view(), name='url_studsubj_validate_scheme'),
         path('studsubj_validate_test', student_views.StudentsubjectValidateTestView.as_view(), name='url_studsubj_validate_test'),
-        path('validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
+        # NIU path('validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
         path('approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1Ex4View.as_view(), name='url_studsubj_approve_submit_multiple'),
@@ -288,7 +289,9 @@ urlpatterns = [
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
         path('validate_composition', student_views.ValidateCompositionView.as_view(), name='url_validate_subj_composition'),
 
-        path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload')
+        path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload'),
+
+        path('history', student_views.StudsubjHistoryView.as_view(), name='url_studsubj_history'),
     ])),
 
 # ===== EX1 EX3 EX4 FORMS ==========================

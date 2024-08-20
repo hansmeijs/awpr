@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
+    const mod_MLINKSTUD_dict = {};
+    const mod_MODHIST_dict = {};
 
     let mod_MSTUDSUBJ_dict = {}; // stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
     //let mod_studsubj_dict = {};  // stores studsubj of selected candidate in MSTUDSUBJ
@@ -71,6 +73,10 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_download_student_xlsx = get_attr_from_el(el_data, "data-url_download_student_xlsx");
     urls.url_studsubj_validate_scheme = get_attr_from_el(el_data, "data-url_studsubj_validate_scheme");
 
+    urls.url_student_multiple_occurrences = get_attr_from_el(el_data, "data-url_student_multiple_occurrences");
+    urls.url_student_linkstudent = get_attr_from_el(el_data, "data-url_student_linkstudent");
+    urls.url_student_history = get_attr_from_el(el_data, "data-url_student_history");
+
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
@@ -78,18 +84,53 @@ document.addEventListener('DOMContentLoaded', function() {
         idnumber: "ID_number", prefix: "Prefix", gender: "Gender",
         birthdate: "Birthdate", birthcountry: "Country_of_birth", birthcity: "Place_of_birth",
         lvl_abbrev:  "Learning_path", sct_abbrev: "Sector",classname: "Class",
-        examnumber: "Examnumber", extrafacilities: "Extra_facilities", bis_exam: "Bis_exam", partial_exam: "Partial_exam"
+        examnumber: "Examnumber", extrafacilities: "Extra_facilities", bis_exam: "Bis_exam",
+        partial_exam: "Partial_exam", history: "Log_file"
     };
 
 // --- get field_settings
     // declared as global: let field_settings = {};
     field_settings.student = {
-        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Learning_path", "Sector", "Class", "Examnumber_twolines", "Extra_facilities_twolines", "Bis_exam", "Partial_exam"],
-        field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvl_abbrev", "sct_abbrev", "classname", "examnumber", "extrafacilities", "bis_exam", "partial_exam"],
-        filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "toggle", "toggle", "toggle"],
-        field_width:  ["020", "120", "220", "240", "090", "090", "120", "180", "180", "090", "090", "090", "090", "090","090","090"],
-        field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l", "l","l", "c","c","c"]
+        field_names: [
+            "select", "idnumber", "lastname", "firstname", "prefix", "gender",
+            "birthdate", "birthcountry", "birthcity", "lvl_abbrev", "sct_abbrev", "classname",
+            "examnumber", "extrafacilities", "bis_exam", "partial_exam", "history"],
+        field_caption: [
+            "", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender",
+            "Birthdate", "Country_of_birth", "Place_of_birth", "Learning_path", "Sector", "Class",
+            "Examnumber_twolines", "Extra_facilities_twolines", "Bis_exam", "Partial_exam", ""],
+        filter_tags: [
+            "select", "text", "text",  "text", "text", "text",
+            "text", "text", "text", "text", "text", "text",
+            "text", "toggle", "toggle", "toggle", ""],
+        field_width:  [
+            "020", "120", "220", "240", "090", "090",
+            "120", "180", "180", "090", "090", "090",
+            "090", "090", "090", "090", "032"],
+        field_align: [
+            "c", "l", "l", "l", "l", "c",
+             "l", "l", "l", "l", "l", "l",
+             "l", "c", "c", "c", "c"]
     };
+    field_settings.history = {
+        field_names: [
+            "idnumber", "lastname", "firstname", "prefix", "gender",
+            "birthdate", "birthcountry", "birthcity", "lvl_abbrev", "sct_abbrev", "classname",
+            "examnumber", "extrafacilities", "bis_exam", "partial_exam"],
+        field_caption: [
+            "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender",
+            "Birthdate", "Country_of_birth", "Place_of_birth", "Learning_path", "Sector", "Class",
+            "Examnumber_twolines", "Extra_facilities_twolines", "Bis_exam", "Partial_exam"],
+        field_width:  [
+            "120", "220", "240", "090", "090",
+            "120", "180", "180", "090", "090", "090",
+            "090", "090","090","090"],
+        field_align: [
+            "l", "l", "l", "l", "c",
+             "l", "l", "l", "l", "l", "l",
+             "l", "c", "c", "c"]
+    };
+
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -251,44 +292,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MSTUD_regnr_container = document.getElementById("id_MSTUD_regnr_container");
 
-        // TODO add log
         const el_MSTUD_btn_log = document.getElementById("id_MSTUD_btn_log");
         const el_MSTUD_btn_save = document.getElementById("id_MSTUD_btn_save");
         if(el_MSTUD_btn_save){ el_MSTUD_btn_save.addEventListener("click", function() {MSTUD_Save("save")}, false)}
 
-/*
-// ---  MODAL STUDENT SUBJECTS
-        const el_MSTUDSUBJ_hdr = document.getElementById("id_MSTUDSUBJ_hdr")
-        const el_MSTUDSUBJ_btn_add_selected = document.getElementById("id_MSTUDSUBJ_btn_add_selected")
-        if(el_MSTUDSUBJ_btn_add_selected){
-            el_MSTUDSUBJ_btn_add_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("add")}, false);
-        }
+// ---  MODAL LINK STUDENTS ------------------------------------
+   const el_MLINKSTUD_body = document.getElementById("id_MLINKSTUD_body");
 
-        const el_MSTUDSUBJ_btn_remove_selected = document.getElementById("id_MSTUDSUBJ_btn_remove_selected")
-        if(el_MSTUDSUBJ_btn_remove_selected){
-            el_MSTUDSUBJ_btn_remove_selected.addEventListener("click", function() {MSTUDSUBJ_AddRemoveSubject("remove")}, false);
+// --- create EventListener for buttons in btn_container
+    const el_MLINKSTUD_btn_container = document.getElementById("id_MLINKSTUD_btn_container");
+    if(el_MLINKSTUD_btn_container){
+        const btns = el_MLINKSTUD_btn_container.children;
+        for (let i = 0, btn; btn = btns[i]; i++) {
+        //PR2021-12-05 debug: data_btn as argument doesn't work, don't know why, use btn as argument instead
+        // was: const data_btn = get_attr_from_el(btn, "data-btn")
+            btn.addEventListener("click", function() {MLINKSTUD_btnSelectClicked(btn)}, false )
         };
-        const el_MSTUDSUBJ_btn_add_package = document.getElementById("id_MSTUDSUBJ_btn_add_package")
-        if(el_MSTUDSUBJ_btn_add_package){
-            el_MSTUDSUBJ_btn_add_package.addEventListener("click", function() {MSTUDSUBJ_AddPackage()}, false);
-        };
-        const el_MSTUDSUBJ_div_form_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls");
-        if(el_MSTUDSUBJ_div_form_controls){
-            const el_input_controls = el_MSTUDSUBJ_div_form_controls.querySelectorAll(".awp_input_text, .awp_input_checkbox")
-            if(el_input_controls){
-                for (let i = 0, el; el = el_input_controls[i]; i++) {
-                    const key_str = (el.classList.contains("awp_input_checkbox")) ? "change" : "keyup";
-                    el.addEventListener(key_str, function() {MSTUDSUBJ_InputboxEdit(el)}, false)
-                }
-            };
-        };
-        const el_MSTUDSUBJ_btn_save = document.getElementById("id_MSTUDSUBJ_btn_save")
-        if(el_MSTUDSUBJ_btn_save){
-            el_MSTUDSUBJ_btn_save.addEventListener("click", function() {MSTUDSUBJ_Save()}, false);
-        };``
-        const el_tblBody_studsubjects = document.getElementById("id_MSTUDSUBJ_tblBody_studsubjects");
-        const el_tblBody_schemeitems = document.getElementById("id_MSTUDSUBJ_tblBody_schemeitems");
-*/
+    };
+
+    const el_MLINKSTUD_loading = document.getElementById("id_MLINKSTUD_loading");
+    const el_MLINKSTUD_no_data = document.getElementById("id_MLINKSTUD_no_data");
+    const el_MLINKSTUD_has_data = document.getElementById("id_MLINKSTUD_has_data");
+    const el_MLINKSTUD_has_unlinked_data = document.getElementById("id_MLINKSTUD_has_unlinked_data");
+    const el_MLINKSTUD_all_linked_data = document.getElementById("id_MLINKSTUD_all_linked_data");
+
+    const el_MLINKSTUD_data_container = document.getElementById("id_MLINKSTUD_data_container");
+
+    const el_MLINKSTUD_info_container = document.getElementById("id_MLINKSTUD_info_container");
+
+    const el_MLINKSTUD_show_all_txt = document.getElementById("id_MLINKSTUD_show_all_txt");
+    const el_MLINKSTUD_btn_showall = document.getElementById("id_MLINKSTUD_btn_showall");
+    if(el_MLINKSTUD_btn_showall){el_MLINKSTUD_btn_showall.addEventListener("click", function() {MLINKSTUD_toggle_showall()}, false )};
+
+    const el_MLINKSTUD_btn_prev = document.getElementById("id_MLINKSTUD_btn_prev");
+    if(el_MLINKSTUD_btn_prev){el_MLINKSTUD_btn_prev.addEventListener("click", function() {MLINKSTUD_btnPrevNextClicked("prev")}, false )};
+
+    const el_MLINKSTUD_btn_next = document.getElementById("id_MLINKSTUD_btn_next");
+    if(el_MLINKSTUD_btn_next){el_MLINKSTUD_btn_next.addEventListener("click", function() {MLINKSTUD_btnPrevNextClicked("next")}, false )};
+
+    const el_MLINKSTUD_btn_save = document.getElementById("id_MLINKSTUD_btn_save");
+    if(el_MLINKSTUD_btn_save){el_MLINKSTUD_btn_save.addEventListener("click", function() {MLINKSTUD_save()}, false )};
+
+    const el_MLINKSTUD_btn_cancel = document.getElementById("id_MLINKSTUDP_btn_cancel");
+
 
 // ---  MODAL IMPORT ------------------------------------
 // --- create EventListener for buttons in btn_container
@@ -336,6 +382,12 @@ document.addEventListener('DOMContentLoaded', function() {
         el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUpload)}, false )
     };
 
+// ---  MOD HISTORY ------------------------------------
+        const el_MODHIST_header = document.getElementById("id_MODHIST_header");
+        const el_MODHIST_loader = document.getElementById("id_MODHIST_loader");
+        const el_MODHIST_tblHead = document.getElementById("id_MODHIST_tblHead");
+        const el_MODHIST_tblBody = document.getElementById("id_MODHIST_tblBody");
+
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
@@ -367,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page: "page_student"},
                 schoolsetting: {setting_key: "import_student"},
-                locale: {page: ["page_student", "upload"]},
+                locale: {page: ["page_student", "upload", "history", "mlinkstud"]},
                 examyear_rows: {get: true},
 
                 // PR2023-05-08 was: school_rows: {skip_allowed_filter: true}
@@ -508,24 +560,19 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete_candidate")}, [], "id_submenu_delete_candidate");
 
 // ---  SUBMENU ------------------------------------
-        // get element here, because element does not exist on opening page PR2023-05-12
-        el_submenu_delete_candidate = document.getElementById("id_submenu_delete_candidate");
-        console.log( "el_submenu_delete_candidate: ", el_submenu_delete_candidate);
-
+            // get element here, because element does not exist on opening page PR2023-05-12
+            el_submenu_delete_candidate = document.getElementById("id_submenu_delete_candidate");
         };
         if(permit_dict.requsr_role_system){
             AddSubmenuButton(el_submenu, loc.Validate_candidate_schemes, function() {ModConfirmOpen("validate_scheme")});
             AddSubmenuButton(el_submenu, loc.Correct_candidate_schemes, function() {ModConfirmOpen("correct_scheme")});
         };
         if(permit_dict.permit_crud){
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open(loc, "import_student")}, null, "id_submenu_import");
-            //AddSubmenuButton(el_submenu, loc.Download_candidate_data, null, [], "id_submenu_download_studentxlsx", urls.url_download_student_xlsx, true);  // true = download
-
+            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student", MIMP_Response)}, null, "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Link_candidates, function() {MLINKSTUD_Open()});
 
             AddSubmenuButton(el_submenu, loc.Download_candidate_data, function() {ModConfirmOpen("download_studentxlsx")});
             AddSubmenuButton(el_submenu, loc.Create_exam_numbers, function() {ModConfirmOpen("create_examnumbers")});
-
-
         };
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_student")}, [], "id_submenu_columns")
@@ -758,7 +805,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // for (let j = 0; j < column_count; j++)
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14 PR2024-07-25
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("col_hidden", col_hidden);
@@ -826,16 +873,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (["extrafacilities", "bis_exam", "partial_exam"].includes(field_name)) {
                     if(permit_dict.permit_crud && permit_dict.requsr_same_school){
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
-                        td.classList.add("pointer_show");
+                        //td.classList.add("pointer_show");
                         add_hover(td);
                     };
+
+                } else if (field_name === "history") {
+                    td.addEventListener("click", function() {MODHIST_open(td)}, false)
+                    td.title = loc.Show_logfile_candidate;
+                    el.classList.add("historyicon")
                 };
 
-    // --- put value in field
-               UpdateField(el, data_dict)
+    // --- put value in field, not
+             if (!["history"].includes(field_name)) {
+               UpdateField(el, data_dict);
+             };
 
            };  // if (!columns_hidden[field_name])
-        } ; // for (let j = 0; j < 8; j++)
+        }; // for (let j = 0; j < 8; j++)
 
     // --- make deleted row red (they only exist when SBR 'Show all' is clicked PR2023-01-14
     //console.log("  data_dict ", data_dict);
@@ -991,6 +1045,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         RefreshDataRows(tblName, response.updated_student_rows, student_rows, true)  // true = update
                     };
 
+                    if ("import_has_unlinked_similarities" in response) {
+                        // PR2024-08-06 debug: skip_open_modal added, to prevent loop in opening modal
+                        if (response.import_has_unlinked_similarities && !response.skip_open_modal){
+                            console.log( "response.import_has_unlinked_similarities", response.import_has_unlinked_similarities);
+                            MLINKSTUD_Open();
+                        };
+                    };
+
                     if("messages" in response){
                         b_show_mod_message_dictlist(response.messages);
                     };
@@ -1001,7 +1063,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if ("validate_scheme_response" in response) {
                         ValidateScheme_Response(response.validate_scheme_response)
-                    }
+                    };
+                    if("multiple_occurrences_list" in response){
+                        MLINKSTUD_response(response);
+                    };
+                    if("updated_multiple_occurrences" in response){
+                        MLINKSTUD_response_update(response.updated_multiple_occurrences);
+                    };
+                    if("studentlog_rows" in response){
+                        MODHIST_response(response.studentlog_rows);
+                    };
                     $("#id_mod_student").modal("hide");
 
                 },  // success: function (response) {
@@ -1215,7 +1286,7 @@ function RefreshDataRowsAfterUpload(response) {
     };  // RefreshDatarowItem
 
 
-// +++++++++ MOD STUDENT ++++++++++++++++ PR2020-09-30 PR2021-12-17
+// +++++++++ MOD STUDENT ++++++++++++++++ PR2020-09-30 PR2021-12-17 PR2024-07-27
 // --- also used for level, sector,
     function MSTUD_Open(el_input){
         console.log(" -----  MSTUD_Open   ----")
@@ -1293,13 +1364,14 @@ function RefreshDataRowsAfterUpload(response) {
 
     // ---  hide delete btn when is_addnew
             const is_deleted = (mod_MSTUD_dict && mod_MSTUD_dict.deleted);
-            add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
+            const is_tobedeleted = (mod_MSTUD_dict && mod_MSTUD_dict.tobedeleted);
+            add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew);
             if (el_MSTUD_btn_delete){
-               el_MSTUD_btn_delete.innerText = (is_deleted) ? loc.Restore_deleted_candidate : loc.Delete_candidate;
+               el_MSTUD_btn_delete.innerText = (is_deleted) ? loc.Restore_deleted_candidate :  (is_tobedeleted) ? loc.Remove_tobedeleted : loc.Delete_candidate;
             };
 
-            add_or_remove_class(el_MSTUD_btn_symbols, cls_hide, is_deleted);
-            add_or_remove_class(el_MSTUD_div_form_controls, "tsa_tr_error", is_deleted);
+            add_or_remove_class(el_MSTUD_btn_symbols, cls_hide, is_deleted || is_tobedeleted);
+            add_or_remove_class(el_MSTUD_div_form_controls, "tsa_tr_error", is_deleted || is_tobedeleted);
 
     // ---  show modal
             $("#id_mod_student").modal({backdrop: true});
@@ -1424,7 +1496,7 @@ function RefreshDataRowsAfterUpload(response) {
 //========= MSTUD_InputKeyup  ============= PR2020-10-01 PR2023-01-28 PR2023-04-20
     function MSTUD_InputKeyup(el_input, event){
         if (el_input){
-            console.log( "  ---  MSTUD_InputKeyup  --- ")
+            //console.log( "  ---  MSTUD_InputKeyup  --- ")
             mod_MSTUD_dict.active_el = el_input;
             mod_MSTUD_dict.caret_at = event.target.selectionStart;
 
@@ -1441,7 +1513,7 @@ function RefreshDataRowsAfterUpload(response) {
                 has_error = MSTUD_validate_null_field(el_input)
             };
 
-            console.log( "  ---  has_error: ", has_error)
+            //console.log( "  ---  has_error: ", has_error)
     // ---  enable / disable save button
             el_MSTUD_btn_save.disabled = has_error;
         };
@@ -1450,7 +1522,7 @@ function RefreshDataRowsAfterUpload(response) {
 //========= MSTUD_InputMouseup  ============= PR2020-10-01 PR2023-01-28
     function MSTUD_InputMouseup(el_input, event){
         if (el_input){
-            console.log( "  ---  MSTUD_InputMouseup  --- ")
+            //console.log( "  ---  MSTUD_InputMouseup  --- ")
             //PR2023-06-20 debug. when changing date with calendar, changed event is not triggered
             // enable save btn when mouseup event is triggered
 
@@ -1458,7 +1530,7 @@ function RefreshDataRowsAfterUpload(response) {
             if (field_name === "birthdate"){
                 el_MSTUD_btn_save.disabled = false;
             };
-            console.log( "    field_name", field_name)
+            //console.log( "    field_name", field_name)
             mod_MSTUD_dict.active_el = el_input;
             mod_MSTUD_dict.caret_at = event.target.selectionStart;
         };
@@ -1466,9 +1538,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= MSTUD_InputSelect  ============= PR2020-12-11 PR2023-01-29
     function MSTUD_InputSelect(el_input){
-
-        console.log(" -----  MSTUD_InputSelect   ----")
-        console.log("   el_input.value ", el_input.value)
+        //console.log(" -----  MSTUD_InputSelect   ----")
+        //console.log("   el_input.value ", el_input.value)
 
     // check if value is null
         const has_error = MSTUD_validate_null_field(el_input)
@@ -1480,7 +1551,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= MSTUD_InputToggle  ============= PR2021-06-15 PR2022-04-11
     function MSTUD_InputToggle(el_input){
-        console.log( "===== MSTUD_InputToggle  ========= ");
+        //console.log( "===== MSTUD_InputToggle  ========= ");
         const data_field = get_attr_from_el(el_input, "data-field")
         const data_value = get_attr_from_el(el_input, "data-value")
         const new_data_value = (data_value === "1") ? "0" : "1";
@@ -1519,7 +1590,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  MSTUD_validate_idnumber  ================  PR2020-10-01 PR2023-01-28
     function MSTUD_validate_idnumber(el_input) {
-        console.log(" -----  MSTUD_validate_idnumber   ----")
+        //console.log(" -----  MSTUD_validate_idnumber   ----")
 
         let msg_err = null;
         let birthdate_iso = null;
@@ -1598,7 +1669,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  MSTUD_validate_null  ================  PR2020-10-01 PR2023-01-29
     function MSTUD_validate_null() {
-        console.log(" -----  MSTUD_validate_null   ----")
+        //console.log(" -----  MSTUD_validate_null   ----")
         let has_error = false;
 
 // ---  loop through input fields on MSTUD_Open
@@ -1619,7 +1690,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  MSTUD_validate_null_field  ================  PR2023-01-29
     function MSTUD_validate_null_field(el_input) {
-        console.log(" -----  MSTUD_validate_null_field   ----")
+        //console.log(" -----  MSTUD_validate_null_field   ----")
         //console.log("    el_input", el_input)
         const fldName = get_attr_from_el(el_input, "data-field");
 
@@ -1778,7 +1849,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  MSTUD_reset_elements  ================  PR2023-01-28
     function MSTUD_reset_elements() {
-        console.log(" -----  MSTUD_reset_elements   ----")
+        //console.log(" -----  MSTUD_reset_elements   ----")
         let has_error = false;
 
 // ---  loop through input fields on MSTUD_Open
@@ -1809,8 +1880,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= MSTUD_SetElements  ============= PR2020-08-03 PR2023-01-27
     function MSTUD_SetElements(focus_field){
-        console.log( "===== MSTUD_SetElements  ========= ");
-        console.log( "mod_MSTUD_dict", mod_MSTUD_dict);
+        //console.log( "===== MSTUD_SetElements  ========= ");
+        //console.log( "mod_MSTUD_dict", mod_MSTUD_dict);
         //console.log( "focus_field", focus_field);
         // only called by MSTUD_Open
 
@@ -1846,7 +1917,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= MSTUD_SetLabelPartialAdditionalExam  ============= PR2021-12-17
     function MSTUD_SetLabelPartialAdditionalExam(){
-        console.log( "===== MSTUD_SetLabelPartialAdditionalExam  ========= ");
+        //console.log( "===== MSTUD_SetLabelPartialAdditionalExam  ========= ");
 // set label partial / additional exam
         // is partial exam if:
         //  - is lex school
@@ -1986,13 +2057,457 @@ function RefreshDataRowsAfterUpload(response) {
             };
             mod_MSTUD_dict.active_el.value = new_value;
 
-            b_setCaretPosition(mod_MSTUD_dict.active_el, mod_MSTUD_dict.caret_at + 1);
+            mod_MSTUD_dict.caret_at += 1;
+            b_setCaretPosition(mod_MSTUD_dict.active_el, mod_MSTUD_dict.caret_at);
 
             el_MSTUD_btn_save.disabled = false;
         };
     };
 
 // +++++++++ END MOD STUDENT +++++++++++++++++++++++++++++++++++++++++
+
+
+// +++++++++++++++++ RESPONSE FROM MODAL IMPORT ++++++++++++++++++++++++++++++++++++++++++
+//=========  MIMP_Response  ================ PR2024-08-08
+    function MIMP_Response() {
+        console.log("===== MIMP_Response =====");
+        if (mimp.has_unlinked_similarities){
+            MLINKSTUD_Open();
+        } else if (mimp.has_automatically_linked_students){
+            const msg_html = [loc.autolink_msg01, loc.autolink_msg02].join("<br>");
+            b_show_mod_message_html(msg_html, loc.autolink_header, "lg");
+        };
+    };  // MIMP_Response
+
+// +++++++++++++++++ MODAL LINK STUDENTS ++++++++++++++++++++++++++++++++++++++++++
+//=========  MLINKSTUD_Open  ================ PR2021-09-05 PR2024-07-19
+    function MLINKSTUD_Open() {
+        console.log("===== MLINKSTUD_Open =====");
+
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
+
+             b_clear_dict(mod_MLINKSTUD_dict);
+            mod_MLINKSTUD_dict.mode = "loading";
+            mod_MLINKSTUD_dict.show_all = true;  // will be set false in MLINKSTUD_toggle_showall
+            mod_MLINKSTUD_dict.no_data = true;
+            mod_MLINKSTUD_dict.has_unlinked_rows = false;
+            mod_MLINKSTUD_dict.rows = [];
+
+            el_MLINKSTUD_data_container.innerHTML = null;
+
+            el_MLINKSTUD_info_container.innerHTML =
+                ["<small>", loc.mlinkstud_info01,
+                 "<ul class='mb-0'><li>",loc.mlinkstud_info02a,
+                (setting_dict.sel_dep_level_req) ? loc.mlinkstud_info02b_vsbo : "",
+                loc.mlinkstud_info02c, "<br>",
+                loc.mlinkstud_info03, "</li><li>",
+                loc.mlinkstud_info04, "</li></ul></small>"
+            ].join("");
+
+
+
+            MLINKSTUD_toggle_showall();
+            // MLINKSTUD_fill_table(); is in  MLINKSTUD_toggle_showall();
+            MLINKSTUD_set_datatable_hidden();
+
+            const url_str = urls.url_student_multiple_occurrences;
+            const upload_dict = {
+                studsubj_multiple_occurrences: {get: true},
+                // PR2024-08-06 debug: skip_open_modal added, to prevent loop in opening modal
+                skip_open_modal: true
+            };
+        console.log("   >>>> upload_dict", upload_dict);
+            UploadChanges(upload_dict, url_str);
+
+// ---  show modal
+            $("#id_mod_link_studentsNEW").modal({backdrop: true});
+        };
+
+    };  // MLINKSTUD_Open
+
+//=========  MLINKSTUD_response  ================ PR2023-01-22
+    function MLINKSTUD_response(response) {
+        console.log("===== MLINKSTUD_response =====");
+        console.log("    response" , response);
+
+        mod_MLINKSTUD_dict.multiple_occurrences_list = (response.multiple_occurrences_list) ? response.multiple_occurrences_list : [];
+
+        mod_MLINKSTUD_dict.mode = (mod_MLINKSTUD_dict.multiple_occurrences_list && mod_MLINKSTUD_dict.multiple_occurrences_list.length) ? "has_data" : "no_data";
+
+        mod_MLINKSTUD_dict.no_data = !(mod_MLINKSTUD_dict.multiple_occurrences_list && mod_MLINKSTUD_dict.multiple_occurrences_list.length);
+
+        console.log("    mod_MLINKSTUD_dict.mode", mod_MLINKSTUD_dict.mode);
+        console.log("    mod_MLINKSTUD_dict.multiple_occurrences_list", mod_MLINKSTUD_dict.multiple_occurrences_list);
+
+        mod_MLINKSTUD_dict.has_unlinked_rows = MLINKSTUD_has_not_linked_stud_list();
+        console.log("   >>>>> mod_MLINKSTUD_dict.has_unlinked_rows", mod_MLINKSTUD_dict.has_unlinked_rows);
+
+        MLINKSTUD_fill_table();
+        MLINKSTUD_set_datatable_hidden();
+    }; // MLINKSTUD_response
+
+
+    function MLINKSTUD_response_update(updated_dict) {  // PR2024-07-20
+        console.log("===== MLINKSTUD_response_update =====");
+        console.log("    updated_dict", updated_dict);
+
+        MLINKSTUD_refresh_tick_cross(
+            updated_dict.cur_stud_pk,
+            updated_dict.oth_stud_pk,
+            updated_dict.linked,
+            updated_dict.notlinked,
+            updated_dict.bis_exam,
+            updated_dict.changed_fields,
+            true
+        );
+
+        mod_MLINKSTUD_dict.has_unlinked_rows = MLINKSTUD_has_not_linked_stud_list();
+        console.log("   >>>>> mod_MLINKSTUD_dict.has_unlinked_rows", mod_MLINKSTUD_dict.has_unlinked_rows);
+
+        // check if cur_stud_pk has any other_studs that are not linked and not notlinked
+        MLINKSTUD_set_datatable_hidden();
+
+    }; // MLINKSTUD_response_update
+
+//=========  MLINKSTUD_fill_table  ================ PR2024-07-16
+    function MLINKSTUD_fill_table() {
+        console.log("===== MLINKSTUD_fill_table =====");
+
+        if(el_MLINKSTUD_data_container){
+            el_MLINKSTUD_data_container.innerHTML = null;
+
+            if (mod_MLINKSTUD_dict.multiple_occurrences_list && mod_MLINKSTUD_dict.multiple_occurrences_list.length){
+
+// ++++ loop through multiple_occurrences_list - it is sorted by student lastname, firstname
+                for (let i = 0, student_dict; student_dict = mod_MLINKSTUD_dict.multiple_occurrences_list[i]; i++) {
+                    if (student_dict){
+                        const cur_stud_id_str = (student_dict.student_id) ?  student_dict.student_id.toString() : null;
+
+        //console.log("    student_dict", student_dict);
+                        const linked_arr = (student_dict.linked) ? student_dict.linked.split(";") : [];
+                        const notlinked_arr = (student_dict.notlinked) ? student_dict.notlinked.split(";") : [];
+                        // linked_arr = ['4643', '8501']
+                        // notlinked_arr  = []
+
+                        let show_cur_box = false;
+
+            // - add div element that contains cur student and list of other students
+                        const el_cur_box = document.createElement("div");
+                        el_cur_box.classList.add("p-2", "my-1");
+
+            // - add header line with student_dict name etc.
+                        const el_stud_h6 = document.createElement("h6");
+                        const el_stud_name = document.createElement("span");
+                        el_stud_name.innerHTML = [
+                            student_dict.fullname + " (" + student_dict.idnumber + ")" ,
+                            " - ", student_dict.deplvlsct, "  "].join(' ');
+
+                        const el_stud_bis_exam = document.createElement("span");
+                        el_stud_bis_exam.innerHTML = (student_dict.bis_exam) ? ["(", loc.Bis_candidate.toLowerCase() ,")"].join("") : null;
+
+                        el_stud_h6.appendChild(el_stud_name);
+                        el_stud_h6.appendChild(el_stud_bis_exam);
+
+                        el_cur_box.appendChild(el_stud_h6);
+                        el_MLINKSTUD_data_container.appendChild(el_cur_box);
+
+            // - loop through other students
+                        const other_students_list = (student_dict.other_stud) ? student_dict.other_stud : [];
+
+                        for (let j = 0, other_stud_dict; other_stud_dict = other_students_list[j]; j++) {
+
+                            const other_stud_id_str = (other_stud_dict.student_id) ?  other_stud_dict.student_id.toString() : null;
+                            const is_linked = (linked_arr && linked_arr.includes(other_stud_id_str));
+                            const is_notlinked = (notlinked_arr && notlinked_arr.includes(other_stud_id_str));
+
+                            const el_other_box = document.createElement("div");
+                            el_other_box.id = [cur_stud_id_str, other_stud_id_str].join("_");
+
+                            el_cur_box.appendChild(el_other_box);
+
+                            const show_other = (mod_MLINKSTUD_dict.show_all) || (!is_linked && !is_notlinked);
+                            // Note: class 'display_hide' not working when classList has also 'note_flex_1'
+                            add_or_remove_class(el_other_box, "note_flex_1", show_other, "display_hide")
+                            if(show_other){
+                                show_cur_box = true;
+                            };
+                        // - add cross icon
+                            const el_cross = document.createElement("div");
+                            el_cross.classList.add("p-1", "pointer_show")
+                            el_cross.addEventListener("click", function() {MLINKSTUD_tick_cross(el_cross, "notlinked")}, false);
+                            el_other_box.appendChild(el_cross);
+                                const el_icon_cross = document.createElement("div");
+                                el_icon_cross.className = (is_notlinked) ? "note_1_4" : "note_0_4";
+                                // dont add hover when is_notlinked, it will return not_notlinked icon on mouseleave
+                                el_cross.appendChild(el_icon_cross);
+
+                        // add tick icon
+                            const el_tick = document.createElement("div");
+                            el_tick.classList.add("p-1", "pointer_show");
+                            el_tick.addEventListener("click", function() {MLINKSTUD_tick_cross(el_tick, "linked")}, false);
+                            el_other_box.appendChild(el_tick);
+                                const el_icon_tick = document.createElement("div");
+                                el_icon_tick.className = (is_linked) ?  "note_1_6" : "note_0_6";
+                                // dont add hover when linked, it will return unlinked icon on mouseleave
+                                el_tick.appendChild(el_icon_tick);
+
+                            const other_name = [
+                                other_stud_dict.examyear,
+                                other_stud_dict.fullname + " (" + other_stud_dict.idnumber + ")" ,
+                                other_stud_dict.school_name,
+                                other_stud_dict.deplvlsct,
+                                other_stud_dict.result_status].join(' - ')
+
+                            const el_info = document.createElement("div");
+                            el_info.classList.add("p-1");
+                            el_other_box.appendChild(el_info);
+                                const el_info_small = document.createElement("small");
+                                el_info_small.classList.add("c_form_text", "mx-2");
+                                el_info_small.innerText = other_name;
+                                el_info.appendChild(el_info_small);
+                        };
+
+                        // show row only if it has one one more other boxes that are shown
+                        if(!show_cur_box){el_cur_box.classList.add("display_hide")};
+                    };
+                };
+            };
+        };
+    };  //  MLINKSTUD_fill_table
+
+    //=========  MLINKSTUD_set_datatable_hidden  ================ PR2022-03-22 PR2024-07-19
+    function MLINKSTUD_set_datatable_hidden() {
+
+        console.log("===== MLINKSTUD_set_datatable_hidden =====");
+        console.log("    mod_MLINKSTUD_dict", mod_MLINKSTUD_dict);
+        console.log("    mode", mod_MLINKSTUD_dict.mode);
+        console.log("    no_data", mod_MLINKSTUD_dict.no_data);
+        console.log("    has_unlinked_rows", mod_MLINKSTUD_dict.has_unlinked_rows);
+
+        add_or_remove_class(el_MLINKSTUD_loading, cls_hide, mod_MLINKSTUD_dict.mode !== "loading");
+        add_or_remove_class(el_MLINKSTUD_no_data, cls_hide, !mod_MLINKSTUD_dict.no_data);
+        add_or_remove_class(el_MLINKSTUD_has_data, cls_hide, mod_MLINKSTUD_dict.no_data);
+
+        const has_unlinked_data = !mod_MLINKSTUD_dict.no_data && mod_MLINKSTUD_dict.has_unlinked_rows;
+        console.log("    has_unlinked_data", has_unlinked_data);
+
+        add_or_remove_class(el_MLINKSTUD_has_unlinked_data, cls_hide, !has_unlinked_data);
+        add_or_remove_class(el_MLINKSTUD_all_linked_data, cls_hide, has_unlinked_data);
+    };  // MLINKSTUD_set_datatable_hidden
+
+//=========  MLINKSTUD_tick_cross  ================ PR2021-09-05 PR2024-07-18
+    function MLINKSTUD_tick_cross(el, field) {
+        //console.log("===== MLINKSTUD_tick_cross =====");
+        //console.log("    el", el);
+        //console.log("    field", field);
+
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
+            const oth_stud_box = el.parentNode;
+            const id_arr = (oth_stud_box.id) ? oth_stud_box.id.split("_") : null;
+            const cur_stud_id =  parseInt(id_arr[0], 10); // use radix 10
+            const oth_stud_id = parseInt(id_arr[1], 10); // use radix 10
+
+            const el_cross = oth_stud_box.children[0].children[0];
+            const el_tick = oth_stud_box.children[1].children[0];
+
+            const cur_stud_dict = t_lookup_row_in_dictlist(mod_MLINKSTUD_dict.multiple_occurrences_list, "student_id", cur_stud_id);
+
+            const oth_stud_list = (cur_stud_dict.other_stud) ? cur_stud_dict.other_stud : [];
+            const other_stud_dict = t_lookup_row_in_dictlist(oth_stud_list, "student_id", oth_stud_id);
+            const other_stud_id_str = (other_stud_dict.student_id) ?  other_stud_dict.student_id.toString() : null;
+
+            const linked_arr = (cur_stud_dict.linked) ? cur_stud_dict.linked.split(";") : [];
+            const notlinked_arr = (cur_stud_dict.notlinked) ? cur_stud_dict.notlinked.split(";") : [];
+            const is_linked = (linked_arr && linked_arr.includes(other_stud_id_str));
+            const is_notlinked = (notlinked_arr && notlinked_arr.includes(other_stud_id_str));
+
+    // ---  Upload Changes
+            let upload_dict = {
+                cur_stud_id: cur_stud_id,
+                oth_stud_id: oth_stud_id,
+                field: field
+            };
+
+            if (field === "linked"){
+                // set linked when clicked on 'tick' and is_linked = false
+                // remove linked when clicked on 'tick' and is_linked = true
+                const new_is_linked = !is_linked;
+                upload_dict.action = (new_is_linked) ? "link": "unlink";
+                //if (!is_linked){ShowOkElement(el)};
+                el_tick.className = (new_is_linked) ? "note_1_6" : "note_0_6";
+                if (new_is_linked && is_notlinked) {
+                    el_cross.className = "note_0_4";
+                };
+                // put new value in cur_stud_dict.linked
+                if (new_is_linked) {
+                    linked_arr.push(other_stud_id_str);
+                    linked_arr.sort();
+
+                    if (notlinked_arr.includes(other_stud_id_str)){
+                        b_remove_item_from_array(notlinked_arr, other_stud_id_str);
+                        cur_stud_dict.notlinked = (notlinked_arr.length) ? notlinked_arr.join(";") : null;
+                    };
+                } else {
+                    b_remove_item_from_array(linked_arr, other_stud_id_str);
+                };
+                cur_stud_dict.linked = (linked_arr.length) ? linked_arr.join(";") : null;
+
+            } else if (field === "notlinked"){
+                // set notlinked when clicked on 'cross' and is_notlinked = false
+                // remove notlinked when clicked on 'cross' and is_notlinked = true
+                const new_is_notlinked = !is_notlinked;
+                upload_dict.action = (new_is_notlinked) ? "link": "unlink";
+                //if (!is_notlinked){ShowOkElement(el)};
+                el_cross.className = (new_is_notlinked) ? "note_1_4" : "note_0_4";
+                if (new_is_notlinked && is_linked) {
+                    el_tick.className = "note_0_6";
+                };
+
+                // put new value in cur_stud_dict.linked
+                if (new_is_notlinked) {
+                    notlinked_arr.push(other_stud_id_str);
+                    notlinked_arr.sort();
+
+                    if (linked_arr.includes(other_stud_id_str)){
+                        b_remove_item_from_array(linked_arr, other_stud_id_str);
+                        cur_stud_dict.linked = (linked_arr.length) ? linked_arr.join(";") : null;
+                    };
+                } else {
+                    b_remove_item_from_array(notlinked_arr, other_stud_id_str);
+                };
+                cur_stud_dict.notlinked = (notlinked_arr.length) ? notlinked_arr.join(";") : null;
+            };
+            const url_str = urls.url_student_linkstudent;
+            UploadChanges(upload_dict, url_str);
+        };
+    };  // MLINKSTUD_tick_cross
+
+
+//=========  MLINKSTUD_refresh_tick_cross  ================ PR2024-07-21
+    function MLINKSTUD_refresh_tick_cross(cur_stud_pk, oth_stud_pk, linked, notlinked, bis_exam, changed_fields, showOKelement) {
+        console.log("===== MLINKSTUD_refresh_tick_cross =====");
+
+// - update linked and notlinked in cur_stud_dict
+        const cur_stud_dict = t_lookup_row_in_dictlist(mod_MLINKSTUD_dict.multiple_occurrences_list, "student_id", cur_stud_pk);
+        if (cur_stud_dict){
+            cur_stud_dict.linked = (linked) ? linked : null;
+            cur_stud_dict.notlinked = (notlinked) ? notlinked : null;
+            cur_stud_dict.bis_exam = (bis_exam) ? bis_exam : false;
+        };
+
+// - update icons in el_oth_stud_box
+        const cur_stud_pk_str = cur_stud_pk.toString();
+        const oth_stud_pk_str = oth_stud_pk.toString();
+
+        const oth_stud_box_id = [cur_stud_pk_str, oth_stud_pk_str].join("_");
+        const el_oth_stud_box = document.getElementById(oth_stud_box_id);
+
+        const el_cross = el_oth_stud_box.children[0].children[0];
+        const el_tick = el_oth_stud_box.children[1].children[0];
+
+        const linked_arr = (linked) ? linked.split(";") : [];
+        const notlinked_arr = (notlinked) ? notlinked.split(";") : [];
+        const is_linked = (linked_arr && linked_arr.includes(oth_stud_pk_str));
+        const is_notlinked = (notlinked_arr && notlinked_arr.includes(oth_stud_pk_str));
+
+        console.log("    linked", linked);
+        console.log("    notlinked", notlinked);
+
+        const old_tick_class = (el_tick.className) ? el_tick.className : null;
+        const old_cross_class = (el_cross.className) ? el_cross.className : null;
+        const new_tick_class =  (is_linked) ? "note_1_6" : "note_0_6";
+        const new_cross_class = (is_notlinked) ? "note_1_4" : "note_0_4";
+        const tick_class_has_changed = (old_tick_class !== new_tick_class);
+        const cross_class_has_changed = (old_cross_class !== new_cross_class);
+
+        el_tick.className = new_tick_class;
+        el_cross.className = new_cross_class;
+
+        const bisexam_has_changed = (changed_fields && changed_fields.includes("bis_exam"));
+        const el_stud_h6 = el_oth_stud_box.parentNode.children[0];
+
+        const el_stud_bis_exam = el_stud_h6.children[1];
+        el_stud_bis_exam.innerHTML = (bis_exam) ? ["(", loc.Bis_candidate.toLowerCase() ,")"].join("") : null;
+
+    // - show Ok element
+        if (showOKelement){
+            const tick_has_changed = (changed_fields && changed_fields.includes("linked"));
+            const cross_has_changed = (changed_fields && changed_fields.includes("notlinked"));
+
+            const show_ok_tick = (tick_has_changed && !cross_has_changed) ||
+                                (tick_has_changed && cross_has_changed && is_linked);
+            const show_ok_cross = (cross_has_changed && !tick_has_changed) ||
+                                (cross_has_changed && tick_has_changed && is_notlinked);
+
+            if (show_ok_tick) {ShowOkElement(el_tick.parentNode)};
+            if (show_ok_cross) {ShowOkElement(el_cross.parentNode)};
+            if (bisexam_has_changed) {
+                ShowOkElement(el_stud_bis_exam)
+                //el_stud_bis_exam.classList.add("border_bg_valid");
+                //setTimeout(function (){el_stud_bis_exam.classList.remove("border_bg_valid");}, 2000);
+            };
+            // hide student if all oth_students are linked or notlinked
+            const has_not_linked_oth_stud = MLINKSTUD_has_not_linked_oth_stud(cur_stud_dict);
+        console.log("    has_not_linked_oth_stud", has_not_linked_oth_stud);
+            if (!has_not_linked_oth_stud){
+                setTimeout(function (){
+                    el_oth_stud_box.parentNode.classList.add(cls_hide);
+                }, 2000);
+            };
+        };
+    };  // MLINKSTUD_refresh_tick_cross
+
+
+//=========  MLINKSTUD_has_not_linked_stud_list  ================ PR2024-07-23
+    function MLINKSTUD_has_not_linked_stud_list() {
+        console.log("===== MLINKSTUD_has_not_linked_stud_list =====");
+        let studlist_has_not_linked = false;
+
+        if (mod_MLINKSTUD_dict.multiple_occurrences_list && mod_MLINKSTUD_dict.multiple_occurrences_list.length){
+            for (let i = 0, student_dict; student_dict = mod_MLINKSTUD_dict.multiple_occurrences_list[i]; i++) {
+                const has_not_linked_oth_stud = MLINKSTUD_has_not_linked_oth_stud(student_dict);
+                if (has_not_linked_oth_stud){
+                    studlist_has_not_linked = true;
+                    break;
+                };
+            };
+        };
+        console.log("studlist_has_not_linked", studlist_has_not_linked);
+        return studlist_has_not_linked;
+    }; // MLINKSTUD_has_not_linked_stud_list
+
+
+//=========  MLINKSTUD_has_not_linked_oth_stud  ================ PR2024-07-23
+    function MLINKSTUD_has_not_linked_oth_stud(student_dict) {
+        let has_not_linked_oth_stud = false;
+        if (student_dict){
+            const linked_arr = (student_dict.linked) ? student_dict.linked.split(";") : [];
+            const notlinked_arr = (student_dict.notlinked) ? student_dict.notlinked.split(";") : [];
+
+            const other_students_list = (student_dict.other_stud) ? student_dict.other_stud : [];
+            for (let j = 0, other_stud_dict; other_stud_dict = other_students_list[j]; j++) {
+                const other_stud_id_str = (other_stud_dict.student_id) ? other_stud_dict.student_id.toString() : null;
+                if (!(linked_arr && linked_arr.includes(other_stud_id_str)) &&
+                    !(notlinked_arr && notlinked_arr.includes(other_stud_id_str))){
+                        has_not_linked_oth_stud = true
+                        break;
+                };
+            };
+        };
+        return has_not_linked_oth_stud;
+    };  // MLINKSTUD_has_not_linked_oth_stud
+
+//=========  MLINKSTUD_toggle_showall  ================ PR2021-09-18 PR2023-01-19 PR2024-07-19
+    function MLINKSTUD_toggle_showall() {
+        console.log("===== MLINKSTUD_toggle_showall =====");
+
+        mod_MLINKSTUD_dict.show_all = !mod_MLINKSTUD_dict.show_all;
+        el_MLINKSTUD_btn_showall.innerText = (mod_MLINKSTUD_dict.show_all) ? loc.Hide_linked_candidates : loc.Show_all_matching_candidates;
+        add_or_remove_class(el_MLINKSTUD_show_all_txt, cls_hide, mod_MLINKSTUD_dict.show_all);
+
+        MLINKSTUD_fill_table();
+
+    };  // MLINKSTUD_toggle_showall
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23 PR2022-04-11 PR2022-12-28 PR2023-09-01
@@ -2498,6 +3013,160 @@ function RefreshDataRowsAfterUpload(response) {
 
     };  // HandleFilterToggle
 
+//========= MODHIST_open  ==================================== PR2024-07-25
+    function MODHIST_open(td) {
+        console.log( "===== MODHIST_open  ========= ");
+        console.log( "  td.parentNode ", td.parentNode);
+
+        b_clear_dict(mod_MODHIST_dict);
+
+        el_MODHIST_tblHead.innerHTML = null;
+        el_MODHIST_tblBody.innerHTML = null;
+
+// ---  get selected student_pk
+        const student_pk = get_attr_from_el_int(td.parentNode, "data-pk");
+        console.log( "    student_pk: ", student_pk);
+
+// ---  lookup student_dict in student_rows
+        const student_dict = b_lookup_dict_in_dictlist(student_rows, "id", student_pk);
+    console.log("    student_dict", student_dict)
+
+        console.log( "urls.url_student_history: ", urls.url_student_history);
+        el_MODHIST_header.innerText = loc.Log_file + loc._of_ + student_dict.fullname;
+        add_or_remove_class(el_MODHIST_loader, cls_hide, false);
+
+        const url_str = urls.url_student_history;
+        const upload_dict = {student_pk: student_pk};
+        UploadChanges(upload_dict, url_str);
+
+        $("#id_mod_history").modal({backdrop: true});
+
+    };  // MODHIST_open
+
+//=========  MODHIST_response  ================ PR2024-07-26
+    function MODHIST_response(studentlog_rows) {
+        console.log("===== MODHIST_response =====");
+
+        add_or_remove_class(el_MODHIST_loader, cls_hide, true);
+
+        MODHIST_FillLogTable(studentlog_rows);
+    }; // MODHIST_response
+
+//=========  MODHIST_FillLogTable  ================ PR2024-07-26
+    function MODHIST_FillLogTable(data_rows) {
+        console.log( "===== MODHIST_FillLogTable ========= ");
+        console.log("    data_rows", data_rows);
+
+        el_MODHIST_tblHead.innerHTML = null;
+        el_MODHIST_tblBody.innerHTML = null;
+
+        const field_setting = field_settings.history;
+        const field_names = field_setting.field_names;
+        const field_caption = field_setting.field_caption;
+        //const field_tags = field_setting.field_tags;
+        const field_tag = "div";
+        const field_align = field_setting.field_align;
+        const field_width = field_setting.field_width;
+        const column_count = field_names.length;
+
+// +++  insert header row ++++++++++++++++++++++++++++++++
+        const tblRow_header = el_MODHIST_tblHead.insertRow (-1);
+    // --- loop through columns
+        for (let j = 0; j < column_count; j++) {
+            const field_name = field_names[j];
+
+    // --- get field_caption from field_setting, display 'Profiel' in column sct_abbrev if has_profiel
+            const caption = (loc[field_caption[j]]) ? loc[field_caption[j]] : field_caption[j];
+
+            const class_width = "tw_" + field_setting.field_width[j] ;
+            const class_align = "ta_" + field_setting.field_align[j];
+
+// ++++++++++ insert columns in header row +++++++++++++++
+    // --- add th to tblRow_header
+            let th_header = document.createElement("th");
+    // --- add div to th, margin not working with th
+                const el_header = document.createElement("div");
+    // --- add innerText to el_header
+                el_header.innerText = caption;
+    // --- add width, text_align, right padding in examnumber
+                th_header.classList.add(class_width, class_align);
+                el_header.classList.add(class_width, class_align);
+                // if(field_name === "examnumber"){el_header.classList.add("pr-2")};
+
+                th_header.appendChild(el_header)
+            tblRow_header.appendChild(th_header);
+
+        };
+// --- loop through data_rows
+        if(data_rows && data_rows.length){
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+
+                const tblRow_mod = el_MODHIST_tblBody.insertRow(-1);
+                tblRow_mod.className = "tsa_tr_selected";
+                const td_mod = tblRow_mod.insertCell(-1);
+                td_mod.setAttribute("colspan", column_count);
+                const el_mod = document.createElement("small");
+
+                const mode_caption = (loc[data_dict.mode])  ? loc[data_dict.mode] : "";
+                const modified_dateJS = parse_dateJS_from_dateISO(data_dict.modifiedat);
+                const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS, "long");
+
+                const modified_by = (data_dict.modby_username) ? data_dict.modby_username : "-";
+                el_mod.innerText = [mode_caption, modified_date_formatted, loc._by_, data_dict.modusr_displayname].join("");
+
+                td_mod.appendChild(el_mod);
+
+// --- insert tblRow into tblBody at end
+                const tblRow = el_MODHIST_tblBody.insertRow(-1);
+
+// +++  insert td's into tblRow
+                for (let j = 0; j < column_count; j++) {
+                    const field_name = field_names[j];
+
+                    const class_width = "tw_" + field_width[j];
+                    const class_align = "ta_" + field_align[j];
+
+        // --- insert td element,
+                    const td = tblRow.insertCell(-1);
+
+        // --- create element with tag from field_tags
+                    const el_div = document.createElement(field_tag);
+
+            // --- add  text_align
+                    el_div.classList.add(class_width, class_align);
+
+                    const fld_value = data_dict[field_name];
+
+                    if (["extrafacilities", "bis_exam", "partial_exam"].includes(field_name)) {
+                        el_div.className = (fld_value === true) ? "tickmark_2_2" : (fld_value === false) ? "tickmark_2_1" : "tickmark_0_0";
+                        if (fld_value === false) {
+                            td.title = loc.Tickmark_removed;
+                        };
+                    } else if (field_name === "birthdate"){
+                        const date_formatted = format_date_from_dateISO(loc, data_dict.birthdate);
+
+                        el_div.innerText = (date_formatted) ? date_formatted : null;
+
+                    } else if (["examnumber", "lastname", "firstname", "prefix", "gender",
+                                 "birthcountry", "birthcity",
+                                "idnumber", "classname", "lvl_abbrev", "sct_abbrev"].includes(field_name)){
+                        el_div.innerText = (fld_value) ? fld_value : null;
+
+                    };
+
+        // ---  mark tobedeleted row with line-through red
+                    add_or_remove_class(el_div, "text_decoration_line_through_red", data_dict.tobedeleted, "text_decoration_initial");
+        // ---  mark deleted row with red background
+                    add_or_remove_class(el_div, "tsa_tr_error", data_dict.tobedeleted);
+
+            // --- append element
+                    td.appendChild(el_div);
+                };
+
+        console.log(" >>   tblRow", tblRow);
+            };
+        };
+    }; // MODHIST_FillLogTable
 
 //========= Filter_TableRows  ==================================== PR2020-08-17 PR22021-12-20
     function Filter_TableRows() {

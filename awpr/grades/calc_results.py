@@ -191,8 +191,8 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                         request=request,
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_school.base,
-                        sel_depbase=sel_department.base,
-                        append_dict={})
+                        sel_depbase=sel_department.base
+                    )
 
 
 # - return html with log_list
@@ -328,7 +328,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict,
                         log_list, sql_studsubj_value_list, sql_student_value_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -479,7 +479,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                          si_dict, ep_list, log_list, sql_studsubj_value_list):
     # PR2021-12-30 PR2022-01-02 PR2024-06-18
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ++++++++++++  calc_studsubj_result  ++++++++++++')
         logger.debug(' studsubj_dict: ' + str(studsubj_dict))
@@ -552,14 +552,14 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
     is_extra_nocount = studsubj_dict.get('is_extra_nocount', False)
     if is_extra_nocount:
         if log_list is not None:
-            log_list.append(''.join((c.STRING_SPACE_05, str(_('Extra subject, does not count for the result.')))))
+            log_list.append(''.join((c.STRING_SPACE_05, gettext('Extra subject, does not count for the result'), '.')))
 
     is_thumbrule = False
     if thumb_rule_allowed:
         is_thumbrule = studsubj_dict.get('is_thumbrule', False)
         if is_thumbrule:
             if log_list is not None:
-                log_list.append(''.join((c.STRING_SPACE_05, str(_('Thumb rule applies, subject does not count for the result.')))))
+                log_list.append(''.join((c.STRING_SPACE_05, gettext('Thumb rule applies, subject does not count for the result'), '.')))
 
     exemp_no_ce = False
 
@@ -723,7 +723,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                                 gradetype, is_combi, is_core, multiplier, is_extra_nocount, is_thumbrule, subj_code)
 
 # - calculate if sectorprgram is sufficient
-                calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype,
+                calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype, multiplier,
                     max_final, is_extra_nocount, is_thumbrule)
 
 # - calculate sum of final grades, separate for combi subjects
@@ -1349,13 +1349,15 @@ def get_sql_studsubj_values(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem
     def get_sql_value_str(value):
         return ''.join(("'", str(value), "'")) if value else 'NULL'
 
-    def get_sql_value_int(value):
+    def get_sql_value_int_nonull(value):
         return str(value) if value else '0'
 
     def get_sql_value_bool(value):
         return 'TRUE' if value else 'FALSE'
 
     sql_studsubj_values = []
+    sql_studsubj_value_str = ''
+
     try:
         sql_studsubj_values = [
             str(studsubj_pk),
@@ -1368,7 +1370,7 @@ def get_sql_studsubj_values(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem
             get_sql_value_bool('sr' in gl_max_ni),
             get_sql_value_bool('pe' in gl_max_ni),
             get_sql_value_bool('ce' in gl_max_ni),
-            get_sql_value_int(gl_examperiod),
+            get_sql_value_int_nonull(gl_examperiod),
 
             get_sql_value_bool(has_exemption),
             get_sql_value_bool(has_reex),
@@ -1611,7 +1613,7 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
     # PR2024-06-16
             key_str = 'spr_insuff'
             if key_str not in count_dict:
-                count_dict[key_str] = False
+                count_dict[key_str] = 0
 
             # skip count when is combi
             #if not is_combi:
@@ -1658,7 +1660,7 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
 ###################
 
 
-def calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype,
+def calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype, multiplier,
                     finalgrade, is_extra_nocount, is_thumbrule):
     # PR2024-06-18 check if sectorprogram had finalgrade 6 or higher spr_insuff
     """
@@ -1687,9 +1689,12 @@ def calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype,
 
             count_dict = calc_student_ep_dict['count']
 
+            # PR2024-07-12 put multiplier in 'spr_insuff' instead ofTrue / False
+            # multiplier is only necessary to put in lig file when calculatingresult
             key_str = 'spr_insuff'
             if key_str not in count_dict:
-                count_dict[key_str] = False
+                # PR2024-07-12 was: count_dict[key_str] = False
+                count_dict[key_str] = 0
 
             if finalgrade:
                 final_int = None
@@ -1699,7 +1704,8 @@ def calc_spr_insuff(calc_student_ep_dict, subj_code, sjtp_code, gradetype,
                     final_int = int(finalgrade)
 
                 if final_int is not None and final_int < 6:
-                    count_dict[key_str] = True
+                    # PR2024-07-12 was: count_dict[key_str] = True
+                    count_dict[key_str] += multiplier
 
             if logging_on:
                 logger.debug('    count_dict: ' + str(count_dict))
@@ -1988,7 +1994,7 @@ def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent
     # rule 2022 Havo/VWO CUR + SXM
     # - voor de vakken cav en lo een voldoende of goed is behaald
 
-    #TODO URGENT student doesnt fail when garde insufficient PR2023-04-26
+    #TODO URGENT student doesnt fail when grade insufficient PR2023-04-26
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -2354,8 +2360,9 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
     #  PR2021-12-24 PR2022-05-26 PR2024-06-18
     logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug('  -----  calc_passfailed_count6_vsbo  -----')
-        logger.debug('  @@@@@@@@@@  student_ep_dict: ' + str(student_ep_dict))
+        logger.debug('    student_ep_dict: ' + str(student_ep_dict))
 
     """
     'PR: slagingsregeling Vsbo
@@ -2364,7 +2371,6 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
     '1c een kandidaat is geslaagd als voor ten hoogste 1 vak een 4 is behaald en voor de overige vakken een 6 of hoger waarvan tenminste 1 een 7 of hoger
     '1d een kandidaat is geslaagd als voor 2 vakken een 5 is behaald en voor de overige vakken een 6 of hoger waarvan tenminste 1 een 7 of hoger
     
-    TODO
     # PR2024-06-13 Yvette Halley / Nancy Josephina: add rule sectorprgram as of 2025
     LANDSBESLUIT, HOUDENDE ALGEMENE MAATREGELEN, van de 11de juli 2022 tot wijziging van het Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o
     Artikel I
@@ -2374,6 +2380,15 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
     c. voor ten hoogste één van zijn examenvakken het eindcijfer 4 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger, of 
     d. voor twee van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger, 
     >>> met dien verstande dat het eindcijfer van het sectorprogramma in de praktisch basisgerichte leerweg dan wel de praktisch kadergerichte leerweg een voldoende dient te zijn.
+
+    e-mail Nancy Josefina 13 jini 2024:
+    Goedemorgen Hans, 
+    Bedankt voor de verheldering. Dit gedeelte van artikel 36 lid 1d is dus, in tegenstelling tot de andere delen van het artikel,  niet geprogrammeerd in AWP.
+    Gezien het tijdstip van de ontdekking en het feit dat de uitslag door de meeste scholen al aan de kandidaten is meegedeeld is het niet verantwoordelijk nog wijzigingen aan te brengen in de uitslagberekening van AWP-online.
+    Het is wel zaak dat dit voor het jaar 2025 in orde wordt gemaakt en tijdig aan en door alle betrokkenen kenbaar wordt gemaakt.
+    Ik hoop je hiermee voldoende te hebben geïnformeerd.
+    Drs. Nancy Josephina
+    Inspecteur MINOWCS
     """
 
     count_dict = student_ep_dict['count']
@@ -2384,11 +2399,11 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
     c7 = count_dict.get('c7', 0)
 
     # PR2024-06-16 added:
-    spr_insuff = count_dict.get('spr_insuff', False)
+    c_spr_insuff = count_dict.get('spr_insuff', 0)
 
     if logging_on:
-        logger.debug('  @@@@@@@@@@  count_dict: ' + str(count_dict))
-        logger.debug('  @@@@@@@@@@  spr_insuff: ' + str(spr_insuff))
+        logger.debug('    count_dict: ' + str(count_dict))
+        logger.debug('    c_spr_insuff: ' + str(c_spr_insuff))
 
     has_failed = False
     result_info = ''
@@ -2398,6 +2413,8 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
         three_str = ' '.join((str(c3), gettext('three or lower') if c3 == 1 else gettext('threes or lower')))
         result_info = ''.join((three_str, '.'))
 
+        if logging_on:
+            logger.debug('    result_info 1 of meer drieën of lager: ' + str(result_info))
     else:
         # kandidaat geen drieën of lager, alleen vieren of hoger
         four_str = ' '.join((str(c4), gettext('four') if c4 == 1 else gettext('fours')))
@@ -2410,6 +2427,8 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
         if c4 > 1:  # meer dan 1 vier
             has_failed = True
             result_info = ''.join((four_str, '.'))
+            if logging_on:
+                logger.debug('    result_info meer dan 1 vier: ' + str(result_info))
 
         elif c4 == 1:
             # 'kandidaat heeft 1 vier, de rest vijven of hoger
@@ -2417,11 +2436,17 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
             if c5:  # kandidaat heeft 1 vier en 1 of meer vijven
                 has_failed = True
                 result_info = ''.join((four_str, gettext(' and '), five_str, '.'))
+
+                if logging_on:
+                    logger.debug('    kandidaat heeft 1 vier en 1 of meer vijven: ' + str(result_info))
+
             else:  # 'kandidaat heeft 1 vier en geen vijf
                 if not c7:
                     has_failed = True
                 result_info = ''.join((four_str, gettext(' and '), seven_str, '.')) # '1 four and no sevens or higher.'
 
+                if logging_on:
+                    logger.debug('    kandidaat heeft 1 vier en geen vijf: ' + str(result_info))
         else:
             # 'kandidaat heeft geen vier, alleen vijven of hoger
             if c5 > 2:
@@ -2429,27 +2454,37 @@ def calc_passfailed_count6_vsbo(student_ep_dict, ey_code, lvlbase_code):
                 has_failed = True
                 result_info = ''.join((five_str, '.'))
 
+                if logging_on:
+                    logger.debug('    3 of meer vijven: ' + str(result_info))
+
             elif c5 == 2:
-                # kandidaat heeft 2 vijven, rest zessen of hoger
 
-                if not c7:  # geen zevens en hoger
+                if logging_on:
+                    logger.debug('    ey_code: ' + str(ey_code))
+                    logger.debug('    c_spr_insuff: ' + str(c_spr_insuff))
+                    logger.debug('    lvlbase_code: ' + str(lvlbase_code))
+
+                # PR2024-06-16 from 2025 add spr_insuff = False in PBL PKL
+                #   voor twee van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger,
+                #   met dien verstande dat het eindcijfer van het sectorprogramma in de praktisch basisgerichte leerweg dan wel de praktisch kadergerichte leerweg een voldoende dient te zijn.
+
+                if ey_code >= 2025 and c_spr_insuff and lvlbase_code.lower() in ('pbl', 'pkl'):
                     has_failed = True
-                    result_info = ''.join((five_str, gettext(' and '), seven_str, '.'))  # '2 fives and no sevens or higher.'
-                else:
-
-                    # PR2024-06-16 as of 2025 add spr_insuff = False in PBL PKL
-                    # . voor twee van zijn examenvakken het eindcijfer 5 heeft behaald en voor zijn overige examenvakken een 6 of hoger waarvan ten minste één 7 of hoger,
-                    # met dien verstande dat het eindcijfer van het sectorprogramma in de praktisch basisgerichte leerweg dan wel de praktisch kadergerichte leerweg een voldoende dient te zijn.
+                    result_info += ''.join((five_str, ', ', gettext('of which %(val)s in the sector program') % {'val': str(c_spr_insuff)}, '.'))
 
                     if logging_on:
-                        logger.debug('    ey_code: ' + str(ey_code))
-                        logger.debug('    spr_insuff: ' + str(spr_insuff))
-                        logger.debug('    lvlbase_code: ' + str(lvlbase_code))
+                        logger.debug('  of which one or more in sector program: ' + str(result_info))
+                else:
+                    # kandidaat heeft 2 vijven, rest zessen of hoger
+                    result_info = ''.join((five_str, str(_(' and ')), seven_str, '.')) # '2 fives and no sevens or higher.'
 
-                    if ey_code >= 2025:
-                        if spr_insuff and lvlbase_code.lower() in ('pbl', 'pkl'):
-                            has_failed = True
-                            result_info = ''.join((five_str, gettext(' of which one in sector program'), '.'))
+                    if not c7:  # geen zevens en hoger
+                        has_failed = True
+                        if logging_on:
+                            logger.debug('   geen zevens en hoger: ' + str(result_info))
+                    else:
+                        if logging_on:
+                            logger.debug('   1 of meer zevens of hoger: ' + str(result_info))
 
             elif c5 == 1:
                 # kandidaat heeft 1 vijf, rest zessen of hoger
@@ -3659,22 +3694,22 @@ def get_sql_student_values(student_dict, last_student_ep_dict, result_info_list)
     def get_sql_value_str(value):
         return ''.join(("'", str(value), "'")) if value else 'NULL'
 
-    def get_sql_value_int(value):
+    def get_sql_value_int_nonull(value):
         return str(value) if value else '0'
 
     sql_student_values = []
     try:
         student_id = student_dict.get('stud_id')
-        exemption_count_str = get_sql_value_int(student_dict.get('c_ep4'))
-        sr_count_str = get_sql_value_int(student_dict.get('sr_count_str'))
-        reex_count_str = get_sql_value_int(student_dict.get('c_ep2'))
-        reex03_count_str = get_sql_value_int(student_dict.get('c_ep3'))
+        exemption_count_str = get_sql_value_int_nonull(student_dict.get('c_ep4'))
+        sr_count_str = get_sql_value_int_nonull(student_dict.get('c_sr'))
+        reex_count_str = get_sql_value_int_nonull(student_dict.get('c_ep2'))
+        reex03_count_str = get_sql_value_int_nonull(student_dict.get('c_ep3'))
 
         # combi thumbrule counts as one, thumbrule_combi = True in student_dict if any combi has thumbrule
         c_thumbrule = student_dict.get('c_thumbrule') or 0
         if student_dict.get('thumbrule_combi'):
             c_thumbrule += 1
-        thumbrule_count_str = get_sql_value_int(c_thumbrule)
+        thumbrule_count_str = get_sql_value_int_nonull(c_thumbrule)
         # TODO add field subj_count to model
         # subject_count = get_sql_value_int(student_dict.get('c_subj'))
 
@@ -3849,7 +3884,7 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
     if logging_on:
         logger.debug(' ---------- log_list_subject_grade ----------')
         logger.debug('this_examperiod_dict: ' + str(this_examperiod_dict))
-    multiplier_str = ''.join(('(', str(multiplier), 'x)')) if multiplier != 1 else ''
+
     weight_se_str = ''.join(('(x', str(weight_se), ')')) if weight_se != 1 else ''
 
     # this_examperiod_dict = {'se': '8.0', 'sesr': '8.0', 'ni': ['ce']}
@@ -3880,12 +3915,12 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
         sr_str = sr_str.replace('.', ',')
         sesr_str = '-' if noinput_se or noinput_sr else sesr_str.replace('.', ',')
         detail_str = ''.join((' [se:', se_str, ' herk:', sr_str, ']')) if sr_allowed else ''
-        sesr_display = ''.join(('SE:', sesr_str, detail_str, multiplier_str, weight_se_str))
+        sesr_display = ''.join(('SE:', sesr_str, detail_str, weight_se_str))
     else:
 
 # when not has_sr: sr_str has either value or 'noinput
         sesr_str = '-' if noinput_se else sesr_str.replace('.', ',')
-        sesr_display = ''.join(('SE:', sesr_str, multiplier_str, weight_se_str))
+        sesr_display = ''.join(('SE:', sesr_str, weight_se_str))
 
     if weight_ce <= 0:
         pece_display = ''
@@ -3908,15 +3943,19 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
     elif examperiod == c.EXAMPERIOD_THIRD:
         ep_str = str(_('Re-examination 3rd period')) + ': '
 
+    # add '(2x)' when multiplier = 2 (sectroprogram PBL, PKL, Curacao only)
     final_str = this_examperiod_dict.get('final') or '-'
-    grade_str = ''.join((' ', str(_('Final grade')), ':', final_str))
+    if multiplier != 1 and final_str != '-':
+        final_str += ''.join((' (', str(multiplier), 'x)'))
+
+    final_display = ''.join((' ', str(_('Final grade')), ':', final_str))
 
     if logging_on:
         logger.debug('     ep_str: ' + str(ep_str))
         logger.debug('     sesr_display: ' + str(sesr_display))
         logger.debug('     pece_display: ' + str(pece_display))
-        logger.debug('     grade_str: ' + str(grade_str))
-    subj_grade_str = ''.join((str(ep_str), sesr_display, pece_display, grade_str))
+        logger.debug('     final_display: ' + str(final_display))
+    subj_grade_str = ''.join((str(ep_str), sesr_display, pece_display, final_display))
     return subj_grade_str
 # - end of log_list_subject_grade
 

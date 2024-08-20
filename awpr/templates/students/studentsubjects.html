@@ -6,8 +6,8 @@
 
 {% block script %}
     <script src="{% static 'js/modallowed230327.js' %}"></script>
-    <script src="{% static 'js/import230815.js' %}"></script>
-    <script src="{% static 'js/studentsubjects240628.js' %}"></script>
+    <script src="{% static 'js/import240819.js' %}"></script>
+    <script src="{% static 'js/studentsubjects240819.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -77,11 +77,13 @@
             {% include 'students/modapprovesubject.html' %}
             {% include 'students/modstudentsubject.html' %}
             {% include 'students/modselectex3.html' %}
+            {% include 'students/modpws.html' %}
             {% include 'includes/modselectexemptionyear.html' %}
 
             {% include 'includes/modimport.html' %}
             {% include 'students/modmultipleoccurrences.html' %}
             {% include 'includes/modmessage.html' %}
+            {% include 'includes/modhistory.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="margin_top80_left16_right32">
@@ -149,7 +151,6 @@
 
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_validate_test="{% url 'url_studsubj_validate_test' %}"
-                data-url_studsubj_validate_all="{% url 'url_studsubj_validate_all' %}"
                 data-url_student_multiple_occurrences="{% url 'url_student_multiple_occurrences' %}"
 
                 data-url_studsubj_approve="{% url 'url_studsubj_approve' %}"
@@ -165,6 +166,9 @@
 
                 data-url_cluster_upload="{% url 'url_cluster_upload' %}"
                 data-url_validate_subj_composition="{% url 'url_validate_subj_composition' %}"
+
+                data-url_studsubj_history="{% url 'url_studsubj_history' %}"
+
             >
             </div>
         {% endif %}

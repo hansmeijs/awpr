@@ -436,6 +436,11 @@
         b_clear_dict(mod_MSSSS_dict);
 
         // PR024-04-02 modalName is used in exams.js, to make difference between MSSS and MEX response
+        // modalName "sbr": update setting_dict and sidebar,
+        // modalName "mex" : select subject for ete exam,
+        // modalName "mdec": select subject for duo (cvte) exam,
+        // modalName "hdr", "mcl", "mups" are not used in t_MSSSS_
+
         mod_MSSSS_dict.modalName = modalName;
         mod_MSSSS_dict.tblName = tblName;
         mod_MSSSS_dict.data_dicts = data_dicts;
@@ -500,7 +505,7 @@
 
 //=========  t_MSSSS_Save_NEW  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26 PR2023-01-05 PR2024-05-02
     function t_MSSSS_Save_NEW(MSSSS_Response) {
-        //console.log("=====  t_MSSSS_Save_NEW =========");
+        console.log("=====  t_MSSSS_Save_NEW =========");
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
         const tblName = mod_MSSSS_dict.tblName;
@@ -911,7 +916,7 @@
     // PR2024-06-18 to prevent empty list: check if selected_pk is in rows, set null if not found
             if (selected_pk_int){
                 const lookup_field = (tblName === "subject") ? "base_id" : "id";
-                const row = t_lookup_row_in_array(data_rows, lookup_field, selected_pk_int);
+                const row = t_lookup_row_in_dictlist(data_rows, lookup_field, selected_pk_int);
                 if(!row){
                     selected_pk_int = null;
                     const upload_pk_dict = {};
@@ -1605,7 +1610,7 @@
 
     //////////////////////////////////
 
-    function t_lookup_row_in_array(data_rows, lookup_field, lookup_value){
+    function t_lookup_row_in_dictlist(data_rows, lookup_field, lookup_value){
         // PR2022-03-29  lookup datarow the oldfashioned way
         // PR2024-05-02 from tsa
         if(lookup_value && data_rows && data_rows.length){
@@ -1617,7 +1622,21 @@
             };
         };
         return null;
-    };  // t_lookup_row_in_array
+    };  // t_lookup_row_in_dictlist
+
+
+    function t_lookup_rowindex_in_dictlist(data_rows, lookup_field, lookup_value){
+        // PR2024-07-30 lookup rowindex the oldfashioned way
+        if(lookup_value && data_rows && data_rows.length){
+            for (let i = 0, row; row = data_rows[i]; i++) {
+                if (row[lookup_field] === lookup_value){
+                    return i;
+                    break;
+                };
+            };
+        };
+        return null;
+    };  // t_lookup_rowindex_in_dictlist
 
 //========= t_get_rowindex_by_sortby  ================= PR2020-06-30
     function t_get_rowindex_by_sortby(tblBody, search_sortby) {
@@ -3067,13 +3086,13 @@ const mod_MCOL_dict = {
 
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02 PR2022-05-15 PR2022-07-21 PR2023-01-12
     function t_MCOL_Open(page) {
-        //console.log(" -----  t_MCOL_Open   ----")
-    //console.log("    mod_MCOL_dict", mod_MCOL_dict)
-    //console.log("    mod_MCOL_dict.cols_skipped", mod_MCOL_dict.cols_skipped)
+        console.log(" -----  t_MCOL_Open   ----")
+    console.log("    mod_MCOL_dict", mod_MCOL_dict)
+    console.log("    mod_MCOL_dict.cols_skipped", mod_MCOL_dict.cols_skipped)
 
         // note: this function uses global variable 'selected_btn'
 
-        //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
+        //  setting_dict.cols_hidden was dict with key 'all' or sel_btn, changed to array PR2021-12-14
         //  skip when setting_dict.cols_hidden is not an array,
         // will be changed into an array when saving with t_MCOL_Save
 
@@ -3092,15 +3111,15 @@ const mod_MCOL_dict = {
             };
         };
 
-    //console.log("    cols_skipped_list", cols_skipped_list)
+    console.log("    cols_skipped_list", cols_skipped_list)
 
 // - fill columns_excl_skipped
         mod_MCOL_dict.columns_excl_skipped = [];
         // loop through values of key 'all' and key selected_btn
         for (const [key, dict] of Object.entries(mod_MCOL_dict.columns)) {
-    //console.log("....key", key)
-    //console.log("    dict", dict)
-    //console.log("    mod_MCOL_dict.selected_btn", mod_MCOL_dict.selected_btn)
+    console.log("....key", key)
+    console.log("    dict", dict)
+    console.log("    mod_MCOL_dict.selected_btn", mod_MCOL_dict.selected_btn)
             if (key === mod_MCOL_dict.selected_btn || key === 'all'){
                 for (const [field, value] of Object.entries(dict)) {
                     // translate value, caption = 'Profile' when dep has_profile and field - sctbase_id

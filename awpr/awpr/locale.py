@@ -216,7 +216,49 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['All_'] = _('All ')
     dict['No_'] = _('No ')
 
-# ====== PAGE UPLOAD =========================
+    # ====== MODAL LINK STUDENTS ==============
+    if 'mlinkstud' in page_list:
+
+        dict['mlinkstud_info01'] = _("If you link a candidate, AWP will do the following:")
+        dict['mlinkstud_info02a'] = _("If the candidate has failed the exam last year in the same department ")
+        dict['mlinkstud_info02b_vsbo'] = _("and learning path ")
+        dict['mlinkstud_info02c'] = _("as this exam year,")
+        dict['mlinkstud_info03'] = _("he/she will be marked as 'bis-candidate'.")
+        dict['mlinkstud_info04'] = _("When you enter or import the subjects of this candidate, the exemptions will be entered automatically.")
+
+# ====== PAGE HISTORY ==============
+    if 'history' in page_list:
+
+        dict['Log_file'] = _('Log file')
+
+        dict['i'] = _('Imported at ')
+        dict['u'] = _('Modified at ')
+        dict['c'] = _('Created at ')
+        dict['d'] = _('Deleted at ')
+        dict['m'] = _('Marked for deletion at ')
+        dict['r'] = _("Restored at ")
+        dict['b'] = _('Calculated by AWP at ')
+
+        dict['o'] = _('Copied from previous exam year at ')
+
+        dict['1'] = _('Approved as %(auth)s at ') % {'auth': gettext('Chairperson').lower()}
+        dict['2'] = _('Approved as %(auth)s at ') % {'auth': gettext('Secretary').lower()}
+        dict['3'] = _('Approved as %(auth)s at ') % {'auth': gettext('Examiner').lower()}
+        dict['4'] = _('Approved as %(auth)s at ') % {'auth': gettext('Second corrector').lower()}
+        dict['5'] = _('Approval as %(auth)s removed at ') % {'auth': gettext('Chairperson').lower()}
+        dict['6'] = _('Approved as %(auth)s removed at ') % {'auth': gettext('Secretary').lower()}
+        dict['7'] = _('Approved as %(auth)s removed at ') % {'auth': gettext('Examiner').lower()}
+        dict['8'] = _('Approved as %(auth)s removed at ') % {'auth': gettext('Second corrector').lower()}
+
+        dict['s'] = _('Submitted at ')
+        dict['z'] = _('Submission removed at ')
+
+        dict['Show_logfile_candidate'] = _('Show changes of the candidate data.')
+
+        dict['Tickmark_removed'] = _('The tick mark has been removed.')
+
+# ====== PAGE UPLOAD ==============
+    # ===========
     if 'upload' in page_list:
 
         dict['Upload_candidates'] = _('Upload candidates')
@@ -863,6 +905,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Add_candidate'] = _('Add candidate')
         dict['Delete_candidate'] = _('Delete candidate')
         dict['Restore_deleted_candidate'] = _('Restore deleted candidate')
+        dict['Remove_tobedeleted'] = _("Remove 'Marked for deletion'")
         dict['Remove_bis_exam'] = _('Remove bis-exam')
         dict['Remove_partial_exam'] = _('Remove partial exam')
         dict['The_bis_exam'] = _('The bis-exam')
@@ -870,6 +913,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_evening_student_label'] = _("Label 'evening student'")
         dict['Remove_evening_student_label'] = _("Remove label 'evening student'")
         dict['Download_candidate_data'] = _('Download candidate data')
+        dict['Link_candidates'] = _('Link candidates')
+
+        dict['Show_all_matching_candidates'] = _('Show all matching candidates')
+        dict['Hide_linked_candidates'] = _('Hide linked candidates')
 
         dict['Create_exam_numbers'] = _('Create exam numbers')
         dict['AWP_will_create_examnumber'] = _('AWP will create an exam number for all candidates ')
@@ -889,7 +936,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Afterthis_submit_additional_ex1form'] = _('Finally, submit an additional Ex1 form. The candidate will then be deleted.')
 
-        dict['Wait_to_submit_additional_exform'] = _("You can wait to submit the additional Ex1 form until you are about to enter the SE-grades.")
+        dict['Wait_to_submit_additional_exform'] = _("You can wait to submit the additional Ex1 form until you are about to submit the SE-grades.")
         dict['Inthisway_changeswillbesubmitted_inoneform'] = _("In this way, all changes will be submitted in one additional Ex1 form.")
 
         dict['This_candidate_ismarked_fordeletion'] = _('This candidate is marked for deletion.')
@@ -912,7 +959,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Please_select_candidate_first'] = _('Please, select a candidate first.')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
-        dict['Please_select_candidate_first'] = _('Please, select a candidate first.')
 
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
@@ -938,6 +984,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Class'] = _('Class')
         dict['Bis_exam'] = _('Bis exam')
+        dict['Bis_candidate'] = _('Bis candidate')
         dict['Partial_exam'] = _('Partial exam')
         dict['Additional_exam'] = _('Additional exam')
 
@@ -966,8 +1013,13 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['The_cob_andor_pob_mustbe_entered'] = _("%(cob)s and / or %(pob)s must be entered.") % {'cob': _('The country of birth'), 'pob': str(_('The place of birth')).lower()}
 
-
         dict['is_not_valid'] = _(" is not valid.")
+
+        dict['autolink_header'] = _("Automatically linked candidates")
+
+        dict['autolink_msg01'] = _("AWP has automatically linked candidates of previous exam years with identical name and ID-number.")
+        dict['autolink_msg02'] = _("Click the gray button 'Link candidates' and then 'Show all matching candidates' to view them.")
+
 
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
     if 'page_studsubj' in page_list:
@@ -993,6 +1045,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['exemption_msg_01'] = _("You can only enter exemptions when a candidate has a 'Bis-exam'.")
         dict['exemption_msg_02'] = _("Go to the page 'Candidates' first and tick off 'Bis-exam'.")
+
+
+        dict['Pws_title_not_allowed'] = _("Title and subjects are not allowed in subject ")
 
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
         dict['No_subject_selected'] = TXT_No_subject_selected
@@ -1043,6 +1098,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['mandatory_subject'] = _('mandatory subject')
         dict['combination_subject'] = _('combination subject')
+        dict['extra_nocount_subject'] = gettext('Extra subject, does not count for the result').lower()
+        dict['thumbrule_nocount_subject'] = gettext('Thumb rule applies, subject does not count for the result').lower()
 
         dict['slh'] = _('slh')
         dict['Studyloadhours'] = _('Studyload hours')

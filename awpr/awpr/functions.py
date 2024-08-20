@@ -21,14 +21,16 @@ from reportlab.pdfbase.ttfonts import TTFont
 from awpr import constants as c
 from awpr import settings as s
 from awpr import library as awpr_lib
+from awpr import logs as awpr_logs
 
 
 from accounts import models as acc_mod
 from accounts import views as acc_view
-from  accounts import  permits as acc_prm
+from accounts import  permits as acc_prm
 
 from grades import views as grade_view
 from grades import calc_results as calc_res
+from grades import calc_finalgrade as calc_final
 
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -1235,6 +1237,9 @@ def system_updates(examyear, request):
 # PR2021-03-26 run this to update text in ex-forms, when necessary
     update_library_in_awpr_lib(examyear, request)
 
+# PR2024-08-07 check if POK of all failed students in 2024 is correct in StudentSubjects PR2024-08-07
+    checkPok2024AndSaveInStudsubjONCEONLY(request)
+
 # PR2024-02-26 set tobedeleted False in table students
     #set_students_tobedeleted_falseONCEONLY(request)
 
@@ -1706,6 +1711,263 @@ def transfer_grade_tobedeleted_to_deletedONCEONLY(request):
         logger.error(getattr(e, 'message', str(e)))
 # end of transfer_grade_tobedeleted_to_deletedONCEONLY
 
+
+def checkPok2024AndSaveInStudsubjONCEONLY(request):
+    # functions adds pok values in studsubj of all failed students - or evelex students  in 2022, 2023, 2024
+    # PR2024-08-09
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- checkPok2024AndSaveInStudsubjONCEONLY -------')
+    def get_sql_value_str(value):
+        return ''.join(("'", str(value), "'")) if value else 'NULL'
+
+    def get_sql_value_int(value):
+        return str(value) if value else '0'
+
+    try:
+        name = 'check_pok2022-2024'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+
+        if not exists:
+            sub_sql = ' '.join((
+                "SELECT grd.studentsubject_id,",
+
+                "ARRAY_AGG(grd.examperiod ORDER BY grd.id) AS examperiod_arr,",
+
+                "ARRAY_AGG(grd.segrade ORDER BY grd.id) AS segrade_arr,",
+                "ARRAY_AGG(grd.srgrade ORDER BY grd.id) AS srgrade_arr,",
+                "ARRAY_AGG(grd.sesrgrade ORDER BY grd.id) AS sesrgrade_arr,",
+                "ARRAY_AGG(grd.pegrade ORDER BY grd.id) AS pegrade_arr,",
+                "ARRAY_AGG(grd.cegrade ORDER BY grd.id) AS cegrade_arr,",
+                "ARRAY_AGG(grd.pecegrade ORDER BY grd.id) AS pecegrade_arr,",
+                "ARRAY_AGG(grd.finalgrade ORDER BY grd.id) AS finalgrade_arr",
+
+                "FROM students_grade AS grd",
+
+                "WHERE NOT grd.deleted AND NOT grd.tobedeleted",
+
+                # skip exaamperiod 'exemption' when calculating pok
+                ''.join(("AND grd.examperiod <", str(c.EXAMPERIOD_EXEMPTION), "::INT")),
+                "GROUP BY grd.studentsubject_id"
+            ))
+            sql_list = (
+                "WITH grd_arr AS (", sub_sql, ")",
+                "SELECT studsubj.id AS studsubj_id, studsubj.pok_final, studsubj.pok_pece, studsubj.pok_sesr, studsubj.pok_validthru,",
+
+                "studsubj.has_sr,",
+                "studsubj.exemption_year,",
+
+                "ey.no_centralexam,",
+                "si.gradetype,",
+                "si.weight_se, si.weight_ce,",
+                "si.is_combi,",
+                "si.no_ce_years,",
+
+                "(ey.sr_allowed AND si.sr_allowed) AS sr_allowed,",
+                "(NOT ey.no_practexam AND si.has_practexam) AS has_practex,",
+
+                "subjbase.code AS subj_code,",
+
+                "grd_arr.examperiod_arr,",
+
+                "grd_arr.segrade_arr,",
+                "grd_arr.srgrade_arr,",
+                "grd_arr.sesrgrade_arr,",
+
+                "grd_arr.pegrade_arr,",
+                "grd_arr.cegrade_arr,",
+                "grd_arr.pecegrade_arr,",
+
+                "grd_arr.finalgrade_arr",
+
+                "FROM students_studentsubject AS studsubj",
+
+                "INNER JOIN grd_arr ON (grd_arr.studentsubject_id = studsubj.id)",
+
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id) ",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id) ",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id) ",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id) ",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id) ",
+
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id) ",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id) ",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id) ",
+
+                "WHERE NOT stud.deleted AND NOT studsubj.deleted ",
+                "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted ",
+
+                "AND ey.code IN (SELECT UNNEST(ARRAY[2022, 2023, 2024]::INT[])) ",
+
+                ''.join(("AND ( (stud.result =", str(c.RESULT_FAILED), "::INT) ",
+                "OR (stud.partial_exam AND (stud.iseveningstudent OR stud.islexstudent)) ) "
+
+                ))
+            )
+            sql = ' '.join(sql_list)
+
+            #if logging_on:
+            #    for sql_txt in sql_list:
+            #        logger.debug(' > ' + str(sql_txt))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = dictfetchall(cursor)
+
+                if rows:
+                    if logging_on:
+                        logger.debug('  len: ' + str(len(rows)))
+
+                    sql_value_list = []
+
+                    for row in rows:
+                        max_grade_dict = {}
+
+            # ===== loop through examperiods / grades of this studsubj =
+                        for i, examperiod in enumerate(row['examperiod_arr']):
+
+                            if examperiod not in max_grade_dict:
+                                max_grade_dict[examperiod] = {}
+
+                            max_grade_ep_dict = max_grade_dict[examperiod]
+
+                            segrade = row['segrade_arr'][i]
+                            srgrade = row['srgrade_arr'][i]
+                            pegrade = row['pegrade_arr'][i]
+                            cegrade = row['cegrade_arr'][i]
+
+                            sesrgrade = row['sesrgrade_arr'][i]
+                            pecegrade = row['pecegrade_arr'][i]
+                            finalgrade = row['finalgrade_arr'][i]
+
+
+                # --- calc no input
+                            this_ep_has_noinput =  calc_final.calc_noinputV2(
+                                examperiod=examperiod,
+                                sr_allowed=row['sr_allowed'],
+                                has_sr=row['has_sr'],
+                                has_practex=row['has_practex'],
+                                subj_code=row['subj_code'],
+                                weight_se=row['weight_se'],
+                                weight_ce=row['weight_ce'],
+                                exemption_year=row['exemption_year'],
+                                no_ce_years=row['no_ce_years'],
+
+                                segrade=segrade,
+                                srgrade=srgrade,
+                                pegrade=pegrade,
+                                cegrade=cegrade
+                            )
+
+                # --- calc_has_pok
+                            this_ep_has_pok = calc_final.calc_has_pok_v2(
+                                noinput=this_ep_has_noinput,
+                                no_centralexam=row['no_centralexam'],
+                                gradetype=row['gradetype'],
+                                is_combi=row['is_combi'],
+                                weight_se=row['weight_se'],
+                                weight_ce=row['weight_ce'],
+                                sesrgrade=sesrgrade,
+                                pecegrade=pecegrade,
+                                finalgrade=finalgrade,
+                                examperiod=examperiod
+                            )
+
+                # --- add grades to max_grade_ep_dict used to calculate max grade and max pok
+                            max_grade_ep_dict['sesrgrade'] = sesrgrade
+                            max_grade_ep_dict['pecegrade'] = pecegrade
+                            max_grade_ep_dict['finalgrade'] = finalgrade
+                            max_grade_ep_dict['noinput'] = this_ep_has_noinput
+                            max_grade_ep_dict['has_pok'] = this_ep_has_pok
+             # ===== end of loop through examperiods / grades of this studsubj ======================================
+
+           # --- calc max pok
+                        max_pok_sesr, max_pok_pece, max_pok_final = calc_final.calc_max_pokV2(max_grade_dict)
+
+                        old_pok_sesr =  row['pok_sesr']
+                        old_pok_pece =  row['pok_pece']
+                        old_pok_final =  row['pok_final']
+
+                        if max_pok_sesr != row['pok_sesr'] or \
+                                max_pok_pece != row['pok_pece'] or \
+                                max_pok_final != row['pok_final']:
+
+                            studsubj_id_str = str(row['studsubj_id'])
+
+                            if logging_on:
+                                logger.debug('----- ' + str(row))
+                                logger.debug('  examperiod: ' + str(examperiod))
+                                logger.debug('   sesrgrade: ' + str(sesrgrade) + ' pecegrade: ' + str(pecegrade) + ' finalgrade: ' + str(finalgrade))
+                                logger.debug('   this_ep_has_noinput: ' + str(this_ep_has_noinput))
+                                logger.debug('  this_ep_has_pok: ' + str(this_ep_has_pok))
+                                logger.debug(
+                                    '  ---- new max_pok_sesr: ' + str(old_pok_sesr) + '  >  ' + str(max_pok_sesr))
+                                logger.debug(
+                                    '  ---- new max_pok_pece: ' + str(old_pok_pece) + '  >  ' + str(max_pok_pece))
+                                logger.debug(
+                                    '  ---- new max_pok_final: ' + str(old_pok_final) + '  >  ' + str(max_pok_final))
+
+                # - put values in TEMP TABLE
+                            sql_value_list.append(''.join((
+                                "(", studsubj_id_str, ", ",
+                                get_sql_value_str(max_pok_sesr), ", ",
+                                get_sql_value_str(max_pok_pece), ", ",
+                                get_sql_value_str(max_pok_final), ")"
+                            )))
+
+# - end of loop
+                    updated_studsubj_pk_list = []
+                    # pok_final, studsubj.pok_pece, studsubj.pok_sesr
+                    sql_value_str = ', '.join(sql_value_list)
+                    sql_update = ''.join((
+                        "DROP TABLE IF EXISTS tmp; CREATE TEMP TABLE tmp (",
+                       "studsubj_id, pok_sesr, pok_pece, pok_final) AS VALUES ",
+                        "(0::INT, '-'::TEXT, '-'::TEXT, '-'::TEXT), ",
+                        sql_value_str,
+                        "; UPDATE students_studentsubject AS studsubj ",
+                        "SET pok_sesr = tmp.pok_sesr, pok_pece = tmp.pok_pece, pok_final = tmp.pok_final ",
+                        #"modifiedby_id = %(modby_id)s::INT, modifiedat = '", modifiedat_str, "'",
+                        "FROM tmp ",
+                        "WHERE tmp.studsubj_id = studsubj.id ",
+                        "RETURNING studsubj.id;"
+                        ))
+
+                    with connection.cursor() as cursor:
+                        cursor.execute(sql_update)
+                        updated_rows = cursor.fetchall()
+
+                    if updated_rows:
+                        for updated_row in updated_rows:
+                            updated_studsubj_pk_list.append(updated_row[0])
+
+                    if logging_on:
+                        logger.debug('  updated_studsubj_pk_list:    ' + str(updated_studsubj_pk_list))
+
+                    # PR2024-08-08 dont add to log file
+                    #if updated_studsubj_pk_list:
+                    #    updated_fields = ('pok_sesr', 'pok_pece', 'pok_final')
+                    #    awpr_logs.savetolog_studentsubject(
+                    #        studsubj_pk_or_array=updated_studsubj_pk_list,
+                    #        log_mode='b',
+                    #        request=request,
+                    #        updated_fields=updated_fields
+                    #    )
+
+    # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('    systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# end of checkPok2024AndSaveInStudsubjONCEONLY
 
 def calcPok2022AndSaveInStudsubjONCEONLY(request):
     # functions calcultes POK of all failed students and stors it in StudentSubjects PR2023-01-21

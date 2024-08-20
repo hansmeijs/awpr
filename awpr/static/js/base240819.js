@@ -29,9 +29,12 @@
     let subject_rows = [];
     //let cluster_rows = [];
 
-    const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
+    //const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
+    let studsubj_dictlist = []; //PR2024-07-30 back to sorted dictlist
+
     const cluster_dictsNEW = {}; //PR2023-01-26 new approach, dict instead of sorted list
     const grade_dictsNEW = {}; //PR2023-05-29 only used in secretaxam.js, for now
+
 
     const manual_dict = {'test': true}
 
@@ -581,7 +584,7 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
             const el_focus = document.getElementById(id);
             set_focus_on_el_with_timeout(el_focus, ms);
         };
-    }; // set_focus_on_id_with_timeout
+    }; // set_focus-_on_id_with_timeout
 
 //========= set_focus_on_el_with_timeout  =========== PR2020-05-09 PR2022-11-03
     function set_focus_on_el_with_timeout(el_focus, ms) {
@@ -893,6 +896,31 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         if (a.sequence > b.sequence) return 1;
         return 0;
     };  // b_comparator_sequence
+
+//========= b_comparator_lastname_firstname_subjcode  =========
+    function b_comparator_lastname_firstname_subjcode(a, b) {
+        // PR2024-07-31
+        let a_lc = (a.lastname) ? a.lastname.toLowerCase().trim() : "zzzzzz";
+        let b_lc = (b.lastname) ? b.lastname.toLowerCase().trim() : "zzzzzz";
+
+        if (a_lc < b_lc) return -1;
+        if (a_lc > b_lc) return 1;
+
+        a_lc = (a.firstname) ? a.firstname.toLowerCase().trim() : "zzzzzz";
+        b_lc = (b.firstname) ? b.firstname.toLowerCase().trim() : "zzzzzz";
+
+        if (a_lc < b_lc) return -1;
+        if (a_lc > b_lc) return 1;
+
+        a_lc = (a.subj_code) ? a.subj_code.toLowerCase().trim() : "zzzzzz";
+        b_lc = (b.subj_code) ? b.subj_code.toLowerCase().trim() : "zzzzzz";
+
+        if (a_lc < b_lc) return -1;
+        if (a_lc > b_lc) return 1;
+
+        return 0;
+    };  // b_comparator_lastname_firstname_subjcode
+
 
 //#########################################################################
 // +++++++++++++++++ DATE FUNCTIONS +++++++++++++++++++++++++++++++++++++++
@@ -1375,6 +1403,7 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
     //console.log( "row_values: ", middle_value_field_1, " - ",  middle_value_field_2, " - ", middle_value_field_3);
 
                     // PR2021-06-08 note: toLowerCase is not necessary, because sensitivity: 'base' ignores lower- / uppercase and accents;
+
                     // sort function from https://stackoverflow.com/questions/51165/how-to-sort-strings-in-javascript
                     // localeCompare from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare
                     // 'acu'.localeCompare('giro') = -1
@@ -1486,6 +1515,14 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         };
         return [lookup_index, lookup_dict];
     };  // b_lookup_dict_in_dictlist
+
+//=========  b_remove_item_from_array  ================ PR2024-07-31
+    function b_remove_item_from_array_by_index(array, row_index){
+        // PR2022-11-06 https://love2dev.com/blog/javascript-remove-from-array/#remove-from-array-splice-value
+        if(array && array.length && row_index != null){
+            array.splice(row_index, 1);
+        };
+    }; // b_remove_item_from_array
 
 //=========  b_remove_item_from_array  ================ PR2021-07-07
     function b_remove_item_from_array(array, value){
@@ -1736,7 +1773,6 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         });
     };  // b_show_mod_message_html
 
-
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
     function b_show_mod_message_html_with_border(msg_list, border_class, header_text, max_size, ModMessageClose){
     // PR2024-06-30
@@ -1749,7 +1785,6 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
             b_show_mod_message_html(msg_html, header_text, max_size, ModMessageClose)
         };
     };  // b_show_mod_message_html_with_border
-
 
 //=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01 PR2022-08-28
     function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
@@ -3175,9 +3210,6 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
         MUPS_FillSelectTable();
     };  // MUPS_ExpandCollapse_all
-
-/////////////////////
-
 
 // ###########################################
 

@@ -52,8 +52,8 @@
 
 //####################################################################
 // +++++++++++++++++ MODAL IMPORT ++++++++++++++++++++
-//=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12
-    function MIMP_Open(loc, import_table) {
+//=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12 PR2024-08-08
+    function MIMP_Open(import_table, MIMP_Response) {
         console.log( "===== MIMP_Open ========= ");
         console.log( "import_table: ", import_table);
 
@@ -85,6 +85,10 @@
 
         mimp.examgradetype = (mimp_stored.examgradetype) ? mimp_stored.examgradetype : null;
         mimp_loc = loc;
+
+        // PR2024-08-08 used to open modlink window in page Student
+        mimp.has_unlinked_similarities = false;
+        mimp.has_automatically_linked_students = false;
 
         //PR2020-12-05. This one doesn't work: if(el_filedialog){el_filedialog.files = null};
 
@@ -157,8 +161,25 @@
 
 // ---  show modal
             $("#id_mod_import").modal({backdrop: true});
-        }
-    }  // MIMP_Open
+
+
+// --- PR2024-08-08 used to open modlink window in page Student
+            if (import_table === "import_student"){
+                $('#id_mod_import').on('hide.bs.modal', function (e) {
+        console.log( "hide.bs.modal: ");
+        console.log( "mimp.has_unlinked_similarities: ", mimp.has_unlinked_similarities);
+        console.log( "mimp.has_automatically_linked_students: ", mimp.has_automatically_linked_students);
+
+                   try {
+                        //if (mimp.has_unlinked_similarities || mimp.has_automatically_linked_students){
+                            MIMP_Response();
+                        //};
+                   } catch (error) {
+                   };
+                });
+            };
+        };
+    };  // MIMPOpen
 
 //=========   MIMP_FillSelectExamgradetype  =====  PR2021-12-06
     function MIMP_FillSelectExamgradetype(){
@@ -470,12 +491,9 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
             if(isEmpty(mapped_awpColdefs)){
                 alert("No linked columns")
             } else {
-                //PR2021-07-20 only idnumber is lookupfield. Was
-                //const lookup_field = (has_awpColdef_examnumber) ? "examnumber" :
-                //                     (has_awpColdef_idnumber) ? "idnumber" : null;
+                //PR2021-07-20 only idnumber is lookupfield.
                 const lookup_field = "idnumber"
-    //console.log ("lookup_field", lookup_field);
-    //console.log ("mapped_awpColdefs", mapped_awpColdefs);
+
 // ---  loop through all rows of worksheet_data
                 let dict_list = [];
                 for (let i = 0; i < rowLength; i++) {
@@ -491,13 +509,12 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                         const cell_value = row[j];
         // skip if cell is empty
                         if(cell_value) {  // cell_value is string , no need for cell_value != null
-    //console.log ("    col_index", j, "cell_value", cell_value, typeof cell_value);
-// check if column is in mapped_awpColdefs
+
+        // check if column is in mapped_awpColdefs
                             if(j in mapped_awpColdefs){
         // add cellvalue to dict with key awpColdef
                                 const awpColdef = mapped_awpColdefs[j];
-    //console.log ("    awpColdef", awpColdef);
-                                dict[awpColdef] = cell_value
+                                dict[awpColdef] = cell_value;
         // check if column is subject column
 
                             } else if(j in mapped_subjects){
@@ -514,14 +531,13 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                                         subject_dict[subjectBasePk] = subject_code;
                                     };
                                 };
-                            }  // if(j in mapped_subjects)
-                        }  // if(!row[j])
+                            };
+                        };
                     }; // for (let j = 0, excel_coldef_dict; excel_coldef_dict = mimp.excel_coldefs[j]; j++)
                     if(!isEmpty(subject_dict)) { dict.subjects = subject_dict }
                     dict_list.push(dict);
-                }  // for (let i = 0; i < rowLength; i++) {
+                };
 
-    //console.log ("    dict_list", dict_list);
                 if(!dict_list || !dict_list.length){
                     alert("No data found")
                 } else {
@@ -538,12 +554,12 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                         filename: mimp.sel_filename,
                         lookup_field: lookup_field,
                         data_list: dict_list
-                    }
+                    };
                     UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload);
-                }
-            }  // if(!awpColdef_list || !awpColdef_list.length){
-        }  // if(rowLength > 0 && colLength > 0){
-    }  // upload_studentsubjects_crosstab
+                };
+            };
+        };
+    };
 
 //=========   upload_student   ======================
     function upload_student(mode, RefreshDataRowsAfterUpload) {
@@ -2676,6 +2692,15 @@ if (show_console){
                     RefreshDataRowsAfterUpload(response);
                 };
 
+                // PR2024-08-08 used to open modlink window in page Student
+                if("import_has_unlinked_similarities" in response){
+                    mimp.has_unlinked_similarities = response.import_has_unlinked_similarities;
+                };
+                if ("has_automatically_linked_students" in response) {
+                     mimp.has_automatically_linked_students = response.has_automatically_linked_students;
+                };
+
+
 //--------- print log file
                 if("log_list" in response){
                     // log_list must come before result
@@ -3063,7 +3088,7 @@ if (show_console){
             const today_dateJS = new Date();
             //const this_month_index = 1 + today.getMonth();
             //const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
-            const datetime_formatted = format_datetime_from_datetimeJS(loc, today_dateJS, true)
+            const datetime_formatted = format_datetime_from_datetimeJS(loc, today_dateJS, "hide")
 
             let filename = "Log dd " + datetime_formatted + ".pdf";
 

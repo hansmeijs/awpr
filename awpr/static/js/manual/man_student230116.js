@@ -109,7 +109,7 @@ const man_student = {
         write_paragraph_body("",
             ["<p>Selecteer de kandidaat door te klikken op het veld links van de achternaam. ",
             "Er verschijnt een zwart pijltje en de regel wordt grijs.<br>",
-            "Klik vervolgens in de menubalk op de knop <i>Kandidaat wissen </i>. ",
+            "Klik vervolgens in de menubalk op de knop <i>Kandidaat wissen</i>. ",
             "AWP vraagt om te bevestigen dat de kandidaat gewist moet worden. Klik op <i>Ja, wis</i>.</p>",
 
             "<p>Wanneer een kandidaat nog geen vakken heeft, of wanneer de vakken van de kandidaat nog niet op een Ex1-formulier zijn ingediend, ",
@@ -147,7 +147,7 @@ const man_student = {
         write_paragraph_header("id_download_students", "Kandidaatgegevens downloaden"),
         write_paragraph_body("",
             ["<p>Klik in de menubalk op de knop <i>Kandidaatgegevens downloaden</i>. ",
-            "Er wordt nu een Excel bestand gedownload met alle kandidaten van deze afdeling.</p>"
+            "Er wordt nu een Excel bestand gedownload met de gegevens van alle kandidaten van deze afdeling.</p>"
             ]),
 
         "<div class='p-3 visibility_hide'>-</div>",
@@ -294,7 +294,7 @@ en:  [
          write_paragraph_header("id_download_students", "Download candidate data"),
          write_paragraph_body("",
              ["<p>In the menu bar, click the <i>Download candidate data</i> button. ",
-             "An Excel file is now being downloaded with all candidates from this department.</p>"
+             "An Excel file is now being downloaded with the data of all candidates from this department.</p>"
              ]),
 
         "<div class='p-3 visibility_hide'>-</div>",

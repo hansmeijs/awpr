@@ -2946,7 +2946,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let modified_text = null;
         if ("updated_enveloporderlist_modifiedat" in response){
             const modified_dateJS = parse_dateJS_from_dateISO(response.updated_enveloporderlist_modifiedat);
-            const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS, true, false, true);
+            const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS, "hide", false, true);
             modified_text = loc.The_orderlist_is_published_at + modified_date_formatted + ". " + loc.The_published_numbers_willbe_used;
         } else {
             modified_text = loc.The_orderlist_is_not_published + " " + loc.The_actual_numbers_willbe_used;

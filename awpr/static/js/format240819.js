@@ -90,10 +90,10 @@
         return display_value
     }  // function format_dateJS_vanilla
 
-//=========  format_datetime_from_datetimeJS ================ PR2021-08-18
-    function format_datetime_from_datetimeISO(loc, datetimeISO, hide_weekday, hide_year, hide_time, hide_suffix) {
+//=========  format_datetime_from_datetimeJS ================ PR2021-08-18 PR2024-07-26
+    function format_datetime_from_datetimeISO(loc, datetimeISO, show_weekday, hide_year, hide_time, hide_suffix) {
         const datetimeJS = parse_dateJS_from_dateISO(datetimeISO);
-        return format_datetime_from_datetimeJS(loc, datetimeJS, hide_weekday, hide_year, hide_time, hide_suffix);
+        return format_datetime_from_datetimeJS(loc, datetimeJS, show_weekday, hide_year, hide_time, hide_suffix);
     };
 
 //=========  format_date_from_dateISO ================ PR2022-03-09
@@ -123,8 +123,8 @@
         return date_formatted
     }  // format_date_from_dateISO
 
-//=========  format_datetime_from_datetimeJS ================ PR2020-07-22  PR2020-10-04
-    function format_datetime_from_datetimeJS(loc, datetimeJS, hide_weekday, hide_year, hide_time, hide_suffix) {
+//=========  format_datetime_from_datetimeJS ================ PR2020-07-22  PR2020-10-04 PR2024-07-26
+    function format_datetime_from_datetimeJS(loc, datetimeJS, show_weekday, hide_year, hide_time, hide_suffix) {
         //console.log( "===== format_datetime_from_datetimeJS  ========= ");
         //  when display24 = true: zo 00.00 u is displayed as 'za 24.00 u'
         //  format: wo 16.30 u or Sat, 12:00 pm
@@ -134,25 +134,30 @@
         let date_formatted = "" , time_formatted = "";
         if(datetimeJS){
             const isEN = (loc.user_lang === "en");
-            const isAmPm = (loc.timeformat === "AmPm");
+            //PR2024-07-27 loc.timeformat not in use. use isAmPm = isEN
+            // was: const isAmPm = (loc.timeformat === "AmPm");
+            const isAmPm = isEN;
             const year_int = datetimeJS.getFullYear();
             const year_str = (!hide_year) ? " " + year_int.toString() : "";
             const date = datetimeJS.getDate();
 
             const weekday_index = (datetimeJS.getDay()) ? datetimeJS.getDay() : 7 // JS sunday = 0, iso sunday = 7
-            const weekday_str = (!hide_weekday) ? loc.weekdays_abbrev[weekday_index] + ( (isEN) ? ", " : " " ) : ""
+            const weekday_delim = (isEN) ? ", " : " ";
+            const weekday_str = (show_weekday === "long") ? loc.weekdays_long[weekday_index] + weekday_delim :
+                                (show_weekday === "hide") ? "" :
+                                    loc.weekdays_abbrev[weekday_index] + weekday_delim;
 
             const month_str = " " + loc.months_abbrev[ (1 + datetimeJS.getMonth()) ];
 
             // midnight, begin of day = 00:00 am
             // noon = 12:00 am
-            // midnight, end of day = 12:00 pmm
+            // midnight, end of day = 12:00 pm
             let is_pm = false;
             let hours = datetimeJS.getHours();
             if(isAmPm && hours > 12) {
                 hours -= 12
                 is_pm = true;
-            }
+            };
             const hour_str = " " + ("0" + hours).slice(-2);
             const minute_str = ("0" + datetimeJS.getMinutes()).slice(-2);
             const ampm_str = (isAmPm) ?  ( (is_pm) ? " pm" : " am" ) : "";
@@ -162,18 +167,18 @@
                     time_formatted = weekday_str + month_str + " " + date + ", " + year_str;
                 } else {
                     time_formatted = weekday_str + date + " " + month_str + " " + year_str;
-                }
+                };
             } else {
                 if (isEN) {
                     time_formatted = weekday_str + month_str + " " + date + ", " + year_str + ", " + hour_str + ":" + minute_str;
                     if(ampm_str) { time_formatted += ampm_str};
                 } else {
                     time_formatted = weekday_str + date + " " + month_str + " " + year_str + ", " + hour_str + "." + minute_str + suffix;
-                }
-            }
-        }
-        return time_formatted
-    }  // format_datetime_from_datetimeJS
+                };
+            };
+        };
+        return time_formatted;
+    };  // format_datetime_from_datetimeJS
 
 //========= f_format_last_modified ======== PR2021-08-21 PR223-03-30
     function f_format_last_modified_txt(prefix_txt, modifiedat, modified_by) {

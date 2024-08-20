@@ -593,7 +593,7 @@ def calcreex_create_totals_in_stud_dict(student_dict):
     for field in ('avg_ce', 'avg_final', 'avg_combi'):
         student_dict[field] = None
 
-    for field in ('no_input', 'thumbrule_combi', 'spr_insuff'):
+    for field in ('no_input', 'thumbrule_combi'):
         student_dict[field] = False
 
     if logging_on:
@@ -1141,7 +1141,7 @@ def calcreex_student_passedfailed_v2(student_dict, rule_avg_pece_sufficient, rul
      77574: {'subjbase_code': 'entl', 'ep': {2: {'sesr': '7.8', 'pece': '7.8', 'final': '7.8'}, 1: {'sesr': '7.8', 'pece': '7.8', 'final': '7.8'}}, 'subject_id': 378, 'subjbase_id': 167, 'subj_sequence': 9999, 'subj_name_nl': 'Engelse taal en literatuur', 'subjtype_abbrev': 'Gemeensch.', 'sjtpbase_code': 'gmd', 'gradetype': 1, 'weight_se': 1, 'weight_ce': 1, 'multiplier': 1, 'is_combi': False, 'is_core_subject': True, 'is_mvt': False, 'is_wisk': False, 'sr_allowed': False, 'no_ce_years': '2020', 'thumb_rule': False, 'rule_grade_sufficient': False, 'rule_gradesuff_notatevlex': False, 'rule_avg_pece_sufficient': True, 'rule_avg_pece_notatevlex': False, 'rule_core_sufficient': True, 'rule_core_notatevlex': False, 'schemeitem_id': 3816, 'is_extra_nocount': False, 'is_extra_counts': False, 'exemption_year': None, 'is_thumbrule': False, 'has_sr': False, 'gl_examperiod': 2, 'gl_sesrgrade': '7.8', 'gl_pecegrade': None, 'gl_finalgrade': None, 'gl_use_exem': False, 'gl_no_input': True, 'passed_pecegrade': '1.1', 'passed_finalgrade': '4', 'passed_ranking': Decimal('0.35')}, 
      77573: {'subjbase_code': 'netl', 'ep': {1: {'sesr': '6.2', 'pece': '6.2', 'final': '6.2'}}, 'subject_id': 379, 'subjbase_id': 165, 'subj_sequence': 9999, 'subj_name_nl': 'Nederlandse taal en literatuur', 'subjtype_abbrev': 'Gemeensch.', 'sjtpbase_code': 'gmd', 'gradetype': 1, 'weight_se': 1, 'weight_ce': 1, 'multiplier': 1, 'is_combi': False, 'is_core_subject': True, 'is_mvt': False, 'is_wisk': False, 'sr_allowed': False, 'no_ce_years': '2020', 'thumb_rule': False, 'rule_grade_sufficient': False, 'rule_gradesuff_notatevlex': False, 'rule_avg_pece_sufficient': True, 'rule_avg_pece_notatevlex': False, 'rule_core_sufficient': True, 'rule_core_notatevlex': False, 'schemeitem_id': 3815, 'is_extra_nocount': False, 'is_extra_counts': False, 'exemption_year': None, 'is_thumbrule': False, 'has_sr': False, 'gl_examperiod': 1, 'gl_sesrgrade': '6.2', 'gl_pecegrade': '5.5', 'gl_finalgrade': '6', 'gl_use_exem': False, 'gl_no_input': False, 'passed_pecegrade': '5.6', 'passed_finalgrade': '6', 'passed_ranking': Decimal('1.475')}, 
      'c_subj': 13, 'c_exemption': 0, 'c_sr': 0, 'c_reex': 0, 'c_reex03': 0, 'c_extra_nocount': 0, 'c_extra_counts': 0, 'c_thumbrule': 0, 
-     'c3': 0, 'c4': 0, 'c5': 1, 'c6': 3, 'c7': 3, 'spr_insuff': False, 'core4': 0, 'core5': 0, 'c_ce': 8, 'c_final': 8, 'c_combi': 3, 
+     'c3': 0, 'c4': 0, 'c5': 1, 'c6': 3, 'c7': 3, 'spr_insuff': 0, 'core4': 0, 'core5': 0, 'c_ce': 8, 'c_final': 8, 'c_combi': 3, 
      'r_index': 0, 't_ce': Decimal('39.9'), 't_final': Decimal('44'), 't_combi': Decimal('22'), 
      'avg_ce_detail': ['pa:6,4(vr)', 'wa:7,4', 'na:4,7', 'sk:5,8', 'bi:4,3', 'ec:5,8', 'entl:0(h)', 'netl:5,5'], 
      'avg_final_detail': ['pa:7(vr)', 'wa:7', 'na:6', 'sk:6', 'bi:5', 'ec:7', 'entl:0(h)', 'netl:6'], 
@@ -1966,12 +1966,12 @@ def calcreex_studsubj_result_to_log(studsubj_dict, write_log, log_list):
 
         is_extra_nocount = studsubj_dict.get('is_extra_nocount', False)
         if is_extra_nocount:
-            log_list.append(''.join((c.STRING_SPACE_05, str(_('Extra subject, does not count for the result.')))))
+            log_list.append(''.join((c.STRING_SPACE_05, gettext('Extra subject, does not count for the result'), '.')))
 
         if thumb_rule_allowed:
             is_thumbrule = studsubj_dict.get('is_thumbrule', False)
             if is_thumbrule:
-                log_list.append(''.join((c.STRING_SPACE_05, str(_('Thumb rule applies, subject does not count for the result.')))))
+                log_list.append(''.join((c.STRING_SPACE_05, gettext('Thumb rule applies, subject does not count for the result'), '.')))
 
         multiplier = studsubj_dict.get('multiplier', 1)
         weight_se = studsubj_dict.get('weight_se', 0)

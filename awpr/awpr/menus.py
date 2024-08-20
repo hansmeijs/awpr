@@ -107,7 +107,7 @@ def get_headerbar_param(request, sel_page, param=None):
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('===== get_headerbar_param ===== ')

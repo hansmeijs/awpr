@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page: "page_user"},
                 schoolsetting: {setting_key: "import_username"},
-                locale: {page: ["page_user", "upload"]},
+                locale: {page: ["page_user", "upload", "mlinkstud"]},
                 examyear_rows: {get: true},
                 user_rows: {get: true},
                 //corrector_rows: {get: true},
@@ -425,7 +425,7 @@ console.log("user_dicts",user_dicts)
         if (permit_dict.permit_crud_sameschool) {
             AddSubmenuButton(el_submenu, loc.Add_users_from_prev_year, function() {ModConfirmOpen_AddFromPreviousExamyears()}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
-            AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open("import_username", MIMP_Response)}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"], "id_submenu_import");
 
         };
         AddSubmenuButton(el_submenu, loc.Download_user_data, function() {ModConfirmOpen_DownloadUserdata("download_userdata_xlsx")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
@@ -435,7 +435,7 @@ console.log("user_dicts",user_dicts)
             AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_userpermit"]);
             AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("userpermit","delete")}, ["tab_show", "tab_btn_userpermit"]);
             AddSubmenuButton(el_submenu, loc.Download_permissions, null, ["tab_show", "tab_btn_userpermit"], "id_submenu_download_perm", urls.url_download_permits, false);  // true = download
-            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open(loc, "import_permit")}, ["tab_show", "tab_btn_userpermit"], "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open("import_permit", MIMP_Response)}, ["tab_show", "tab_btn_userpermit"], "id_submenu_import");
         };
         el_submenu.classList.remove(cls_hide);
     };  //function CreateSubmenu
@@ -3578,7 +3578,6 @@ console.log( "upload_dict", upload_dict);
     };  // HandleInputChange
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-
 //=========  ModConfirmOpen_AddFromPreviousExamyears  ================ PR2023-04-1
     function ModConfirmOpen_AddFromPreviousExamyears() {
         //console.log(" -----  ModConfirmOpen_AddFromPreviousExamyears   ----")
@@ -4014,6 +4013,14 @@ console.log( "upload_dict", upload_dict);
             $("#id_mod_confirm").modal("hide");
         };
     };  // ModConfirmResponse
+
+
+// +++++++++++++++++ RESPONSE FROM MODAL IMPORT ++++++++++++++++++++++++++++++++++++++++++
+//=========  MIMP_Response  ================ PR2024-08-08
+    function MIMP_Response() {
+        console.log("===== MIMP_Response =====");
+        console.log("    mimp", mimp);
+    };  // MIMP_Response
 
 //###########################################################################
 

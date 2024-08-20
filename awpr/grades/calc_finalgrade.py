@@ -245,7 +245,7 @@ def calc_sesr_char(se_grade, sr_grade, has_sr, weight_se):  # PR2021-12-15
                         sesr_grade = 'g'
                     elif se_grade.lower() == 'v':
                         if sr_grade == 'g':
-                            #gemiddeld eindcijfer v + g > g
+                            # gemiddeld eindcijfer v + g > g
                             sesr_grade = 'g'
                         elif sr_grade.lower() == 'o':
                             #' gebruik SE cijfer als herkansing lager is dan SE
@@ -862,7 +862,7 @@ def compare_two_grades_v2(this_sesrgrade, this_pecegrade, this_finalgrade,
 
 
 def calc_has_pok_v2(noinput, no_centralexam, gradetype, is_combi, weight_se, weight_ce, sesrgrade, pecegrade, finalgrade, examperiod=None):
-    # PR2022-07-01 PR2024-05-03 PR2024-05-27
+    # PR2022-07-01 PR2024-05-03 PR2024-05-27 PR2024-08-07
     # function calculates proof of knowledge
     # examperiod is only used to skip exemption. examperiod can be None
 
@@ -910,9 +910,9 @@ def calc_has_pok_v2(noinput, no_centralexam, gradetype, is_combi, weight_se, wei
             logger.debug('  >  final_grade is empty ')
 
     # PR2024-05-07 function is only called when examperiod is ep1, ep2 ep3, not when exemption
-    elif examperiod == c.EXAMPERIOD_EXEMPTION:
+    elif examperiod not in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
         if logging_on:
-            logger.debug('  >  examperiod not in ep 1 2 3 ')
+            logger.debug('  >  examperiod not in ep 1 2 3: ' + str(examperiod))
     else:
 # 2b. bereken BvK als het cijfer niet is gebaseerd is op vrijstelling
         final_grade_ok, sesr_grade_ok, pece_grade_ok = False, False, False
@@ -1537,7 +1537,7 @@ def batch_update_finalgrade_v2(req_user, grade_pk_list=None, student_pk_list=Non
             if updated_cegrade_list:
                 awpr_logs.copytolog_grade_v2(
                     grade_pk_list=grade_pk_list,
-                    req_mode='b',
+                    log_mode='b',
                     modifiedby_id=req_user.pk
                 )
 

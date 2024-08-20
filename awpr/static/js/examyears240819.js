@@ -479,8 +479,8 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("datetimeUTCiso", datetimeUTCiso);
                         const datetimeLocalJS = (datetimeUTCiso) ? new Date(datetimeUTCiso) : null;
         //console.log("datetimeLocalJS", datetimeLocalJS);
-                        //format_datetime_from_datetimeJS(loc, datetimeJS, hide_weekday, hide_year, hide_time, hide_suffix)
-                        display_text = format_datetime_from_datetimeJS(loc, datetimeLocalJS, false, false, true)
+                        //format_datetime_from_datetimeJS(loc, datetimeJS, show_weekday, hide_year, hide_time, hide_suffix)
+                        display_text = format_datetime_from_datetimeJS(loc, datetimeLocalJS, "short", false, true)
         //console.log("display_text", display_text);
                     }
                     el_div.innerText = (display_text) ? display_text : "\n";

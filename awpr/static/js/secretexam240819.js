@@ -222,7 +222,8 @@ document.addEventListener("DOMContentLoaded", function() {
         const add_all = true;
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if (el_SBR_select_subject){
-            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, add_all, false, setting_dict, permit_dict, MSSSS_subject_response)}, false);
+            // PR204-08-05 was:el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, add_all, false, setting_dict, permit_dict, MSSSS_subject_response)}, false);
+            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open_NEW("sbr", "subject", subject_rows, MSSSS_subject_response, true)}, false)
         };
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if (el_SBR_select_student){
@@ -502,6 +503,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
+
                     selected_btn = setting_dict.sel_btn;
                     isloaded_settings = true;
 
@@ -516,12 +518,23 @@ document.addEventListener("DOMContentLoaded", function() {
                     };
 
         // add level to cols_skipped when dep has no level, thumbrule_allowed PR2023-01-24
-                    mod_MCOL_dict.cols_skipped = {};
-                    const cols_skipped_all = [];
+                    mod_MCOL_dict.cols_skipped = {all: []};
+                    const cols_skipped_all = mod_MCOL_dict.cols_skipped.all;
                     if (!setting_dict.sel_dep_level_req) {cols_skipped_all.push("lvl_abbrev") };
-                    if (!setting_dict.sel_examyear_thumbrule_allowed) {cols_skipped_all.push("is_thumbrule")};
-                    if (cols_skipped_all.length){mod_MCOL_dict.cols_skipped.all = cols_skipped_all};
 
+                    mod_MCOL_dict.sel_dep_has_profiel = setting_dict.sel_dep_has_profiel;
+
+                    if (!setting_dict.sel_examyear_thumbrule_allowed){
+                        cols_skipped_all.push("is_thumbrule");
+                    };
+
+        // copy setting_dict sel_ values to local selected dict
+                    b_clear_dict(selected);
+
+                    selected.subjbase_pk = (setting_dict.sel_subjbase_pk) ? setting_dict.sel_subjbase_pk : null;
+                    selected.subject_name = (setting_dict.sel_subject_name) ? setting_dict.sel_subject_name : null;
+
+                    selected.cluster_pk = (setting_dict.sel_cluster_pk) ? setting_dict.sel_cluster_pk : null;
                 };
 
                 if ("permit_dict" in response) {
@@ -719,26 +732,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  HandleTblRowClicked  ================ PR2020-08-03
     function HandleTblRowClicked(tr_clicked) {
-        //console.log("=== HandleTblRowClicked");
+        console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        //DeselectHighlightedRows(tr_clicked, cls_selected);
-        //tr_clicked.classList.add(cls_selected)
-
 // ---  deselect all highlighted rows, select clicked row
-       // t_tbody_selected_clear(tr_clicked.parentNode);
-       // t_tr_selected_set(tr_clicked);
         t_td_selected_toggle(tr_clicked, true);  // select_single = true
 
-// ---  update setting_dict.sel_student_pk
-        // only select employee from select table
-        const row_id = tr_clicked.id
-        if(row_id){
-            const map_dict = get_mapdict_from_datamap_by_id(student_map, row_id)
-            //setting_dict.sel_student_pk = map_dict.id;
-        }
-    }  // HandleTblRowClicked
+// get data_dict from grade_dictsNEW
+        //const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
+        //const data_dict = b_get_datadict_by_integer_from_datarows(grade_rows, "id", grade_pk);
+        const data_dict = grade_dictsNEW[tr_clicked.id];
+        console.log( "data_dict: ", data_dict);
+
+// ---  update selected studsubj_dict / student_pk / subject pk
+        selected.subjbase_pk = (data_dict && data_dict.subjbase_id) ? data_dict.subjbase_id : null;
+        selected.subject_name = (data_dict && data_dict.name_nl) ? data_dict.name_nl : null;
+
+    };  // HandleTblRowClicked
 
 //=========  HandleSbrPeriod  ================ PR2020-12-20
     function HandleSbrPeriod(el_select) {
@@ -923,7 +933,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= FillTblRows  ====================================
     function FillTblRows() {
         console.log( "===== FillTblRows  === ");
-        //console.log( "field_settings", field_settings);
+        console.log( "field_settings", field_settings);
         console.log( "grade_dictsNEW", grade_dictsNEW);
 
         const tblName = "grades";
@@ -950,6 +960,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 (!setting_dict.sel_student_pk || data_dict.student_id === setting_dict.sel_student_pk) &&
                                 (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk);
 
+        console.log( "show_row", show_row);
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);
                 };
@@ -1155,7 +1166,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- add data-field Attribute when input element
                 if (field_tag === "input") {
 
-// --- make el readonly when not edit permission
+    // --- make el readonly when not edit permission
                     const may_edit = permit_dict.permit_crud;
 
                     let is_enabled = false;
@@ -2470,19 +2481,18 @@ document.addEventListener("DOMContentLoaded", function() {
 ///////////////////////////////////////
 
 // +++++++++++++++++ MODAL CLUSTERS ++++++++++++++++++++++++++++++++++++++++++
-//=========  MCL_Open  ================ PR2022-01-06
+//=========  MCL_Open  ================ PR2022-01-06 PR2024-08-04
     function MCL_Open(el_div) {
         console.log("===== MCL_Open =====");
-        console.log("selected", selected);
-        console.log("el_div", el_div);
+        console.log("    selected", selected);
+        console.log("    el_div", el_div);
 
         b_clear_dict(mod_MCL_dict);
 
         if (permit_dict.permit_crud) {
 
-// -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
-            selected.subject_pk = setting_dict.sel_subject_pk; // used in mod MCL
-            t_MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
+// -- lookup selected.subjbase_pk in subject_rows and get sel_subject_dict
+            MCL_SaveSubject_in_MCL_dict(selected.subjbase_pk); //PR2024-03-31 use selected.subjbase_pk instead of selected.subject_pk
 
             MCL_FillClusterList();
             MCL_FillTableClusters();
@@ -2569,7 +2579,7 @@ document.addEventListener("DOMContentLoaded", function() {
     };  // MCL_Save
 
 //=========  MCL_Response  ================ PR2021-01-23 PR2021-07-26 PR2023-03-26
-    function MCL_Response(tblName, selected_dict, selected_pk) {
+    function MCL_Response(modalName, tblName, selected_dict, selected_pk) {
         console.log( "===== MCL_Response ========= ");
         console.log( "    tblName", tblName);
         console.log( "    selected_pk", selected_pk);
@@ -2605,8 +2615,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const modal_MCL_is_open = (!!el_modal && el_modal.classList.contains("show"));
         console.log( "    modal_MCL_is_open", modal_MCL_is_open);
             if(modal_MCL_is_open){
-                t_MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
-                t_MCL_SaveSubject_in_MCL_dict(setting_dict.sel_subject_pk);
+                MCL_SaveSubject_in_MCL_dict(selected.subjbase_pk); //PR2024-08-0431 use selected.subjbase_pk instead of selected.subject_pk
 
                 MCL_FillClusterList();
                 MCL_FillTableClusters();
@@ -2806,7 +2815,9 @@ document.addEventListener("DOMContentLoaded", function() {
         // reset mode_edit_clustername
         mod_MCL_dict.mode_edit_clustername = null;
         MCL_ShowClusterName();
-        t_MSSSS_Open(loc, "subject", subject_rows, false, false, setting_dict, permit_dict, MCL_Response);
+        // PR2024-08-04 was:
+        //    t_MSSSS_Open(loc, "subject", subject_rows, false, false, setting_dict, permit_dict, MCL_Response);
+        t_MSSSS_Open_NEW("mcl", "subject", subject_rows, MCL_Response);
     };  // MCL_BtnSelectSubjectClick
 
   //=========  MCL_InputClusterName  ================ PR2022-01-06  PR2022-12-24
@@ -2825,16 +2836,19 @@ document.addEventListener("DOMContentLoaded", function() {
 
     };  // MCL_ShowClusterName
 
-//=========  t_MCL_SaveSubject_in_MCL_dict  ================ PR2022-01-07
-    function t_MCL_SaveSubject_in_MCL_dict(sel_subject_pk) {
-        //console.log("===== t_MCL_SaveSubject_in_MCL_dict =====");
-        //console.log("sel_subject_pk", sel_subject_pk);
+//=========  MCL_SaveSubject_in_MCL_dict  ================ PR2022-01-07 PR2024-08-04
+    function MCL_SaveSubject_in_MCL_dict(sel_subjbase_pk) {
+        console.log("===== MCL_SaveSubject_in_MCL_dict =====");
+        console.log("    sel_subjbase_pk", sel_subjbase_pk);
+        console.log("subject_rows", subject_rows);
+        //PR2024-08-04 use selected.subjbase_pk instead of selected.subject_pk
 
         //note: cluster_upload uses subject_pk, not subjbase_pk
 
 // - reset mod_MCL_dict
         b_clear_dict(mod_MCL_dict);
 
+        mod_MCL_dict.subjbase_pk = null;
         mod_MCL_dict.subject_pk = null;
         mod_MCL_dict.subject_name = null;
         mod_MCL_dict.subject_code = null;
@@ -2849,25 +2863,25 @@ document.addEventListener("DOMContentLoaded", function() {
 // - reset input_cluster_name.
         el_MCL_input_cluster_name.value = null;
 
-// -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
-        const [index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", sel_subject_pk);
-        if (!isEmpty(found_dict)){
-            mod_MCL_dict.subject_pk = found_dict.id;
-            mod_MCL_dict.subject_dict = found_dict;
-            mod_MCL_dict.subject_name = (found_dict.name_nl) ? found_dict.name_nl : null;
-            mod_MCL_dict.subject_code = (found_dict.code) ? found_dict.code : null;
+// -- lookup sel_subjbase_pk in subject_rows and get sel_subject_dict
+        for (let i = 0, data_dict; data_dict = subject_rows[i]; i++) {
+            if (data_dict.base_id === sel_subjbase_pk){
+                mod_MCL_dict.subjbase_pk = data_dict.base_id;
+                mod_MCL_dict.subject_pk = data_dict.id;
+                mod_MCL_dict.subject_dict = data_dict;
+                mod_MCL_dict.subject_name = (data_dict.name_nl) ? data_dict.name_nl : null;
+                mod_MCL_dict.subject_code = (data_dict.code) ? data_dict.code : null;
+                break;
+            };
         };
 
-        selected.subject_pk = mod_MCL_dict.subject_pk;
-        if(!selected.subject_pk){selected.student_pk = null};
-
+        console.log("  mod_MCL_dict", mod_MCL_dict);
 
 // update text in select subject div
-        el_MCL_select_subject.innerText = (mod_MCL_dict.subject_pk) ?
+        el_MCL_select_subject.innerText = (mod_MCL_dict.subjbase_pk) ?
                                             mod_MCL_dict.subject_name : loc.Click_here_to_select_subject;
 
-        //console.log("mod_MCL_dict", mod_MCL_dict);
-    };  // t_MCL_SaveSubject_in_MCL_dict
+    };  // MCL_SaveSubject_in_MCL_dict
 
 //=========  MCL_FillTableClusters  ================ PR2022-01-07
     function MCL_FillTableClusters() {
@@ -3318,10 +3332,8 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  get selected.data_dict
             const tblRow = t_get_tablerow_selected(el_input)
             const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
-            const data_dict = b_get_datadict_by_integer_from_datarows(grade_rows, "id", grade_pk);
-
-        console.log("    grade_pk", grade_pk);
-        console.log("    data_dict", data_dict);
+            // PR2024-08-04 was: const data_dict = b_get_datadict_by_integer_from_datarows(grade_rows, "id", grade_pk);
+            const data_dict = grade_dictsNEW[tblRow.id];
 
         console.log("data_dict", data_dict);
 
@@ -5918,19 +5930,20 @@ console.log( "......filter_value", filter_value);
 
     };  // MSSSS_school_response
 
-//=========  MSSSS_subject_response  ================ PR2023-03-30
-    function MSSSS_subject_response(tblName, selected_dict, sel_subject_pk) {
+//=========  MSSSS_subject_response  ================ PR2023-03-30 PR2024-08-05
+    function MSSSS_subject_response(tblName, selected_dict, sel_subjbase_pk) {
         console.log( "===== MSSSS_subject_response ========= ");
         console.log( "   tblName", tblName);
-        console.log( "    sel_subject_pk", sel_subject_pk, typeof sel_subject_pk);
+        console.log( "    sel_subjbase_pk", sel_subjbase_pk, typeof sel_subject_pk);
         console.log( "    selected_dict", selected_dict);
         // arguments of MSSSS_response are set in t_MSSSS_Save_NEW
         // when changing subject, only update settings, dont use DatalistDownload but filter on page
 
+        // PR2024-08-05 sel_subject is deprecated, use subjbase instead
         // 'all subjects' has value -1
-        if(sel_subject_pk === -1) { sel_subject_pk = null};
+        if(sel_subjbase_pk === -1) { sel_subjbase_pk = null};
 
-        setting_dict.sel_subject_pk = sel_subject_pk;
+        setting_dict.sel_subjbase_pk = sel_subjbase_pk;
         setting_dict.sel_subject_name = (selected_dict && selected_dict.name_nl) ? selected_dict.name_nl : null;
 
         setting_dict.sel_cluster_pk = null;
@@ -5944,7 +5957,7 @@ console.log( "......filter_value", filter_value);
 // ---  upload new setting and refresh page
         const request_item_setting = {
             page: "page_secretexam",
-            sel_subject_pk: sel_subject_pk,
+            sel_subjbase_pk: sel_subjbase_pk,
             sel_cluster_pk: null,
             sel_student_pk: null
         };

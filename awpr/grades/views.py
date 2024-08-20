@@ -3797,7 +3797,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
                 awpr_log.copytolog_grade_v2(
                     grade_pk_list=[grade_instance.pk],
-                    req_mode=savetolog_mode,
+                    log_mode=savetolog_mode,
                     modifiedby_id=request.user.pk
                 )
 
@@ -4247,8 +4247,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 
     # PR2023-05-22 when secret_exams_only = True: show grdaes of all schools, but secret_exams_only
 
-
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('    sel_examyear:    ' + str(sel_examyear))

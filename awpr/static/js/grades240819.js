@@ -524,7 +524,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const datalist_request = {
             setting: request_item_setting,
             schoolsetting: {setting_key: "import_grade"},
-            locale: {page: ["page_grade", "upload"]},
+            locale: {page: ["page_grade", "upload", "mlinkstud"]},
             examyear_rows: {get: true},
             school_rows: {get: true},
 
@@ -710,9 +710,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 AddSubmenuButton(el_submenu, loc.Ex3_form, function() {ModConfirmOpen("ex3")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex", "tab_btn_reex03"]);
             };
             if(permit_dict.permit_crud){
-                AddSubmenuButton(el_submenu, loc.Upload_grades, function() {MIMP_Open(loc, "import_grade")}, ["tab_show", "tab_btn_ep_01"]);
-                AddSubmenuButton(el_submenu, loc.Lookup_exemptions, function() {MLINKSTUD_Open()}, ["tab_show", "tab_btn_exem"]);
-                AddSubmenuButton(el_submenu, loc.Upload_exemptions, function() {MIMP_Open(loc, "import_grade")}, ["tab_show", "tab_btn_exem"]);
+                AddSubmenuButton(el_submenu, loc.Upload_grades, function() {MIMP_Open("import_grade", MIMP_Response)}, ["tab_show", "tab_btn_ep_01"]);
+                //AddSubmenuButton(el_submenu, loc.Lookup_exemptions, function() {MLINKSTUD_Open()}, ["tab_show", "tab_btn_exem"]);
+                //AddSubmenuButton(el_submenu, loc.Upload_exemptions, function() {MIMP_Open("import_grade", MIMP_Response)}, ["tab_show", "tab_btn_exem"]);
             };
 
             // true = save_in_all: when true: hidden columns are saved in 'all', otherwise they are saved separately for each selected_btn PR2021-12-02
@@ -2714,6 +2714,16 @@ const is_allowed_cluster = true;
         //console.log("mod_dict.el_focus: ", mod_dict.el_focus);
         if (mod_dict.el_focus) { set_focus_on_el_with_timeout(mod_dict.el_focus, 150)};
     };  // ModMessageClose
+
+
+// +++++++++++++++++ RESPONSE FROM MODAL IMPORT ++++++++++++++++++++++++++++++++++++++++++
+//=========  MIMP_Response  ================ PR2024-08-08
+    function MIMP_Response() {
+        console.log("===== MIMP_Response =====");
+        console.log("    mimp", mimp);
+    };  // MIMP_Response
+
+
 
 //========= MOD APPROVE GRADE ==================================== PR2022-03-09
     function MAG_Open (open_mode ) {

@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import230815.js' %}"></script>
-    <script src="{% static 'js/students240628.js' %}"></script>
+    <script src="{% static 'js/import240819.js' %}"></script>
+    <script src="{% static 'js/students240819.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -63,6 +63,8 @@
             {% include 'includes/modconfirm.html' %}
             {% include 'students/modstudentsubject.html' %}
             {% include 'includes/modimport.html' %}
+            {% include 'students/modlinkstudentsNEW.html' %}
+            {% include 'includes/modhistory.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="content_margin_top78">
@@ -93,7 +95,7 @@
 
     <!-- END OF CONTENT BODY -->
             <div id="id_data"
-                 data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
+                data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_student_upload="{% url 'url_student_upload' %}"
@@ -102,6 +104,9 @@
 
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
+                data-url_student_multiple_occurrences="{% url 'url_student_multiple_occurrences' %}"
+                data-url_student_linkstudent="{% url 'url_student_linkstudent' %}"
+                data-url_student_history="{% url 'url_student_history' %}"
             >
             </div>
         {% endif %}

@@ -16,10 +16,15 @@ const man_studsubj = {
                 "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>hier</a> om naar de handleiding hiervan te gaan;</li>",
                 "<li>De controle op de samenstelling van de vakken bekijken;</li>",
                 "<li>Vakken aan een kandidaat toewijzen;</li>",
-                "<li>Vakken van kandidaten goedkeuren en het Ex1 formulier indienen. ",
-                "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>hier</a> voor de handleiding ervan;</li>",
-                "<li>Het voorlopige Ex1-formulier downloaden.</li></ul>",
-                "<p class='pb-0'>De optie om vakken van vakkenpakketten toe te toewijzen is nog niet beschikbaar.</p>",
+                "<li>Vakken van kandidaten goedkeuren. ",
+                    "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>hier</a> voor de handleiding ervan;</li>",
+
+                "<li>Aangeven of de kandidaat een vrijstelling voor dit vak heeft;</li>",
+                "<li>Aangeven of de kandidaat een herexamen in het tweede of derde tijdvak dit heeft;</li>",
+
+                "<li>Het voorlopige Ex1-formulier en Ex4-formulier downloaden.</li>",
+                "<li>Het Ex1-formulier en Ex4-formulier indienen.</li></ul>",
+                //"<p class='pb-0'>De optie om vakken van vakkenpakketten toe te toewijzen is nog niet beschikbaar.</p>",
             ]),
 
         write_paragraph_header("id_filter_subjects", "Vakken filteren"),
@@ -40,8 +45,8 @@ const man_studsubj = {
         write_paragraph_header("id_validate_subjects", "Controle op de samenstelling van de vakken"),
         write_paragraph_body("img_exclamationsign",
             [
-                "<p>Nieuw in AWP is de controle op de samenstelling van de vakken. ",
-                "AWP gaat na of de samenstelling van de vakken van de kandidaten voldoet aan de wettelijke voorschriften. ",
+                //"<p>Nieuw in AWP is de controle op de samenstelling van de vakken. ",
+                "<p>AWP gaat na of de samenstelling van de vakken van de kandidaten voldoet aan de wettelijke voorschriften. ",
                 "Wanneer de samenstelling van de vakken niet correct is verschijnt er een gele driehoek met een uitroepteken voor de naam van de kandidaat. ",
                 "Klik op de naam van de kandidaat om het venster te openen waarmee je de vakken van de kandidaat kunt wijzigen. ",
                 "Bovenaan verschijnt een kader waarin staat welke fouten er zijn gevonden.</p>",
@@ -64,7 +69,7 @@ const man_studsubj = {
                 "In de linker lijst staan de beschikbare vakken, de rechter lijst bevat de vakken van de kandidaat. ",
                 "Alleen de afkorting en het karakter van het vak worden in de lijst weergegeven. ",
                 "Als je met de muis boven de afkorting gaat staan, verschijnt er een venster met de volledige naam. ",
-                "Een ^ teken achter het vak betekent dat het een verplicht vak is, een * betekent dat het een combinatievak is.</p>",
+                "Een ^ teken achter het vak betekent dat het een verplicht vak is, een * betekent dat het een combinatievak is, een + betekent dat het een extra vak is.</p>",
 
                 "<p><b>Vakken toevoegen</b><br> ",
                 "Klik op een vak in de lijst met beschikbare vakken. ",
@@ -87,23 +92,33 @@ const man_studsubj = {
                 "De voorzitter en secretaris moeten de gewiste vakken eerst goedkeuren ",
                 "en door middel van een aanvullend Ex1-formulier bij de Inspectie en het ETE indienen.<br>",
                 "De vakken worden gewist als het aanvullende Ex1-formulier is ingediend.</p>",
-
-                "<p><b>Kenmerken van het vak wijzigen</b><br> ",
-                "Klik op een kandidaat in de rechter lijst. In het kader <i>Kenmerken van het vak</i> staan alle kenmerken van dat vak. ",
-                "De algemene kenmerken kun je niet veranderen. Dat zijn bijvboorbeeld: 'Combinatievak', 'Verplicht vak'.<br>",
-                "Individuele kenmerken kun je wel per kandidaat instellen. ", "Het zijn: 'Extra vak, telt niet mee voor de uitslag' en 'Extra vak, telt mee voor de uitslag'.</p>",
             ]),
         write_image("img_studsubj_mod_studsubj_ne"),
 
         write_paragraph_header("id_pws_title_subjects", "Titel en vakken van het werkstuk"),
         write_paragraph_body("",
             [
-                "<p>De 'Titel van het werkstuk' en 'Vakken waarop het werkstuk betrekking heeft' zijn voortaan opgenomen als individueel kenmerk van het vak 'Werkstuk'. ",
-                "Klik op het vak 'Werkstuk' en vul de titel en vakken van het werkstuk in bij <i>Kenmerken van het vak</i> </p>",
+                "<p>De 'Titel van het werkstuk' en 'Vakken waarop het werkstuk betrekking heeft' zijn opgenomen als individueel kenmerk van het vak 'Werkstuk'.</p>",
+
+                "<p class='pb-0'><b>Invoeren titel en vakken van het werkstuk</b><br> ",
+                "Het invoeren van de titel en vakken van het werkstuk gaat als volgt:</p>",
+                "<ul class='manual_bullet mb-2'><li>Ga naar de regel met het vak 'Werkstuk' van de betreffende kandidaat.</li>",
+                "<li>Klik op de kolom 'Titel van het werkstuk' of 'Vakken waarop het werkstuk betrekking heeft'. ",
+                "Het venster 'Titel werkstuk' of 'Vakken werkstuk' verschijnt.</li>",
+                "<li>Vul de titel of vakken van het werkstuk in en klik op Opslaan.</li>",
+                "<li>Klik op de knop <i>Bijzondere tekens invoeren</i> als je letters met accenten of dergelijke wilt invoeren.</li></ul>",
+
+                "<p class='pb-0'><b>Uploaden titels en vakken van het werkstuk</b><br> ",
                 "<p>Je kunt de titels en vakken van het werkstuk ook uploaden. ",
-                "Klik in de menubalk van de pagina <i>Vakken</i> op <i>Vakken uploaden</i> en koppel bij stap 2 de velden 'Titel van het werkstuk' en 'Vakken van het werkstuk' ",
+                "Klik in de menubalk van de pagina <i>Vakken</i> op <i>Vakken uploade n</i> en koppel bij stap 2 de velden 'Titel van het werkstuk' en 'Vakken van het werkstuk' ",
                 "aan de betreffende Excel kolommen.<br>",
-                "Ook als de vakken reeds zijn ingevoerd in AWP kun je de titels en vakken van het werkstuk uploaden.</p"
+                "Ook als de vakken reeds zijn ingevoerd in AWP kun je de titels en vakken van het werkstuk uploaden.</p>",
+
+                "<p class='pb-0'><b>Fout bij printen bijzondere tekens</b><br> ",
+                "<p>Het kan voorkomen dat op de cijferlijst een zwart hokje wordt geprint in plaats van een bijzonder teken. ",
+                "Dit betekent dat AWP het bijzondere teken niet herkent bij het aanmaken van de cijferlijst. ",
+                "Dat kan gebeuren wanneer de gegevens zijn geïmporteerd of zijn ingevoerd op een Apple computer.<br>",
+                "Voer het teken dan opnieuw in door middel van de knop <i>Bijzondere tekens invoeren</i>.</p>"
             ]),
 
         "<div class='p-3 visibility_hide'>-</div>",
@@ -121,10 +136,15 @@ en:  [
                 "Click <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>here</a> to go to its manual;</li>",
                 "<li>View the subject composition check;</li>",
                 "<li>Assign subjects to a candidate;</li>",
-                "<li>Approve candidates' subjects and submit the Ex1 form. ",
-                "Click <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>here</a> for its tutorial;</li>",
-                "<li>Download the preliminary Ex1 form.</li></ul>",
-                "<p class='pb-0'>The option to assign subjects from subject packages is not yet available.</p>",
+                "<li>Approve candidates' subjects. ",
+                    "Click <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>here</a> for its tutorial;</li>",
+
+                "<li>Indicate whether the candidate has an exemption for this subject;</li>",
+                "<li>Indicate whether the candidate has a retake in the second or third period;</li>",
+
+                "<li>Download the preliminary Ex1 form and Ex4 form.</li></ul>",
+                "<li>Submit the Ex1 form and Ex4 form .</li></ul>",
+                //"<p class='pb-0'>The option to assign subjects from subject packages is not yet available.</p>",
             ]),
 
         write_paragraph_header("id_filter_subjects", "Filter subjects"),
@@ -145,8 +165,8 @@ en:  [
         write_paragraph_header("id_validate_subjects", "Composition check"),
         write_paragraph_body("img_exclamationsign",
             [
-                "<p>New in AWP is the check on the composition of the subjects. ",
-                "AWP checks whether the composition of the candidates' subjects meets the legal requirements. ",
+                //"<p>New in AWP is the check on the composition of the subjects. ",
+                "<p>AWP checks whether the composition of the candidates' subjects meets the legal requirements. ",
                 "If the composition of the subjects is not correct, a yellow triangle with an exclamation sign will appear in front of the candidate's name. ",
                 "Click on the candidate's name to open the window where you can change the candidate's subjects. ",
                 "A frame appears at the top stating which errors were found.</p>",
@@ -156,6 +176,7 @@ en:  [
                 "<li>whether the total number of subjects and the number of subjects per character ('Gemeenschappelijk deel' etc.) is correct;</li>",
                 "<li>whether the total number of modern foreign languages and mathematics subjects is correct.</li></ul>",
                 "<p>In the evening schools and Landsexamens, the check on the compulsory subjects and the minimum required number of subjects is skipped.</p>",
+
                 "<p>When uploading subjects, the character of the subject is not taken into account. ",
                 "Error messages can therefore arise because AWP has given a subject the wrong character. ",
                 "In that case, the character of the subject must be corrected manually.</p>",
@@ -169,7 +190,7 @@ en:  [
                 "The list on the left shows the available subjects, the list on the right contains the subjects of the candidate. ",
                 "Only the abbreviation and character of the subject are displayed in the list. ",
                 "If you hover the mouse over the abbreviation, a window with the full name will appear. ",
-                "A ^ character after the subject means it is a required field, a * means it is a combination subject.</p>",
+                "A ^ character after the subject means it is a required field, a * means it is a combination subject, a + means it is an extra subject.</p>",
 
                 "<p><b>Add subjects</b><br> ",
                  "Click on a subject in the list of available subjects. ",
@@ -185,30 +206,38 @@ en:  [
                  "Every time subjects are added or removed, AWP recalculates whether the composition of the subjects is correct.<br>",
                  "Click the <b><i>Save</i></b> button to save the changes. </p>",
 
-                 "<p><b>Mark subjects to be cleared</b><br>",
-                 "If the subject you want to clear has already been submitted on an Ex1 form,",
-                 "the subject will not be cleared immediately, but will be 'marked to be cleared'.",
+                 "<p><b>Mark subjects to be deleted</b><br>",
+                 "If the subject you want to delete has already been submitted on an Ex1 form,",
+                 "the subject will not be deleted immediately, but will be 'marked to be deleted'.",
                  "This is indicated by a double red line through the subject name.<br>" ,
-                 "The chairman and secretary must first approve the cleared boxes",
+                 "The chairman and secretary must first approve the deleted subjects",
                  "and submit to the Inspectorate and the ETE by means of an additional Ex1 form.<br>",
-                 "The boxes will be cleared when the supplementary Ex1 form is submitted.</p>",
-
-                "<p><b>Change subject attributes</b><br> ",
-                "Click on a candidate in the list on the right. In the frame <i>Attributes of the subject</i> you will find all the characteristics of that subject. ",
-                "You cannot change the general characteristics. These are for example: 'Combination subject', 'Required subject'.<br>",
-                "You can set individual characteristics per candidate. ",
-                "They are: 'Extra subject, does not count towards the result' and 'Extra subject, counts towards the result'.</p>",
+                 "The subjects will be deleted when the supplementary Ex1 form is submitted.</p>",
             ]),
         write_image("img_studsubj_mod_studsubj_en"),
-        write_paragraph_header("id_pws_title_subjects", "Project title and subjects"),
+        write_paragraph_header("id_pws_title_subjects", "Assignment title and subjects"),
          write_paragraph_body("",
              [
-                 "<p>The 'Title of the assignment' and 'Subjects to which the assignment relates' are now included as individual attributes of the subject 'Project'. ",
-                 "Click on the field 'Project' and fill in the title and fields of the assignment at <i>Attributes of the subject</i> </p>",
-                 "<p>You can also upload the titles and subjects of the assignment. ",
-                 "Click in the menu bar of the page <i>Subjects</i> on <i>Upload subjects</i> and link the fields 'Title of the assignment' and 'Subjects of the assignment' in step 2 ",
-                 "to the appropriate Excel columns.<br>",
-                 "Even if the subjects have already been entered in AWP, you can upload the titles and subjects of the assignment.</p"
+                 "<p>The 'Title of the assignment' and 'Subjects to which the assignment relates' are included as individual attributes of the subject 'Werkstuk'. ",
+                 "<p class='pb-0'><b>Entering the title and subjects of the assignment</b><br> ",
+                "Entering the title and subjects of the assignment can be done as follows:</p>",
+                "<ul class='manual_bullet mb-2'><li>Go to the line with the subject 'Werkstuk' of the candidate.</li>",
+                "<li>Click on the column 'Assignment title' or Assignment subjects'. ",
+                "The window 'Title of the assignment' or 'Subjects of the assignment' appears.</li>",
+                "<li>Enter the title or subjects of the assignment and click 'Save'.</li>",
+                "<li>Click on the button <i>Enter special characters</i> if you want to enter letters with accents or the like.</li></ul>",
+
+                "<p class='pb-0'><b>Uploading titles and subjects of the assignment</b><br> ",
+                "<p>You can also upload the titles and subjects of the assignment. ",
+                "Click on <i>Upload subjects</i> in the menu bar of the <i>Subjects</i> page and link the fields 'Titel van het werkstuk' and 'Vakken van het werkstuk' ",
+                "to the relevant Excel columns in step 2.<br>",
+                "Even if the subjects have already been entered in AWP, you can upload the titles and subjects of the assignment.</p>",
+
+                "<p class='pb-0'><b>Error when printing special characters</b><br> ",
+                "<p>It is possible that a black box is printed on the grade list instead of a special character. ",
+                "This means that AWP does not recognize the special character when creating the grade list. ",
+                "That can happen when the data has been imported or entered on an Apple computer.<br>",
+                "Then re-enter the character using the <i>Enter special characters</i> button.</p>"
              ]),
         "<div class='p-3 visibility_hide'>-</div>",
      ]

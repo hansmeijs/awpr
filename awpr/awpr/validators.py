@@ -85,15 +85,15 @@ def validate_unique_user_lastname(schoolbase, user_lastname, cur_user_id=None, s
     #logger.debug ('=== validate_unique_username ====')
     # __iexact looks for the exact string, but case-insensitive. If username is None, it is interpreted as an SQL NULL
 
-    msg_err = None
+    err_txt = None
     if schoolbase is None:
-        msg_err = get_err_html_cannot_be_blank(_('School'))
+        err_txt = get_err_html_cannot_be_blank(_('School'))
 
     elif not user_lastname:
-        msg_err = get_err_html_cannot_be_blank(_('Name of the user'))
+        err_txt = get_err_html_cannot_be_blank(_('Name of the user'))
 
     elif len(user_lastname) > c.USER_LASTNAME_MAX_LENGTH:
-        msg_err = _('Name of the user must have %(fld)s characters or fewer.') % {'fld': c.USER_LASTNAME_MAX_LENGTH}
+        err_txt = _('Name of the user must have %(fld)s characters or fewer.') % {'fld': c.USER_LASTNAME_MAX_LENGTH}
     else:
         # don't use get_or_none, it will return None when multiple users with the same name exist
         if cur_user_id:
@@ -107,14 +107,14 @@ def validate_unique_user_lastname(schoolbase, user_lastname, cur_user_id=None, s
                 last_name__iexact=user_lastname
             ).first()
         if user:
-            msg_err = str(_("Username '%(val)s' already exists at this school.") % {'val': user.username_sliced})
+            err_txt = str(_("Username '%(val)s' already exists at this school.") % {'val': user.username_sliced})
             if not skip_msg_activated:
                 if not user.activated:
-                    msg_err += str(_("The account is not activated yet."))
+                    err_txt += str(_("The account is not activated yet."))
                 elif not user.is_active:
-                    msg_err += str(_("The account is inactive."))
+                    err_txt += str(_("The account is inactive."))
 
-    return msg_err
+    return err_txt
 # - end of validate_unique_user_lastname
 
 # === validate_email_address ========= PR2020-08-02
@@ -187,17 +187,22 @@ def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False)
 # - end of validate_notblank_maxlength
 
 
-# === validate_level_sector_in_student ========= PR2022-08-20
+# === validate_level_sector_in_student =========
 
 def validate_level_sector_in_student(examyear, school, department, lvlbase_pk, sctbase_pk):
-    logging_on = False  # s.LOGGING_ON
+    # PR2022-08-20 PR2024-08-07
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- validate_level_sector_in_student ----- ')
         logger.debug('    lvlbase_pk: ' + str(lvlbase_pk))
         logger.debug('    sctbase_pk: ' + str(sctbase_pk))
+        logger.debug('    examyear.pk: ' + str(examyear.pk))
+        logger.debug('    examyear.code: ' + str(examyear.code))
+        logger.debug('    department.sector_req: ' + str(department.sector_req))
 
     msg_list = []
+    level, sector, scheme = None, None, None
     if school is None:
         msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': _('School')}))
     elif department is None:
@@ -227,8 +232,19 @@ def validate_level_sector_in_student(examyear, school, department, lvlbase_pk, s
                 )
                 if sector is None:
                     msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': caption}))
+
+        if (level or not department.level_req) and ((sector or not department.sector_req)):
+            scheme = subj_mod.Scheme.objects.get_or_none(
+                department=department,
+                level=level,
+                sector=sector
+            )
+            if scheme is None:
+                caption = _('The subject scheme')
+                msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': caption}))
+
     # use msglist, so it can show multiple messages (happens when both level and sector are missing)
-    return msg_list
+    return level, sector, scheme, msg_list
 # - end of validate_level_sector_in_student
 
 
@@ -826,6 +842,26 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     Het registratienummer op het diploma en cijferlijst wordt voortaan door AWP aangemaakt en is uniek voor elk waardepapier. Het is niet meer nodig om het diplomanummer en cijferlijstnummer in te voeren.
     De waardepapieren zijn terug te vinden in de pagina Archief, tab Dipi=oma’s en cijferlijsten.
     """
+
+    msg = ''.join((
+        "<p class='pb-2'><b>", gettext("NEW"), ": ",  gettext("The function to copy exemptions from previous years is improved"), '</b><br>',
+        gettext("When you enter or import canididates, AWP will search for similar candidates of previous years."), "<br>",
+        gettext("If any found, a window opens, in which you can link candidates when they are the same."), "<br>",
+        gettext("AWP will automatically link candidates, whose ID-number and name are identical."), "<br>",
+        gettext("When you enter or import subjects of a linked candidate, the exemptions will be entered automatically."), "<br>",
+        gettext("You can also enter exemptions manually."),
+
+        "</p><p><b>", gettext("NEW"), ": ", gettext("Log file of changes"), '</b><br>',
+        gettext("AWP keeps track of the changes that have been made in the candidate data, subjects and grades."), "<br>",
+        gettext("Click on the icon with the clock at the right of a line to open the log file."), "<br>",
+        gettext("This feature still has to be elaborated further."), "</p>"
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
     functions = ', '.join((gettext('Chairperson'), gettext('Secretary'), gettext('Examiner'), gettext('Second corrector')))
     msg = ''.join((
         "<p class='pb-2'><b>", gettext("Functions"), '</b>  (', functions, ')<br>',
@@ -845,11 +881,7 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
 # authenticiteit
     ))
 
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
+    
     
         msg = ''.join((
         '<p><b>', gettext("The N-terms of the first exam period are published"), '</b></p>',

@@ -351,7 +351,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_examyear= sel_examyear,
                         sel_schoolbase=sel_schoolbase,
                         sel_depbase=sel_depbase,
-                        append_dict={},
                         show_deleted=show_deleted
                     )
                     if error_dict:

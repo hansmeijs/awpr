@@ -1,9 +1,8 @@
 # PR2019-02-17
-
 from django.db import connection
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import pgettext_lazy, gettext, gettext_lazy as _
-
+from operator import itemgetter
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
 import math
@@ -11,9 +10,11 @@ import math
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
+from awpr import logs as awpr_log
 
 from schools import models as sch_mod
 from students import models as stud_mod
+from students import views as stud_view
 from students import functions as stud_fnc
 from subjects import models as subj_mod
 
@@ -39,6 +40,9 @@ def get_multiple_occurrences(sel_examyear, sel_schoolbase, sel_depbase):  # PR20
         # in this_year + last_year, for evening and lex school: last 10 years
         firstinrange_examyear_int, sorted_idnumber_list = \
             get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_depbase)
+
+        #get_student_similarities(sel_examyear, sel_schoolbase, sel_depbase)
+
         if logging_on:
             logger.debug('    firstinrange_examyear_int: ' + str(firstinrange_examyear_int))
             logger.debug('    sorted_idnumber_list: ' + str(sorted_idnumber_list))
@@ -73,37 +77,45 @@ def get_multiple_occurrences(sel_examyear, sel_schoolbase, sel_depbase):  # PR20
         logger.debug('    multiple_occurrences_dict: ' + str(multiple_occurrences_dict))
 
     return multiple_occurrences_list, multiple_occurrences_dict
-
 # - end of get_multiple_occurrences
 
 
-def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber):
+def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase,
+                                this_student_idnumber):
     # PR2021-09-05 PR2023-01-19
     # function looks up matching students in previous year(s)
 
     # PR2023-08-10 use from difflib import SequenceMatcher
     # from https://stackoverflow.com/questions/17388213/find-the-similarity-metric-between-two-strings
+    # PR2024-07-15
+    # https://medium.com/@zhangkd5/a-tutorial-for-difflib-a-powerful-python-standard-library-to-compare-textual-sequences-096d52b4c843
+    # psql: https://www.dbrnd.com/2017/05/postgresql-compare-two-string-similarity-in-percentage-pg_trgm-module/
+
+    #seq_match = SequenceMatcher(None, a, b)
+    #ratio = seq_match.ratio()
+    #print(ratio)  # Check the similarity of the two strings
+    # The output similarity will be a decimal between 0 and 1, in our example it may output: 0.821917808219178
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- lookup_multiple_occurrences ----------- ')
-        logger.debug('    student: ' + str(student_idnumber))
+        logger.debug('    student: ' + str(this_student_idnumber))
 
     # first check if this student exists in this school, last year
     student_dict = {}
-    if student_idnumber:
-        idnumber_lower = student_idnumber.lower()
+    if this_student_idnumber:
+        idnumber_lower = this_student_idnumber.lower()
 
-        cur_stud_dict = get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
+        this_stud_dict = get_this_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
         if logging_on:
-            logger.debug('    cur_stud_dict: ' + str(cur_stud_dict))
+            logger.debug('    this_stud_dict: ' + str(this_stud_dict))
 
-        if cur_stud_dict:
-            student_pk = cur_stud_dict.get('student_id')
+        if this_stud_dict:
+            student_pk = this_stud_dict.get('student_id')
             student_dict['cur_student_pk'] = student_pk
-            # student_dict['cur_stud_lastname'] = cur_stud_dict.get('lastname') or ''
-            # student_dict['cur_stud_firstname'] = cur_stud_dict.get('firstname') or ''
-            student_dict['cur_stud'] = cur_stud_dict
+            # student_dict['cur_stud_lastname'] = this_stud_dict.get('lastname') or ''
+            # student_dict['cur_stud_firstname'] = this_stud_dict.get('firstname') or ''
+            student_dict['cur_stud'] = this_stud_dict
 
 # get other occurrences of this student within period, from all countries
             sql_keys = {'first_ey': firstinrange_examyear_int, 'cur_ey': sel_examyear.code,
@@ -152,7 +164,15 @@ def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_sch
 # - end of lookup_multiple_occurrences
 
 
-def get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-17
+def get_this_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-17
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----------- get_this_stud_dict ----------- ')
+        logger.debug('    idnumber_lower: ' + str(idnumber_lower))
+        logger.debug('    sel_examyear.pk: ' + str(sel_examyear.pk))
+        logger.debug('    sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
+        logger.debug('    sel_depbase.pk: ' + str(sel_depbase.pk))
 
     student_dict = None
     if idnumber_lower:
@@ -189,6 +209,8 @@ def get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
             cursor.execute(sql, sql_keys)
             student_dict = af.dictfetchone(cursor)
 
+    if logging_on:
+        logger.debug('    student_dict: ' + str(student_dict))
     return student_dict
 # - end of
 
@@ -300,14 +322,508 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
     return firstinrange_examyear_int, sorted_idnumber_list
 # - end of get_idnumbers_with_multiple_occurrence
 
-# NOT IN USE
-def link_students_with_multiple_occurrences(dictlist):  # PR2023-01-18
+
+def get_student_similarities(sel_examyear, sel_schoolbase, sel_depbase, student_pk_list = None):  # PR2024-07-15
+    # to speed up search: get list of students of this schoolbase with idnumber that occurs multiple times in database,
+    # in this_year + last_year, for evening and lex school: last 10 years
+    # from all countries, not deleted, not tobedeleted
+
+    # see https://neon.tech/docs/extensions/pg_trgm
 
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ')
-        logger.debug(' ============= link_students_with_multiple_occurrences ============= ')
-# end of link_students_with_multiple_occurrences
+        logger.debug('----------- get_student_similarities ----------- ')
+        logger.debug('--- sel_examyear: ' + str(sel_examyear))
+        logger.debug('--- sel_schoolbase: ' + str(sel_schoolbase))
+        logger.debug('--- sel_depbase: ' + str(sel_depbase))
+
+    similarities_dict = {}
+    similarities_dictlist_sorted = []
+    identical_students_dict = {}
+    if sel_examyear and sel_schoolbase and sel_depbase:
+        # - get selected school
+        sel_school = sch_mod.School.objects.get_or_none(
+            base=sel_schoolbase,
+            examyear=sel_examyear)
+        if sel_school:
+            if logging_on:
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                logger.debug('sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
+
+            current_examyear_int = sel_examyear.code
+            # bewijs van vrijstelling is valid for 10 years when evening or lex school
+            if sel_school.iseveningschool or sel_school.islexschool:
+                firstinrange_examyear_int = current_examyear_int - 10 if current_examyear_int else None
+            else:
+                firstinrange_examyear_int = current_examyear_int - 1 if current_examyear_int else None
+
+            if logging_on:
+                logger.debug('    current_examyear_int: ' + str(current_examyear_int))
+                logger.debug('    firstinrange_examyear_int: ' + str(firstinrange_examyear_int))
+
+            sub_sql = ' '.join((
+                "SELECT stud.id, stud.idnumber, stud.firstname, stud.lastname, stud.prefix,",
+                "stud.result_status, ",
+                #"stud.linked, stud.notlinked,",
+                "ey.code AS ey_code, sb.code AS school_code, sch.abbrev AS school_name,",
+                "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev",
+
+                "FROM students_student AS stud",
+                "INNER JOIN schools_school AS sch ON (sch.id = stud.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+                "WHERE NOT stud.tobedeleted AND NOT stud.deleted",
+                ''.join(("AND ey.code >= ", str(firstinrange_examyear_int), "::INT AND ey.code <=", str(current_examyear_int), "::INT")),
+            ))
+
+            sql_list = [
+                "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
+                "WITH sub_sql AS ( " , sub_sql, ")",
+
+                "SELECT stud.id, stud.idnumber, stud.lastname, stud.firstname, stud.linked, stud.notlinked,",
+                "stud.iseveningstudent, stud.islexstudent, stud.bis_exam,  stud.partial_exam,",
+
+                "CONCAT_WS (' ', ",
+                        "TRIM(COALESCE(stud.prefix,'')), ",
+                        "CONCAT(TRIM(COALESCE(stud.lastname,'')), ','), ",
+                        "TRIM(COALESCE(stud.firstname,''))) AS this_fullname,",
+
+                "depbase.code AS this_depbase_code, lvl.abbrev AS this_lvl_abbrev, sct.abbrev AS this_sct_abbrev,",
+
+                "CONCAT_WS (' ', ",
+                        "TRIM(COALESCE(sub_sql.prefix,'')), ",
+                        "CONCAT(TRIM(COALESCE(sub_sql.lastname,'')), ','), ",
+                        "TRIM(COALESCE(sub_sql.firstname,''))) AS other_fullname, ",
+
+                "sub_sql.id AS other_stud_id, sub_sql.ey_code AS other_ey_code, sub_sql.idnumber AS other_idnumber, ",
+                "sub_sql.lastname AS other_lastname, sub_sql.firstname AS other_firstname,",
+                "sub_sql.depbase_code AS other_depbase_code, ",
+
+                "CONCAT_WS (' ', sb.code, sch.name) AS this_schoolname,",
+                "CONCAT_WS (' ', sub_sql.school_code, sub_sql.school_name) AS other_schoolname,",
+
+                #"CONCAT_WS(' ', depbase.code, COALESCE(lvl.abbrev, ''), COALESCE(sct.abbrev, '')) AS this_deplvlsct,",
+                #"CONCAT_WS(' ', sub_sql.depbase_code, COALESCE(sub_sql.lvl_abbrev, ''), COALESCE(sub_sql.sct_abbrev, '')) AS other_deplvlsct",
+
+                "CONCAT_WS(' ', depbase.code, lvl.abbrev, sct.abbrev) AS this_deplvlsct,",
+                "CONCAT_WS(' ', sub_sql.depbase_code, sub_sql.lvl_abbrev, sub_sql.sct_abbrev) AS other_deplvlsct,",
+                "sub_sql.result_status AS other_result_status",
+
+                "FROM sub_sql, students_student AS stud",
+                "INNER JOIN schools_school AS sch ON (sch.id = stud.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id) ",
+
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+                "WHERE NOT stud.tobedeleted AND NOT stud.deleted",
+                "AND stud.school_id =", str(sel_school.pk), "::INT",
+                "AND depbase.id =", str(sel_depbase.pk), "::INT",
+
+                # match when idnumber is the same OR when SIMILARITY(prefix+' '+ lastname) > 0,5
+                "AND (LOWER(sub_sql.idnumber) = LOWER(stud.idnumber) OR (",
+                    "SIMILARITY(CONCAT_WS(' ', TRIM(COALESCE(sub_sql.prefix,'')), TRIM(COALESCE(sub_sql.lastname))), ",
+                               "CONCAT_WS(' ', TRIM(COALESCE(stud.prefix,'')), TRIM(COALESCE(stud.lastname)))) > 0.5 ",
+                # plus SIMILARITY(firstname) > 0,2
+                "AND SIMILARITY(TRIM(COALESCE(sub_sql.firstname,'')), TRIM(COALESCE(stud.firstname,''))) > 0.2)) ",
+
+                "AND sub_sql.id <> stud.id"
+            ]
+
+            if student_pk_list:
+                if len(student_pk_list) == 1:
+                    sql_list.append(''.join(("AND stud.id =", str(student_pk_list[0]), "::INT")))
+                else:
+                    sql_list.append(''.join(("AND stud.id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[]))")))
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+                if logging_on and False:
+                    logger.debug('-----------------')
+                    for q in connection.queries:
+                        logger.debug(str(q))
+                    logger.debug('-----------------')
+
+                rows = af.dictfetchall(cursor)
+                if rows:
+                    for row in rows:
+                        this_stud_id = row['id']
+
+                        # used to look up identical other student PR2024-0-17
+                        this_stud_idnumber = row['idnumber']
+                        this_stud_fullname = row['this_fullname']
+                        this_stud_linked = row['linked']
+                        this_stud_notlinked = row['notlinked']
+
+                        if this_stud_id not in similarities_dict:
+                            similarities_dict[this_stud_id] = {
+                                'student_id': this_stud_id,
+                                'idnumber': this_stud_idnumber,
+                                'firstname':  row['firstname'],
+                                'lastname': row['lastname'],
+                                'fullname': this_stud_fullname,
+                                'school_name': row['this_schoolname'],
+                                'deplvlsct': row['this_deplvlsct'],
+                                'iseveningstudent': row['iseveningstudent'],
+                                'islexstudent': row['islexstudent'],
+                                'bis_exam': row['bis_exam'],
+                                'partial_exam': row['partial_exam'],
+
+                                'linked': this_stud_linked,
+                                'notlinked': this_stud_notlinked,
+                                'other_stud': []
+                            }
+                        this_stud_dict = similarities_dict[this_stud_id]
+
+                        other_stud_list = this_stud_dict['other_stud']
+                        other_stud_id = row['other_stud_id']
+
+
+                        other_stud_idnumber = row['other_idnumber']
+                        other_stud_fullname = row['other_fullname']
+
+                        other_stud_list.append({
+                            'student_id': other_stud_id,
+                            'idnumber': row['other_idnumber'],
+                            'fullname': row['other_fullname'],
+                            'school_name': row['other_schoolname'],
+                            'deplvlsct': row['other_deplvlsct'],
+                            'examyear': row['other_ey_code'],
+                            'result_status': row['other_result_status']
+                        })
+
+                        # PR2024-08-17 check if this_stud ad other_stud are identical (same idnumber ad fulname
+                        # used to automaically linkwhen not linked or notlinked
+                        if this_stud_idnumber == other_stud_idnumber and \
+                                this_stud_fullname == other_stud_fullname:
+                            linked_arr = this_stud_linked.split(';') if this_stud_linked else []
+                            notlinked_arr = this_stud_notlinked.split(';') if this_stud_notlinked else []
+                            # skip if other stud usisalreay linked or notlinks
+                            if str(other_stud_id) not in notlinked_arr and \
+                                    str(other_stud_id) not in linked_arr:
+                                    if this_stud_id not in identical_students_dict:
+                                        identical_students_dict[this_stud_id] = []
+
+                                    other_student_list = identical_students_dict[this_stud_id]
+                                    if other_stud_id not in other_student_list:
+                                        other_student_list.append(other_stud_id)
+
+                    # convert dict to sorted dictlist
+                    similarities_dictlist_sorted = sorted(list(similarities_dict.values()),
+                                                   key=lambda k: (k['lastname'].lower(), k['firstname'].lower()))
+
+                    # sort other_stud_list
+                    for stud_dict in similarities_dictlist_sorted:
+                        other_stud_list = stud_dict['other_stud']
+                        if other_stud_list and  len(other_stud_list) > 1:
+                            stud_dict['other_stud'] = sorted(other_stud_list, key=itemgetter('examyear'), reverse=True)
+
+    if logging_on :
+        logger.debug('    similarities_dictlist_sorted: ' + str(similarities_dictlist_sorted))
+        logger.debug('    identical_students_dict: ' + str(identical_students_dict))
+
+    """            
+    sorted_similarities_list = [ {
+        'id': 10670, 'idnumber': '2004092603', 'fullname': ' BakboordXXXXXXXXXXXX, Mily-AnXXXXXXXXXXXX', 
+        'depbase_code': 'Havo', 'lvl_abbrev': None, 'linked': None, 'notlinked': None, 
+        'other_stud': {
+            5000: {'id': 5000, 'idnumber': '2004092603', 'fullname': ' Bakboord, Mily-An Margaritha Divina', 
+                'depbase_code': 'Havo', 'lvl_abbrev': None, 'linked': None, 'notlinked': None, 'examyear': 2022}, 
+            6925: {'id': 6925, 'idnumber': '2004092603', 'fullname': ' Bakboord, Mily-An Margaritha Divina', 
+                'depbase_code': 'Havo', 'lvl_abbrev': None, 'linked': None, 'notlinked': None, 'examyear': 2023}}}
+                
+    identical_students_dict: { this_stud_id: [other_stud_id, ...], ... }
+    """
+    return similarities_dictlist_sorted, identical_students_dict
+# - end of get_student_similarities
+
+
+def check_unlinked_student_similarities(sel_examyear, sel_schoolbase, sel_depbase, student_pk_list = None):
+    # PR2024-07-22
+    # get list of student_pk's of this schoolbase that have not linked / notlinked similarities
+    # in this_year + last_year, for evening and lex school: last 10 years
+    # from all countries, not deleted, not tobedeleted
+
+    # see https://neon.tech/docs/extensions/pg_trgm
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----------- check_unlinked_student_similarities ----------- ')
+        logger.debug('--- sel_examyear: ' + str(sel_examyear))
+        logger.debug('--- sel_schoolbase: ' + str(sel_schoolbase))
+        logger.debug('--- sel_depbase: ' + str(sel_depbase))
+
+    has_unlinked_similarities = False
+
+    if sel_examyear and sel_schoolbase and sel_depbase:
+        # - get selected school
+        sel_school = sch_mod.School.objects.get_or_none(
+            base=sel_schoolbase,
+            examyear=sel_examyear)
+        if sel_school:
+            if logging_on:
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                logger.debug('sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
+
+            current_examyear_int = sel_examyear.code
+            # bewijs van vrijstelling is valid for 10 years when evening or lex school
+            if sel_school.iseveningschool or sel_school.islexschool:
+                firstinrange_examyear_int = current_examyear_int - 10 if current_examyear_int else None
+            else:
+                firstinrange_examyear_int = current_examyear_int - 1 if current_examyear_int else None
+
+            if logging_on:
+                logger.debug('    current_examyear_int: ' + str(current_examyear_int))
+                logger.debug('    firstinrange_examyear_int: ' + str(firstinrange_examyear_int))
+
+            sub_sql = ' '.join((
+                "SELECT stud.id, stud.idnumber, stud.firstname, stud.lastname, stud.prefix",
+
+                "FROM students_student AS stud",
+                "INNER JOIN schools_school AS sch ON (sch.id = stud.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+
+                "WHERE NOT stud.tobedeleted AND NOT stud.deleted",
+                ''.join(("AND ey.code >= ", str(firstinrange_examyear_int), "::INT AND ey.code <=", str(current_examyear_int), "::INT")),
+            ))
+
+            sql_list = [
+                "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
+                "WITH sub_sql AS ( " , sub_sql, ")",
+
+                "SELECT stud.id",
+
+                "FROM sub_sql, students_student AS stud",
+                "INNER JOIN schools_school AS sch ON (sch.id = stud.school_id)",
+
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+                "WHERE NOT stud.tobedeleted AND NOT stud.deleted",
+                "AND stud.school_id =", str(sel_school.pk), "::INT",
+                "AND dep.base_id =", str(sel_depbase.pk), "::INT",
+
+                # match when idnumber is the same OR when SIMILARITY(prefix+' '+ lastname) > 0,5
+                "AND (LOWER(sub_sql.idnumber) = LOWER(stud.idnumber) OR (",
+                    "SIMILARITY(CONCAT_WS(' ', TRIM(COALESCE(sub_sql.prefix,'')), TRIM(COALESCE(sub_sql.lastname))), ",
+                               "CONCAT_WS(' ', TRIM(COALESCE(stud.prefix,'')), TRIM(COALESCE(stud.lastname)))) > 0.5 ",
+
+                # plus SIMILARITY(firstname) > 0,2
+                "AND SIMILARITY(TRIM(COALESCE(sub_sql.firstname,'')), TRIM(COALESCE(stud.firstname,''))) > 0.2)) ",
+
+                "AND sub_sql.id <> stud.id",
+                
+                # and not linked and not unlinked
+                "AND POSITION( CONCAT(';', sub_sql.id::TEXT, ';') IN CONCAT(';', stud.linked, ';') ) = 0 ",
+                "AND POSITION( CONCAT(';', sub_sql.id::TEXT, ';') IN CONCAT(';', stud.notlinked, ';') ) = 0 ",
+            ]
+
+            if student_pk_list:
+                if len(student_pk_list) == 1:
+                    sql_list.append(''.join(("AND stud.id =", str(student_pk_list[0]), "::INT")))
+                else:
+                    sql_list.append(''.join(("AND stud.id IN (SELECT UNNEST(ARRAY", str(student_pk_list), "::INT[]))")))
+
+            sql_list.append("GROUP BY stud.id LIMIT 1;")
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+                if rows:
+                    has_unlinked_similarities = True
+
+    if logging_on :
+        logger.debug('has_unlinked_similarities: ' + str(has_unlinked_similarities))
+
+    return has_unlinked_similarities
+# - end of check_unlinked_student_similarities
+
+
+def link_identical_students(request, sel_examyear, sel_school, sel_department, student_pk=None):
+    # PR2024-08-17
+    # to speed up search: get list of students of this schoolbase with idnumber that occurs multiple times in database,
+    # in this_year + last_year, for evening and lex school: last 10 years
+    # from all countries, not deleted, not tobedeleted
+
+    # see https://neon.tech/docs/extensions/pg_trgm
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----------- link_identical_students ----------- ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+        logger.debug('    sel_school: ' + str(sel_school))
+        logger.debug('    sel_department: ' + str(sel_department))
+        logger.debug('    student_pk: ' + str(student_pk))
+
+    def get_identical_students():
+        identical_stud_dict = {}
+
+        if sel_school.iseveningschool or sel_school.islexschool:
+            firstinrange_examyear_code = sel_examyear.code - 10
+        else:
+            firstinrange_examyear_code = sel_examyear.code - 1
+
+        student_clause = ''.join(("AND stud.id=", str(student_pk), "::INT")) if student_pk else ''
+
+        if logging_on:
+            logger.debug('    sel_examyear.code: ' + str(sel_examyear.code))
+        sub_sql = ''.join((
+            "SELECT stud.id, stud.idnumber, stud.firstname, stud.lastname, stud.prefix ",
+
+            "FROM students_student AS stud ",
+            "INNER JOIN schools_school AS sch ON (sch.id = stud.school_id) ",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id) ",
+
+            "WHERE NOT stud.tobedeleted AND NOT stud.deleted ",
+            "AND ey.code >= ", str(firstinrange_examyear_code), "::INT AND ey.code <", str(sel_examyear.code),"::INT"
+
+        ))
+
+        sql_list = [
+            "WITH sub_sql AS ( ", sub_sql, ")",
+            "SELECT stud.id, stud.idnumber, stud.lastname, stud.firstname, stud.prefix, stud.linked, stud.notlinked, ",
+            "sub_sql.id AS other_stud_id, sub_sql.idnumber AS other_idnumber, sub_sql.prefix AS other_prefix ",
+
+            "FROM sub_sql, students_student AS stud",
+            "INNER JOIN schools_school AS sch ON (sch.id = stud.school_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+
+            "WHERE NOT stud.tobedeleted AND NOT stud.deleted",
+            "AND stud.school_id =", str(sel_school.pk), "::INT",
+            "AND stud.department_id =", str(sel_department.pk), "::INT",
+            #student_clause,
+            # match when idnumber, lastname, firstname and prefix are the same
+            "AND LOWER(TRIM(sub_sql.lastname)) = LOWER(TRIM(stud.lastname)) ",
+            "AND LOWER(TRIM(sub_sql.firstname)) = LOWER(TRIM(stud.firstname)) ",
+           # "AND ( (stud.prefix IS NULL AND sub_sql.prefix IS NULL) OR ",
+           #     " ( stud.prefix IS NOT NULL AND sub_sql.prefix IS NOT NULL AND ",
+            #        "LOWER(TRIM(sub_sql.prefix)) = LOWER(TRIM(stud.prefix)) ) ) ",
+
+            # match idnumber,later, to get nodots first
+            #"AND LOWER(TRIM(sub_sql.idnumber)) = LOWER(TRIM(stud.idnumber)) ",
+
+            "AND sub_sql.id <> stud.id;"
+        ]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            rows = af.dictfetchall(cursor)
+
+            if rows:
+                for row in rows:
+                    if logging_on:
+                        logger.debug('    row: ' + str(row))
+
+                    cur_stud_id = row['id']
+                    cur_stud_linked = row['linked']
+                    cur_stud_notlinked = row['notlinked']
+
+                    cur_stud_idnumber_nodots, msg_err_listNIU, birthdate_dteobjNIU = get_idnumber_nodots_stripped_lower(
+                        row['idnumber'])
+
+                    other_stud_idnumber_nodots, msg_err_listNIU, birthdate_dteobjNIU = get_idnumber_nodots_stripped_lower(
+                        row['other_idnumber'])
+
+                    if logging_on:
+                        logger.debug('    - cur_stud_idnumber_nodots: ' + str(cur_stud_idnumber_nodots))
+                        logger.debug('    - other_stud_idnumber_nodots: ' + str(other_stud_idnumber_nodots))
+
+                    if other_stud_idnumber_nodots and cur_stud_idnumber_nodots == other_stud_idnumber_nodots:
+                        linked_arr = cur_stud_linked.split(';') if cur_stud_linked else []
+                        notlinked_arr = cur_stud_notlinked.split(';') if cur_stud_notlinked else []
+
+                        prefix_ok = False
+
+                        cur_prefix = row['prefix']
+                        other_prefix = row['other_prefix']
+                        if cur_prefix:
+                            if other_prefix:
+                                prefix_ok = cur_prefix.strip().lower() == other_prefix.strip().lower()
+                        else:
+                            prefix_ok = not other_prefix
+
+                        other_stud_id = row['other_stud_id']
+                        if logging_on:
+                            logger.debug('    - prefix_ok: ' + str(prefix_ok))
+                            logger.debug('    - linked_arr: ' + str(linked_arr))
+                            logger.debug('    - notlinked_arr: ' + str(notlinked_arr))
+                            logger.debug('    - other_stud_id: ' + str(other_stud_id))
+                            logger.debug('    - str(other_stud_id) not in linked_arr: ' + str(str(other_stud_id) not in linked_arr))
+                            logger.debug('    - str(other_stud_id) not in notlinked_arr: ' + str(str(other_stud_id) not in notlinked_arr))
+
+                        # skip if other student isalready linked or notlinked
+                        if str(other_stud_id) not in notlinked_arr and \
+                                str(other_stud_id) not in linked_arr:
+
+                            if cur_stud_id not in identical_stud_dict:
+                                identical_stud_dict[cur_stud_id] = []
+
+                            other_student_list = identical_stud_dict[cur_stud_id]
+                            if other_stud_id not in other_student_list:
+                                other_student_list.append(other_stud_id)
+        return identical_stud_dict
+
+    has_linked_students = False
+    if sel_examyear and sel_school and sel_department:
+        identical_students_dict = get_identical_students()
+
+        if logging_on:
+            logger.debug('    - identical_students_dict: ' + str(identical_students_dict))
+
+        if identical_students_dict:
+            for cur_stud_id, other_stud_id_list in identical_students_dict.items():
+                cur_student = stud_mod.Student.objects.get_or_none(
+                    school=sel_school,
+                    pk=cur_stud_id
+                )
+                if cur_student:
+                    linked = getattr(cur_student, 'linked')
+                    linked_str_arr = linked.split(';') if linked else []
+
+                    has_changed = False
+                    updated_fields = []
+                    for other_stud_id in other_stud_id_list:
+                        if str(other_stud_id) not in linked_str_arr:
+                            linked_str_arr.append(str(other_stud_id))
+                        has_changed = True
+
+            # set student bis-exam, only when field 'linked' is set True
+                        is_new_bisexam = stud_view.get_is_bis_exam(cur_student, other_stud_id)
+                        if is_new_bisexam:
+                            setattr(cur_student, 'bis_exam', True)
+                            if 'bis_exam' not in updated_fields:
+                                updated_fields.append('bis_exam')
+
+                    if has_changed:
+                        updated_fields.append('linked')
+
+                        linked_str_arr.sort()
+                        linked_str = ';'.join(linked_str_arr)
+                        setattr(cur_student, 'linked', linked_str)
+                        cur_student.save(request=request)
+
+                        has_linked_students = True
+                        awpr_log.savetolog_student(cur_student.pk, 'b', request, updated_fields)
+    return has_linked_students
+# - end of link_identical_students
+
 
 # ########################### validate students ##############################
 
@@ -334,12 +850,12 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 
     # msg_err already given when id is blank or too long ( in stud_val.get_idnumber_nodots_stripped_lower)
     if idnumber_nodots:
-        msg_keys = {'cpt': str(_('ID-number')), 'val': idnumber_nodots, 'name': upload_fullname}
+        msg_keys = {'cpt': gettext('ID-number'), 'val': idnumber_nodots, 'name': upload_fullname}
 
 # - count how many students exist with this idnumber in this school (all departments)
         # get all students from this school with this idnumber
         # idnumber can have letters, therefore compare case insensitive
-        # # include tobedeleted students PR2023-04-20
+        # include tobedeleted students PR2023-04-20
         #   was: include deleted students PR2023-01-16
         rows = stud_mod.Student.objects.filter(
             idnumber__iexact=idnumber_nodots,
@@ -403,7 +919,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
                     else:
                         student = None
 
-    # - return error if both students exist in this this or other department: return error
+    # - return error if both students exist in this or other department: return error
             if student is None:
                 err_list.append(get_error_multiple_students(rows, department, msg_keys))
             elif found_is_error:
@@ -483,7 +999,7 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
 def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, user_lang):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('    student: ' + str(student))
@@ -1891,7 +2407,7 @@ def get_examnumberlist_from_database(sel_school, sel_department, examnumber_list
     # list contains tuples with (id, examnumber) id is needed to skip value of  this student
 
     # PR2022-08-22 debug: idnumber_list must be parameter and use extend to keep reference
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_examnumberlist_from_database -----')
         logger.debug('sel_school: ' + str(sel_school))
@@ -1917,6 +2433,10 @@ def get_examnumberlist_from_database(sel_school, sel_department, examnumber_list
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             rows = af.dictfetchall(cursor)
+
+            if logging_on:
+                logger.debug('    rows: ' + str(rows))
+
             if len(rows):
                 examnumber_list.extend(rows)
 
@@ -2218,7 +2738,7 @@ def get_idnumber_nodots_stripped_lower(id_number):
 def get_string_convert_type_and_strip(caption, value, blank_not_allowed):
     # function converts non-string types to string and strips it from spaces PR2021-11-07
     value_stripped = ''
-    msg_err = None
+    err_txt = None
     if value:
         try:
             if not isinstance(value, str):
@@ -2228,12 +2748,12 @@ def get_string_convert_type_and_strip(caption, value, blank_not_allowed):
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            msg_err = _("%(cpt)s '%(val)s' is not a valid field type.") % {'cpt': caption, 'val': str(value)}
+            err_txt = _("%(cpt)s '%(val)s' is not a valid field type.") % {'cpt': caption, 'val': str(value)}
 
     elif blank_not_allowed:
-        msg_err = _("%(cpt)s cannot be blank.")% {'cpt': caption, 'val': str(value)}
+        err_txt = _("%(cpt)s cannot be blank.")% {'cpt': caption, 'val': str(value)}
 
-    return value_stripped, msg_err
+    return value_stripped, err_txt
 # - end of get_string_checked_for_type_and_stripped
 
 
@@ -2333,23 +2853,23 @@ def validate_length(caption, input_value, max_length, blank_allowed, hide_value_
         logger.debug('    input_value: ' + str(input_value))
         logger.debug('    max_length: ' + str(max_length))
 
-    msg_err = None
+    err_txt = None
     if not input_value:
         if not blank_allowed:
-            msg_err = _('%(cpt)s cannot be blank.') % {'cpt': caption}
+            err_txt = _('%(cpt)s cannot be blank.') % {'cpt': caption}
 
     elif max_length and len(input_value) > max_length:
         if hide_value_in_msg:
-            msg_err = _("%(cpt)s is too long, maximum %(max)s characters.") \
+            err_txt = _("%(cpt)s is too long, maximum %(max)s characters.") \
                         % {'cpt': caption, 'max': max_length}
         else:
-            msg_err = _("%(cpt)s '%(val)s' is too long, maximum %(max)s characters.") \
+            err_txt = _("%(cpt)s '%(val)s' is too long, maximum %(max)s characters.") \
                         % {'cpt': caption, 'val': input_value, 'max': max_length}
 
     if logging_on:
-        logger.debug('msg_err: ' + str(msg_err))
+        logger.debug('err_txt: ' + str(err_txt))
 
-    return msg_err
+    return err_txt
 # - end of validate_length
 
 
@@ -2535,13 +3055,14 @@ def validate_thumbrule_allowed(studsubj_instance, si_dict):
                 err_list.append(str(_('The thumbrule can only be applied to one subject.')))
         else:
     # - only when Havo / Vwo
-            depbase_code = studsubj_instance.student.department.base.code
-            if depbase_code != 'Havo' and depbase_code != 'Vwo':
-                err_list.append(str(_('Thumb rule is not applicable in Vsbo.')))
+            # PR2024-08-02 must set thumbrule allowed in schemeitem
+            #depbase_code = studsubj_instance.student.department.base.code
+            #if depbase_code != 'Havo' and depbase_code != 'Vwo':
+            #    err_list.append(str(_('Thumb rule is not applicable in Vsbo.')))
         # - not in core subjects
-            elif studsubj_instance.schemeitem.is_core_subject:
-                err_list.append(str(_('Thumb rule is not applicable to core subjects.')))
-            else:
+            #elif studsubj_instance.schemeitem.is_core_subject:
+            #    err_list.append(str(_('Thumb rule is not applicable to core subjects.')))
+            #else:
         # - not when there are exemptions
                 # PR2022-06-15 this is removed from the final MB
                 # was:
@@ -2556,21 +3077,21 @@ def validate_thumbrule_allowed(studsubj_instance, si_dict):
                 #else:
 
     # check if there is already a subject with thumbrule
-                has_thumbrule_nocombi = stud_mod.Studentsubject.objects.filter(
-                    student=studsubj_instance.student,
-                    is_thumbrule=True,
-                    schemeitem__is_combi=False,
-                    tobedeleted=False
-                ).exists()
-                has_thumbrule_combi = stud_mod.Studentsubject.objects.filter(
-                    student=studsubj_instance.student,
-                    is_thumbrule=True,
-                    schemeitem__is_combi=True,
-                    tobedeleted=False
-                ).exists()
-                if has_thumbrule_nocombi or has_thumbrule_combi:
-                    err_list.append(str(_('This candidate already has a subject with the thumb rule.')))
-                    err_list.append(str(_('The thumbrule can only be applied to one subject.')))
+            has_thumbrule_nocombi = stud_mod.Studentsubject.objects.filter(
+                student=studsubj_instance.student,
+                is_thumbrule=True,
+                schemeitem__is_combi=False,
+                tobedeleted=False
+            ).exists()
+            has_thumbrule_combi = stud_mod.Studentsubject.objects.filter(
+                student=studsubj_instance.student,
+                is_thumbrule=True,
+                schemeitem__is_combi=True,
+                tobedeleted=False
+            ).exists()
+            if has_thumbrule_nocombi or has_thumbrule_combi:
+                err_list.append(str(_('This candidate already has a subject with the thumb rule.')))
+                err_list.append(str(_('The thumbrule can only be applied to one subject.')))
 
     return err_list
 # --- end of validate_thumbrule_allowed

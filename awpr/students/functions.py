@@ -52,7 +52,6 @@ def convert_idnumber_withdots_no_char(id_number):
 # - end of convert_idnumber_withdots_no_char
 
 
-
 def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11 PR2023-09-02
     # function gets max exnr of this school and dep and adds 1 to it
     max_exnr = 0
@@ -78,7 +77,6 @@ def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11 PR2023-09-0
     # was: max_exnr_str = str(max_exnr)
     return max_exnr
 # - end of get_next_examnumber
-
 
 
 def calc_regnumber_2022(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
@@ -162,7 +160,6 @@ def calc_regnumber_2022(school_code, gender, examyear_str, examnumber_str, depba
         logger.debug('regnumber: ' + str(regnumber))
     return regnumber
 # - end of calc_regnumber
-
 
 
 def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam, used_regnumber_list):
@@ -425,6 +422,7 @@ def get_firstname_prefix_lastname(last_name, first_name, prefix):  # PR2022-03-0
 
     return _full_name
 # - end of get_firstname_prefix_lastname
+
 
 def get_full_name(last_name, first_name, prefix, has_extrafacilities=False):
     # PR2021-07-26 PR2021-09-05  PR2021-10-07 PR2023-01-07

@@ -116,6 +116,7 @@ def save_to_log(instance, req_mode, request):
             pass
 # - end of save_to_log
 
+
 def savetolog_user(instance, req_mode, request, updated_fields):
     # PR2023-08-10
     logging_on = s.LOGGING_ON
@@ -208,7 +209,7 @@ def savetolog_user(instance, req_mode, request, updated_fields):
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-# - end of copy_user_to_log
+# - end of savetolog_user
 
 
 def savetolog_examyear(examyear_pk, req_mode, request, updated_fields):
@@ -308,76 +309,44 @@ def savetolog_examyear(examyear_pk, req_mode, request, updated_fields):
 # - end of savetolog_examyear
 
 
-def savetolog_student(student_pk, req_mode, request, updated_fields):
-    # PR2023-08-10
+def savetolog_student(student_pk_or_array, log_mode, request, updated_fields):
+    # PR2023-08-10 PR2024-07-24 PR2024-08-06
+    # called by:
+    # - set_student_instance_tobedeleted
+    # - create_student_instance
+    # - update_student_instance
+    # - add_new_examnumbers in StudentCreateExamnumbersView
+    # - new_bisexam in StudentLinkStudentView
+
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('  ----- savetolog_student -----')
-        logger.debug('    req_mode: ' + str(req_mode))
+        logger.debug('    req_mode: ' + str(log_mode))
         logger.debug('    updated_fields: ' + str(updated_fields))
 
-    """
-    # PR2023-08-11 fields in Studentlog:
-     id                       | integer                  |           | not null | nextval('students_studentlog_id_seq'::regclass)
-     student_id               | integer                  |           | not null |
-     mode                     | character varying(1)     |           |          |
+    if student_pk_or_array and request and request.user:
 
-     school_id                | integer                  |           |          |
-     department_id            | integer                  |           |          |
-     level_id                 | integer                  |           |          |
-     sector_id                | integer                  |           |          |
-     scheme_id                | integer                  |           |          |
-     package_id               | integer                  |           |          |
-
-     lastname                 | character varying(80)    |           |          |
-     firstname                | character varying(80)    |           |          |
-     prefix                   | character varying(10)    |           |          |
-     gender                   | character varying(1)     |           |          |
-     idnumber                 | character varying(14)    |           |          |
-     birthdate                | date                     |           |          |
-     birthcountry             | character varying(50)    |           |          |
-     birthcity                | character varying(50)    |           |          |
-     classname                | character varying(20)    |           |          |
-     examnumber               | character varying(20)    |           |          |
-     
-     extrafacilities          | boolean                  |           |          |
-     iseveningstudent         | boolean                  |           |          |
-     islexstudent             | boolean                  |           |          |
-     bis_exam                 | boolean                  |           |          |
-     partial_exam             | boolean                  |           |          |
-     
-     subj_composition_checked | boolean                  |           |          |
-     subj_composition_ok      | boolean                  |           |          |
-
-     subj_dispensation        | boolean                  |           |          |
-     subj_disp_modifiedby_id  | integer                  |           |          |
-     subj_disp_modifiedat     | timestamp with time zone |           |          |
-     
-     linked                   | character varying(80)    |           |          |
-     notlinked                | character varying(80)    |           |          |
-     withdrawn                | boolean                  |           |          |
-     
-     result                   | smallint                 |           |          |
-     result_status            | character varying(24)    |           |          |
-     result_info              | character varying(2048)  |           |          |
-     
-     gl_status                | smallint                 |           | not null |
-     gl_modifiedat            | timestamp with time zone |           |          |
-     gl_auth1by_id            | integer                  |           |          |
-
-     tobedeleted              | boolean                  |           |          |
-     deleted                  | boolean                  |           |          |
-
-     modifiedby_id            | integer                  |           |          |
-     modifiedat               | timestamp with time zone |           | not null |
-
-    """
-    if student_pk and request and request.user:
         try:
-            mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
+            if isinstance(student_pk_or_array, int):
+                where_clause = ''.join(("WHERE stud.id=", str(student_pk_or_array), "::INT "))
+            elif isinstance(student_pk_or_array, list):
+                where_clause = ''.join(("WHERE stud.id IN (SELECT UNNEST(ARRAY", str(student_pk_or_array), "::INT[])) "))
+            else:
+                where_clause = "WHERE FALSE "
 
-            field_list = (
+            if isinstance(updated_fields, str):
+                updated_field_list = [updated_fields]
+            elif isinstance(updated_fields, list):
+                updated_field_list = updated_fields
+            else:
+                updated_field_list = []
+
+            if logging_on:
+                logger.debug('    where_clause: ' + str(where_clause))
+                logger.debug('    updated_field_list: ' + str(updated_field_list))
+
+            log_field_list = (
                 'school_id', 'department_id', 'level_id', 'sector_id', 'scheme_id', 'package_id',
                 'lastname', 'firstname', 'prefix', 'gender',
                 'idnumber', 'birthdate', 'birthcountry', 'birthcity', 'classname', 'examnumber',
@@ -394,104 +363,73 @@ def savetolog_student(student_pk, req_mode, request, updated_fields):
             # these fields are always included: 'modifiedby_id', 'modifiedat'
             tobe_copied_field_list = ['modifiedby_id', 'modifiedat']
 
-            for field in field_list:
-                # - when mode is 'update': copy only updated fields
-                # - always copy field 'country_id','code', 'modifiedby_id', ''modifiedat'
+            for field in updated_field_list:
+                if field in log_field_list and field not in tobe_copied_field_list:
+                    tobe_copied_field_list.append(field)
 
-                if logging_on:
-                    logger.debug('    field: ' + str(field))
-                    logger.debug('    tobe_copied_field_list: ' + str(tobe_copied_field_list))
-                    logger.debug('    field not in tobe_copied_field_list: ' + str(field not in tobe_copied_field_list))
-                    logger.debug('    mode: <' + str(mode) + '>')
-                    logger.debug('    mode in c i: ' + str(mode in ('c', 'i')))
-                if field not in tobe_copied_field_list:
-                    # copy all fields when mode = 'create' or 'import'
-                    is_create_or_import = mode in ("'c'", "'i'")
-                    logger.debug('    is_create_or_import: <' + str(is_create_or_import) + '>')
-                    if is_create_or_import:
-                        tobe_copied_field_list.append(field)
-                    # otherwise: copy fields in tobe_copied_field_list
-                    elif field in updated_fields:
-                        tobe_copied_field_list.append(field)
-                if logging_on:
-                    logger.debug('    tobe_copied_field_list: ' + str(tobe_copied_field_list))
+            if logging_on:
+                logger.debug('    tobe_copied_field_list: ' + str(tobe_copied_field_list))
 
             tobe_copied_field_str = ', '.join(tobe_copied_field_list)
 
-            sql = ' '.join((
+            sql = ''.join((
                 "INSERT INTO students_studentlog(",
                     "student_id, mode,", tobe_copied_field_str,
-                ") SELECT",
-                    "id,", mode, ",", tobe_copied_field_str,
-                "FROM students_student AS stud",
-                "WHERE stud.id=", str(student_pk), "::INT;"
+                ") SELECT ",
+                    "id, '", log_mode, "',", tobe_copied_field_str,
+                " FROM students_student AS stud ",
+                where_clause,
+                " RETURNING student_id, mode;"
             ))
             if logging_on:
-                logger.debug('    tobe_copied_field_list: ' + str(tobe_copied_field_list))
+                logger.debug('    sql: ' + str(sql))
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
                 if logging_on:
-                    logger.debug('    rows: cursor.fetchall()')
+                    logger.debug('    rows:' + str(cursor.fetchall()))
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 # - end of savetolog_student
 
 
-def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_fields):
-    # PR2023-08-14
+def savetolog_studentsubject(studsubj_pk_or_array, log_mode, updated_fields):
+    # PR2023-08-14 PR2024-07-30
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('  ----- savetolog_studentsubject -----')
-        logger.debug('    req_mode: ' + str(req_mode))
+        logger.debug('    log_mode: ' + str(log_mode))
         logger.debug('    updated_fields: ' + str(updated_fields))
 
-    """
-    # PR2023-08-14 fields in Studentsubjectlog:
-    id                | integer                  |           | not null | nextval('students_studentsubjectlog_id_seq'::regclass)
-    modifiedat        | timestamp with time zone |           | not null |
-    studentsubject_id | integer                  |           | not null |
-    mode              | character varying(1)     |           |          |
-    is_extra_nocount  | boolean                  |           |          |
-    is_extra_counts   | boolean                  |           |          |
-    is_thumbrule      | boolean                  |           |          |
-    pws_title         | character varying(80)    |           |          |
-    pws_subjects      | character varying(80)    |           |          |
-    has_exemption     | boolean                  |           |          |
-    has_sr            | boolean                  |           |          |
-    has_reex          | boolean                  |           |          |
-    has_reex03        | boolean                  |           |          |
-    exemption_year    | smallint                 |           |          |
-    pok_validthru     | smallint                 |           |          |
-    pok_sesr          | character varying(4)     |           |          |
-    pok_pece          | character varying(4)     |           |          |
-    pok_final         | character varying(4)     |           |          |
-    tobechanged       | boolean                  |           |          |
-    tobedeleted       | boolean                  |           |          |
-    deleted           | boolean                  |           |          |
-    cluster_id        | integer                  |           |          |
-    ete_cluster_id    | integer                  |           |          |
-    modifiedby_id     | integer                  |           |          |
-    schemeitem_id     | integer                  |           |          |
-    student_id        | integer                  |           |          |
-    subj_auth1by_id   | integer                  |           |          |
-    subj_auth2by_id   | integer                  |           |          |
-    subj_published_id | integer                  |           |          |
-    subject_id        | integer                  |           |          |
-   
-    """
 
     #  PR2024-04-02 Sentry error: null value in column "gradelist_use_exem" violates not-null constraint
     #   cause: forgot to add non-null field gradelist_use_exem to field_list
     # PR2024-05-30 TODO make gradelist_use_exem nullable, remove from default fieldlist
-    if studentsubject_pk and request and request.user:
-        try:
-            mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
 
-            field_list = (
-                'student_id', 'subject_id', 'schemeitem_id', 'cluster_id', 'ete_cluster_id',
+    if studsubj_pk_or_array:
+        try:
+
+            if isinstance(studsubj_pk_or_array, int):
+                where_clause = ''.join(("WHERE studsubj.id = ", str(studsubj_pk_or_array), "::INT;"))
+            elif isinstance(studsubj_pk_or_array, list):
+                where_clause = ''.join(("WHERE studsubj.id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_or_array), "::INT[]));"))
+            else:
+                where_clause = "WHERE FALSE;"
+
+            if isinstance(updated_fields, str):
+                updated_field_list = [updated_fields]
+            elif isinstance(updated_fields, list):
+                updated_field_list = updated_fields
+            else:
+                updated_field_list = []
+
+            mode = "'" + log_mode[:1] + "'" if log_mode else "'-'"
+
+            log_field_list = (
+                # NIU: 'student_id', 'subject_id',
+                'schemeitem_id', 'cluster_id', 'ete_cluster_id',
                 'is_extra_nocount', 'is_extra_counts', 'is_thumbrule',
                 'pws_title', 'pws_subjects',
                 'has_exemption', 'has_sr', 'has_reex', 'has_reex03', 'exemption_year',
@@ -514,57 +452,51 @@ def savetolog_studentsubject(studentsubject_pk, req_mode, request, updated_field
             # till that is done: add gradelist_use_exem as requited field
             tobe_copied_field_list.append('gradelist_use_exem')
 
-            for field in field_list:
-                # - when mode is 'update': copy only updated fields
-                # - always copy field 'country_id','code', 'modifiedby_id', ''modifiedat'
+            for field in updated_field_list:
+                if field in log_field_list and field not in tobe_copied_field_list:
+                    tobe_copied_field_list.append(field)
 
-                if field not in tobe_copied_field_list:
-                    # copy all fields when mode = 'create' or 'import'
-                    is_create_or_import = mode in ("'c'", "'i'")
-
-                    if is_create_or_import:
-                        tobe_copied_field_list.append(field)
-                    # otherwise: copy fields in tobe_copied_field_list
-                    elif field in updated_fields:
-                        tobe_copied_field_list.append(field)
+            if logging_on:
+                logger.debug('    tobe_copied_field_list: ' + str(tobe_copied_field_list))
 
             tobe_copied_field_str = ', '.join(tobe_copied_field_list)
 
-            sql = ' '.join((
+            sql = ''.join((
                 "INSERT INTO students_studentsubjectlog(",
-                "studentsubject_id, mode,", tobe_copied_field_str,
-                ") SELECT id,", mode, ",",
-                tobe_copied_field_str,
-                "FROM students_studentsubject AS studsubj",
-                "WHERE studsubj.id=", str(studentsubject_pk), "::INT",
-                "RETURNING id;"
+                    "studentsubject_id, mode,", tobe_copied_field_str,
+                ") SELECT ",
+                    "id, '", log_mode, "',", tobe_copied_field_str,
+                " FROM students_studentsubject AS studsubj ",
+                where_clause
             ))
-            if logging_on:
-                logger.debug('    tobe_copied_field_list: ' + str(tobe_copied_field_list))
-                logger.debug('    sql: ' + str(sql))
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
-                if logging_on:
-                    logger.debug('    rows: ' + str(cursor.fetchall()))
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 # - end of savetolog_studentsubject
 
 
-def savetolog_grade(grade_pk, req_mode, request, updated_fields):
+def savetolog_grade(grade_pk_or_array, log_mode, request, updated_fields):
     # PR2023-08-15 PR2024-02-24
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('  ----- savetolog_grade -----')
-        logger.debug('    req_mode: ' + str(req_mode))
+        logger.debug('    req_mode: ' + str(log_mode))
         logger.debug('    updated_fields: ' + str(updated_fields))
 
-    if grade_pk and request and request.user:
+    if grade_pk_or_array and request and request.user:
         try:
-            mode = "'" + req_mode[:1] + "'" if req_mode else "'-'"
+            if isinstance(grade_pk_or_array, int):
+                where_clause = ''.join(("= ", str(grade_pk_or_array), "::INT;"))
+            elif isinstance(grade_pk_or_array, list):
+                where_clause = ''.join(("IN (SELECT UNNEST(ARRAY", str(grade_pk_or_array), "::INT[])) "))
+            else:
+                where_clause = "WHERE FALSE;"
+
+            mode = "'" + log_mode[:1] + "'" if log_mode else "'-'"
             field_list = (
                 'studentsubject_id',
                 'pescore', 'cescore', 'segrade', 'srgrade', 'sesrgrade',
@@ -786,7 +718,7 @@ def get_exam_log_pk(exam_id): # PR2021-12-13
 
 
 ############################## VERSION 2 ############################### PR2024-06-02
-def copytolog_grade_v2(grade_pk_list, req_mode, modifiedby_id=None):
+def copytolog_grade_v2(grade_pk_list, log_mode, modifiedby_id=None):
     # PR2024-06-02
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -802,7 +734,7 @@ def copytolog_grade_v2(grade_pk_list, req_mode, modifiedby_id=None):
         return sql_clause
 
     def sql_mode_value():
-        mode = req_mode[:1] if req_mode else '-'
+        mode = log_mode[:1] if log_mode else '-'
         return ''.join(("'", mode, "', "))
 
     def sql_modifiedvalue():
@@ -843,4 +775,6 @@ def copytolog_grade_v2(grade_pk_list, req_mode, modifiedby_id=None):
             logger.error(getattr(e, 'message', str(e)))
 
 # - end of copytolog_grade_v2
+
+
 
