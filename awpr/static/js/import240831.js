@@ -594,7 +594,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 let dict_list = [];
                 for (let i = 0; i < rowLength; i++) {
                     let row = mimp.curWorksheetData[i];
-        console.log ("row", deepcopy_dict(row));
+        //console.log ("row", deepcopy_dict(row));
 
 //------ loop through excel_coldefs
                     // rowindex is index of tablerow. Index 0 is header, therefore rowindex starts with 1
@@ -633,7 +633,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                         }
                     }; //for (let col = 1 ; col <colLength; col++)
                     dict_list.push(dict);
-    console.log("      dict_list:", dict_list)
+    //console.log("      dict_list:", dict_list)
                 }
     //console.log("======== dict_list:", dict_list)
                 if(!dict_list || !dict_list.length){
@@ -1031,7 +1031,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========  get_excel_coldef_dictlist_from_tablecolumn  ================  PR2023-08-14
     function get_excel_coldef_dictlist_from_tablecolumn(){
-        console.log("==== get_excel_coldef_dictlist_from_tablecolumn  ========= ");
+        //console.log("==== get_excel_coldef_dictlist_from_tablecolumn  ========= ");
 
 // --- create new_awpDict_list
         const excel_coldef_dictlist = [];
@@ -1097,13 +1097,13 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 // ---  create dictlist 'mimp.stored_coldefs' from mimp_stored
         mimp.stored_coldefs = get_awp_coldef_dictlist_from_mimp_stored();
-        console.log("    mimp.stored_coldefs: ", mimp.stored_coldefs);
+//console.log("    mimp.stored_coldefs: ", mimp.stored_coldefs);
 
 // ---  create array 'excel_coldefs' with Excel column names, replaces spaces, ", ', /, \ and . with _
         let itemlist = [];
         mimp.excel_coldefs = get_excel_coldef_dictlist_from_tablecolumn();
 
-        console.log("    mimp.excel_coldefs: ", mimp.excel_coldefs);
+//console.log("    mimp.excel_coldefs: ", mimp.excel_coldefs);
 
 // +++++  loop through mimp.stored_coldefs +++++
         // mimp.stored_coldefs is an array, it gets values from mimp.stored_coldefs
@@ -1246,8 +1246,8 @@ if (console_on){
         };
 
     if (console_on){
-        console.log(" >>> mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
-        console.log(" >>> mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+        console.log(" @@@@@@@@@@>>> mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+        console.log(" @@@@@@@@@@>>> mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
     };
 };  // FillExcelValueLists
 
@@ -1255,7 +1255,7 @@ if (console_on){
 //=========  FillExcelValueDictlist  ================  PR2021-02-24 PR2023-08-13
     function FillExcelValueDictlist(excColIndex, excColdef, awpColdef, link_same_values){
         console.log(" ==========  FillExcelValueDictlist ========== ");
-        console.log("    excColIndex", excColIndex);
+        //console.log("    excColIndex", excColIndex);
         console.log("    excColdef: ", excColdef);  // excColdef: Sector
         console.log("    awpColdef: ", awpColdef);  // awpColdef: sector
         console.log("    mimp_stored[" + awpColdef + "]: ", mimp_stored[awpColdef]);
@@ -2059,7 +2059,7 @@ if (console_on){
     function Fill_AEL_Tables(JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
         console.log(" ==== Fill_AEL_Tables  =========>> ");
 
-        //console.log("mimp_stored.tablelist ", mimp_stored.tablelist);
+        console.log("mimp_stored.tablelist ", mimp_stored.tablelist);
         //console.log("mimp.stored_coldefs ", mimp.stored_coldefs);
         //console.log("mimp.excel_coldefs ", mimp.excel_coldefs);
         // called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
@@ -2076,7 +2076,8 @@ if (console_on){
     function Fill_AEL_Table(tbodyTblName, JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
         console.log(" ===== Fill_AEL_Table  =====");
         console.log("tbodyTblName", tbodyTblName);
-        const show_console = false; // (tbodyTblName === "level");
+        const show_console = false;
+        //const show_console = (tbodyTblName === "sector");
 
 if (show_console){
     console.log("    mimp.import_table: ", mimp.import_table);
@@ -2130,7 +2131,7 @@ if (show_console){
 
             if(show_table){
     // ---  first loop through array of awp_columns, then through array of excel_coldefs
-                // key: 0 = "awp", 1: "lnk" or "awp"
+                // key: 0 = "awp", 1: "exc"
                 for (let j = 0; j < 2; j++) {
                     const key =  (!j) ? "awp" : "exc";
                     const rows = (is_tbl_coldef) ? (key === "awp") ? mimp.stored_coldefs : mimp.excel_coldefs :
@@ -2207,13 +2208,14 @@ if (show_console){console.log("===> row_is_linked row.awpBasePk", row.awpBasePk)
 if (show_console){
     console.log("....awpCaption", awpCaption);
     console.log("....excCaption", excCaption);
-}
+    console.log("....skip_linked_exc_row", skip_linked_exc_row);
+};
                             if(!skip_linked_exc_row){
             // ---  if excColdef and excValue exist: append row to table ColLinked
                                 //  append row to table Awp if excValue does not exist in items
                                 // add linked row to linked table, add to awp / excel tab;le otherwise
                                 let el_tbody = (row_is_linked) ? el_tbody_lnk : (key === "awp") ? el_tbody_awp : el_tbody_exc;
-
+if (show_console){console.log(" el_tbody", el_tbody);}
             // --- insert tblRow into tbody_lnk
                                 let tblRow = el_tbody.insertRow(-1);
                                     if (row.rowId) {tblRow.id = row.rowId};
@@ -2282,6 +2284,7 @@ if (show_console){
                                         for (let i = 0, td; td = tblRow.children[i]; i++) {
                                             td.classList.remove(cls_linked_hover);
                                     }});
+if (show_console){console.log(" tblRow", tblRow)};
                             }; //  if(!skip_linked_exc_row)
                         };  // for (let i = 0, row ; row = items[i]; i++)
                     };  // if(items){
@@ -2441,9 +2444,9 @@ if (show_console){
 // ---  fill lists with linked values
         // must fill exccelvalues list again, after linking sector, profiel, level, department
         // PR2022-08-21 debug : NOT when linking subjects!!
-        //if(mimp.import_table !== "import_studsubj"){
-            //FillExcelValueLists(true);  // true = link_same_values
-       // };
+        if(mimp.import_table !== "import_studsubj"){
+            FillExcelValueLists(true);  // true = link_same_values
+        };
 
 // ---  update AEL-tables
         Fill_AEL_Tables(JustLinkedAwpId);

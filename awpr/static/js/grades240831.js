@@ -4857,8 +4857,8 @@ console.log( "......filter_value", filter_value);
                     mod_MSELEX_dict.subj_pk = data_dict.subj_id;
                     mod_MSELEX_dict.subjbase_pk = data_dict.subjbase_id;
                     mod_MSELEX_dict.student_lvlbase_pk = data_dict.lvlbase_id;
-    //console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
-    //console.log( "mod_MSELEX_dict.exam_pk", mod_MSELEX_dict.exam_pk);
+    console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+    console.log( "mod_MSELEX_dict.exam_pk", mod_MSELEX_dict.exam_pk);
 
         // ---  fill select table
                     const row_count = MSELEX_FillSelectTable()
@@ -4919,16 +4919,18 @@ console.log( "......filter_value", filter_value);
 
 //=========  MSELEX_FillSelectTable  ================ PR2022-06-22
     function MSELEX_FillSelectTable() {
-        //console.log( "===== MSELEX_FillSelectTable ========= ");
+        console.log( "===== MSELEX_FillSelectTable ========= ");
 
         const tblBody_select = el_MSELEX_tblBody_select;
         tblBody_select.innerText = null;
-    //console.log( "all_exam_rows", all_exam_rows);
+
+    console.log( "    mod_MSELEX_dict.subjbase_pk", mod_MSELEX_dict.subjbase_pk);
 
         let row_count = 0, add_to_list = false;
 // ---  loop through all_exam_rows
         if(all_exam_rows && all_exam_rows.length){
             for (let i = 0, data_dict; data_dict = all_exam_rows[i]; i++) {
+
 
             // add only when exam has same subject as grade, and also the same depbase and lvlbase_id
             // also filter examperiod
@@ -4936,10 +4938,21 @@ console.log( "......filter_value", filter_value);
             // cause: sxm has different subj_pk, use subjbase_pk instead
                 let show_row = false;
                 if (mod_MSELEX_dict.subjbase_pk === data_dict.subjbase_id){
+
                     // PR2022-06-30 debug: showed wrong examperiod after switching examperiod in sel_btn
                     // solved by downloading all_exam_rows when switching sel_btn
                     // also added filter examperiod here, to be on the safe side
                     if (data_dict.examperiod === setting_dict.sel_examperiod){
+
+    console.log( "    data_dict.subjbase_id", data_dict.subjbase_id);
+    console.log( "    data_dict.examperiod", data_dict.examperiod);
+    console.log( "    setting_dict.sel_examperiod", setting_dict.sel_examperiod);
+
+    console.log( "    mod_MSELEX_dict.student_lvlbase_pk", mod_MSELEX_dict.student_lvlbase_pk);
+    console.log( "    data_dict.lvlbase_id", data_dict.lvlbase_id);
+
+    console.log( "    data_dict", data_dict);
+
                         if(mod_MSELEX_dict.student_lvlbase_pk){
                             show_row = (mod_MSELEX_dict.student_lvlbase_pk === data_dict.lvlbase_id);
                         } else {
@@ -4948,7 +4961,6 @@ console.log( "......filter_value", filter_value);
                     };
                 };
                 if (show_row){
-    //console.log( "data_dict", data_dict);
                     row_count += 1;
                     MSELEX_FillSelectRow(data_dict, tblBody_select, -1);
                 };

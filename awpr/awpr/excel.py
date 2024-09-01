@@ -2030,7 +2030,7 @@ def create_ex2_ex2a_ex6_xlsx(published_instance, examyear, school, department, l
                              library, ex_form, save_to_disk, request, user_lang):
     # PR2022-02-17 PR2022-06-01  PR2023-08-25
     # called by GradeSubmitEx2Ex2aView, GradeDownloadEx2View, GradeDownloadEx2aView, GradeDownloadEx6View
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_ex2_ex2a_ex6_xlsx -----')
@@ -3482,8 +3482,8 @@ def create_ex5_rows_dict(examyear, school, department, level, examperiod, save_t
 
 #WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
 def create_ex6_rows_dict(examyear, school, department, level):
-    # PR2022-08-25 #
-    # PR204-06-10 TODO use fields in studentssubject table: pok_final pok_pece pok_sesr
+    # PR2022-08-25
+    # PR204-08-30 use fields in studentssubject pok_final pok_pece pok_sesr instead of calculating pok based on gradelist grades
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------------ create_ex6_rows_dict -----------------')
@@ -3495,8 +3495,10 @@ def create_ex6_rows_dict(examyear, school, department, level):
                 "st.iseveningstudent AS evest, st.islexstudent AS lexst, st.bis_exam AS bisst, st.partial_exam AS partst, st.withdrawn AS wdr,"
                 "st.result,"
 
-                "studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade, ",
-                "studsubj.gradelist_use_exem, ",
+                "studsubj.pok_sesr, studsubj.pok_pece, studsubj.pok_final, ",
+                #"studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade, ",
+                #"studsubj.gradelist_use_exem, ",
+
                 "subj.id AS subj_id, subjbase.code AS subj_code, ",
 
                 "si.gradetype, si.is_combi, si.weight_se, si.weight_ce, ",
@@ -3515,7 +3517,11 @@ def create_ex6_rows_dict(examyear, school, department, level):
 
                 "WHERE st.school_id = ", str(school.pk) , "::INT ",
                 "AND st.department_id = ", str(department.pk) , "::INT",
-                "AND st.result = ", str(c.RESULT_FAILED) , "::INT",
+                # PR2024-08-29 Nancy Ispectie: Elke deelnemer aan een examenjaar heeft recht om een bewijs van kennis te ontvangen.
+                # skip only candidates that have passed the exam
+                # was: "AND st.result = ", str(c.RESULT_FAILED) , "::INT",
+                "AND st.result != ", str(c.RESULT_PASSED), "::INT",
+
                 "AND NOT st.deleted AND NOT st.tobedeleted",
                 "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted"
                 ]
@@ -3602,31 +3608,40 @@ def create_ex6_rows_dict(examyear, school, department, level):
                 # calculate pok
                 subj_code = row.get('subj_code') or '-'
                 # calc if this subject has pok
-                sesr_grade = row.get('gradelist_sesrgrade')
-                pece_grade = row.get('gradelist_pecegrade')
-                final_grade = row.get('gradelist_finalgrade')
+                # P2024-08-30 this one is not correct. Don't calc pok from gradelist,
+                # becasue grade n gradelist might be based on exemption, Thiswould create a new pok of that exemption
+                # grade of this year might have been overruled by exemption, must be able to generate new pok based on grade of this yesr
+                # get pok_sesr, pok_pece and pok_final from studsubject instead
+                # was:
+                #sesr_grade = row.get('gradelist_sesrgrade')
+                #pece_grade = row.get('gradelist_pecegrade')
+                #final_grade = row.get('gradelist_finalgrade')
 
-                no_input = False if final_grade else True
-                has_pok = calc_final.calc_has_pok_v2(
-                    noinput=no_input,
-                    no_centralexam=examyear.no_centralexam,
-                    gradetype=row.get('gradetype'),
-                    is_combi=row.get('is_combi'),
-                    weight_se=row.get('weight_se'),
-                    weight_ce=row.get('weight_ce'),
-                    sesrgrade=sesr_grade,
-                    pecegrade=pece_grade,
-                    finalgrade=final_grade
-                )
+                #no_input = False if final_grade else True
+                #has_pok = calc_final.calc_pok_v2(
+                #    noinput=no_input,
+                #    no_centralexam=examyear.no_centralexam,
+                #    gradetype=row.get('gradetype'),
+                #    is_combi=row.get('is_combi'),
+                #    weight_se=row.get('weight_se'),
+                #    weight_ce=row.get('weight_ce'),
+                #    sesrgrade=sesr_grade,
+                #    pecegrade=pece_grade,
+                #    finalgrade=final_grade
+                #)
 
-                if has_pok:
+                pok_sesr = row.get('pok_sesr') or '-'
+                pok_pece = row.get('pok_pece')
+                pok_final = row.get('pok_final')
+
+                if pok_final:
                     if subject_pk not in subject_dict:
                         subject_dict[subject_pk] = {'pk': subject_pk, 'code': subj_code}
 
-                    display_list = [(sesr_grade or '---').replace('.', ',')]
-                    if pece_grade:
-                        display_list.append(' : ' + pece_grade.replace('.', ','))
-                    display_list.append(' > ' + (final_grade or '---'))
+                    display_list = [pok_sesr.replace('.', ',')]
+                    if pok_pece:
+                        display_list.append(' : ' + pok_pece.replace('.', ','))
+                    display_list.append(' > ' + pok_final)
                     level_student_grades_dict[subject_pk] = ''.join(display_list)
 
     if logging_on:
@@ -3634,26 +3649,14 @@ def create_ex6_rows_dict(examyear, school, department, level):
 
         """                       
         ex6_rows_dict: {
-            6: {'lvl_name': 'Praktisch Basisgerichte Leerweg', 
-                'students':
-                    3826: {
-                        'stud': {'idnr': '2005080604', 'exnr': '2180', 'gender': 'V', 'class': 'T4B', 'lvl': 'TKL', 'sct': 'z&w', 
-                                'name': 'Arion , Tichainy Jennifer', 'regnr': 'CUR0322221803', 'dipnr': None, 'glnr': None, 
-                                'evest': False, 'lexst': False, 'bisst': False, 'partst': False, 'wdr': False, 
-                                'c_avg': None, 'combi_avg': None, 'f_avg': None, 'result': 0}, 
-                        'subj': {135: {'exemp': True, 'usex': True}, 113: {}, 114: {}, 115: {}, 
-                                116: {'exemp': True, 'usex': True}, 117: {'exemp': True, 'usex': True}, 
-                                118: {'exemp': True, 'usex': True}, 123: {}, 124: {}, 120: {}, 131: {}}, 
-                                
-        ex6_rows_dict: 
-            {11: {'lvl_name': 'Praktisch Kadergerichte Leerweg', 
-                'students': 
-                    {6183: {
-                        'stud': {'idnr': '2004.09.29.04', 'exnr': 'V023', 'gender': 'V', 'class': '4V2', 'lvl': 'PKL', 'sct': 'z&w', 
-                            'name': 'Antonia, Röshanteli Röena Rosa de Lima', 
-                            'evest': False, 'lexst': False, 'bisst': False, 'partst': False, 'wdr': False, 'result': 2}, 
-                        'grades': {266: 'g > g', 247: '6,7 > 7', 251: '5,7 > 6', 249: '5,8 > 6'}, 
-
+            'subjects': {
+                357: {'pk': 357, 'code': 'lo'}, 353: {'pk': 353, 'code': 'mm1'}, ... 
+            16: {
+                'lvl_name': 'Praktisch Basisgerichte Leerweg',
+                'students': {
+                    9936: {'idnr': '2005.09.13.01', 'exnr': '2005091301', 'cls': '4IE-PBL', 'lvl': 'PBL', 'sct': 'tech', 
+                            'name': 'Antonia Anastatia, Dylan Flavien', 
+                            'grades': {357: '9,4 > 9', 353: '5,9 > 6', 372: 'v > v', 355: '6,6 > 7'}}, ...
        """
     subject_dictlist_sorted = []
     if subject_dict:

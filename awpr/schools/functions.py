@@ -1653,21 +1653,30 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
     stored_coldef = {}
 
 # - get list of tables needed for uploading
+    table_list = []
     if setting_key == c.KEY_IMPORT_STUDENT:
+        # PR2024-09-01
+        table_list.append('coldef')
         if school_has_multiple_deps:
-            table_list = ("coldef", "department", "level", "sector", "profiel")
-        else:
-            table_list = ("coldef", "level", "sector", "profiel")
+            table_list.append('department')
+        if is_level_req:
+            table_list.append('level')
+        if is_sector_req:
+            if has_profiel:
+                table_list.append('profiel')
+            else:
+                table_list.append('sector')
+
     elif setting_key == c.KEY_IMPORT_GRADE:
         # PR2021-08-11 subjecttype NIU was: table_list = ("coldef", "subject", "subjecttype")
         # 'subject' comes first, subject values are used in coldef to exclude linked subjects from coldef list PR2021-08-11
-        table_list = ("subject", "coldef")
+        table_list = ["subject", "coldef"]
     elif setting_key == c.KEY_IMPORT_STUDENTSUBJECT:
         # PR2021-08-11 subjecttype NIU was: table_list = ("coldef", "subject", "subjecttype")
         # 'subject' comes first, subject values are used in coldef to exclude linked subjects from coldef list PR2021-08-11
-        table_list = ("subject", "coldef")
+        table_list = ["subject", "coldef"]
     else:
-        table_list = ("coldef",)
+        table_list = ["coldef"]
 
     if setting_key and sel_school:
         if stored_settings_dict:

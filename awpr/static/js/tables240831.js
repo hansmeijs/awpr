@@ -119,7 +119,7 @@
 
 //=========  t_MSED_Open  ================
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_departments) {
-        //PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08 PR2023-01-08 PR2023-07-03
+        //PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08 PR2023-01-08 PR2023-07-03 PR2024-08-31
         //console.log( "===== t_MSED_Open ========= ", tblName);
         //console.log( "    setting_dict", setting_dict);
         //console.log( "    permit_dict", permit_dict);
@@ -267,13 +267,13 @@
                                    (tblName === "department") ? data_dict.base_id : null;
 
         // permit_dict.requsr_country_pk
-                    const is_locked = (data_dict && data_dict.locked) ? true : false;
+                    const is_locked = (data_dict && data_dict.examyear_locked);
                     const code_value = (tblName === "examyear") ? (data_dict.examyear_code) ? data_dict.examyear_code : "---" :
                                     (tblName === "department") ? (data_dict.base_code) ? data_dict.base_code : "---" : "---";
 
-    //console.log( "data_dict", data_dict);
-    //console.log( "code_value", code_value);
-    //console.log( "is_locked", is_locked);
+    //console.log( "    data_dict", data_dict);
+    //console.log( "    code_value", code_value);
+    //console.log( "    is_locked", is_locked);
                     let skip_row = false;
                     if(tblName === "examyear") {
                         skip_row = (permit_dict.requsr_country_pk !== data_dict.country_id);

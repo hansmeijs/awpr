@@ -322,7 +322,7 @@ def get_gl_msg_approved(sel_school_pk, sel_dep_pk, mode, student_pk_list, sel_lv
 
     gl_approved_list = []
     gl_not_approved_list = []
-    gl_not_failed_list = []
+    pok_have_passed_list = []
 
     has_gl_approved = False
     has_rows = False
@@ -347,14 +347,24 @@ def get_gl_msg_approved(sel_school_pk, sel_dep_pk, mode, student_pk_list, sel_lv
                 gl_approved_list.append(full_name)
 
             elif is_pok:
-                # only add students that have failed or that have partial_exam
-                if row.get('result') == c.RESULT_FAILED or row.get('partial_exam', False):
+                """  
+                PR2024-08-29 email Nancy Ispectie nav email Hilly Buitenweg ST Paulus:
+                    Elke deelnemer aan een examenjaar heeft recht om een bewijs van kennis te ontvangen. 
+                    Het is inderdaad goed dat het uitprinten van bewijzen van kennis ook voor de uitslagen "geen uitslag" en "teruggetrokken" mogelijk is, evenals het uitprinten van cijferlijsten.
+                    Deze mogelijkheid hebben wij niet eerder meegenomen, maar de praktijkgevallen wijzen op de noodzaak.
+                    Dit alles natuurlijk wel na het goedkeuren door de Inspectie.
+                    Drs. Nancy Josephina
+                """
+                # PR2024-08-29 was: only add students that have failed or that have partial_exam
+                # was: if row.get('result') == c.RESULT_FAILED or row.get('partial_exam', False):
+
+                if row.get('result') == c.RESULT_PASSED:
+                    pok_have_passed_list.append(full_name)
+                else:
                     if row.get('gl_status') == c.GL_STATUS_01_APPROVED:
                         gl_approved_list.append(full_name)
                     else:
                         gl_not_approved_list.append(full_name)
-                else:
-                    gl_not_failed_list.append(full_name)
 
             else:
                 if row.get('gl_status') == c.GL_STATUS_01_APPROVED:
@@ -414,30 +424,24 @@ def get_gl_msg_approved(sel_school_pk, sel_dep_pk, mode, student_pk_list, sel_lv
                 "</p></div>"
             ))
 
-        if gl_not_failed_list:
-            len_not_failed = len(gl_not_failed_list)
+        if pok_have_passed_list:
+            # PR2024-08-29 Nancy Ispectie: Elke deelnemer aan een examenjaar heeft recht om een bewijs van kennis te ontvangen.
+            # skip only candidates that have passed the exam
+            len_have_passed = len(pok_have_passed_list)
 
-            cand_txt = str(_('candidate') if len_not_failed == 1 else _('candidates'))
-            is_have_txt = pgettext_lazy('is_nl', 'has') if len_not_failed == 1 else pgettext_lazy( 'zijn_nl', 'have')
-            has_have_txt = gettext('has') if len_not_failed == 1 else gettext('have')
-            val_txt = gettext('the following').capitalize() if len_not_failed <= 10 else str(len_not_failed)
+            cand_txt = str(_('candidate') if len_have_passed == 1 else _('candidates'))
+            is_have_txt = pgettext_lazy('is_nl', 'has') if len_have_passed == 1 else pgettext_lazy( 'zijn_nl', 'have')
+            will_not_get_txt = pgettext_lazy('singular', 'will not get') if len_have_passed == 1 else pgettext_lazy( 'plural', 'will not get')
+
+            val_txt = str(len_have_passed)
 
             msg_list.append("<div class='p-2 mb-2 border_bg_transparent'><p>")
             msg_list.append(gettext(
-                '%(val)s %(cand)s %(is_have)s not failed the exam and %(has_have)s not taken a partial exam') \
-                            % {'val': val_txt, 'cand': cand_txt, 'is_have': is_have_txt, 'has_have': has_have_txt})
+                '%(val)s %(cand)s %(is_have)s passed and %(will_not_get)s proof of knowledge.') \
+                            % {'val': val_txt, 'cand': cand_txt, 'is_have': is_have_txt, 'will_not_get': will_not_get_txt})
 
-            if len_not_failed <= 10:
-                cand_list = '<br>'.join(gl_not_failed_list)
-                msg_list.extend(( ":<p class='pb-2'>", cand_list,"</p>"))
-            else:
-                msg_list.append(".</p>")
+            msg_list.append("</p>")
 
-            msg_list.extend((
-                "<p>",
-                gettext("Only candidates that have failed the exam or have taken a partial exam can get a proof of knowledge."),
-                "</p></div>"
-            ))
     msg_html = ''.join(msg_list)
     return has_rows, has_gl_approved, msg_html
 # - end of get_gl_msg_approved

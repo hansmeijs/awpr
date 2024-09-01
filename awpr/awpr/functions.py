@@ -1751,7 +1751,7 @@ def checkPok2024AndSaveInStudsubjONCEONLY(request):
                 "WHERE NOT grd.deleted AND NOT grd.tobedeleted",
 
                 # skip exaamperiod 'exemption' when calculating pok
-                ''.join(("AND grd.examperiod <", str(c.EXAMPERIOD_EXEMPTION), "::INT")),
+                ''.join(("AND grd.examperiod < ", str(c.EXAMPERIOD_EXEMPTION), "::INT")),
                 "GROUP BY grd.studentsubject_id"
             ))
             sql_list = (
@@ -1802,17 +1802,18 @@ def checkPok2024AndSaveInStudsubjONCEONLY(request):
                 "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted ",
 
                 "AND ey.code IN (SELECT UNNEST(ARRAY[2022, 2023, 2024]::INT[])) ",
-
-                ''.join(("AND ( (stud.result =", str(c.RESULT_FAILED), "::INT) ",
-                "OR (stud.partial_exam AND (stud.iseveningstudent OR stud.islexstudent)) ) "
-
+                # PR2024-08-29 Nancy Ispectie: Elke deelnemer aan een examenjaar heeft recht om een bewijs van kennis te ontvangen.
+                # skip only candidates that have passed the exam
+                # was: ''.join(("AND ( (stud.result =", str(c.RESULT_FAILED), "::INT) ",
+                #       "OR (stud.partial_exam AND (stud.iseveningstudent OR stud.islexstudent)) ) "
+                ''.join(("AND stud.result != ", str(c.RESULT_PASSED), "::INT;",
                 ))
             )
             sql = ' '.join(sql_list)
 
-            #if logging_on:
-            #    for sql_txt in sql_list:
-            #        logger.debug(' > ' + str(sql_txt))
+            if logging_on:
+                for sql_txt in sql_list:
+                    logger.debug(' > ' + str(sql_txt))
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
@@ -1825,6 +1826,9 @@ def checkPok2024AndSaveInStudsubjONCEONLY(request):
                     sql_value_list = []
 
                     for row in rows:
+                        if logging_on:
+                            logger.debug('  --- row: ' + str(row))
+
                         max_grade_dict = {}
 
             # ===== loop through examperiods / grades of this studsubj =
@@ -1864,7 +1868,7 @@ def checkPok2024AndSaveInStudsubjONCEONLY(request):
                             )
 
                 # --- calc_has_pok
-                            this_ep_has_pok = calc_final.calc_has_pok_v2(
+                            this_ep_has_pok = calc_final.calc_pok_v2(
                                 noinput=this_ep_has_noinput,
                                 no_centralexam=row['no_centralexam'],
                                 gradetype=row['gradetype'],

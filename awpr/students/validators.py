@@ -707,7 +707,7 @@ def link_identical_students(request, sel_examyear, sel_school, sel_department, s
             "WHERE NOT stud.tobedeleted AND NOT stud.deleted",
             "AND stud.school_id =", str(sel_school.pk), "::INT",
             "AND stud.department_id =", str(sel_department.pk), "::INT",
-            #student_clause,
+            student_clause,
             # match when idnumber, lastname, firstname and prefix are the same
             "AND LOWER(TRIM(sub_sql.lastname)) = LOWER(TRIM(stud.lastname)) ",
             "AND LOWER(TRIM(sub_sql.firstname)) = LOWER(TRIM(stud.firstname)) ",
@@ -999,7 +999,7 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
 def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, user_lang):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('    student: ' + str(student))
@@ -1149,7 +1149,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                 if is_sxm_student:
                     # PR2024-06-05 Sint Maarten does not validate the composition of the subjects
                     pass
-                if is_evening_student or is_lex_student or partial_exam:
+                elif is_evening_student or is_lex_student or partial_exam:
                     # - return message when is_evening_student, is_lex_student, partial_exam
 
                     msg_list.append("<div class='p-2 border_bg_transparent'><p>")
@@ -1453,12 +1453,13 @@ def validate_studentsubjects_no_msg(student_instance, user_lang):
         logger.debug('    student_instance: ' + str(student_instance))
 
     has_error = False
-    # - when sxm_student: skip validate_studentsubjects PR2022-08-31
-    is_sxm_student = get_is_sxm_student(student_instance)  # sxm has different rules
-    if is_sxm_student:
-        pass
-    else:
-        if student_instance:
+
+    if student_instance:
+# - when sxm_student: skip validate_studentsubjects PR2022-08-31
+        is_sxm_student = get_is_sxm_student(student_instance)  # sxm has different rules
+        if is_sxm_student:
+            pass
+        else:
             stud_scheme = student_instance.scheme
             if logging_on:
                 logger.debug('    stud_scheme: ' + str(stud_scheme))

@@ -1819,7 +1819,6 @@ class GradeSubmitEx5View(View):  # PR2022-06-12 PR2023-06-15
 # --- end of GradeSubmitEx5View
 
 
-
 @method_decorator([login_required], name='dispatch')
 class GradeSubmitEx6View(View):  # PR2023-08-26
     # function creates new published_instance, Ex6 xlsx and sets published_id in grade
@@ -1837,7 +1836,6 @@ class GradeSubmitEx6View(View):  # PR2023-08-26
         test_is_ok = False
 
 # - get permit
-
         has_permit = acc_prm.get_permit_of_this_page('page_result', 'submit_ex5', request)
         if logging_on:
             logger.debug('     has_permit: ' + str(has_permit))
@@ -1913,9 +1911,9 @@ class GradeSubmitEx6View(View):  # PR2023-08-26
                                     base_id=sel_lvlbase_pk,
                                     examyear=sel_examyear
                                 )
-
                             if logging_on:
                                 logger.debug('     sel_level: ' + str(sel_level))
+
 # - check ex6_grade_approved_rows
                             # not necessary to check grades
                             test_is_ok = True
@@ -1955,7 +1953,7 @@ class GradeSubmitEx6View(View):  # PR2023-08-26
                                     logger.debug('     published_pk: ' + str(published_pk))
                                     logger.debug('     file_name:    ' + str(file_name))
 
-# +++ create Ex5_xlsx
+# +++ create Ex6_xlsx
                                 if not is_test:
                 # - get text from examyearsetting
                                     # just to prevent PyCharm warning on published_instance=published_instance

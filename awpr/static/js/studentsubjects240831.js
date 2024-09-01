@@ -1385,11 +1385,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.setAttribute("data-value", filter_value);
 
                 } else if(field === "subj_error"){
-                     const no_error = (data_dict.subj_composition_checked && data_dict.subj_composition_ok) ||
+                    // PR2024-08-31
+                     const no_error = (data_dict.subj_composition_ok) ||
                                         (data_dict.subj_dispensation);
-
-console.log ("data_dict", data_dict)
-console.log ("@@@@@@@@@@@@@@@@@@@@ no_error", no_error)
 
                     filter_value = (no_error) ?  "0" : "1";
                     el_div.className = (data_dict.subj_dispensation) ? "note_2_3" :
@@ -2435,7 +2433,7 @@ console.log ("@@@@@@@@@@@@@@@@@@@@ no_error", no_error)
 
     function MSTUDSUBJ_SetInputFields(sel_si_pk, is_selected){  // PR2023-01-04
 // ---  put value in input box 'Characteristics of this subject
-        console.log( "===== MSTUDSUBJ_SetInputFields  ========= ");
+        //console.log( "===== MSTUDSUBJ_SetInputFields  ========= ");
         //console.log( "    sel_si_pk", sel_si_pk);
         //console.log( "    is_selected", is_selected);
 
@@ -2449,7 +2447,7 @@ console.log ("@@@@@@@@@@@@@@@@@@@@ no_error", no_error)
 
 // - get sel_subject_pk from sel_si_dict
         const sel_si_dict = (mod_MSTUDSUBJ_dict.schemeitem_dict[sel_si_pk]) ? mod_MSTUDSUBJ_dict.schemeitem_dict[sel_si_pk] : {};
-    console.log( "    sel_si_dict", sel_si_dict);
+    //console.log( "    sel_si_dict", sel_si_dict);
         if(!isEmpty(sel_si_dict)){
             is_mand = sel_si_dict.is_mandatory;
             is_mand_subj_id = sel_si_dict.is_mand_subj_id;
@@ -2462,9 +2460,8 @@ console.log ("@@@@@@@@@@@@@@@@@@@@ no_error", no_error)
 
             studsubj_dict = mod_MSTUDSUBJ_dict.studsubj_dict[sel_si_dict.subj_id];
     //console.log( "    sel_si_dict.subj_id", sel_si_dict.subj_id);
-    //console.log( " @@@@@@@@@@@@   studsubj_dict", studsubj_dict);
-    console.log( "    sel_si_dict.extra_nocount_allowed", sel_si_dict.extra_nocount_allowed);
-    console.log( "    studsubj_dict.is_extra_nocount", studsubj_dict.is_extra_nocount);
+    //console.log( "    studsubj_dict", studsubj_dict);
+
 
             if(!isEmpty(studsubj_dict)){
                 is_empty = false;
@@ -2503,8 +2500,6 @@ console.log ("@@@@@@@@@@@@@@@@@@@@ no_error", no_error)
                                      (field === "pws_title") ? studsubj_dict.pws_title :
                                      (field === "pws_subjects") ? studsubj_dict.pws_subjects : null;
 
-    console.log( "    >>> hide_element", hide_element);
-        console.log( "    >>> field_value", field_value);
                 if(el_wrap){ add_or_remove_class(el_wrap, cls_hide, hide_element )};
 
                if(el.classList.contains("awp_input_text")){

@@ -861,14 +861,18 @@ def compare_two_grades_v2(this_sesrgrade, this_pecegrade, this_finalgrade,
 # - end of calc_max_grade_v2
 
 
-def calc_has_pok_v2(noinput, no_centralexam, gradetype, is_combi, weight_se, weight_ce, sesrgrade, pecegrade, finalgrade, examperiod=None):
+def calc_pok_v2(noinput, no_centralexam, gradetype, is_combi, weight_se, weight_ce, sesrgrade, pecegrade, finalgrade, examperiod=None):
     # PR2022-07-01 PR2024-05-03 PR2024-05-27 PR2024-08-07
-    # function calculates proof of knowledge
+    # function calculates if grade of this examperiod meets requirements of proof of knowledge, if so: returns has_pok =True
     # examperiod is only used to skip exemption. examperiod can be None
 
-    logging_on = False  # s.LOGGING_ON
+    # called by :
+    #  - batch_recalc_update_studsubj_grade_v2, This function uses calc_max_pokV2 and batch update studsubj
+    # - checkPok2024AndSaveInStudsubjONCEONLY, this onceonly function uses calc_max_pokV2 and updates po in studsubj if it has changed
+    # - create_ex6_rows_dict
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ---------- calc_has_pok_v2 ----------')
+        logger.debug(' ---------- calc_pok_v2 ----------')
         logger.debug('    examperiod: ' + str(examperiod) + ' no_centralexam: ' + str(no_centralexam) + ' gradetype: ' + str(gradetype))
         logger.debug('    is_combi: ' + str(is_combi) + ' weight_se: ' + str(weight_se) + ' weight_ce: ' + str(weight_ce))
         logger.debug('    sesrgrade: ' + str(sesrgrade) + ' pecegrade: ' + str(pecegrade) + ' finalgrade: ' + str(finalgrade))
@@ -896,6 +900,26 @@ def calc_has_pok_v2(noinput, no_centralexam, gradetype, is_combi, weight_se, wei
         ' ik: Weet Nancy zeker dat het artikel waar ze naar verwijst ook van toepassing is op de dagscholen?
         ' Esther: Ja Hans. We hadden het over dagschool. Die ene artikel geeft dat niet expliciet aan.
     dus ook een 'v' geeft bewijs van kennis:    
+    
+    PR2024-08-29 email Nancy Ispectie nav email Hilly Buitenweg ST Paulus:
+        Elke deelnemer aan een examenjaar heeft recht om een bewijs van kennis te ontvangen. 
+        Het is inderdaad goed dat het uitprinten van bewijzen van kennis ook voor de uitslagen "geen uitslag" en "teruggetrokken" mogelijk is, evenals het uitprinten van cijferlijsten.
+        Deze mogelijkheid hebben wij niet eerder meegenomen, maar de praktijkgevallen wijzen op de noodzaak.
+        Dit alles natuurlijk wel na het goedkeuren door de Inspectie.
+        Drs. Nancy Josephina
+        This is implemented not here, because this function calculates pok for every subject, regardles result 
+        It is done in results.get_gl_msg_approved
+          
+    Note:  pok is possible if use_exemp
+    The following situation may exist:
+     - a student has an exemption with final grade 9
+     - he does exam this exam period and gets an 8
+     - AWP calculates the result based on the exemption
+      - the student fails again
+     - because she did the exam this year, she must get a new exemption, based on final grade 8
+     - therefore calculating max_pok is not enough, because it looks at the exemption and gives pok = False
+     - solved by: add pok_sesr, pok_pece and pok_final to studsubject
+
     """
 
     has_pok = False
@@ -989,7 +1013,7 @@ def calc_has_pok_v2(noinput, no_centralexam, gradetype, is_combi, weight_se, wei
         logger.debug('  >  has_pok: ' + str(has_pok))
 
     return has_pok
-# end of calc_has_pok_v2
+# end of calc_pok_v2
 
 
 def calc_max_pokV2(max_grade_dict):
@@ -2086,7 +2110,7 @@ def batch_recalc_update_studsubj_grade_v2(request, studsubj_pk_list= None, schem
                 )
 
 # --- calc_has_pok
-                this_ep_has_pok = calc_has_pok_v2(
+                this_ep_has_pok = calc_pok_v2(
                     noinput=this_ep_has_noinput,
                     no_centralexam=row['no_centralexam'],
                     gradetype=row['gradetype'],

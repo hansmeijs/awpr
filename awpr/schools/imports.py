@@ -668,7 +668,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20 PR2024-08-13
 # +++++ loop through data_list - each data_dict contains info of all subjects of one student
                         for data_dict in data_list:
                             if logging_on:
-                                logger.debug('++++++++++++++++++++++++++++++++++++++++++++++++ ')
+                                logger.debug('++++++ loop through data_list +++++++++++++++')
 
     # skip empty rows
                             has_values = False
@@ -3369,9 +3369,9 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
     if logging_on:
         # logger.debug('students_dict_with_subjbase_pk_list: ' + str(students_dict_with_subjbase_pk_list))
         #logger.debug('    lookup_field_caption: ' + str(lookup_field_caption))
-        logger.debug('    idnumber_nodots: ' + str(idnumber_nodots) + ' ' + str(type(idnumber_nodots)))
+        logger.debug('    idnumber_nodots: ' + str(idnumber_nodots))
         logger.debug('    error_list: ' + str(error_list))
-        logger.debug('    has_error: ' + str(has_error))
+        logger.debug('    has_error:  ' + str(has_error))
 
     student = None
     student_dict = None
@@ -5489,7 +5489,7 @@ def create_exemption_sql_list(cur_student_dict, cur_subjbase_pk, cur_subjbase_in
             #logger.debug(' cur_depbase_code:   ' + str(cur_depbase_code))
             #logger.debug(' cur_lvl_abbrev:   ' + str(cur_lvl_abbrev))
             #logger.debug(' cur_sct_abbrev:   ' + str(cur_sct_abbrev))
-            logger.debug(' @@@@@@@@@@@@@ cur_studentsubjects_dict:   ' + str(cur_studentsubjects_dict))
+           # logger.debug(' cur_studentsubjects_dict:   ' + str(cur_studentsubjects_dict))
             logger.debug(' linked_arr:   ' + str(linked_arr))
             logger.debug(' ..........')
 
@@ -5508,8 +5508,8 @@ def create_exemption_sql_list(cur_student_dict, cur_subjbase_pk, cur_subjbase_in
             # get info of this studentsubject from cur_studsubj_dict, key is subjbase_pk, not studsubj_pk
             # use cur_subjbase_instance insetad
             #cur_studsubj_dict = cur_studentsubjects_dict.get(cur_subjbase_pk)
-            if logging_on:
-                logger.debug('    cur_studsubj_dict: ' + str(cur_studsubj_dict))
+            #if logging_on:
+            #    logger.debug('    cur_studsubj_dict: ' + str(cur_studsubj_dict))
 
             if cur_subjbase_instance:
                 if logging_on:

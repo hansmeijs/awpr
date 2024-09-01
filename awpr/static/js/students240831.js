@@ -188,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  MODAL USER SET ALLOWED SECTIONS
         const el_MUPS_username = document.getElementById("id_MUPS_username");
-        console.log("DOMContentLoaded TABLE.js el_MUPS_username", el_MUPS_username);
         const el_MUPS_loader = document.getElementById("id_MUPS_loader");
 
         const el_MUPS_tbody_container = document.getElementById("id_MUPS_tbody_container");
@@ -554,29 +553,32 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("loc.Add_subject ", loc.Add_subject);
         //console.log("loc ", loc);
 
-        let el_submenu = document.getElementById("id_submenu")
-        if(permit_dict.permit_crud){
-            AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete_candidate")}, [], "id_submenu_delete_candidate");
+        //PR2023-06-08 debug: to prevent creating submenu multiple times: skip if btn columns exists
+        if (!document.getElementById("id_submenu_columns")){
+            let el_submenu = document.getElementById("id_submenu")
+            if(permit_dict.permit_crud){
+                AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
+                AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete_candidate")}, [], "id_submenu_delete_candidate");
 
-// ---  SUBMENU ------------------------------------
-            // get element here, because element does not exist on opening page PR2023-05-12
-            el_submenu_delete_candidate = document.getElementById("id_submenu_delete_candidate");
-        };
-        if(permit_dict.requsr_role_system){
-            AddSubmenuButton(el_submenu, loc.Validate_candidate_schemes, function() {ModConfirmOpen("validate_scheme")});
-            AddSubmenuButton(el_submenu, loc.Correct_candidate_schemes, function() {ModConfirmOpen("correct_scheme")});
-        };
-        if(permit_dict.permit_crud){
-            AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student", MIMP_Response)}, null, "id_submenu_import");
-            AddSubmenuButton(el_submenu, loc.Link_candidates, function() {MLINKSTUD_Open()});
+    // ---  SUBMENU ------------------------------------
+                // get element here, because element does not exist on opening page PR2023-05-12
+                el_submenu_delete_candidate = document.getElementById("id_submenu_delete_candidate");
+            };
+            if(permit_dict.requsr_role_system){
+                AddSubmenuButton(el_submenu, loc.Validate_candidate_schemes, function() {ModConfirmOpen("validate_scheme")});
+                AddSubmenuButton(el_submenu, loc.Correct_candidate_schemes, function() {ModConfirmOpen("correct_scheme")});
+            };
+            if(permit_dict.permit_crud){
+                AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open("import_student", MIMP_Response)}, null, "id_submenu_import");
+                AddSubmenuButton(el_submenu, loc.Link_candidates, function() {MLINKSTUD_Open()});
 
-            AddSubmenuButton(el_submenu, loc.Download_candidate_data, function() {ModConfirmOpen("download_studentxlsx")});
-            AddSubmenuButton(el_submenu, loc.Create_exam_numbers, function() {ModConfirmOpen("create_examnumbers")});
-        };
+                AddSubmenuButton(el_submenu, loc.Download_candidate_data, function() {ModConfirmOpen("download_studentxlsx")});
+                AddSubmenuButton(el_submenu, loc.Create_exam_numbers, function() {ModConfirmOpen("create_examnumbers")});
+            };
 
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_student")}, [], "id_submenu_columns")
-        el_submenu.classList.remove(cls_hide);
+            AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_student")}, [], "id_submenu_columns")
+            el_submenu.classList.remove(cls_hide);
+        };
 
     };//function CreateSubmenu
 

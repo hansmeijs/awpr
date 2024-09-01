@@ -3995,13 +3995,21 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
         "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
-        "WHERE school.examyear_id = ", str(examyear.pk), "::INT",
-        "AND school.id = ", str(school.pk), "::INT AND dep.id = ", str(department.pk), "::INT",
+        ''.join(("WHERE school.examyear_id = ", str(examyear.pk), "::INT")),
+        ''.join(("AND school.id = ", str(school.pk), "::INT AND dep.id = ", str(department.pk), "::INT")),
         "AND NOT stud.deleted AND NOT stud.tobedeleted",
         "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted",
 
-        # PR2024-06-10 only students that have failed the exam can have a pok, or when it ispartial_exam CORRECT?
-        "AND (stud.result=", str(c.RESULT_FAILED), "::INT OR stud.partial_exam)"
+        # PR2024-06-10 only students that have failed the exam can have a pok, or when it ispartial_exam CORRECT? Nope
+        # PR2024-08-29 email Nancy Ispectie nav email Hilly Buitenweg ST Paulus:
+        #    Elke deelnemer aan een examenjaar heeft recht om een bewijs van kennis te ontvangen.
+        #    Het is inderdaad goed dat het uitprinten van bewijzen van kennis ook voor de uitslagen "geen uitslag" en "teruggetrokken" mogelijk is, evenals het uitprinten van cijferlijsten.
+        #    Deze mogelijkheid hebben wij niet eerder meegenomen, maar de praktijkgevallen wijzen op de noodzaak.
+        #    Dit alles natuurlijk wel na het goedkeuren door de Inspectie.
+        #    Drs. Nancy Josephina
+        # was: "AND (stud.result=", str(c.RESULT_FAILED), "::INT OR stud.partial_exam)"
+        ''.join(("AND (stud.result!=", str(c.RESULT_PASSED), "::INT)")),
+        ''.join(("AND stud.gl_status=", str(c.GL_STATUS_01_APPROVED), "::INT")),
     ]
 
     if student_pk_list:
@@ -4013,11 +4021,17 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
     sql_list.append("ORDER BY stud.lastname, stud.firstname, subj.name_nl")
 
     sql = ' '.join(sql_list)
+    if logging_on:
+        for txt in sql_list:
+            logger.debug('  > ' + str(txt))
 
     proof_of_knowledge_dict = {}
     with connection.cursor() as cursor:
         cursor.execute(sql)
         rows = af.dictfetchall(cursor)
+
+    if logging_on:
+        logger.debug('  len rows ' + str(len(rows)))
 
     if rows:
         for row in rows:
@@ -4193,7 +4207,7 @@ def calc_proof_of_knowledge(subj_code, examperiod, this_examperiod_dict, no_cent
         #    final_grade=final_grade
         #)
 
-        has_pok = calc_final.calc_has_pok_v2(
+        has_pok = calc_final.calc_pok_v2(
             noinput=no_input,
             no_centralexam=no_centralexam,
             gradetype=gradetype,
@@ -4228,7 +4242,7 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
     # - calcPok2022AndSaveInStudsubjONCEONLY
     # - get_proof_of_knowledge_dict  (to be deprecated)
     # - calc_proof_of_knowledge (only called by calc_studsubj_result)
-    # PR2024-06-10 TODO replace by calc_final.calc_has_pok_v2
+    # PR2024-06-10 TODO replace by calc_final.calc_pok_v2
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -4263,10 +4277,11 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
         ' ik: Weet Nancy zeker dat het artikel waar ze naar verwijst ook van toepassing is op de dagscholen?
         ' Esther: Ja Hans. We hadden het over dagschool. Die ene artikel geeft dat niet expliciet aan.
     dus ook een 'v' geeft bewijs van kennis:    
+    
     """
     proof_of_knowledge_ok, final_grade_ok, sesr_grade_ok, pece_grade_ok = False, False, False, False
 
-    # TODO pok is possible if use_exemp
+    # Note:  pok is possible if use_exemp
     # The following situation exists:
     # - a student has an exemption with final grade 9
     # - she does exam this exam period and gets an 8

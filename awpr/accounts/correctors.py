@@ -568,15 +568,17 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
             # create new published_instance and save it when it is not a test (this function is only called when it is not a test)
             # filename is added after creating file in create_ex1_xlsx
-            depbase_code = sel_department.base.code if sel_department.base.code else '-'
+
+            # PR2024-09-01 don't add depbase_code and lvlcode, form gives compensations of all depsartment
+            # depbase_code = sel_department.base.code if sel_department.base.code else '-'
             school_code = sel_school.base.code if sel_school.base.code else '-'
             school_abbrev = sel_school.abbrev if sel_school.abbrev else '-'
 
-            if sel_level and sel_department.level_req and sel_level.abbrev:
-                depbase_code += ' ' + sel_level.abbrev
+            #if sel_level and sel_department.level_req and sel_level.abbrev:
+            #    depbase_code += ' ' + sel_level.abbrev
 
             if logging_on:
-                logger.debug('     depbase_code:  ' + str(depbase_code))
+                # logger.debug('     depbase_code:  ' + str(depbase_code))
                 logger.debug('     school_code:   ' + str(school_code))
                 logger.debug('     school_abbrev: ' + str(school_abbrev))
 
@@ -596,11 +598,12 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
             hour_str = ("00" + str(now_arr[3]))[-2:]
             minute_str = ("00" + str(now_arr[4]))[-2:]
             now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
-
-            file_name = ' '.join((exform, school_code, school_abbrev, depbase_code, now_formatted))
+            # file_name = ' '.join((exform, school_code, school_abbrev, depbase_code, now_formatted))
+            file_name = ' '.join((exform, school_code, school_abbrev, now_formatted))
             # skip school_abbrev if total file_name is too long
             if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
-                file_name = ' '.join((exform, school_code, depbase_code, now_formatted))
+                # file_name = ' '.join((exform, school_code, depbase_code, now_formatted))
+                file_name = ' '.join((exform, school_code, now_formatted))
             # if total file_name is still too long: cut off
             if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
                 file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
@@ -613,7 +616,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                 # sel_examtype = '-'
                 published_instance = sch_mod.Published(
                     school=sel_school,
-                    department=sel_department,
+                    department= None,  # sel_department,
                     examperiod=0,
                     name=file_name,
                     datepublished=today_date

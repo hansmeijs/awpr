@@ -490,11 +490,11 @@ def savetolog_grade(grade_pk_or_array, log_mode, request, updated_fields):
     if grade_pk_or_array and request and request.user:
         try:
             if isinstance(grade_pk_or_array, int):
-                where_clause = ''.join(("= ", str(grade_pk_or_array), "::INT;"))
+                grade_clause = ''.join(("grade.id = ", str(grade_pk_or_array), "::INT"))
             elif isinstance(grade_pk_or_array, list):
-                where_clause = ''.join(("IN (SELECT UNNEST(ARRAY", str(grade_pk_or_array), "::INT[])) "))
+                grade_clause = ''.join(("grade.id IN (SELECT UNNEST(ARRAY", str(grade_pk_or_array), "::INT[]))"))
             else:
-                where_clause = "WHERE FALSE;"
+                grade_clause = "FALSE"
 
             mode = "'" + log_mode[:1] + "'" if log_mode else "'-'"
             field_list = (
@@ -536,12 +536,10 @@ def savetolog_grade(grade_pk_or_array, log_mode, request, updated_fields):
             tobe_copied_field_str = ', '.join(tobe_copied_field_list)
 
             sql = ' '.join((
-                "INSERT INTO students_gradelog(",
-                "grade_id, mode,", tobe_copied_field_str,
-                ") SELECT",
-                "id,", mode, ",", tobe_copied_field_str,
+                "INSERT INTO students_gradelog(grade_id, mode,", tobe_copied_field_str,
+                ") SELECT id,", mode, ",", tobe_copied_field_str,
                 "FROM students_grade AS grade",
-                "WHERE grade.id=", str(grade_pk), "::INT",
+                "WHERE ", grade_clause,
                 "RETURNING id;"
             ))
             if logging_on:

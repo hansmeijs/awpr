@@ -33,7 +33,6 @@ from subjects import models as subj_mod
 from subjects import views as subj_vw
 
 from schools import models as sch_mod
-from schools import imports as school_imports
 from students import models as stud_mod
 from students import functions as stud_fnc
 from students import validators as stud_val
@@ -3399,6 +3398,10 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                         "CASE WHEN stud.subj_composition_ok OR stud.subj_dispensation",
                         # PR2023-02-17 skip composition check when iseveningstudent, islexstudent or partial_exam
                         "OR stud.iseveningstudent OR stud.islexstudent OR stud.partial_exam",
+
+                        # PR2024-08-31 exclude sxm from composition_error
+                        "OR country.abbrev ILIKE 'Sxm'",
+
                         "THEN FALSE ELSE TRUE END AS composition_error,",
 
                         "stud.regnumber AS regnr, stud.diplomanumber AS dipnr, stud.gradelistnumber AS glnr,",
@@ -3422,6 +3425,10 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
                         "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
                         "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                        # PR2024-08-31 country is only used to exclude sxm from composition_error
+                        "INNER JOIN schools_country AS country ON (country.id = ey.country_id)",
+
+
                         "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
 
                         "WHERE school.id = " + str(sel_school.pk) + "::INT",
@@ -5579,7 +5586,13 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                         messages.append({'class': "border_bg_invalid", 'msg_html': msg_html})
 
         # return all studsubj rows of this student when composition_ok has changed
-                    comp_changed_student_pk = student_instance.pk if comp_ok_has_changed else None
+                    comp_changed_student_pk = None
+                    if comp_ok_has_changed:
+                        comp_changed_student_pk = student_instance.pk
+                    elif not updated_studsubj_pk_list:
+                        # PR2024-08-31 to prevent downloading studsubj of all students when updated_studsubj_pk_list is empty
+                        comp_changed_student_pk = student_instance.pk
+
                     if logging_on:
                         logger.debug('    comp_ok_has_changed: ' + str(comp_ok_has_changed))
                         logger.debug('    comp_changed_student_pk: ' + str(comp_changed_student_pk))
@@ -7684,7 +7697,7 @@ def create_student_instance(examyear, school, department, idnumber_nodots,
     error_list = []
 
 # - create but don't save studentbase
-    # save studentbase at the end, to prevent studentbases without student
+    # save it at the end, to prevent studentbases without student
     studentbase = stud_mod.Studentbase()
 
     log_mode = None
@@ -9124,7 +9137,7 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                 )
                 if not skip_save:
                     grade.save(request=request)
-    # - alseo save to log file
+    # - also save to log file
                     awpr_log.copytolog_grade_v2(
                         grade_pk_list=[grade.pk],
                         log_mode='c',
@@ -9181,7 +9194,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
     # PR2022-12-16 allowed filter renewed
     # PR2023-04-18 Sentry error fixed: syntax error at or near ")" LINE 1: ...cluster_id IN (SELECT UNNEST(ARRAY[1465]::INT[])) ) ORDER BY...
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_studentsubject_rows ============= ')
@@ -9325,13 +9338,21 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
         sql_studsubjects = ' '.join(sql_studsubj_list)
 
         sql_list = ["WITH studsubj AS (" + sql_studsubjects + ")",
-            "SELECT st.id AS stud_id, studsubj.studsubj_id, studsubj.subjbase_id, studsubj.schemeitem_id, studsubj.cluster_id, studsubj.cluster_name,",
-            "CONCAT('studsubj_', st.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
-            "st.lastname, st.firstname, st.prefix, st.examnumber,",
-            "st.scheme_id, st.iseveningstudent, st.islexstudent, st.classname, ",
-            "st.tobedeleted AS st_tobedeleted, st.reex_count, st.reex03_count, st.bis_exam, st.withdrawn,",
+            "SELECT stud.id AS stud_id, studsubj.studsubj_id, studsubj.subjbase_id, studsubj.schemeitem_id, studsubj.cluster_id, studsubj.cluster_name,",
+            "CONCAT('studsubj_', stud.id::TEXT, '_', studsubj.studsubj_id::TEXT) AS mapid, 'studsubj' AS table,",
+            "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+            "stud.scheme_id, stud.iseveningstudent, stud.islexstudent, stud.classname, ",
+            "stud.tobedeleted AS st_tobedeleted, stud.reex_count, stud.reex03_count, stud.bis_exam, stud.withdrawn,",
 
-            "st.subj_composition_checked, st.subj_composition_ok, st.subj_dispensation,",
+            "stud.subj_composition_checked, stud.subj_dispensation,",
+            # PR2024-08-31 Frits Marsham SUndial: shows composition exclamation sign
+            # R2024-08-31 return  subj_composition_checked and subj_composition_ok true when sxm student or evelex or partal exam
+            # TODO add subj_composition_check to import studsubj, so this
+            # PR2023-02-17 skip composition check when iseveningstudent, islexstudent or partial_exam
+            "(stud.subj_composition_ok ",
+                "OR stud.iseveningstudent OR stud.islexstudent OR stud.partial_exam",
+                # PR2024-08-31 exclude sxm from composition_error
+                "OR country.abbrev ILIKE 'Sxm') AS subj_composition_ok,",
 
             "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name_nl,",
             "dep.base_id AS depbase_id, dep.abbrev AS dep_abbrev,",
@@ -9374,19 +9395,24 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
 
             "studsubj.tobedeleted, studsubj.modifiedat, studsubj.modby_username",
 
-            "FROM students_student AS st",
-            left_or_inner_join, "studsubj ON (studsubj.student_id = st.id)",
-            "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
-            "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
-            "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
-            "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
-            "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
-            "LEFT JOIN subjects_package AS package ON (package.id = st.package_id)",
+            "FROM students_student AS stud",
+            left_or_inner_join, "studsubj ON (studsubj.student_id = stud.id)",
+            "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+
+            # PR2024-08-31 ey and country only used for subj_composition_check
+            "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+            "INNER JOIN schools_country AS country ON (country.id = ey.country_id)",
+
+            "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+            "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+            "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = stud.scheme_id)",
+            # "LEFT JOIN subjects_package AS package ON (package.id = stud.package_id)",
 
             "WHERE school.base_id=" + str(sel_schoolbase_pk) + "::INT",
             "AND school.examyear_id=" + str(sel_examyear_pk) + "::INT",
             "AND dep.base_id=" + str(sel_depbase_pk) + "::INT",
-            "AND NOT st.deleted"
+            "AND NOT stud.deleted"
             ]
 
         if sel_lvlbase_pk:
@@ -9397,7 +9423,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
 
         # filter on sel_student_pk
         if student_pk:
-            sql_list.append("".join(("AND st.id=", str(student_pk), "::INT")))
+            sql_list.append("".join(("AND stud.id=", str(student_pk), "::INT")))
 
         # also return existing studsubj of updated clusters, to show changed name in table
         # - filter on studsubj_pk_list with ANY clause
@@ -9455,7 +9481,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
             if logging_on :
                 logger.debug('sql_clause: ' + str(sql_clause))
 
-        sql_list.append('ORDER BY st.lastname, st.firstname, studsubj.subj_code NULLS FIRST;')
+        sql_list.append('ORDER BY stud.lastname, stud.firstname, studsubj.subj_code NULLS FIRST;')
         if logging_on and False:
             for sql_str in sql_list:
                 logger.debug('  > ' + str(sql_str))
@@ -9660,64 +9686,144 @@ def create_student_with_thumbrule2023_TEMP_rows_NIU():  # PR2023-07-01
     return student_with_thumbrule_rows
 # - end of create_student_with_thumbrule2023_TEMP_rows_NIU
 
-def create_exemption_in_multiple_upload(student, cur_studsubj, request):
+def create_exemption_in_multiple_upload(student_instance, cur_studsubj, request):
     #PR2024-08-19
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('   ----- create_exemption_in_multiple_upload -----')
         logger.debug('    cur_studsubj: ' + str(cur_studsubj))
 
-    # only when this stud has bis_exam or is_evelex, not when partial_exam
+    def get_other_studsubj(other_student_pk, curstud_depbase_pk, curstud_lvlbase_pk, curstudsubj_subjbase_pk):
+        # get pok from other_student, only if:
+        # - student not passed
+        # - result is approved by Inspection
+        # - has pok (pok_final is not null)
+        # - samee subjbase_pk
+        # - other sudent has same department
+        # - other sudent has same level (if required)
+        # outside this function:
+        # - check examyear
 
-    is_evelex_student = student.iseveningstudent or student.islexstudent
-    if student.linked is not None and not student.partial_exam and \
-            (student.bis_exam or is_evelex_student):
-        linked_student_pk_arr = list(map(int, student.linked.split(';')))
+        #if logging_on:
+        #    logger.debug('   ----- get_other_studsubj -----')
+
+        other_studsubj_dict = {}
+        try:
+            lvlbase_clause= ''.join(("AND lvl.base_id = ", str(curstud_lvlbase_pk), "::INT ")) if curstud_lvlbase_pk else ''
+
+            sql_list = (
+                "SELECT stud.id AS stud_id, ey.code AS ey_code, ",
+                "(stud.iseveningstudent or stud.islexstudent) AS is_evelex_student, ",
+                "subjbase.code AS subj_code, studsubj.pok_sesr, studsubj.pok_pece, studsubj.pok_final ",
+
+                "FROM students_studentsubject AS studsubj ",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id) ",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id) ",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id) ",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id) ",
+
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id) ",
+
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id) ",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id) ",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id) ",
+
+                "WHERE stud.id = ", str(other_student_pk), "::INT ",
+                "AND stud.gl_status = ", str(c.GL_STATUS_01_APPROVED), "::INT ",
+                "AND stud.result != ", str(c.RESULT_PASSED), "::INT ",
+                "AND dep.base_id = ", str(curstud_depbase_pk), "::INT ",
+                lvlbase_clause,
+                "AND subj.base_id = ", str(curstudsubj_subjbase_pk), "::INT ",
+                "AND studsubj.pok_final IS NOT NULL ",
+
+                "AND NOT stud.deleted AND NOT stud.tobedeleted ",
+                "AND NOT studsubj.deleted AND NOT studsubj.tobedeleted;"
+            )
+            sql = ''.join(sql_list)
+            cursor = connection.cursor()
+            cursor.execute(sql)
+            other_studsubj_dict = af.dictfetchone(cursor)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        #if logging_on:
+        #    logger.debug('    other_studsubj_dict: ' + str(other_studsubj_dict))
+        return other_studsubj_dict
+
+    # create exemption only when this stud has bis_exam or is_evelex, not when partial_exam
+
+    is_evelex_student = student_instance.iseveningstudent or student_instance.islexstudent
+    if student_instance.linked is not None and \
+            not student_instance.partial_exam and \
+            (student_instance.bis_exam or is_evelex_student):
+        linked_student_pk_arr = list(map(int, student_instance.linked.split(';')))
 
         if logging_on:
             logger.debug('    linked_student_pk_arr: ' + str(linked_student_pk_arr))
 
         if linked_student_pk_arr:
-
-            this_examyear_code = student.school.examyear.code
+            this_examyear_code = student_instance.school.examyear.code
 
             # loop through linked students
             for other_student_pk in linked_student_pk_arr:
-                other_studsubj = stud_mod.Studentsubject.objects.get_or_none(
-                    student_id=other_student_pk,
-                    student__department__base_id=cur_studsubj.student.department.base_id,
-                    schemeitem__subject__base_id=cur_studsubj.schemeitem.subject.base_id,
-                    deleted=False,
-                    tobedeleted=False,
-                    pok_final__isnull = False
-                )
-                if logging_on:
-                    logger.debug('    .......... ')
-                    logger.debug('    other_studsubj: ' + str(other_studsubj))
 
-                if other_studsubj:
-                    other_examyear_code = other_studsubj.student.school.examyear.code
-                    other_is_evelex_student = (other_studsubj.student.iseveningstudent or other_studsubj.student.islexstudent)
+                # PR2024-08-29 was: only add students that have failed or that have partial_exam
+                # changed to skip when student has passed
+                # added: only when gl_status  = 1 accepted
 
-        # check exaamyear of pok
-                    examyear_check = False
-                    if is_evelex_student and other_is_evelex_student:
-                            examyear_check = (other_examyear_code < this_examyear_code and other_examyear_code >= this_examyear_code - 10)
-                    else:
-                        examyear_check = (other_examyear_code == this_examyear_code - 1 and other_studsubj.student.result == c.RESULT_FAILED)
+                # PR2024-08-29 was: copy exemption only when result is approved by inspection
+                # gl_status 1 = accepted, 2 = declined, 0 = default value
+                try:
+                    curstud_depbase_pk = student_instance.department.base_id
                     if logging_on:
-                        logger.debug('    examyear_check: ' + str(examyear_check))
+                        logger.debug('    curstud_depbase_pk: ' + str(curstud_depbase_pk))
+                    curstud_lvlbase_pk = student_instance.level.base_id if student_instance.level else None
+                    if logging_on:
+                        logger.debug('    curstud_lvlbase_pk: ' + str(curstud_lvlbase_pk))
 
-                    if examyear_check:
+                    curstudsubj_schemeitem = cur_studsubj.schemeitem
+                    if logging_on:
+                        logger.debug('    curstudsubj_schemeitem: ' + str(curstudsubj_schemeitem))
+                    curstudsubj_subject = curstudsubj_schemeitem.subject
+                    if logging_on:
+                        logger.debug('    curstudsubj_subject: ' + str(curstudsubj_subject))
+                    curstudsubj_subjbase_pk = curstudsubj_subject.base_id
+                    if logging_on:
+                        logger.debug('    curstudsubj_subjbase_pk: ' + str(curstudsubj_subjbase_pk))
 
-        # chcek level if required
-                        if not student.department.level_req or \
-                                (student.level.base_id == other_studsubj.student.level.base_id ):
+                    other_studsubj_dict = get_other_studsubj(
+                        other_student_pk=other_student_pk,
+                        curstud_depbase_pk=curstud_depbase_pk,
+                        curstud_lvlbase_pk=curstud_lvlbase_pk,
+                        curstudsubj_subjbase_pk=curstudsubj_subjbase_pk
+                    )
+                    if logging_on:
+                        logger.debug('    .......... ')
+                        logger.debug('    other_studsubj_dict: ' + str(other_studsubj_dict))
+                    """
+                    other_studsubj_dict: {'stud_id': 9318, 'ey_code': 2024, 'is_evelex_student': False, 
+                    'subjbase_code': 'pws', 'pok_sesr': '9.3', 'pok_pece': None, 'pok_final': '9'}
 
-                            other_subj_code = other_studsubj.schemeitem.subject.base.code
-                            other_pok_sesr = other_studsubj.pok_sesr
-                            other_pok_pece = other_studsubj.pok_pece
-                            other_pok_final = other_studsubj.pok_final
+                    """
+                    if other_studsubj_dict:
+                        other_examyear_code = other_studsubj_dict['ey_code']
+                        other_is_evelex_student = other_studsubj_dict['is_evelex_student']
+
+            # check exaamyear of pok
+
+                        if is_evelex_student and other_is_evelex_student:
+                            examyear_check = (other_examyear_code < this_examyear_code and other_examyear_code >= this_examyear_code - 10)
+                        else:
+                            examyear_check = (other_examyear_code == this_examyear_code - 1)
+                        if logging_on:
+                            logger.debug('    examyear_check: ' + str(examyear_check))
+
+                        if examyear_check:
+                            other_subj_code = other_studsubj_dict['subj_code']
+                            other_pok_sesr =  other_studsubj_dict['pok_sesr']
+                            other_pok_pece =  other_studsubj_dict['pok_pece']
+                            other_pok_final =  other_studsubj_dict['pok_final']
 
                             if logging_on:
                                 logger.debug('    other_subj_code: ' + str(other_subj_code))
@@ -9736,9 +9842,12 @@ def create_exemption_in_multiple_upload(student, cur_studsubj, request):
                                 other_examyear_code=other_examyear_code,
                                 request=request
                             )
-
                             if logging_on:
                                 logger.debug('    cur_studsubj.has_exemption: ' + str(cur_studsubj.has_exemption))
+
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
 # - end of  create_exemption_in_multiple_upload
 
 def create_exemption_instance(cur_studsubj, other_subj_code, other_pok_sesr, other_pok_pece, other_pok_final, other_examyear_code, request):
@@ -9773,14 +9882,15 @@ def create_exemption_instance(cur_studsubj, other_subj_code, other_pok_sesr, oth
             logger.debug('    cur_studsubj pk: ' + str(cur_studsubj.pk))
 
         grade_logtxt = ''.join((c.STRING_SPACE_10,
-                                (other_subj_code + c.STRING_SPACE_10)[:8],
-                                's: ', (other_pok_sesr + c.STRING_SPACE_05)[:5],
-                                'c: ', (other_pok_pece + c.STRING_SPACE_05)[:5],
-                                'e: ', (other_pok_final + c.STRING_SPACE_05)[:5]
+                                (other_subj_code_str + c.STRING_SPACE_10)[:8],
+                                's: ', (other_pok_sesr_str + c.STRING_SPACE_05)[:5],
+                                'c: ', (other_pok_pece_str + c.STRING_SPACE_05)[:5],
+                                'e: ', (other_pok_final_str + c.STRING_SPACE_05)[:5]
                                 ))
 
         if logging_on:
             logger.debug('    grade_logtxt: ' + str(grade_logtxt))
+
 # check if cur_studsubj has already an exemption grade
         cur_exem_grade = stud_mod.Grade.objects.filter(
             studentsubject=cur_studsubj,
