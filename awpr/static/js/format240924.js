@@ -478,7 +478,7 @@
             title_text = (gl_status === 2) ? loc.Rejected_by_Inspectorate :
                         (gl_status === 1) ? loc. Approved_by_Inspectorate : loc.Not_yet_approved_by_Inspectorate;
 
-            // only inspectorate and admin may see gl_auth1_username
+            // only Inspectorate and admin may see gl_auth1_username
             if (permit_dict.requsr_role >= 32 && data_dict.gl_auth1_username){
                 title_text += "\n    " + loc._by_ + data_dict.gl_auth1_username + loc._on_ + modifiedat_formatted;
             };

@@ -415,7 +415,7 @@
     console.log( "tblName", tblName );
     console.log( "data_dicts", data_dicts, typeof data_dicts );
 
-        // tblNames are: 'cluster', 'subject',  // tobe added:  "school", "student", "envelopbundle
+        // tblNames are: 'cluster', 'subject',  // tobe added:  "school", "student", "envelopbundle"
         // table "school", "student" use base_id as selected_pk
 
         // PR2024-03-28 use 'sel_subjbase_pk ' instead of 'sel_subject_pk
@@ -439,7 +439,7 @@
         // modalName "sbr": update setting_dict and sidebar,
         // modalName "mex" : select subject for ete exam,
         // modalName "mdec": select subject for duo (cvte) exam,
-        // modalName "hdr", "mcl", "mups" are not used in t_MSSSS_
+        // modalName "hdr", "mcl", "mups" "envbndl" are not used in t_MSSSS_
 
         mod_MSSSS_dict.modalName = modalName;
         mod_MSSSS_dict.tblName = tblName;
@@ -516,14 +516,14 @@
         const selected_pk_int = mod_MSSSS_dict.selected_pk;
         const selected_code = mod_MSSSS_dict.data_code;
         const selected_name = mod_MSSSS_dict.data_name;
-/*
-    //console.log( "   modalName", modalName );
-    //console.log("    tblName", tblName)
+
+    console.log( "   modalName", modalName );
+    console.log("    tblName", tblName)
     //console.log("    mod_MSSSS_dict", mod_MSSSS_dict)
-    //console.log("    selected_pk_int", selected_pk_int, typeof selected_pk_int);
+    console.log("    selected_pk_int", selected_pk_int, typeof selected_pk_int);
     //console.log("    selected_code", selected_code);
     //console.log("    selected_name", selected_name);
-*/
+
 // +++ get existing map_dict from data_rows
         // when tblName = school: pk_int = base_pk, therefore can't use b_recursive_integer_lookup PR2022-10-26
         let selected_dict = {};
@@ -531,6 +531,7 @@
         if (["school", "subject", "student"].includes(tblName)) {
             const data_rows = (tblName === "school") ? school_rows :
                               (tblName === "subject") ? subject_rows :
+                              (tblName === "student") ? student_rows : [];
                               (tblName === "student") ? student_rows : [];
             const pk_key = (tblName === "student") ? "id" : "base_id";
 
@@ -541,10 +542,10 @@
             }};
         } else {
             const map_id = tblName + "_" + selected_pk_int;
-            selected_dict = (!isEmpty(mod_MSSSS_dict.data_dicts) && map_id in mod_MSSSS_dict.data_dicts ) ? mod_MSSSS_dict.data_dicts[map_id] : null;
-        };
+            // PR2024-09-24 was: selected_dict = (!isEmpty(mod_MSSSS_dict.data_dicts) && map_id in mod_MSSSS_dict.data_dicts ) ? mod_MSSSS_dict.data_dicts[map_id] : null;
+            selected_dict = t_lookup_row_in_dictlist(mod_MSSSS_dict.data_dicts, "mapid", map_id);
 
-    //console.log("    student_rows", student_rows);
+        };
     //console.log("    selected_dict", selected_dict);
 
         // reset other select elements
@@ -710,20 +711,24 @@
         const subjbase_key = (["mex", "mdec"].includes(modalName)) ? "subjbase_id" : "base_id";
         const pk_int = (tblName === "school") ? data_dict.base_id :
                     (tblName === "subject") ? data_dict[subjbase_key] :
+                    (tblName === "student") ? data_dict.id :
                     (tblName === "cluster") ? data_dict.id :
-                    (tblName === "student") ? data_dict.id : null;
+                    (tblName === "envelopbundle") ? data_dict.id : null;
     //console.log("    pk_int", pk_int);
 
         const code = (tblName === "school") ? data_dict.sb_code :
                     (tblName === "subject") ? data_dict.code :
-                    (tblName === "cluster") ? data_dict.subj_code :
-                    (tblName === "student") ? data_dict.name_first_init : "";
+                    (tblName === "student") ? data_dict.name_first_init :
+                    (tblName === "cluster") ? data_dict.subj_code : "";
+                    // code not used in envelopbundle
+    //console.log("    code", code);
 
         const name =  (tblName === "school") ? data_dict.name : // data_dict.abbrev
                     (tblName === "subject") ? data_dict.name_nl :
-                    (tblName === "cluster") ? data_dict.name :
                     (tblName === "student") ? data_dict.fullname  :
+                    (tblName === "cluster") ? data_dict.name :
                     (tblName === "envelopbundle") ? data_dict.name : "";
+    //console.log("    name", name);
 
         const is_selected_row = (!!pk_int && pk_int === mod_MSSSS_dict.selected_pk);
 
@@ -823,7 +828,6 @@
 // ---  get pk code and value from tblRow, put values in mod_MSSSS_dict
             // PR2024-03-30 don't use get_attr_from_el_int(tblRow, "data-pk"), it converts null to 0
             mod_MSSSS_dict.selected_pk = (tblRow.dataset.pk) ? parseInt(tblRow.dataset.pk, 10) : null;
-
             mod_MSSSS_dict.data_code = get_attr_from_el(tblRow, "data-code")
             mod_MSSSS_dict.data_name = get_attr_from_el(tblRow, "data-name")
 
@@ -992,7 +996,7 @@
 
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13
-    function t_MSSSS_OpenNIU(loc, tblName, data_rows, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
+    function t_MSSSS_Open(loc, tblName, data_rows, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
         //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
     //console.log( "    permit_dict", permit_dict);
     //console.log( "tblName", tblName );

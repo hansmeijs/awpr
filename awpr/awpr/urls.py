@@ -278,7 +278,8 @@ urlpatterns = [
 
         path('studsubj_validate_scheme', student_views.StudentsubjectValidateSchemeView.as_view(), name='url_studsubj_validate_scheme'),
         path('studsubj_validate_test', student_views.StudentsubjectValidateTestView.as_view(), name='url_studsubj_validate_test'),
-        # NIU path('validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
+        path('update_composition_check', student_views.StudentsubjectUpdateCompositionCheck.as_view(), name='url_update_composition_check'),
+        path('validate_composition', student_views.ValidateCompositionView.as_view(), name='url_validate_subj_composition'),
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
         path('approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1Ex4View.as_view(), name='url_studsubj_approve_submit_multiple'),
@@ -287,7 +288,6 @@ urlpatterns = [
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
-        path('validate_composition', student_views.ValidateCompositionView.as_view(), name='url_validate_subj_composition'),
 
         path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload'),
 

@@ -1876,36 +1876,40 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  ModSelEnvBundle_Open  ================  PR2022-08-12
     function ModSelEnvBundle_Open(td) {
         console.log(" ----- ModSelEnvBundle_Open ----")
-        console.log("td", td)
+        console.log("    td", td)
         const tblRow = t_get_tablerow_selected(td);
 
 // --- get existing data_dict from data_rows
         const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-        console.log("pk_int", pk_int)
-        selected.envelopsubject_pk = pk_int
+        console.log("pk_int", pk_int);
+        selected.envelopsubject_pk = pk_int;
 
-        const [index, data_dict, compare] = b_recursive_integer_lookup(envelopsubject_rows, "id", pk_int);
+        // PR2024-9-24 was: const [index, data_dict, compare] = b_recursive_integer_lookup(envelopsubject_rows, "id", pk_int);
+        const data_dict = b_lookup_dict_in_dictlist(envelopsubject_rows, "id", pk_int);
+
+        console.log("    data_dict", data_dict)
         setting_dict.envelopbundle_pk = (data_dict.envelopbundle_id) ? data_dict.envelopbundle_id : null;
 
-        t_MSSSS_Open(loc, "envelopbundle", envelopbundle_rows, false, true, setting_dict, permit_dict, ModSelEnvBundle_Response);
+        // PR2024-9-24 was: t_MSSSS_Open(loc, "envelopbundle", envelopbundle_rows, false, true, setting_dict, permit_dict, ModSelEnvBundle_Response);
+        t_MSSSS_Open_NEW("envbndl", "envelopbundle", envelopbundle_rows, ModSelEnvBundle_Response, false, true);  //add_all = false, show_delete_btn = true
+
 
     };  // ModSelEnvBundle_Open
 
-//=========  ModSelEnvBundle_Response  ================  PR2022-08-12 PR2022-10-10
-    function ModSelEnvBundle_Response(tblName, selected_dict, selected_pk_int) {
-
-        console.log(" ----- ModSelEnvBundle_Response ----")
-        console.log("tblName", tblName)
-        console.log("selected_dict", selected_dict)
-        console.log("selected_pk_int", selected_pk_int)
-        console.log("subject_rows", subject_rows)
+//=========  ModSelEnvBundle_Response  ================  PR2022-08-12 PR2022-10-10 PR2024-09-24
+    function ModSelEnvBundle_Response(modalName, tblName, selected_dict, selected_pk_int) {
+        //console.log(" ----- ModSelEnvBundle_Response ----")
+        //console.log("    modalName", modalName)
+        //console.log("    tblName", tblName)
+        //console.log("    selected_dict", selected_dict)
+        //console.log("    selected_pk_int", selected_pk_int)
 
         if (permit_dict.permit_crud){
     // --- get selected ete_exam
             const pk_int = selected.envelopsubject_pk;
             const [index, data_dict, compare] = b_recursive_integer_lookup(envelopsubject_rows, "id", pk_int);
-        console.log( "data_dict: ", data_dict);
-        console.log( "selected: ", selected);
+        //console.log( "data_dict: ", data_dict);
+        //console.log( "selected: ", selected);
             if (data_dict){
                 let upload_dict = {
                     table: "envelopsubject",

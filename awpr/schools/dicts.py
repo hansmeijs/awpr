@@ -460,6 +460,8 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
         sql_list = ["SELECT ey.id, ey.country_id, cntr.name AS country,",
                     "CONCAT('examyear_', ey.id::TEXT) AS mapid,",
             "ey.code AS examyear_code, ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
+            # PR2024-09-03 examyear_locked is used to show padlock in examear select modal
+            "ey.locked AS examyear_locked,",
             "ey.no_practexam, ey.sr_allowed, ey.no_centralexam, ey.no_thirdperiod,",
             "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
             "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",

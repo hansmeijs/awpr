@@ -777,7 +777,7 @@ class ValidateCompositionView(View):  # PR2022-08-25
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-# - get permit, only inspectorate kan set validation
+# - get permit, only Inspectorate can set validation
         has_permit = request.user.role == c.ROLE_032_INSP and acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
 
         if not has_permit:
@@ -3019,14 +3019,14 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectValidateAllViewNIU(View):  # PR2021-07-24 # PR2024-08-05 NIU
+class StudentsubjectUpdateCompositionCheck(View):  # PR2024-09-03
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= StudentsubjectValidateAllView ============= ')
+            logger.debug(' ============= StudentsubjectUpdateCompositionCheck ============= ')
 
-        # function validates studentsubject records of all students of this dep PR2021-07-10
+        # function validates studentsubject records of this student
 
         update_wrap = {}
 
@@ -3042,61 +3042,54 @@ class StudentsubjectValidateAllViewNIU(View):  # PR2021-07-24 # PR2024-08-05 NIU
             upload_dict = json.loads(upload_json)
             if logging_on:
                 logger.debug('    upload_dict: ' + str(upload_dict))
-                # upload_dict: {'studsubj_validate': {'get': True}}
+            # upload_dict: {'student_pk': 12947, 'mode': 'check_subj_composition'}
+
+            mode = upload_dict.get('mode')
+            student_pk = upload_dict.get('student_pk')
+            if student_pk and mode == 'check_subj_composition':
 
 # ----- get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
-                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-            if logging_on:
-                logger.debug('    sel_department: ' + str(sel_department))
-                logger.debug('    sel_level: ' + str(sel_level))
-
-# +++ validate subjects of all students of this dep, used to update studsubj table
-            # TODO to speed up: get info in 1 request, no msg_text
-            crit = Q(school=sel_school) & \
-                   Q(department=sel_department) & \
-                   Q(deleted=False)
-
-            if sel_level:
-                crit.add(Q(level=sel_level), crit.connector)
-
-            students = stud_mod.Student.objects.filter(crit)
-            if logging_on:
-                logger.debug('    students: ' + str(students))
-
-            if students:
-                validate_studsubj_list = []
-                for student in students:
-
+                # PR2022-12-23 debug: don't filter on allowed, it will skip not-allowed subjects and give incorrect validation
+                sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+                if sel_examyear and sel_school and sel_department:
+        # +++ validate subjects of all students of this dep, used to update studsubj table
+                    student_instance = stud_mod.Student.objects.get_or_none(
+                        pk=student_pk,
+                        school=sel_school,
+                        department=sel_department,
+                        deleted=False,
+                        tobedeleted=False
+                    )
                     if logging_on:
-                        logger.debug('----student: ' + str(student))
+                        logger.debug('----student_instance: ' + str(student_instance))
 
-                    # validate_studentsubjects_no_msg returns True when there is an error PR2022-08-25
-                    no_error = not stud_val.validate_studentsubjects_no_msg(student, 'nl')
+                    if student_instance:
+                        if not student_instance.subj_dispensation:
+                            comp_ok_has_changed = update_student_subj_composition(student_instance)
+                            if comp_ok_has_changed:
+                                # must update all studsubjects from this student, because the exclamation sign must be updated
+                                updated_rows = create_studentsubject_rows(
+                                    sel_examyear=sel_examyear,
+                                    sel_schoolbase=sel_school.base if sel_school else None,
+                                    sel_depbase=sel_department.base if sel_department else None,
+                                    append_dict={},
+                                    request=request,
+                                    requsr_same_school=True,  # check for same_school is included in may_edit
+                                    student_pk=student_instance.pk
+                                )
+                                if updated_rows:
+                                    # PR2023-01-07 added to update composistion tickmark in all studsubjects of this student
+                                    for row in updated_rows:
+                                        row['changed'] = True
 
-                    if (not student.subj_composition_checked) or \
-                            (student.subj_composition_checked and student.subj_composition_ok != no_error):
-                        setattr(student, 'subj_composition_checked', True)
-                        setattr(student, 'subj_composition_ok', no_error)
-                        # don't update modified by
-                        student.save()
-                        if logging_on:
-                            logger.debug('  student.save  no_error: ' + str(no_error))
+                                    update_wrap['updated_studsubj_rows'] = updated_rows
 
-                    if not no_error:
-                        if student.pk not in validate_studsubj_list:
-                            validate_studsubj_list.append(student.pk)
-
-                    if logging_on:
-                        logger.debug('    no_error: ' + str(no_error))
-
-                if validate_studsubj_list:
-                    update_wrap['validate_studsubj_list'] = validate_studsubj_list
         if logging_on:
             logger.debug('    update_wrap: ' + str(update_wrap))
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of StudentsubjectValidateAllView
+# - end of StudentsubjectUpdateCompositionCheck
 
 
 @method_decorator([login_required], name='dispatch')
@@ -5831,6 +5824,14 @@ def delete_studentsubject_grades(studsubj_pk, request):
 
 @method_decorator([login_required], name='dispatch')
 class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
+    # PR2024-09-03 called by studentsubject.js function:
+    #
+    #  - MExemptionYear_Save (update exemption_year)
+    #  - MSELEX_Save (update cluster_pk)
+    #  - MODPWS_Save (update pws_title, pws_subjects
+    #  - ModConfirmSave (update "has_exemption", "has_sr", "has_reex", "has_reex03", "is_extra_nocount", "is_extra_counts", "is_thumbrule")
+    # and in secretexam.js:
+    #  - MSELCLS_Save (update cluster_pk)
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -9481,7 +9482,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
             if logging_on :
                 logger.debug('sql_clause: ' + str(sql_clause))
 
-        sql_list.append('ORDER BY stud.lastname, stud.firstname, studsubj.subj_code NULLS FIRST;')
+        sql_list.append('ORDER BY LOWER(stud.lastname), LOWER(stud.firstname), LOWER(studsubj.subj_code) NULLS FIRST;')
         if logging_on and False:
             for sql_str in sql_list:
                 logger.debug('  > ' + str(sql_str))
@@ -9811,8 +9812,17 @@ def create_exemption_in_multiple_upload(student_instance, cur_studsubj, request)
                         other_is_evelex_student = other_studsubj_dict['is_evelex_student']
 
             # check exaamyear of pok
+                        # PR2024-09-24 pok may always be 10 years old when is_evelex_student
+                        #   email Hans meijs 17 sep 24:
+                        #   Een avondschool-kandidaat krijgt vrijstelling voor een vak wanneer:
+                        #    - de kandiaat voor dat vak een Bewijs van Vrijstelling van een avondschool heeft dat niet ouder is dan 10 jaar
+                        #    - of de kandidaat een Bewijs van Kennis van een dagschool heeft, niet ouder dan 10 jaar
+                        #   email Nancy Josephina 17 sep 2024:
+                        #       Jouw interpretatie klopt en de wijziging is op zijn plaats. Bedankt voor de informatie.
+                        #       Drs. Nancy Josephina
+                        # was: if is_evelex_student and other_is_evelex_student:
 
-                        if is_evelex_student and other_is_evelex_student:
+                        if is_evelex_student:
                             examyear_check = (other_examyear_code < this_examyear_code and other_examyear_code >= this_examyear_code - 10)
                         else:
                             examyear_check = (other_examyear_code == this_examyear_code - 1)

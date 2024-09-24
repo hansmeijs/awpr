@@ -7,7 +7,7 @@
 {% block script %}
     <script src="{% static 'js/modallowed230327.js' %}"></script>
     <script src="{% static 'js/import240831.js' %}"></script>
-    <script src="{% static 'js/studentsubjects240831.js' %}"></script>
+    <script src="{% static 'js/studentsubjects240924.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -151,6 +151,8 @@
 
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_validate_test="{% url 'url_studsubj_validate_test' %}"
+                data-url_update_composition_check="{% url 'url_update_composition_check' %}"
+
                 data-url_student_multiple_occurrences="{% url 'url_student_multiple_occurrences' %}"
 
                 data-url_studsubj_approve="{% url 'url_studsubj_approve' %}"

@@ -1070,9 +1070,11 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Validate_subject_composition'] = _('Validate subject composition')
         dict['Remove_subject_validation'] = _('Remove subject validation')
+        dict['Check_subject_composition'] = _('Check subject composition')
 
         dict['The_composition_ofthe_subjects_of'] = _('The composition of the subjects of')
-        dict['will_be_validated'] = _('will be validated.')
+        dict['will_be_validated'] = pgettext_lazy('singular', 'will be validated.')
+        dict['will_be_checked'] = pgettext_lazy('singular', 'will be checked.')
 
         dict['The_composition_is_validated'] = _('The composition of the subjects is validated by the Inspectorate.')
 

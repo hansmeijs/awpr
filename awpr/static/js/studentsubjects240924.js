@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     urls.url_studsubj_validate = get_attr_from_el(el_data, "data-url_studsubj_validate");
     urls.url_studsubj_validate_test = get_attr_from_el(el_data, "data-url_studsubj_validate_test");
+    urls.url_update_composition_check = get_attr_from_el(el_data, "data-url_update_composition_check");
+
 
     //urls.url_studsubj_validate_all = get_attr_from_el(el_data, "data-url_studsubj_validate_all");
     urls.url_student_multiple_occurrences = get_attr_from_el(el_data, "data-url_student_multiple_occurrences");
@@ -1227,15 +1229,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     add_hover(td);
 
                 } else if (field_name === "subj_error") {
-                    if(permit_dict.requsr_role === 32){ // Inspectorate
+                    if(permit_dict.requsr_role === 32 && permit_dict.permit_crud){ // Inspectorate
                         td.addEventListener("click", function() {ModConfirmOpen("validate_subj_composition", el)}, false);
+                    } else if (permit_dict.permit_crud && permit_dict.requsr_same_school){
+                        td.addEventListener("click", function() {ModConfirmOpen("check_subj_composition", el)}, false);
+
                     } else {
                         td.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
                     };
                     add_hover(td);
 
                 } else if (field_name.includes("has_")){
-                    if(permit_dict.permit_crud && permit_dict.requsr_same_school){
+                    if (permit_dict.permit_crud && permit_dict.requsr_same_school){
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     };
@@ -1812,7 +1817,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
 
                     if ("updated_cluster_rows" in response) {
-                        RefreshClusterDatadict("cluster", response.updated_cluster_rows, cluster_dictsNEW);
+                        RefreshDataDictCluster(response.updated_cluster_rows);
                     };
                     add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
                     if ("studsubj_validate_html" in response) {
@@ -4919,11 +4924,11 @@ document.addEventListener('DOMContentLoaded', function() {
 //////////////////////////////////////
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2021-08-13 PR2023-07-12
+//=========  ModConfirmOpen  ================ PR2021-08-13 PR2023-07-12 PR2024-09-03
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         console.log("    mode", mode)
-        // values of mode are "prelim_ex1", "prelim_ex4", "validate_subj_composition", "st_tobedeleted", "delete_cluster"
+        // values of mode are "prelim_ex1", "prelim_ex4", "validate_subj_composition", "check_subj_composition" "st_tobedeleted", "delete_cluster"
         // when called by UploadToggle :"has_exemption", "has_reex", "has_reex03", "is_thumbrule", "is_extra_nocount", "is_extra_counts"
 
         let show_modal = false, show_outline_danger = false;
@@ -4971,7 +4976,8 @@ document.addEventListener('DOMContentLoaded', function() {
             show_modal = true;
 
         } else if (mode === "validate_subj_composition"){
-
+             // only Inspectorate can set validation, only when has permit_crud
+             // this is set in CreateTblRow
             if(!isEmpty(mod_dict.data_dict)){
             console.log("mod_dict.data_dict", mod_dict.data_dict)
                 if (mod_dict.data_dict.subj_dispensation || !mod_dict.data_dict.subj_composition_ok) {
@@ -4988,6 +4994,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     header_txt = (mod_dict.new_subj_dispensation) ? loc.Validate_subject_composition : loc.Remove_subject_validation;
                     show_outline_danger = !mod_dict.new_subj_dispensation;
+                    show_modal = true;
+                };
+            };
+        } else if (mode === "check_subj_composition"){
+             // PR2024-09-03 only Same school can check validation, only when has permit_crud
+             // this is set in CreateTblRow
+            if(!isEmpty(mod_dict.data_dict)){
+            console.log("mod_dict.data_dict", mod_dict.data_dict);
+                if (!mod_dict.data_dict.subj_dispensation) {
+                    mod_dict.student_pk = mod_dict.data_dict.stud_id;
+                    msg_html = ["<p>", loc.The_composition_ofthe_subjects_of, ":</p><p class='px-2'>", mod_dict.data_dict.fullname, "</p><p>", loc.will_be_checked,
+                                "</p><p>",loc.Do_you_want_to_continue, "</p>"].join("");
+                    btn_save_txt = loc.OK;
+                    btn_cancel_txt = loc.Cancel;
+                    header_txt =  loc.Check_subject_composition;
+                    show_outline_danger = false;
                     show_modal = true;
                 };
             };
@@ -5157,6 +5179,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 subj_dispensation: mod_dict.new_subj_dispensation
             };
             UploadChanges(upload_dict, urls.url_validate_subj_composition);
+            close_modal = true;
+
+        } else  if (mod_dict.mode === "check_subj_composition"){
+        // ---  upload changes
+            const upload_dict = {
+                student_pk: mod_dict.student_pk,
+                mode: mod_dict.mode
+            };
+            UploadChanges(upload_dict, urls.url_update_composition_check);
             close_modal = true;
 
         } else if (mod_dict.mode === "delete_cluster"){
@@ -5493,7 +5524,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 //=========  RefreshDictlistItem  ================
-// PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-05 PR2024-07-30
+// PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-05 PR2024-07-30  PR2024-09-03
     function RefreshDictlistItem(tblName, field_setting, update_dict, dict_list, pk_fldName) {
         console.log(" --- RefreshDictlistItem  ---");
         console.log("    tblName", tblName);
@@ -5510,7 +5541,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
             const is_restored = (!!update_dict.restored);
-            const is_changed = (!!update_dict.changed);
+            //const is_changed = (!!update_dict.changed);
                 /*
                 in create_studsubj:
                 'changed' when:
@@ -5529,7 +5560,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("    is_deleted", is_deleted);
     console.log("    is_created", is_created);
     console.log("    is_restored", is_restored);
-    console.log("    is_changed", is_changed);
+    //console.log("    is_changed", is_changed);
 
     // ---  get list of hidden columns
             const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
@@ -5631,12 +5662,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         };
                     };
 
-// ++++ restored or changed ++++
-                } else if(is_restored || is_changed){
+// ++++ restored ++++
+                } else if(is_restored){
 
-    // -  remove key 'restored' or 'changed' from update_dict
+    // -  remove key 'restored' from update_dict
                     if (update_dict.hasOwnProperty("restored")){delete update_dict.restored};
-                    if (update_dict.hasOwnProperty("changed")){delete update_dict.changed};
 
     // -  update data_dict
                     if (row_index != null && dict_list[row_index]){
@@ -5649,7 +5679,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
 
 // +++++++++++ updated row +++++++++++
-    console.log(" ?????? in use?? updated row");
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
 
@@ -5756,275 +5785,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };  // SortStudsubjDictlist
 
-//=========  RefreshClusterDatadict  ================  PR2021-06-21 PR2023-01-05
-    function RefreshClusterDatadict(tblName, update_rows, data_dictsNEW) {
-        console.log(" ===== RefreshClusterDatadict  =====");
-        console.log("    tblName", tblName);
-        console.log("    update_rows", update_rows);
-
-        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
-        if (update_rows && update_rows.length ) {
-            const field_setting = field_settings[selected_btn];
-            const pk_fldName = "id";
-            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatadictItemNEW(tblName, field_setting, update_dict, data_dictsNEW, pk_fldName);
-            };
-        };
-        // clusters are not table rows, skip Filter_TableRows
-
-    };  //  RefreshClusterDatadict
-
-//=========  RefreshDatadictItemNEW  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-05
-    function RefreshDatadictItemNEW(tblName, field_setting, update_dict, data_dictsNEW, pk_fldName) {
-        console.log(" --- RefreshDatadictItemNEW  ---");
-        console.log("    tblName", tblName);
-        console.log("    pk_fldName", pk_fldName);
-        //console.log("field_setting", field_setting);
-        console.log("    update_dict", update_dict);
-        console.log("    update_dict.err_fields", update_dict.err_fields);
-
-        if(!isEmpty(update_dict)){
-            const field_names = field_setting.field_names;
-
-            const pk_int = (update_dict[pk_fldName]) ? update_dict[pk_fldName] : null;
-
-            const map_id = update_dict.mapid;
-            const is_deleted = (!!update_dict.deleted);
-            const is_created = (!!update_dict.created);
-            const is_restored = (!!update_dict.restored);
-            const is_changed = (!!update_dict.changed);
-
-        console.log("    pk_int", pk_int, typeof pk_int);
-        console.log("    is_deleted", is_deleted);
-        console.log("    is_created", is_created);
-        console.log("    is_restored", is_restored);
-
-    // ---  get list of hidden columns
-        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
-
-    // ---  get list of columns that are not updated because of errors
-            const error_columns = [];
-            if (update_dict.err_fields){
-                // replace field 'subj_auth2by' by 'subj_status'
-                for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
-                    if (err_field && err_field.includes("_auth")){
-                        const arr = err_field.split("_");
-                        err_field = arr[0] + "_status";
-                    };
-                    error_columns.push(err_field);
-                };
-            };
-
-// ++++ created ++++
-            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
-            //arr.splice(index, 0, item); will insert item into arr at the specified index
-            // (deleting 0 items first, that is, it's just an insert).
-
-            if(is_created){
-    // ---  first remove key 'created' from update_dict
-                delete update_dict.created;
-
-    // --- lookup index where new row must be inserted in data_rows
-                // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
-
-    // ---  add new item to  data_dictsNEW with key
-                //data_rows.push(update_dict);
-                const pk_int = (tblName === "cluster") ? update_dict.id : update_dict.stud_id;
-                const key_str = b_get_datadicts_keystr(tblName, pk_int, update_dict.studsubj_id);
-
-                data_dictsNEW[key_str] = update_dict;
-
-    // - delete row without subjects
-                if (tblName === "studsubj"){
-                const nosubjects_keystr = b_get_datadicts_keystr(tblName, update_dict.stud_id);
-                    if (data_dictsNEW[nosubjects_keystr]){
-                        delete data_dictsNEW[nosubjects_keystr];
-                    };
-                };
-    // clusters are not table rows, skip Filter_TableRows when tblName = "cluster"
-                if (tblName !== "cluster"){
-        // ---  create row in table., insert in alphabetical order
-                    const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden);
-
-                    if(new_tblRow){
-        // --- add1 to item_count and show total in sidebar
-                        selected.item_count += 1;
-        // ---  scrollIntoView,
-                        new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
-
-        // ---  make new row green for 2 seconds,
-                        ShowOkElement(new_tblRow);
-                    };
-                };
-            } else {
-
-// +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
-                let data_dict = null, datarow_index = null;
-                if (tblName === "cluster"){
-                    //const cluster_pk = update_dict.id;
-                    //const [index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", cluster_pk);
-                    //if (!isEmpty(found_dict)){
-                    //    data_dict = found_dict;
-                    //    datarow_index = index;
-                    //};
-                    data_dict = (!isEmpty(cluster_dictsNEW[update_dict.id])) ? cluster_dictsNEW[update_dict.id] : null;
-                } else {
-                    // 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
-                    const student_pk = (update_dict && update_dict.stud_id) ? update_dict.stud_id : null;
-                    const studsubj_pk = (update_dict && update_dict.studsubj_id) ? update_dict.studsubj_id : null;
-                    //const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
-                    //if (!isEmpty(found_dict)){
-                    //    data_dict = found_dict;
-                    //    datarow_index = index;
-                    //};
-                    data_dict = get_datadict_by_studpk_studsubjpk (student_pk, studsubj_pk);
-                };
-
-        console.log("    data_dict", data_dict);
-
-// ++++ deleted ++++
-                if(is_restored){
-
-    // ---  remove key 'restored' from update_dict
-                    delete update_dict.restored;
-
-    // ---  update data_dict
-                    data_dictsNEW[map_id] = update_dict;
-                    let tblRow = document.getElementById(map_id);
-
-    // ---  update tblRow
-                    UpdateTblRow(tblRow, tblName, update_dict);
-
-                } else if(is_changed){
-    // ---  remove key 'changed' from update_dict
-                    delete update_dict.changed;
-
-    // ---  update data_dict
-                    data_dictsNEW[map_id] = update_dict;
-                    let tblRow = document.getElementById(map_id);
-
-    // ---  update tblRow
-                    UpdateTblRow(tblRow, tblName, update_dict);
-
-                } else if(is_deleted){
-
-    // ---  delete key/value from data_dict
-                    if (map_id && map_id in data_dictsNEW){
-                        delete data_dictsNEW[map_id];
-
-        //--- delete tblRow
-                        if (tblName !== "cluster"){
-                            const tblRow_tobe_deleted = document.getElementById(map_id);
-                            if (tblRow_tobe_deleted ){
-                                tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
-            // --- subtract 1 from item_count and show total in sidebar
-                                selected.item_count -= 1;
-                            };
-                        };
-                    };
-
-                } else {
-
-// +++++++++++ updated row +++++++++++
-    console.log("updated row");
-    // ---  check which fields are updated, add to list 'updated_columns'
-                    if(!isEmpty(data_dict) && field_names){
-
-    // ---  first add updated fields to updated_columns list, before updating data_row
-                        let updated_columns = [];
-                        // first column subj_error
-                        for (let i = 0, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-
-    // ---  'status' fields are not in data_row
-                            if (col_field.includes("_status")){
-                                const [old_status_className, old_status_title] = UpdateFieldStatus(col_field, data_dict);
-                                const [new_status_className, new_status_title] = UpdateFieldStatus(col_field, update_dict);
-                                if (old_status_className !== new_status_className || old_status_title !== new_status_title ) {
-                                    updated_columns.push(col_field)
-                                };
-                            } else if (col_field === "subj_error"){
-                                    // PR2023-01-16
-                                    if (update_dict.subj_composition_ok !== data_dict.subj_composition_ok ||
-                                        update_dict.subj_dispensation !== data_dict.subj_dispensation) {
-                                            updated_columns.push(col_field);
-                                        };
-
-                            } else if (col_field in data_dict && col_field in update_dict){
-                                if (data_dict[col_field] !== update_dict[col_field] ) {
-                                    updated_columns.push(col_field)
-                                };
-                            };
-                        };
-
-// ---  update fields in data_row
-                        for (const [key, new_value] of Object.entries(update_dict)) {
-                            if (key in data_dict){
-                                const old_value = data_dict[key];
-                                if (new_value !== data_dict[key]) {
-                                    data_dict[key] = new_value;
-                                };
-                            };
-                        };
-
-// ---  update field in tblRow
-                        // note: when updated_columns is empty, then updated_columns is still true.
-                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-                        // PR2021-09-29 always update all columns, to remove strikethrough after undelete
-                        // was: if(updated_columns.length || field_error_list.length){
-
-// --- get existing tblRow
-                            let tblRow = document.getElementById(map_id);
-    console.log("tblRow", tblRow);
-    console.log("updated_columns", updated_columns);
-                            if(tblRow){
-
-    // - to make it perfect: move row when first or last name have changed
-                                if (updated_columns.includes("name")){
-                                //--- delete current tblRow
-                                    tblRow.parentNode.removeChild(tblRow);
-                                //--- insert row new at new position
-                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden)
-                                };
-
-    // - loop through cells of row
-                                const tobedeleted = (update_dict.tobedeleted) ? update_dict.tobedeleted : false;
-                                const st_tobedeleted = (update_dict.st_tobedeleted) ? update_dict.st_tobedeleted : false;
-
-    console.log("tobedeleted", tobedeleted);
-                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
-                                    el = td.children[0];
-                                    if (el){
-                                        el_fldName = get_attr_from_el(el, "data-field");
-                                        const is_updated_field = updated_columns.includes(el_fldName);
-                                        const is_err_field = error_columns.includes(el_fldName);
-
-    // - update field and make field green when field name is in updated_columns
-                                        // PR2022-01-18 debug: UpdateField also when record is tobedeleted
-                                        if(is_updated_field || tobedeleted){
-                                            UpdateField(el, update_dict, tobedeleted);
-                                        };
-                                        if(is_updated_field){ShowOkElement(el)};
-                                        if(is_err_field){
-    // - make field red when error and reset old value after 2 seconds
-                                            reset_element_with_errorclass(el, update_dict, tobedeleted, st_tobedeleted);
-                                        };
-
-                                    }  //  if (el){
-                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++)
-                            };  // if(tblRow)
-                        //}; // if(updated_columns.length)
-                    };  // if(!isEmpty(data_dict) && field_names)
-                };  //  if(is_deleted)
-            }; // if(is_created)
-
-    // ---  show total in sidebar
-            t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Subject, loc.Subjects, setting_dict.user_lang);
-
-        };  // if(!isEmpty(update_dict))
-    }  // RefreshDatadictItemNEW
-
-
-//=========  RefreshDataDictCluster  ================  PR2021-06-21 PR2023-06-01
+//=========  RefreshDataDictCluster  ================  PR2021-06-21 PR2023-06-01 PR2024-09-03
     function RefreshDataDictCluster(update_rows) {
         console.log(" ===== RefreshDataDictCluster  =====");
         console.log("    update_rows", update_rows);
@@ -6032,6 +5793,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (update_rows && update_rows.length ) {
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
                 if(!isEmpty(update_dict)){
+
+                    const map_id = update_dict.mapid;
+
             // ---  first remove key 'created' from update_dict
                     if(update_dict.created){
                         delete update_dict.created;

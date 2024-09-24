@@ -3373,7 +3373,7 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
         logger.debug('    error_list: ' + str(error_list))
         logger.debug('    has_error:  ' + str(has_error))
 
-    student = None
+    student_instance = None
     student_dict = None
     student_pk = None
 
@@ -3390,7 +3390,7 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
 
     if not has_error:
 
-        # - lookup student in students_dict_with_subjbase_pk_list ( list only contains students of this dep, doubles in uploadlist are filtered out
+# - lookup student in students_dict_with_subjbase_pk_list ( list only contains students of this dep, doubles in uploadlist are filtered out
         if idnumber_nodots in students_dict_with_subjbase_pk_list:
             student_dict = students_dict_with_subjbase_pk_list.get(idnumber_nodots)
             """
@@ -3415,7 +3415,7 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
 
             student_pk = student_dict.get('stud_id')
             if student_pk:
-                student = stud_mod.Student.objects.get_or_none(
+                student_instance = stud_mod.Student.objects.get_or_none(
                     pk=student_pk,
                     school=sel_school,
                     department=sel_department
@@ -3430,22 +3430,22 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
                     has_multiple_pws_subjects = True
 
         if logging_on:
-            logger.debug('    student: ' + str(student))
+            logger.debug('    student_instance: ' + str(student_instance))
 
-        if student is None:
+        if student_instance is None:
             has_error = True
             log_list.append(_("Candidate with ID-number '%(val)s' is not found.") % {'val': idnumber_nodots})
 
-        elif student.scheme is None:
+        elif student_instance.scheme is None:
             has_error = True
-            log_list.append(idnumber_nodots + '  ' + student.fullname + ' ' + str(student.scheme))
+            log_list.append(idnumber_nodots + '  ' + student_instance.fullname + ' ' + str(student_instance.scheme))
             caption_txt = c.STRING_SPACE_05 + (c.STRING_SPACE_10)[:8]
-            if student.department_id is None:
+            if student_instance.department_id is None:
                 log_list.append(caption_txt + str(_('This candidate has no %(cpt)s.') % {'cpt': _('department')}))
-            if sel_department.sector_req and student.sector_id is None:
+            if sel_department.sector_req and student_instance.sector_id is None:
                 caption = _('profiel') if sel_department.has_profiel else _('sector')
                 log_list.append(caption_txt + str(_('This candidate has no %(cpt)s.') % {'cpt': caption}))
-            if sel_department.level_req and student.level_id is None:
+            if sel_department.level_req and student_instance.level_id is None:
                 log_list.append(caption_txt + str(_('This candidate has no %(cpt)s.') % {'cpt': _('leerweg')}))
             cpt = _('The subjects')
             if is_test:
@@ -3457,7 +3457,7 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
             is_existing_student = True
 
     if not has_error:
-        log_list.append(idnumber_nodots + '  ' + student.fullname + ' ' + str(student.scheme))
+        log_list.append(idnumber_nodots + '  ' + student_instance.fullname + ' ' + str(student_instance.scheme))
 
         import_pws_title = upload_data_dict.get('pws_title')
         import_pws_subjects = upload_data_dict.get('pws_subjects')
@@ -3465,7 +3465,7 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
         # mapped_subjectbase_pk_dict = { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code, has_pws] }, ... }
         # mapped_subjectbase_pk_dict: {249: {140: [2070, 'sp', False], 133: [2054, 'ne', False],
         scheme_dict = {}
-        student_scheme_pk = student.scheme_id
+        student_scheme_pk = student_instance.scheme_id
         if student_scheme_pk in mapped_subjectbase_pk_dict:
             scheme_dict = mapped_subjectbase_pk_dict.get(student_scheme_pk)
 
@@ -3483,7 +3483,7 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
         """
         if logging_on and False:
             logger.debug('..... student_subjbase_pk_dict: ' + str(student_subjbase_pk_dict))
-            logger.debug('      student_scheme: ' + str(student_scheme_pk) + ' ' + str(student.scheme))
+            logger.debug('      student_scheme: ' + str(student_scheme_pk) + ' ' + str(student_instance.scheme))
 
         # PR2020-06-03 debug: ... + (list_item) gives error: must be str, not __proxy__
         # solved bij wrapping with str()
@@ -3586,7 +3586,7 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
 # - create studentsubject instance and grade instance
 #       - schemeitem_pk is the subject with the lowest subjecttype sequence
                             studsubj, append_keyNIU = stud_view.create_studsubj(
-                                student=student,
+                                student=student_instance,
                                 schemeitem=schemeitem,
                                 messages=messages,
                                 error_list=err_list,
@@ -3640,10 +3640,13 @@ def upload_studentsubject_from_datalist(upload_data_dict, sel_examyear, sel_scho
 
 # +++ end of loop through subjects of data_list ++++++++++++++++++++++++++++++++++++++
 
-                # - when studsubjects are added to student: add rows to studsubj_rows
-                # PR2021-08-13 to prevent timeout error: download studentsubject_rows in separate ajax call
                 if has_created_studsubj:
-                    pass
+                    # PR2024-09-03 added: update_student_subj_composition
+                    comp_ok_has_changed = stud_view.update_student_subj_composition(student_instance)
+
+                    # - when studsubjects are added to student: add rows to studsubj_rows
+                    # PR2021-08-13 to prevent timeout error: download studentsubject_rows in separate ajax call
+
                     """
                     append_dict = {'created': True}
                     rows = stud_view.create_studentsubject_rows(
@@ -5481,7 +5484,6 @@ def create_exemption_sql_list(cur_student_dict, cur_subjbase_pk, cur_subjbase_in
 
         cur_stud_is_evelex = cur_student_dict['is_evelex_student']
 
-
         curstud_logtxt_added = False
 
         if logging_on:
@@ -5581,7 +5583,17 @@ def create_exemption_sql_list(cur_student_dict, cur_subjbase_pk, cur_subjbase_in
                         # - cur_stud is day_student and other_stud is evelex_student > not clear, make it 1 year to be on the safe side
                         # - cur_stud is evelex_student and other_stud is day_student > not clear, make it 1 year to be on the safe side
 
-                        valid_years = 10 if cur_stud_is_evelex and other_is_evelex else 1
+                        # PR2024-09-24 pok may always be 10 years old when is_evelex_student
+                        #   email Hans meijs 17 sep 24:
+                        #   Een avondschool-kandidaat krijgt vrijstelling voor een vak wanneer:
+                        #    - de kandiaat voor dat vak een Bewijs van Vrijstelling van een avondschool heeft dat niet ouder is dan 10 jaar
+                        #    - of de kandidaat een Bewijs van Kennis van een dagschool heeft, niet ouder dan 10 jaar
+                        #   email Nancy Josephina 17 sep 2024:
+                        #       Jouw interpretatie klopt en de wijziging is op zijn plaats. Bedankt voor de informatie.
+                        #       Drs. Nancy Josephina
+                        # was: valid_years = 10 if cur_stud_is_evelex and other_is_evelex else 1
+
+                        valid_years = 10 if cur_stud_is_evelex else 1
                         examyear_is_correct = (other_examyear_code < cur_examyear_code and
                                                other_examyear_code >= cur_examyear_code - valid_years)
                         if logging_on:
