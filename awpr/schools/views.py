@@ -29,7 +29,6 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from accounts import models as acc_mod
 from accounts import views as acc_view
 from accounts import permits as acc_prm
 
@@ -2629,7 +2628,7 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
 class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug('===== OrderlistsPublishView =====')
@@ -2809,8 +2808,6 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                     log_list.append(c.STRING_SPACE_05)
 
                                 else:
-                                    if logging_on:
-                                        logger.debug('count_dict: ' + str(count_dict))
 
 # +++ save count_dict in Enveloporderlist
                                     receipt_json = json.dumps(receipt_dict)
@@ -2852,8 +2849,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
 # - get list of 'auth1' and 'auth2' users of requsr_school (ETE or DOE), for sending email with total_orderlist
                                     # they will get cc of email to each school
-                                    allowed_usergroups = ('auth1', 'auth2')
-                                    cc_pk_str_list, cc_name_list, cc_email_list = get_school_emailto_list(requsr_school, allowed_usergroups)
+                                    cc_pk_str_list, cc_name_list, cc_email_list = get_school_emailto_list(sel_examyear_instance, req_usr.schoolbase_id)
                                     if logging_on:
                                         logger.debug('cc_pk_str_list: ' + str(cc_pk_str_list))
                                         logger.debug('cc_name_list: ' + str(cc_name_list))
@@ -2965,7 +2961,7 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                                 cc_pk_str_list, cc_email_list, cc_name_list, send_email,
                                 user_lang, request):
     # function creates orderlist of one school # PR2021-10-12
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ===== create_orderlist_per_school =====')
@@ -2985,10 +2981,8 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
         log_list.append(''.join(
             ((sbase_code + c.STRING_SPACE_10)[:10], sch_name)))
 
-        # - get list of 'auth1' and 'auth2'users of this school, for sending email
-        allowed_usergroups = ('auth1', 'auth2')
         sendto_pk_str_list, sendto_name_list, sendto_email_list = \
-            get_school_emailto_list(school, allowed_usergroups)
+            get_school_emailto_list(sel_examyear_instance, school.base_id)
 
         count_total, subjbasepk_inuse_list = count_total_exams(count_dict, sbase_id)
 
@@ -3058,8 +3052,16 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                     # get list of users of this school, for sending email
                     if not send_email:
                         log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ',
-                                                 str(_('The email to %(cpt)s has not been sent.') % {'cpt': school.name}))))
+                                                 str(_('The email to %(cpt)s has not been sent to:') % {'cpt': school.name}))))
+                        if sendto_name_list:
+                            for sendto_name in sendto_name_list:
+                                log_list.append(''.join((c.STRING_SPACE_15, sendto_name)))
+                        if cc_name_list:
+                            log_list.append(''.join((c.STRING_SPACE_10, str(_('c.c.')), ':')))
+                            for cc_name in cc_name_list:
+                                log_list.append(''.join((c.STRING_SPACE_15, cc_name)))
                         log_list.append(c.STRING_SPACE_05)
+
                     else:
                         mail_sent = send_email_orderlist(
                             examyear=sel_examyear_instance,
@@ -3081,8 +3083,7 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                             log_list.append(''.join((c.STRING_SPACE_10, str(_(
                                 'An email with the orderlist is sent to')), ':')))
                             log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)))))
-                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
-                                'c.c.')), ':')))
+                            log_list.append(''.join((c.STRING_SPACE_10, str(_('c.c.')), ':')))
                             log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)))))
                         log_list.append(c.STRING_SPACE_05)
                         if logging_on:
@@ -3124,34 +3125,69 @@ def count_total_exams(count_dict, sbase_id):  # PR2021-09-10
 # - end of count_total_exams
 
 
-def get_school_emailto_list(school, allowed_usergroups):  # PR2021-09-09
+def get_school_emailto_list(sel_examyear_instance, sel_school_pk):  # PR2021-09-09 PR2024-10-14
 
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('')
+        logger.debug(' ============= get_school_emailto_list ============= ')
+        logger.debug('    sel_school_pk: ' + str(sel_school_pk))
+
+    # - get list of 'auth1' and 'auth2'users of this school, for sending email
+    allowed_usergroups = ('auth1', 'auth2')
     sendto_pk_str_list, sendto_email_list, sendto_name_list = [], [], []
     # get list of users of this school, for sending email
     # only users with allowed_usergroups will be added
 
-    # TODO PR2022-12-11: check if this is correct usergroups moved from suer to userallowed ( PR2022-12-11
+    # - also used to get list of 'auth1' and 'auth2' users of requsr_school (ETE or DOE), for sending email with total_orderlist
+
+    # PR2022-12-11: check if this is correct usergroups moved from suer to userallowed ( PR2022-12-11
     # was:
     # school_users = acc_mod.User.objects.filter(
     #     schoolbase=school.base,
     #     activated=True,
     #     is_active=True,
     #     usergroups__isnull=False
-    # )
 
-    school_users = acc_mod.UserAllowed.objects.filter(
-        user__schoolbase=school.base,
-        user__activated=True,
-        user__is_active=True,
-        usergroups__isnull=False
-    )
+    # PR2024-10-14 switched to sql.  was:
+    #school_users = acc_mod.UserAllowed.objects.filter(
+    #    user__schoolbase=school.base,
+    #    user__activated=True,
+    #    user__is_active=True,
+    #    usergroups__isnull=False
+    #)
+
+    sql = ''.join((
+        "SELECT ual.user_id, ual.usergroups, u.last_name, u.email ",
+
+        "FROM accounts_userallowed AS ual ",
+        "INNER JOIN accounts_user AS u ON (u.id = ual.user_id) ",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id) ",
+
+        "WHERE ey.code=", str(sel_examyear_instance.code), "::INT ",
+        "AND u.schoolbase_id=", str(sel_school_pk), "::INT ",
+        "AND u.activated AND u.is_active ",
+        "AND ual.usergroups IS NOT NULL;"
+    ))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        school_users = af.dictfetchall(cursor)
+
     for school_user in school_users:
-        is_allowed = ug_exists_in_usergroups_json(allowed_usergroups, school_user.usergroups)
+        if logging_on:
+            logger.debug('    school_user: ' + str(school_user))
+        is_allowed = ug_exists_in_usergroups_json(
+            ug_list=allowed_usergroups,
+            usergroups_str=school_user['usergroups']
+        )
+        if logging_on:
+            logger.debug('    is_allowed: ' + str(is_allowed))
 
         if is_allowed:
-            sendto_pk_str_list.append(str(school_user.pk))
-            sendto_email_list.append(school_user.email)
-            sendto_name_list.append(school_user.last_name)
+            sendto_pk_str_list.append(str(school_user['user_id']))
+            sendto_email_list.append(school_user['email'])
+            sendto_name_list.append(school_user['last_name'])
 
     return sendto_pk_str_list, sendto_name_list, sendto_email_list
 # - end of get_school_emailto_list
@@ -3160,7 +3196,7 @@ def get_school_emailto_list(school, allowed_usergroups):  # PR2021-09-09
 def send_email_orderlist(examyear, school, is_total_orderlist,
                          sendto_pk_str_list, sendto_name_list, sendto_email_list,
                          cc_pk_str_list, cc_email_list, published_instance, request):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- send_email_orderlist  -----')
